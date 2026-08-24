@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+
+# Node
+node_modules/
+dist/
+coverage/
+.vite/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Databases and generated artifacts
+*.db
+*.sqlite
+*.sqlite3
+artifacts/
+exports/
+reports/generated/
+
+# Reference source files are local inputs, not repository content
+data/reference/raw/*
+!data/reference/raw/README.md
+
+# Codex logs/worktrees
+.codex-log/

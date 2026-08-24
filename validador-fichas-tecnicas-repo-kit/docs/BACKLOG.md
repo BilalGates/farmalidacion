@@ -1,0 +1,235 @@
+# Backlog inicial
+
+Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o endurecimiento. Los identificadores se mantienen aunque las issues se creen después en GitHub.
+
+## EPIC E0 — Gobierno y descubrimiento
+
+### DEV-001 — Instalar el sistema operativo del repositorio (`P0`)
+
+**Objetivo:** copiar y validar `AGENTS.md`, agentes, skill, documentos y ficheros de referencia.
+
+**Aceptación:** Codex enumera instrucciones, agentes y skill; el verificador de hashes pasa; `STATUS.md` refleja el arranque.
+
+### DEV-002 — Crear perfilador reproducible de Excel (`P0`)
+
+**Objetivo:** inspeccionar todas las hojas sin modificar los originales.
+
+**Salida:** JSON/CSV y Markdown con filas materialmente pobladas, columnas, tipos observados, nulos, longitudes, duplicados, fórmulas y claves candidatas.
+
+**Aceptación:** dos ejecuciones sobre los mismos hashes producen el mismo informe.
+
+### DEV-003 — Reconstruir el catálogo canónico (`P0`)
+
+**Objetivo:** ampliar las 353 definiciones con entidad, bloque, subbloque, rol, cardinalidad, columna de exportación y obligatoriedad original.
+
+**Aceptación:** no quedan colisiones sin identificador distinto; se preservan `S/N/S*/N*`.
+
+### DEV-004 — Mapear cardinalidades y claves por bloque (`P0`)
+
+**Objetivo:** definir uno-a-uno, uno-a-muchos y claves naturales de cada hoja.
+
+**Aceptación:** tabla revisable y tests sobre ejemplos reales.
+
+### DEV-005 — Resolver relación entre CIMA y registros destino (`P0`)
+
+**Objetivo:** cerrar D-001, D-002 y D-006.
+
+**Aceptación:** ADR-0001 aceptado o reemplazado; ejemplos de uno-a-varios y varios-a-varios.
+
+### DEV-006 — Definir matriz de fuentes por campo (`P0`)
+
+**Objetivo:** indicar fuente primaria, secundaria, prioridad, conflicto y acción humana.
+
+**Aceptación:** todos los campos activos tienen regla o estado explícito pendiente.
+
+### DEV-007 — Prueba de importación de omeprazol (`P0`)
+
+**Objetivo:** representar las 22 hojas en el modelo canónico candidato.
+
+**Aceptación:** recuentos y valores materialmente poblados conciliados.
+
+### DEV-008 — Prueba de exportación y comparación semántica (`P0`)
+
+**Objetivo:** reconstruir omeprazol y comparar hoja por hoja.
+
+**Aceptación:** cero pérdidas; diferencias clasificadas y aprobadas.
+
+### DEV-009 — Reproducir incidencias de integridad (`P1`)
+
+**Objetivo:** comprobar huérfanos de excipientes, duplicados y límites de longitud.
+
+**Aceptación:** informe reproducible con ejemplos y severidad.
+
+### DEV-010 — Cerrar estrategia de interacciones (`P0`)
+
+**Objetivo:** aceptar, cambiar o descartar ADR-0003.
+
+**Aceptación:** alcance y backlog separados claramente.
+
+## EPIC E1 — Scaffold de aplicación
+
+### DEV-101 — Crear estructura del repositorio (`P0`)
+
+Backend, frontend, infraestructura, scripts, docs y datos de ejemplo.
+
+### DEV-102 — Configurar backend (`P0`)
+
+FastAPI, configuración, logging, health check, pytest y lint.
+
+### DEV-103 — Configurar frontend (`P0`)
+
+React, TypeScript, Vite, Vitest, lint y shell visual mínimo.
+
+### DEV-104 — Configurar SQLite y Alembic (`P0`)
+
+Migración inicial del modelo aceptado, upgrade/downgrade y fixtures.
+
+### DEV-105 — Crear Docker Compose (`P0`)
+
+Arranque limpio con backend, frontend y datos de demostración.
+
+### DEV-106 — Crear CI (`P1`)
+
+Tests, lint, typecheck, build y verificación de migraciones.
+
+### DEV-107 — Primer corte vertical de lectura (`P0`)
+
+Importar fixture y visualizar por API un registro con bloques repetibles.
+
+## EPIC E2 — CIMA y documentos
+
+### DEV-201 — Verificar contrato de API CIMA (`P0`)
+
+Documentar endpoints y parámetros exactos desde fuente oficial.
+
+### DEV-202 — Cliente CIMA robusto (`P0`)
+
+Rate limit, reintentos, timeouts, cache e idempotencia.
+
+### DEV-203 — Muestreo reproducible (`P0`)
+
+Aleatorio y estratificado, semilla, criterios y persistencia.
+
+### DEV-204 — Informe de composición (`P1`)
+
+ATC, forma y vía; salida legible y datos exportables.
+
+### DEV-205 — Versionado inmutable (`P0`)
+
+Documento, versión, sección, hash y metadatos.
+
+### DEV-206 — Detección y diff de versiones (`P1`)
+
+Preparación para mantenimiento continuo.
+
+### DEV-207 — Corpus offline (`P0`)
+
+Fixtures y operación sin red.
+
+## EPIC E3 — Maestros y consolidación
+
+### DEV-301 — Infraestructura común de importadores (`P0`)
+
+Lotes, hashes, idempotencia, diagnósticos y cuarentena.
+
+### DEV-302 — Importador de catálogo (`P0`)
+
+Incluye overrides CHAR(100) y preserva tipos originales.
+
+### DEV-303 — Importador de principio activo (`P1`)
+
+### DEV-304 — Importador de medicamento (`P1`)
+
+### DEV-305 — Importador de especialidad (`P1`)
+
+### DEV-306 — Importador o exclusión formal de interacciones (`P1`)
+
+### DEV-307 — Motor de conflictos de procedencia (`P0`)
+
+### DEV-308 — Informes de calidad de datos (`P1`)
+
+Longitudes, tipos, duplicados, huérfanos, nulos y catálogos.
+
+## EPIC E4 — Extractor local
+
+### DEV-401 — Contrato `ExtractorLLM` (`P0`)
+
+### DEV-402 — Adaptador de servidor local (`P0`)
+
+### DEV-403 — Esquema de salida guiada (`P0`)
+
+### DEV-404 — Agrupación por sección (`P1`)
+
+### DEV-405 — Verificador literal de evidencia (`P0`)
+
+### DEV-406 — Procesamiento reanudable por lotes (`P1`)
+
+### DEV-407 — Herramienta de anotación del conjunto oro (`P0`)
+
+### DEV-408 — Benchmark de dos modelos (`P0`)
+
+### DEV-409 — Política configurable por resultados (`P0`)
+
+## EPIC E5 — Revisión farmacéutica
+
+### DEV-501 — Selector de usuario (`P0`)
+
+### DEV-502 — Cola y asignación de lotes (`P0`)
+
+### DEV-503 — Pantalla de tres zonas (`P0`)
+
+### DEV-504 — Navegación completa por teclado (`P0`)
+
+### DEV-505 — Guardado incremental (`P0`)
+
+### DEV-506 — Estados de validación (`P0`)
+
+### DEV-507 — Editor de bloques repetibles (`P0`)
+
+### DEV-508 — Medición de tiempo (`P1`)
+
+### DEV-509 — Rendimiento y precarga (`P1`)
+
+### DEV-510 — Tests de sesgo de automatización (`P0`)
+
+### DEV-511 — Ejecución del conjunto de medida (`P0`)
+
+## EPIC E6 — Exportación, riesgo y auditoría
+
+### DEV-601 — Cerrar contrato de exportación (`P0`)
+
+### DEV-602 — Exportadores CSV/TXT/XLSX (`P0`)
+
+### DEV-603 — Validador de tipos y longitudes (`P0`)
+
+### DEV-604 — Informe de exportación (`P1`)
+
+### DEV-605 — Exportación reproducible (`P1`)
+
+### DEV-606 — Reglas ATC por prefijo (`P0`)
+
+### DEV-607 — Segunda validación ciega (`P0`)
+
+### DEV-608 — Conciliación (`P0`)
+
+### DEV-609 — Auditoría append-only (`P0`)
+
+### DEV-610 — Prueba de carga con proveedor (`P0`)
+
+## EPIC E7 — Mantenimiento
+
+### DEV-701 — Consulta de cambios CIMA (`P0`)
+
+### DEV-702 — Revisión pendiente selectiva (`P0`)
+
+### DEV-703 — Panel de novedades y diff (`P1`)
+
+### DEV-704 — Operación programada y alertas (`P1`)
+
+### DEV-705 — Chat contextual citado (`P2`)
+
+## Orden recomendado de las primeras issues
+
+`DEV-001 → DEV-002 → DEV-003 → DEV-004 → DEV-005 → DEV-006 → DEV-007 → DEV-008 → DEV-009 → DEV-010`
+
+Solo después: `DEV-101` en adelante.

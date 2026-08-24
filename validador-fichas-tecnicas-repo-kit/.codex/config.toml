@@ -1,0 +1,7 @@
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 6
+
+# Project-scoped custom agents live in .codex/agents/.
+# The main thread owns decisions and integration. Prefer parallel read-only
+# analysis; use separate worktrees for independent write-heavy tasks.
