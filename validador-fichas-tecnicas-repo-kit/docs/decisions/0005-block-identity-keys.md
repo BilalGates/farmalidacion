@@ -1,6 +1,6 @@
 # ADR-0005 — Identidad y claves candidatas de bloques
 
-- Estado: propuesto
+- Estado: aceptado
 - Fecha: 2026-08-25
 - Decisiones relacionadas: D-004
 - Responsables: producto, farmacia, proveedor y tecnología
@@ -31,9 +31,9 @@ Reduce colisiones observadas, pero incorpora columnas vacías o redundantes y co
 
 Asignar identidad canónica independiente. Registrar cada clave observada con sistema emisor, versión, ámbito y estado; usar combinaciones de bloque solo como reglas candidatas hasta demostrar estabilidad y aprobarlas.
 
-## Decisión propuesta
+## Decisión aceptada
 
-Adoptar la opción C. Para ingesta se pueden usar `IDEXTERNO`, `MED_IDEXTERNO`, `BN_IDEXTERNO`, `CODIGO_NACIONAL` y `LI_IDEXTERNO` como identificadores de fuente observados, nunca como identidad canónica universal sin validación adicional.
+Adoptar la opción C. Cada entidad tiene PK canónica interna. Una referencia externa se identifica mediante `source_system + source_identifier + source_version`. Los identificadores observados ayudan a reconciliar/importar, pero no definen por sí solos identidad de dominio ni estabilidad histórica. Aprobación humana: 25 de agosto de 2026.
 
 ## Consecuencias
 

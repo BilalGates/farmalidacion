@@ -38,7 +38,7 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 **Aceptación:** ADR, diagrama, tabla de entidades/bloques/cardinalidades/claves candidatas y cobertura documental de las 22 hojas de omeprazol sin pérdida de ocurrencias.
 
-**Estado:** completada documentalmente el 25 de agosto de 2026. Evidencia: `docs/CANONICAL_CONCEPTUAL_MODEL.md` y ADR-0001 ampliado, que continúa propuesto. En el cierre de DEV-003 no se aceptaron claves ni cardinalidades no demostradas.
+**Estado:** completada documentalmente. ADR-0001 fue aceptado posteriormente tras round-trip y aprobación humana; esquema físico pendiente.
 
 ### DEV-004 — Mapear cardinalidades y claves por bloque (`P0`)
 
@@ -46,7 +46,7 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 **Aceptación:** tabla revisable y tests sobre ejemplos reales.
 
-**Estado:** completada como evidencia el 25 de agosto de 2026. Se evaluaron 35 hipótesis de clave y 12 relaciones; 6 candidatas mostraron unicidad en esta versión. Se reprodujeron 275 filas huérfanas de excipientes correspondientes a 184 claves paternas distintas. Evidencia en `docs/CARDINALITY_KEY_EVIDENCE.md`; ADR-0005 y D-004 permanecen propuestos, no aceptados.
+**Estado:** completada y aceptada el 25 de agosto de 2026. ADR-0005/D-004 adoptan PK canónica propia e identificadores externos versionados; ninguna unicidad observada se convierte en clave natural.
 
 ### DEV-005 — Resolver relación entre CIMA y registros destino (`P0`)
 
@@ -78,7 +78,7 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 **Aceptación:** cero pérdidas; diferencias clasificadas y aprobadas.
 
-**Estado:** completada el 25 de agosto de 2026 como spike reversible. Dos corridas conciliaron 22/22 hojas y 2.674/2.674 valores con cero diferencias, hash reproducible `7d474de536f4e168636c286aabd4ab3339715dde04c3164900c58c5204926adf` y original intacto. Evidencia en `docs/OMEPRAZOLE_ROUNDTRIP_EVIDENCE.md`. No constituye el exportador final ni acepta ADR-0001.
+**Estado:** completada como spike reversible: 22/22 hojas, 2.674/2.674 valores y cero diferencias. No es exportador final; permitió aceptar ADR-0001 conceptualmente.
 
 ### DEV-008A — Definir contrato semántico del round-trip (`P0`)
 
@@ -94,7 +94,7 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 **Aceptación:** ADR-0004 aceptado o sustituido con reglas de autoridad, transición y exportación verificadas.
 
-**Estado:** completado en alcance interno el 25 de agosto de 2026; ADR-0004 aceptado internamente. Serialización externa pendiente bajo D-011; el gate completo no está satisfecho.
+**Estado:** cerrada el 25 de agosto de 2026 bajo excepción explícita de Gate 0B. ADR-0004 aceptado; serialización trasladada a PROVIDER-002 y no bloquea Fase 1.
 
 **Evidencia DEV-011:** `docs/VALUE_STATE_VALIDATION_TABLE.md`. Aprobación humana registrada; pendiente exclusivamente el contrato de representación del proveedor.
 
@@ -119,6 +119,8 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 ### DEV-101 — Crear estructura del repositorio (`P0`)
 
 Backend, frontend, infraestructura, scripts, docs y datos de ejemplo.
+
+**Estado:** autorizado como siguiente issue; no iniciado.
 
 ### DEV-102 — Configurar backend (`P0`)
 

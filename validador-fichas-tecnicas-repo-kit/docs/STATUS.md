@@ -2,11 +2,11 @@
 
 ## Estado global
 
-`FASE 0A CERRADA — FASE 0B EN DESCUBRIMIENTO`
+`FASE 0A CERRADA — FASE 0B CERRADA CON DEPENDENCIAS EXTERNAS — FASE 1 AUTORIZADA`
 
 ## Fase actual
 
-Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-008 están completados en su alcance de spike; el modelo físico no está implementado y la puerta requiere todavía decisiones y validación humana.
+Fase 1 autorizada, todavía no iniciada. El siguiente issue es DEV-101 y el esquema físico definitivo permanece pendiente.
 
 ## Fase 0A — Cerrada
 
@@ -34,7 +34,7 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-008 est�
 - Contrato semántico del round-trip de omeprazol definido, todavía no ejecutado.
 - Bloques repetibles exigidos como ocurrencias explícitas; concatenación prohibida.
 - ADR-0004/D-010 está aceptado para el modelo interno; la serialización externa continúa pendiente bajo D-011.
-- ADR-0001 continúa propuesto; DEV-002 por sí solo no lo acepta.
+- ADR-0001 aceptado tras DEV-008 y aprobación humana.
 
 ## DEV-003 — Completado documentalmente
 
@@ -42,8 +42,8 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-008 est�
 - Diagrama y tabla de entidades, bloques, cardinalidades conservadoras y claves candidatas documentados en `docs/CANONICAL_CONCEPTUAL_MODEL.md`.
 - Las 22 hojas de omeprazol tienen representación sin concatenar, deduplicar ni descartar ocurrencias.
 - La demostración es de capacidad conceptual; la importación y comparación real siguen pendientes en DEV-007/DEV-008.
-- D-004 y D-006 no se han cerrado; las claves y cardinalidades no demostradas permanecen abiertas.
-- ADR-0001 permanece propuesto.
+- D-004 y D-006 no se cerraron dentro de DEV-003; fueron aceptadas posteriormente mediante ADR-0005/0006.
+- ADR-0001 está aceptado como modelo conceptual, no como esquema físico definitivo.
 
 ## DEV-004 — Completado como evidencia
 
@@ -53,7 +53,7 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-008 est�
 - Cardinalidades observadas documentadas, incluidos bloques 0..N y hojas vacías 0..0.
 - Reproducidas 275 filas huérfanas de excipientes, equivalentes a 184 claves paternas distintas.
 - Hash de evidencia: `c685c293172fd3702db881eff6823409a6f9b8447772ab283ef159bba2f23a6c`.
-- D-004/ADR-0005 siguen propuestos; D-006 pasa a propuesta documental en DEV-005, sin aceptación.
+- La evidencia no convierte unicidad en clave natural; D-004/ADR-0005 fueron aceptados posteriormente con identidad canónica propia.
 
 ## DEV-005 — Completado y aceptado
 
@@ -73,7 +73,7 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-008 est�
 - Maestro actual conservado como línea base, nunca como verdad autoritativa automática.
 - Toda prioridad no aprobada queda `pending_human_validation` y todo conflicto conserva las afirmaciones y procedencias.
 - CIMA estructurado permanece fuente candidata condicionada a mapeo verificado; no se ha integrado ni consultado.
-- ADR-0007 aceptado y D-008 cerrada; D-005 sigue pendiente y D-011 mantiene abierta la serialización externa de estados.
+- ADR-0007 aceptado y D-008 cerrada; PROVIDER-001/002 siguen abiertos sin bloquear Fase 1.
 
 ## DEV-007 — Completado como spike reversible
 
@@ -83,7 +83,7 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-008 est�
 - Dos corridas independientes produjeron instantáneas idénticas y el hash canónico `5e8564dcd726380aec23f031f6060e4450d2c0fa09f559589e9c6d32caebdb5f`.
 - Los recuentos por hoja coinciden con el perfil agregado de DEV-002; suite completa 12/12 OK.
 - Evidencia y límites en `docs/OMEPRAZOLE_CANONICAL_IMPORT_EVIDENCE.md`.
-- ADR-0001 permanece propuesto: DEV-008 debe reconstruir y comparar semánticamente las 22 hojas.
+- Esta evidencia permitió ejecutar DEV-008; ADR-0001 fue aceptado después del round-trip.
 
 ## DEV-008 — Completado como round-trip reversible
 
@@ -92,7 +92,7 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-008 est�
 - Cero diferencias, defectos, pendientes, truncamientos, descartes, concatenaciones o partes auxiliares alteradas.
 - Dos corridas de 8,165 s y 7,373 s produjeron XLSX e informes idénticos con hash reproducible `7d474de536f4e168636c286aabd4ab3339715dde04c3164900c58c5204926adf`.
 - Suite completa 14/14 OK; la prueba de mutación confirma que un valor alterado se clasifica como defecto.
-- Evidencia en `docs/OMEPRAZOLE_ROUNDTRIP_EVIDENCE.md`. No es el exportador final y ADR-0001 permanece propuesto.
+- Evidencia en `docs/OMEPRAZOLE_ROUNDTRIP_EVIDENCE.md`. No es el exportador final; ADR-0001 quedó aceptado conceptualmente.
 
 ## DEV-009 — Completado como evidencia de integridad
 
@@ -102,17 +102,17 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-008 est�
 - Dos corridas idénticas: `987129be4c8d7b62517c0962e19279e01b00299c7c51490e179137b3040579e7`; suite 16/16 OK.
 - Evidencia en `docs/INTEGRITY_INCIDENT_EVIDENCE.md`; no se aceptan claves ni reparaciones.
 
-## Puerta 0B — No superada
+## Puerta 0B — PASS WITH EXTERNAL DEPENDENCIES
 
-Revisión formal en `docs/PHASE_0B_GATE_REVIEW.md`: la no pérdida está demostrada, pero cinco bloqueos documentales/de decisión impiden avanzar.
+Revisión formal en `docs/PHASE_0B_GATE_REVIEW.md`. Excepción humana aprobada para PROVIDER-001/002; Fase 1 autorizada.
 
-DEV-011 está completado para el modelo interno: D-010 y ADR-0004 quedan aceptados en semántica, autoridad, comentarios, reversibilidad y doble validación. La serialización de `no_consta`/`not_applicable` sigue abierta bajo D-011; no se supera la puerta 0B ni se autoriza Fase 1.
+DEV-011 queda cerrado bajo la excepción: modelo interno aceptado y serialización externa trasladada a PROVIDER-002.
 
-Faltan cerrar o aceptar explícitamente las claves y relaciones todavía propuestas, validar humanamente el modelo candidato y aceptar o sustituir ADR-0001. No se autoriza avanzar a Fase 1.
+DEV-101 puede iniciarse. No se autoriza avanzar automáticamente más allá de ese issue.
 
 ## Decisiones pendientes
 
-- D-004 y D-005 requieren validación humana o evidencia adicional; D-011 requiere el contrato del proveedor.
+- PROVIDER-001 debe resolverse antes de reglas condicionales definitivas; PROVIDER-002 antes del exportador definitivo.
 - Las excepciones concretas por campo y el mapeo CIMA se verificarán en sus fases sin reabrir prioridades implícitas.
 - Contrato de exportación, separador decimal y hardware de inferencia siguen pendientes en sus fases.
 

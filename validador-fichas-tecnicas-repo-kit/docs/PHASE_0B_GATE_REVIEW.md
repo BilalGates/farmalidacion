@@ -1,26 +1,23 @@
 # Revisión formal de la puerta de Fase 0B
 
 - Fecha: 2026-08-25
-- Resultado: **no superada**
-- Recomendación: detener avance a Fase 1.
+- Resultado: **PASS WITH EXTERNAL DEPENDENCIES**
+- Excepción aprobada: PROVIDER-001 y PROVIDER-002 no bloquean Fase 1, pero sí sus funcionalidades límite.
 
 | Criterio | Estado | Evidencia | Bloqueo restante |
 |---|---|---|---|
-| ADR canónico aceptado | bloqueado | ADR-0001; ADR-0006/0004 aceptados en sus alcances | ADR-0001 y ADR-0005/D-004 siguen propuestos |
-| Catálogo sin colisiones ambiguas | bloqueado | DEV-006/009 | cinco identidades repetidas, dos conflictos de tipo y D-005 pendiente |
+| ADR canónico aceptado | cumplido | ADR-0001, 0004, 0005 y 0006 aceptados | esquema físico sigue pendiente |
+| Catálogo sin colisiones ambiguas | cumplido con dependencias | D-026 resuelve límites internos; D-005 preserva literal | PROVIDER-001 bloquea solo reglas definitivas |
 | Importación sin pérdida | cumplido | DEV-007: 22/22, 616 ocurrencias, 2.674 valores | ninguno en el fixture |
 | Round-trip sin pérdida | cumplido como spike | DEV-008: 22/22, 2.674/2.674, cero diferencias | no es exportador final |
 | Diferencias clasificadas | cumplido | contrato y reporte DEV-008 | cero diferencias observadas |
 | Cero truncamientos/descartes | cumplido en spikes | DEV-007/008/009 | cuatro excesos requieren gobierno antes de exportar |
 | Semántica interna de estados | cumplido | ADR-0004/D-010 | ninguno interno |
-| Serialización externa | bloqueado | D-011 | contrato del proveedor |
+| Serialización externa | excepción externa | PROVIDER-002 | bloquea exportador definitivo, no Fase 1 |
 
-## Decisiones necesarias
+## Dependencias posteriores
 
-1. Aceptar, modificar o sustituir ADR-0001.
-2. Resolver D-004/ADR-0005 sin convertir unicidad observada en clave natural.
-3. Resolver D-005 con el proveedor sin reinterpretar `S*`/`N*`.
-4. Resolver los conflictos `Composición/DESCRIPCION` (`CHAR(50)`/`CHAR(100)`) y `Links/DESCRIPCION` (`CHAR(100)`/`CHAR(255)`), además de identidades repetidas.
-5. Obtener para D-011 la representación exacta de carga del proveedor.
+1. PROVIDER-001 antes de reglas definitivas de obligatoriedad condicional.
+2. PROVIDER-002 antes del contrato/exportador definitivo.
 
-No se autorizan migraciones definitivas, backend, frontend, exportador final ni integración CIMA/LLM. Cualquier excepción requiere decisión humana y ADR explícitos.
+Fase 1 queda autorizada. Esta revisión no autoriza avanzar automáticamente más allá de DEV-101 ni implementar exportador final, CIMA o LLM.

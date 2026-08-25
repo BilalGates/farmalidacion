@@ -10,8 +10,8 @@
 | Catálogo gobernado por configuración | Especificación 6 | 0B, 3 | importador de catálogo | añadir campo sin cambiar código |
 | Overrides CHAR(100) | Especificación 6.1 | 3 | regla de importación | test de ambos campos |
 | Bloques repetibles | Ficheros reales | 0B, 1, 3 | `instancia_bloque` o decisión equivalente | round-trip omeprazol |
-| Modelo conceptual canónico | Especificación 5-7; inventario; DEV-002 | 0B | `docs/CANONICAL_CONCEPTUAL_MODEL.md`; ADR-0001 propuesto | cobertura documental 22/22 hojas sin concatenar ni deduplicar ocurrencias |
-| Puerta formal de Fase 0B | Plan de desarrollo; phase gate | 0B | `docs/PHASE_0B_GATE_REVIEW.md` | estado por criterio y bloqueos; avance detenido mientras no se resuelvan |
+| Modelo conceptual canónico | Especificación 5-7; inventario; DEV-002 | 0B | `docs/CANONICAL_CONCEPTUAL_MODEL.md`; ADR-0001 aceptado | 22/22 hojas sin pérdida; esquema físico pendiente |
+| Puerta formal de Fase 0B | Plan de desarrollo; phase gate | 0B | `docs/PHASE_0B_GATE_REVIEW.md`; `docs/EXTERNAL_DEPENDENCIES.md` | PASS WITH EXTERNAL DEPENDENCIES; Fase 1 autorizada |
 | Documento, versión y registro destino separados | Especificación 5, 11, 13; D-002/D-020 | 0B, 2 | conceptos y vínculos del modelo candidato | cada valor referencia versión y fragmento; decisión aún propuesta |
 | Identidad nregistro/CN/medicamento/especialidad/principio activo | Especificación 5.1; maestros; D-006 | 0B | ADR-0006 aceptado; vínculos tipados | no fusionar; cardinalidad factual CIMA pendiente de Fase 2 |
 | Grafo de registros destino | Maestros; DEV-004/DEV-005 | 0B | `docs/TARGET_RECORD_RELATIONSHIP_EVIDENCE.md`; ADR-0006 propuesto | especialidad→medicamento y composición→principio activo sin huérfanos |
@@ -22,7 +22,7 @@
 | Calidad agregada por columna | Inventario de fuentes; DEV-002 | 0B | `columns.csv`, `incidents-summary.csv`, resumen Markdown | 730 columnas; tipos, nulos, longitudes, fórmulas, duplicados y cardinalidad informados |
 | Relaciones y huérfanos detallados | Inventario de fuentes; D-004/D-006 | 0B, 3 | agregados DEV-004; detalle pendiente de D-006/Fase 3 | no materializados fila a fila; requieren identidad aprobada |
 | Cardinalidades padre-hijo observadas | Maestros; DEV-004 | 0B | `scripts/analyze_reference_relationships.py`; `docs/CARDINALITY_KEY_EVIDENCE.md` | 12 relaciones agregadas; máximos observados no normativos |
-| Claves candidatas por bloque | Maestros; D-004 | 0B | ADR-0005 propuesto; tabla de 35 hipótesis | 6 unicidades observadas; hojas vacías y claves incompletas no aceptadas |
+| Claves candidatas por bloque | Maestros; D-004 | 0B | ADR-0005 aceptado; 35 hipótesis | PK canónica propia; identificadores de fuente versionados; unicidad no implica clave natural |
 | Huérfanos de excipientes | Inventario; especialidades | 0B, 3 | informe DEV-004 | 275 filas, 184 claves paternas distintas, sin reparación silenciosa |
 | Incidencias de integridad reproducibles | DEV-002/004/009 | 0B, 3, 6 | `scripts/analyze_integrity_incidents.py`; `docs/INTEGRITY_INCIDENT_EVIDENCE.md` | dos corridas idénticas; 275 huérfanos, 6 duplicados, 4 excesos y 24 valores al límite |
 | Round-trip semántico de 22 hojas | Plan Fase 0B; omeprazol de referencia | 0B | `scripts/roundtrip_omeprazole_fixture.py`; `docs/OMEPRAZOLE_ROUNDTRIP_EVIDENCE.md` | 22/22 hojas y 2.674/2.674 valores; cero diferencias; dos corridas con hash `7d474de536f4e168636c286aabd4ab3339715dde04c3164900c58c5204926adf` |
@@ -48,6 +48,7 @@
 | Auditoría append-only | Especificación 11 | 6 | eventos inmutables | reconstrucción histórica |
 | CSV/TXT/XLSX | Especificación 12 | 6 | exportadores | fixtures de formato |
 | Sin truncamiento | Especificación 12.3 | 3, 6 | validador e informe | CHAR excedido falla |
+| Límites canónicos internos | DEV-009; D-026 | 0B, 1, 3 | Composición/DESCRIPCION 100; Links/DESCRIPCION 255 | original conservado; límite proveedor independiente; exceso falla |
 | Exportación reproducible | Especificación 12.2 | 6 | snapshot de configuración | mismo estado, mismo contenido |
 | Registro de cambios CIMA | Especificación 13 | 7 | tarea programada | nueva versión + diff |
 | UI <100 ms por campo | Especificación 14 | 5 | precarga/cache local | prueba de rendimiento |

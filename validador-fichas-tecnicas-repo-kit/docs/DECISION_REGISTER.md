@@ -7,8 +7,8 @@ Estados: `cerrada`, `propuesta`, `pendiente`, `bloqueada`, `descartada`. Una dec
 | D-001 | Unidad que revisa el farmacéutico | cerrada | Fase 0B | Expediente contextual; decisiones atribuidas al nivel destino correspondiente | ADR-0006 aceptado; aprobación humana 2026-08-25 |
 | D-002 | Modelo canónico de documentos, registros y vínculos | cerrada | Fase 0B | Separar documento/versiones, registro destino y vínculo tipado | ADR-0006 aceptado; ADR-0001 sigue propuesto para el modelo completo |
 | D-003 | Representación de bloques repetibles | cerrada | Fase 0B | Ocurrencias explícitas; prohibido concatenarlas | Aprobación humana 2026-08-24; ADR-0001 sigue propuesto para el modelo completo |
-| D-004 | Claves naturales y reglas de identidad por bloque | propuesta | Fase 0B | Identidad canónica propia y claves de fuente versionadas; validar por round-trip y con proveedor | ADR-0005; DEV-004 |
-| D-005 | Significado de `S*` y `N*` | pendiente | Fase 0B | Conservar literal hasta respuesta del proveedor | Por crear |
+| D-004 | Claves naturales y reglas de identidad por bloque | cerrada | Fase 0B | PK canónica propia; referencia externa versionada | ADR-0005 aceptado; aprobación humana 2026-08-25 |
+| D-005 | Significado de `S*` y `N*` | dependencia externa | Antes de reglas condicionales definitivas | Conservar literal; derivar solo `base_required`; modificador abierto | PROVIDER-001; no bloquea Fase 1 |
 | D-006 | Relación `nregistro` / CN / medicamento / especialidad / principio activo | cerrada | Fase 0B | Identidades separadas y vínculos con rol, procedencia y vigencia; cardinalidad factual `nregistro`↔CN se verifica en Fase 2 | ADR-0006 aceptado; aprobación humana 2026-08-25 |
 | D-007 | Estrategia para maestros actuales | cerrada | Fase 0B | Línea base con procedencia, consolidada con CIMA, FT y decisiones farmacéuticas | ADR-0002; aprobación humana 2026-08-24 |
 | D-008 | Matriz de fuente y prioridad por campo | cerrada | Fase 3 | Línea base + prioridad configurable; conflicto visible y acción humana si falta regla | ADR-0007 aceptado; aprobación humana 2026-08-25 |
@@ -29,6 +29,7 @@ Estados: `cerrada`, `propuesta`, `pendiente`, `bloqueada`, `descartada`. Una dec
 | D-023 | Preselección en campos interpretables o clínicos | cerrada | Siempre | Prohibida | Especificación v2 |
 | D-024 | Evidencia de propuestas de FT | cerrada | Fase 4 | Coincidencia literal obligatoria | Especificación v2 |
 | D-025 | Idioma de interfaz | cerrada | Fase 5 | Español | Especificación v2 |
+| D-026 | Límites canónicos internos ambiguos | cerrada | Fase 1 | Composición/DESCRIPCION 100; Links/DESCRIPCION 255; nunca truncar | Aprobación humana 2026-08-25; no equivale a contrato proveedor |
 
 ## Flujo de una decisión
 

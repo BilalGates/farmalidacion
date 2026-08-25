@@ -1,6 +1,6 @@
 # ADR-0001 — Separar documentos fuente, registros destino y ocurrencias repetibles
 
-- Estado: propuesto
+- Estado: aceptado
 - Fecha: 2026-08-24
 - Decisiones relacionadas: D-001, D-002, D-003, D-006, D-020
 - Responsables: producto, farmacia y tecnología
@@ -31,19 +31,21 @@ Muy explícita y tipada, pero multiplica tablas y migraciones; cualquier nuevo b
 
 Separar documento/versiones, registro destino y vínculos. Representar cada fila repetible como `instancia_bloque`, con valores de campo asociados, claves naturales, orden, procedencia y estado. Permite tablas especializadas solo donde aporten valor.
 
-## Decisión propuesta
+## Decisión aceptada
 
-Adoptar la opción C, con un enfoque híbrido: núcleo canónico configurable para importación, revisión y exportación; tablas tipadas adicionales para relaciones críticas si las pruebas demuestran que son necesarias.
+Adoptar la opción C, con un enfoque híbrido: núcleo canónico configurable para importación, revisión y exportación; tablas tipadas adicionales para relaciones críticas si las pruebas demuestran que son necesarias. Aprobación humana: 25 de agosto de 2026.
 
-El contrato conceptual, diagrama, cardinalidades conservadoras y cobertura de las 22 hojas de omeprazol se desarrollan en `docs/CANONICAL_CONCEPTUAL_MODEL.md`. La evidencia de DEV-003 demuestra capacidad de representación sin pérdida de ocurrencias, pero no resuelve las claves de negocio ni ejecuta el round-trip; por ello este ADR permanece propuesto.
+La aceptación es conceptual. El esquema físico definitivo permanece pendiente y no impondrá restricciones irreversibles sin necesidad. Permanecen separados documento fuente, versión, identidad canónica, identificadores de fuente, registro destino, bloque/ocurrencia, valor y procedencia.
+
+El contrato conceptual, diagrama, cardinalidades conservadoras y cobertura de las 22 hojas se desarrollan en `docs/CANONICAL_CONCEPTUAL_MODEL.md`. Al terminar DEV-003 el ADR continuó propuesto porque aún faltaban claves y round-trip.
 
 DEV-005 desarrolla la unidad de revisión y el grafo entre destinos en `docs/TARGET_RECORD_RELATIONSHIP_EVIDENCE.md` y ADR-0006. La relación `nregistro`↔CN sigue pendiente de evidencia CIMA, por lo que este ADR no cambia de estado.
 
-ADR-0006 fue aceptado el 25 de agosto de 2026 y cierra D-001, D-002 y D-006 en su alcance conceptual. ADR-0001 permanece propuesto hasta el round-trip y la aceptación del modelo completo.
+ADR-0006 fue aceptado el 25 de agosto de 2026 y cerró D-001, D-002 y D-006 en su alcance conceptual. ADR-0001 siguió propuesto hasta completar el round-trip y recibir aceptación humana.
 
-DEV-007 demostró el 25 de agosto de 2026 que el núcleo candidato puede importar las 22 hojas del fixture de omeprazol sin perder sus 616 ocurrencias materiales ni sus 2.674 valores. La identidad usada por el spike es exclusivamente técnica y derivada de coordenadas de fuente; no valida claves de negocio. La exportación y comparación semántica siguen pendientes en DEV-008, por lo que el estado permanece propuesto.
+DEV-007 demostró que el núcleo candidato importa las 22 hojas sin perder 616 ocurrencias ni 2.674 valores. Su identidad técnica no valida claves de negocio; el ADR siguió propuesto hasta la evidencia posterior de DEV-008.
 
-DEV-008 completó el 25 de agosto de 2026 dos round-trips reversibles: 22/22 hojas, 2.674/2.674 valores y estructura OOXML auxiliar conciliados con cero diferencias. Esta evidencia valida la capacidad técnica de no pérdida para el fixture, pero no demuestra claves naturales, relaciones farmacéuticas ni un esquema físico definitivo. El ADR permanece propuesto hasta validación y aceptación humana del modelo completo.
+DEV-008 completó dos round-trips reversibles sin diferencias. Esta evidencia y la aprobación humana permiten aceptar el modelo conceptual; no aceptan un esquema físico definitivo ni claves naturales de fuente.
 
 ## Consecuencias
 
