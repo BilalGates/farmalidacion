@@ -1,6 +1,6 @@
 # ADR-0004 — Semántica de vacío, pendiente, no consta y no aplica
 
-- Estado: propuesto
+- Estado: aceptado para el modelo interno; serialización externa pendiente en D-011
 - Fecha: 2026-08-24
 - Decisiones relacionadas: D-010
 - Responsables: producto, farmacia, tecnología y proveedor
@@ -33,9 +33,9 @@ Conserva etiquetas visibles, pero mezcla dato y estado, puede colisionar con val
 
 Mantiene por separado el valor observado, su presencia/tipo, el estado de trabajo y una eventual decisión humana, con reglas de exportación configurables. Es la recomendación provisional.
 
-## Decisión propuesta
+## Decisión aceptada
 
-Evaluar la opción C. Como vocabulario candidato, sin aprobación todavía:
+Adoptar la opción C para el modelo interno:
 
 - `source_absent`: no existe celda/atributo en la fuente;
 - `source_blank`: existe pero está vacío, conservando la variante observada;
@@ -44,7 +44,13 @@ Evaluar la opción C. Como vocabulario candidato, sin aprobación todavía:
 - `not_applicable`: una persona confirmó que el campo/bloque no aplica bajo una regla aprobada;
 - `valued`: existe un valor, con su estado de validación separado.
 
-Los nombres, transiciones, actor autorizado, obligatoriedad de comentario y representación de exportación siguen pendientes. Nada en este ADR autoriza mapear automáticamente un vacío a otro estado.
+Cada campo configura fuentes aplicables y obligatorias. `no_consta` solo se confirma tras revisar todas sus fuentes obligatorias. `not_applicable` solo puede declararlo un farmacéutico, nunca CIMA, heurísticas o LLM; exige motivo y auditoría.
+
+Un bloque completo puede declararse `not_applicable` sin alterar ocurrencias originales. El cambio es lógico, reversible y auditado.
+
+Comentario obligatorio para `not_applicable`, sobrescritura de fuente prioritaria, conflicto entre fuentes, conciliación de doble validación, reversión de `no_consta`/`not_applicable` confirmado y `no_consta` en campo obligatorio. La doble validación depende exclusivamente de riesgo ATC e incluye estos estados cuando aplique.
+
+La representación externa permanece abierta bajo D-011: no se infiere vacío, `NULL`, omisión, sentinela ni código.
 
 ## Consecuencias
 
@@ -78,14 +84,10 @@ Los nombres, transiciones, actor autorizado, obligatoriedad de comentario y repr
 
 No hay migración en esta fase. El modelo candidato debe mantener el valor y estado originales para permitir renombrar o dividir estados sin pérdida. No crear enums ni columnas definitivas hasta aceptar el ADR.
 
-## Preguntas pendientes
+## Pregunta pendiente fuera del alcance interno
 
-- ¿Qué fuentes debe revisar una persona antes de declarar `no_consta`?
-- ¿Quién puede declarar `no_aplica` y bajo qué regla por campo o bloque?
-- ¿Puede un bloque completo ser no aplicable y cómo se conservan ocurrencias previas?
 - ¿Qué estados admite exactamente el proveedor y cómo se exporta cada uno?
-- ¿Qué transiciones requieren comentario o doble validación?
 
 ## Evidencia DEV-011
 
-`docs/VALUE_STATE_VALIDATION_TABLE.md` separa observación, trabajo y decisión. La especificación respalda `no_consta` como decisión distinta de vacío y pendiente, y excluye `pending` de exportación. `not_applicable`, fuentes mínimas, transiciones y serialización siguen sin evidencia suficiente. El ADR permanece **propuesto** y DEV-011 requiere validación de farmacia y proveedor.
+`docs/VALUE_STATE_VALIDATION_TABLE.md` incorpora la aprobación humana del 25 de agosto de 2026. Semántica interna, autoridad, comentarios, reversibilidad y doble validación quedan aceptadas. Solo la serialización del proveedor permanece pendiente bajo D-011.

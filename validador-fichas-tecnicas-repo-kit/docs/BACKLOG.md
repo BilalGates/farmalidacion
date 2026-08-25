@@ -94,9 +94,9 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 **Aceptación:** ADR-0004 aceptado o sustituido con reglas de autoridad, transición y exportación verificadas.
 
-**Estado:** pendiente; ADR-0004 está propuesto.
+**Estado:** completado en alcance interno el 25 de agosto de 2026; ADR-0004 aceptado internamente. Serialización externa pendiente bajo D-011; el gate completo no está satisfecho.
 
-**Preparación DEV-011:** tabla disponible en `docs/VALUE_STATE_VALIDATION_TABLE.md`. Pendiente de farmacia y proveedor; no se considera completada ni se acepta ADR-0004.
+**Evidencia DEV-011:** `docs/VALUE_STATE_VALIDATION_TABLE.md`. Aprobación humana registrada; pendiente exclusivamente el contrato de representación del proveedor.
 
 ### DEV-009 — Reproducir incidencias de integridad (`P1`)
 

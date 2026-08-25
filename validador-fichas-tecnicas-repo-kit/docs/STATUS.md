@@ -33,7 +33,7 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-008 est�
 
 - Contrato semántico del round-trip de omeprazol definido, todavía no ejecutado.
 - Bloques repetibles exigidos como ocurrencias explícitas; concatenación prohibida.
-- ADR-0004/D-010 continúa propuesto.
+- ADR-0004/D-010 está aceptado para el modelo interno; la serialización externa continúa pendiente bajo D-011.
 - ADR-0001 continúa propuesto; DEV-002 por sí solo no lo acepta.
 
 ## DEV-003 — Completado documentalmente
@@ -73,7 +73,7 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-008 est�
 - Maestro actual conservado como línea base, nunca como verdad autoritativa automática.
 - Toda prioridad no aprobada queda `pending_human_validation` y todo conflicto conserva las afirmaciones y procedencias.
 - CIMA estructurado permanece fuente candidata condicionada a mapeo verificado; no se ha integrado ni consultado.
-- ADR-0007 aceptado y D-008 cerrada; D-005 y D-010 siguen pendientes/propuestos.
+- ADR-0007 aceptado y D-008 cerrada; D-005 sigue pendiente y D-011 mantiene abierta la serialización externa de estados.
 
 ## DEV-007 — Completado como spike reversible
 
@@ -104,13 +104,13 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-008 est�
 
 ## Puerta 0B — No superada
 
-DEV-011 está preparado para validación mediante `docs/VALUE_STATE_VALIDATION_TABLE.md`. `no_consta` y la exclusión de `pending` tienen respaldo normativo; `not_applicable`, transiciones, comentarios y serialización siguen abiertos. ADR-0004 permanece propuesto.
+DEV-011 está completado para el modelo interno: D-010 y ADR-0004 quedan aceptados en semántica, autoridad, comentarios, reversibilidad y doble validación. La serialización de `no_consta`/`not_applicable` sigue abierta bajo D-011; no se supera la puerta 0B ni se autoriza Fase 1.
 
 Faltan cerrar o aceptar explícitamente las claves y relaciones todavía propuestas, validar humanamente el modelo candidato y aceptar o sustituir ADR-0001. No se autoriza avanzar a Fase 1.
 
 ## Decisiones pendientes
 
-- D-004, D-005 y D-010 requieren validación humana o evidencia adicional.
+- D-004 y D-005 requieren validación humana o evidencia adicional; D-011 requiere el contrato del proveedor.
 - Las excepciones concretas por campo y el mapeo CIMA se verificarán en sus fases sin reabrir prioridades implícitas.
 - Contrato de exportación, separador decimal y hardware de inferencia siguen pendientes en sus fases.
 
