@@ -102,6 +102,8 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 **Aceptación:** informe reproducible con ejemplos y severidad.
 
+**Estado:** completada el 25 de agosto de 2026. Dos corridas idénticas reprodujeron 275 huérfanos/184 claves, seis incidencias de duplicado, cuatro excesos, 24 valores al límite y dos conflictos de tipo. Hash `987129be4c8d7b62517c0962e19279e01b00299c7c51490e179137b3040579e7`; evidencia en `docs/INTEGRITY_INCIDENT_EVIDENCE.md`. No se corrigieron originales.
+
 ### DEV-010 — Cerrar estrategia de interacciones (`P0`)
 
 **Objetivo:** aceptar, cambiar o descartar ADR-0003.

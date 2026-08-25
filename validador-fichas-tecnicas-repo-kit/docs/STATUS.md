@@ -94,6 +94,14 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-008 est�
 - Suite completa 14/14 OK; la prueba de mutación confirma que un valor alterado se clasifica como defecto.
 - Evidencia en `docs/OMEPRAZOLE_ROUNDTRIP_EVIDENCE.md`. No es el exportador final y ADR-0001 permanece propuesto.
 
+## DEV-009 — Completado como evidencia de integridad
+
+- Catálogo: cabecera reproducible y 353/353 filas activas.
+- Reproducidos 275 huérfanos/184 claves, seis incidencias de duplicado, cuatro excesos y 24 valores exactamente al límite, sin reparar datos.
+- Dos conflictos de tipo: `Composición / DESCRIPCION` (`CHAR(50)`/`CHAR(100)`) y `Links / DESCRIPCION` (`CHAR(100)`/`CHAR(255)`).
+- Dos corridas idénticas: `987129be4c8d7b62517c0962e19279e01b00299c7c51490e179137b3040579e7`; suite 16/16 OK.
+- Evidencia en `docs/INTEGRITY_INCIDENT_EVIDENCE.md`; no se aceptan claves ni reparaciones.
+
 ## Puerta 0B — No superada
 
 Faltan cerrar o aceptar explícitamente las claves y relaciones todavía propuestas, validar humanamente el modelo candidato y aceptar o sustituir ADR-0001. No se autoriza avanzar a Fase 1.
