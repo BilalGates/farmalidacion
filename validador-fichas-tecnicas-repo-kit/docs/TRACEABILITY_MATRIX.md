@@ -24,6 +24,7 @@
 | Claves candidatas por bloque | Maestros; D-004 | 0B | ADR-0005 propuesto; tabla de 35 hipótesis | 6 unicidades observadas; hojas vacías y claves incompletas no aceptadas |
 | Huérfanos de excipientes | Inventario; especialidades | 0B, 3 | informe DEV-004 | 275 filas, 184 claves paternas distintas, sin reparación silenciosa |
 | Round-trip semántico de 22 hojas | Plan Fase 0B; omeprazol de referencia | 0B | `docs/contracts/OMEPRAZOLE_SEMANTIC_COMPARISON_CONTRACT.md` | 22/22 hojas; cero defectos, descartes o concatenaciones |
+| Importación canónica temporal de omeprazol | Plan Fase 0B; DEV-007 | 0B | `scripts/import_omeprazole_fixture.py`; `docs/OMEPRAZOLE_CANONICAL_IMPORT_EVIDENCE.md` | 22/22 hojas, 616 ocurrencias y 2.674 valores; dos instantáneas idénticas con hash `5e8564dcd726380aec23f031f6060e4450d2c0fa09f559589e9c6d32caebdb5f` |
 | Sin normalización implícita | AGENTS.md; reglas no negociables | 0B, 3, 6 | reglas versionadas y diferencias clasificadas | toda transformación referencia decisión aceptada |
 | Estados vacío/pendiente/no consta/no aplica | Especificación 7.1; D-010 | 0B, 5, 6 | ADR-0004 propuesto | tabla de decisión y round-trip sin sustituciones implícitas |
 | Maestros como línea base con procedencia | D-007; ADR-0002 | 0B, 3 | contrato de perfilado y futura consolidación | valor trazable a fichero, hash, hoja y coordenada |

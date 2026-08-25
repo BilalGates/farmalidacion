@@ -41,6 +41,8 @@ DEV-005 desarrolla la unidad de revisión y el grafo entre destinos en `docs/TAR
 
 ADR-0006 fue aceptado el 25 de agosto de 2026 y cierra D-001, D-002 y D-006 en su alcance conceptual. ADR-0001 permanece propuesto hasta el round-trip y la aceptación del modelo completo.
 
+DEV-007 demostró el 25 de agosto de 2026 que el núcleo candidato puede importar las 22 hojas del fixture de omeprazol sin perder sus 616 ocurrencias materiales ni sus 2.674 valores. La identidad usada por el spike es exclusivamente técnica y derivada de coordenadas de fuente; no valida claves de negocio. La exportación y comparación semántica siguen pendientes en DEV-008, por lo que el estado permanece propuesto.
+
 ## Consecuencias
 
 ### Positivas

@@ -70,6 +70,8 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 **Aceptación:** recuentos y valores materialmente poblados conciliados.
 
+**Estado:** completada el 25 de agosto de 2026 como spike reversible. Las 22/22 hojas, 616 filas materiales y 2.674 valores se conservaron con coordenada y procedencia, sin identidad de negocio inferida. Dos corridas produjeron instantáneas idénticas con hash canónico `5e8564dcd726380aec23f031f6060e4450d2c0fa09f559589e9c6d32caebdb5f`; los recuentos por hoja coinciden con DEV-002 y la suite completa pasa 12/12. Evidencia en `docs/OMEPRAZOLE_CANONICAL_IMPORT_EVIDENCE.md`.
+
 ### DEV-008 — Prueba de exportación y comparación semántica (`P0`)
 
 **Objetivo:** reconstruir omeprazol y comparar hoja por hoja.

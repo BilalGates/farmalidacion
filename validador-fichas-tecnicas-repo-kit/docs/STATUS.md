@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 y el trabajo documental de DEV-003 están completados; el modelo físico y el round-trip todavía no están implementados.
+Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-007 están completados en su alcance aprobado; el modelo físico y el round-trip de exportación todavía no están implementados.
 
 ## Fase 0A — Cerrada
 
@@ -74,11 +74,20 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 y el trabajo d
 - Toda prioridad no aprobada queda `pending_human_validation` y todo conflicto conserva las afirmaciones y procedencias.
 - CIMA estructurado permanece fuente candidata condicionada a mapeo verificado; no se ha integrado ni consultado.
 - ADR-0007 aceptado y D-008 cerrada; D-005 y D-010 siguen pendientes/propuestos.
-- No se ha iniciado DEV-007.
+
+## DEV-007 — Completado como spike reversible
+
+- Importador temporal seguro implementado en `scripts/import_omeprazole_fixture.py`; no define esquema físico ni infiere identidades de negocio.
+- Las 22/22 hojas se representan con orden, filas materiales, valores literales, tipos observados, coordenadas, fórmulas y procedencia por fragmento.
+- Se conservaron 616 ocurrencias técnicas provisionales y 2.674 valores materiales; no se concatenaron, deduplicaron ni descartaron ocurrencias.
+- Dos corridas independientes produjeron instantáneas idénticas y el hash canónico `5e8564dcd726380aec23f031f6060e4450d2c0fa09f559589e9c6d32caebdb5f`.
+- Los recuentos por hoja coinciden con el perfil agregado de DEV-002; suite completa 12/12 OK.
+- Evidencia y límites en `docs/OMEPRAZOLE_CANONICAL_IMPORT_EVIDENCE.md`.
+- ADR-0001 permanece propuesto: DEV-008 debe reconstruir y comparar semánticamente las 22 hojas.
 
 ## Puerta 0B — No superada
 
-Faltan el catálogo ampliado, claves y relaciones verificadas, la validación humana del modelo candidato, la importación/exportación real de omeprazol, la comparación de sus 22 hojas y la aceptación de ADR-0001. No se autoriza avanzar a Fase 1.
+Faltan cerrar las claves y relaciones todavía propuestas, la validación humana del modelo candidato, la exportación real de omeprazol, la comparación semántica de sus 22 hojas y la aceptación de ADR-0001. No se autoriza avanzar a Fase 1.
 
 ## Decisiones pendientes
 
