@@ -12,11 +12,14 @@
 | Bloques repetibles | Ficheros reales | 0B, 1, 3 | `instancia_bloque` o decisión equivalente | round-trip omeprazol |
 | Modelo conceptual canónico | Especificación 5-7; inventario; DEV-002 | 0B | `docs/CANONICAL_CONCEPTUAL_MODEL.md`; ADR-0001 propuesto | cobertura documental 22/22 hojas sin concatenar ni deduplicar ocurrencias |
 | Documento, versión y registro destino separados | Especificación 5, 11, 13; D-002/D-020 | 0B, 2 | conceptos y vínculos del modelo candidato | cada valor referencia versión y fragmento; decisión aún propuesta |
-| Identidad nregistro/CN/medicamento/especialidad/principio activo | Especificación 5.1; maestros; D-006 | 0B | vínculos tipados conservadores en el modelo conceptual | no fusionar por identificador supuesto; cierre pendiente DEV-004/DEV-005 |
+| Identidad nregistro/CN/medicamento/especialidad/principio activo | Especificación 5.1; maestros; D-006 | 0B | vínculos tipados conservadores en el modelo conceptual | no fusionar por identificador supuesto; cierre pendiente DEV-005 |
 | Perfilado reproducible de siete Excel | Plan Fase 0B; inventario de fuentes | 0B | `scripts/profile_reference_files.py`; contrato y manifiestos generados | dos corridas: hash `1999097257b99fe5cc52ab903da873085dd9abe5deb7b0a1d327670f04875976`; originales intactos |
 | Filas materialmente pobladas | Inventario de fuentes | 0B | JSON agregado por libro/hoja | dimensión aparente separada de filas materiales; 7/7 libros procesados |
 | Calidad agregada por columna | Inventario de fuentes; DEV-002 | 0B | `columns.csv`, `incidents-summary.csv`, resumen Markdown | 730 columnas; tipos, nulos, longitudes, fórmulas, duplicados y cardinalidad informados |
-| Relaciones y huérfanos detallados | Inventario de fuentes; D-004/D-006 | 0B, 3 | pendiente de DEV-004/DEV-006 | no materializados en DEV-002; requieren reglas e identidad aprobadas |
+| Relaciones y huérfanos detallados | Inventario de fuentes; D-004/D-006 | 0B, 3 | agregados DEV-004; detalle pendiente de D-006/Fase 3 | no materializados fila a fila; requieren identidad aprobada |
+| Cardinalidades padre-hijo observadas | Maestros; DEV-004 | 0B | `scripts/analyze_reference_relationships.py`; `docs/CARDINALITY_KEY_EVIDENCE.md` | 12 relaciones agregadas; máximos observados no normativos |
+| Claves candidatas por bloque | Maestros; D-004 | 0B | ADR-0005 propuesto; tabla de 35 hipótesis | 6 unicidades observadas; hojas vacías y claves incompletas no aceptadas |
+| Huérfanos de excipientes | Inventario; especialidades | 0B, 3 | informe DEV-004 | 275 filas, 184 claves paternas distintas, sin reparación silenciosa |
 | Round-trip semántico de 22 hojas | Plan Fase 0B; omeprazol de referencia | 0B | `docs/contracts/OMEPRAZOLE_SEMANTIC_COMPARISON_CONTRACT.md` | 22/22 hojas; cero defectos, descartes o concatenaciones |
 | Sin normalización implícita | AGENTS.md; reglas no negociables | 0B, 3, 6 | reglas versionadas y diferencias clasificadas | toda transformación referencia decisión aceptada |
 | Estados vacío/pendiente/no consta/no aplica | Especificación 7.1; D-010 | 0B, 5, 6 | ADR-0004 propuesto | tabla de decisión y round-trip sin sustituciones implícitas |

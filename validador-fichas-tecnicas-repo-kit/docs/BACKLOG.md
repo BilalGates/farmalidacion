@@ -38,13 +38,15 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 **Aceptación:** ADR, diagrama, tabla de entidades/bloques/cardinalidades/claves candidatas y cobertura documental de las 22 hojas de omeprazol sin pérdida de ocurrencias.
 
-**Estado:** completada documentalmente el 25 de agosto de 2026. Evidencia: `docs/CANONICAL_CONCEPTUAL_MODEL.md` y ADR-0001 ampliado, que continúa propuesto. D-004/D-006, las claves naturales y las cardinalidades no demostradas permanecen abiertas; no se ha iniciado DEV-004.
+**Estado:** completada documentalmente el 25 de agosto de 2026. Evidencia: `docs/CANONICAL_CONCEPTUAL_MODEL.md` y ADR-0001 ampliado, que continúa propuesto. En el cierre de DEV-003 no se aceptaron claves ni cardinalidades no demostradas.
 
 ### DEV-004 — Mapear cardinalidades y claves por bloque (`P0`)
 
 **Objetivo:** definir uno-a-uno, uno-a-muchos y claves naturales de cada hoja.
 
 **Aceptación:** tabla revisable y tests sobre ejemplos reales.
+
+**Estado:** completada como evidencia el 25 de agosto de 2026. Se evaluaron 35 hipótesis de clave y 12 relaciones; 6 candidatas mostraron unicidad en esta versión. Se reprodujeron 275 filas huérfanas de excipientes correspondientes a 184 claves paternas distintas. Evidencia en `docs/CARDINALITY_KEY_EVIDENCE.md`; ADR-0005 y D-004 permanecen propuestos, no aceptados.
 
 ### DEV-005 — Resolver relación entre CIMA y registros destino (`P0`)
 

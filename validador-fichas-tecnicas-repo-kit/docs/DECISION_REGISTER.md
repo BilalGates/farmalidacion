@@ -7,7 +7,7 @@ Estados: `cerrada`, `propuesta`, `pendiente`, `bloqueada`, `descartada`. Una dec
 | D-001 | Unidad que revisa el farmacéutico | pendiente | Fase 0B | Revisar un registro destino con acceso a todas sus fuentes vinculadas | ADR-0001 |
 | D-002 | Modelo canónico de documentos, registros y vínculos | propuesta | Fase 0B | Separar documento/versiones, registro destino y vínculo N:M | ADR-0001 |
 | D-003 | Representación de bloques repetibles | cerrada | Fase 0B | Ocurrencias explícitas; prohibido concatenarlas | Aprobación humana 2026-08-24; ADR-0001 sigue propuesto para el modelo completo |
-| D-004 | Claves naturales y reglas de identidad por bloque | pendiente | Fase 0B | Derivarlas de cada hoja y validarlas por round-trip | Por crear |
+| D-004 | Claves naturales y reglas de identidad por bloque | propuesta | Fase 0B | Identidad canónica propia y claves de fuente versionadas; validar por round-trip y con proveedor | ADR-0005; DEV-004 |
 | D-005 | Significado de `S*` y `N*` | pendiente | Fase 0B | Conservar literal hasta respuesta del proveedor | Por crear |
 | D-006 | Relación `nregistro` / CN / medicamento / especialidad / principio activo | pendiente | Fase 0B | Vínculos explícitos con rol y vigencia | ADR-0001 |
 | D-007 | Estrategia para maestros actuales | cerrada | Fase 0B | Línea base con procedencia, consolidada con CIMA, FT y decisiones farmacéuticas | ADR-0002; aprobación humana 2026-08-24 |

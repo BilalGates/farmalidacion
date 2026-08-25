@@ -43,7 +43,17 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 y el trabajo d
 - Las 22 hojas de omeprazol tienen representación sin concatenar, deduplicar ni descartar ocurrencias.
 - La demostración es de capacidad conceptual; la importación y comparación real siguen pendientes en DEV-007/DEV-008.
 - D-004 y D-006 no se han cerrado; las claves y cardinalidades no demostradas permanecen abiertas.
-- ADR-0001 permanece propuesto y no se ha iniciado DEV-004.
+- ADR-0001 permanece propuesto.
+
+## DEV-004 — Completado como evidencia
+
+- Analizador agregado dirigido implementado sin serialización de relaciones fila a fila.
+- 35 hipótesis de clave y 12 relaciones evaluadas sobre cuatro maestros.
+- 6 unicidades observadas; ninguna se declara clave natural aceptada.
+- Cardinalidades observadas documentadas, incluidos bloques 0..N y hojas vacías 0..0.
+- Reproducidas 275 filas huérfanas de excipientes, equivalentes a 184 claves paternas distintas.
+- Hash de evidencia: `c685c293172fd3702db881eff6823409a6f9b8447772ab283ef159bba2f23a6c`.
+- D-004/ADR-0005 siguen propuestos y D-006 continúa abierta. DEV-005 no se ha iniciado.
 
 ## Puerta 0B — No superada
 
@@ -51,7 +61,7 @@ Faltan el catálogo ampliado, claves y relaciones verificadas, la validación hu
 
 ## Decisiones pendientes
 
-- D-001, D-002, D-004, D-005, D-006 y D-010 requieren evidencia y validación humana.
+- D-001, D-002, D-004, D-005, D-006 y D-010 requieren validación humana o evidencia adicional.
 - D-008 queda pendiente para Fase 3.
 - Contrato de exportación, separador decimal y hardware de inferencia siguen pendientes en sus fases.
 
