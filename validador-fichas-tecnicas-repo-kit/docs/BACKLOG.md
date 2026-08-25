@@ -134,6 +134,8 @@ FastAPI, configuración, logging, health check, pytest y lint.
 
 React, TypeScript, Vite, Vitest, lint y shell visual mínimo.
 
+**Estado:** completado el 25 de agosto de 2026. Shell técnico accesible en español con React/TypeScript, configuración por entorno, Vitest sobre happy-dom, ESLint y build Vite; sin flujo farmacéutico ni llamadas de red.
+
 ### DEV-104 — Configurar SQLite y Alembic (`P0`)
 
 Migración inicial del modelo aceptado, upgrade/downgrade y fixtures.

@@ -56,3 +56,4 @@
 | Operación offline | Especificación 15.10 | 2 en adelante | fixtures/corpus local | bloqueo de red durante prueba |
 | Scaffold de aplicación | Plan Fase 1; DEV-101 | 1 | `backend/`, `frontend/`, `infra/`, `data/examples/`, `.env.example`, `docs/COMMANDS.md` | test de límites y configuración sin secretos |
 | Backend base y health check | Plan Fase 1; DEV-102 | 1 | `backend/src/pharma_validator_api/`; `backend/pyproject.toml` | pytest de configuración, salud y errores; Ruff |
+| Frontend técnico base | Plan Fase 1; DEV-103 | 1 | `frontend/src/`; Vite y TypeScript | Vitest/Testing Library, ESLint y build de producción |

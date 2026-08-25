@@ -4,9 +4,9 @@ DEV-101 reserva una única superficie conceptual de comandos. Cada comando se ha
 
 | Comando conceptual | Finalidad | Estado |
 |---|---|---|
-| `test` | suite backend, frontend e integración | backend: `python -m pytest tests backend/tests` |
-| `lint` | estilo estático de Python y TypeScript | backend: `python -m ruff check backend/src backend/tests` |
-| `typecheck` | tipos de backend y frontend | pendiente DEV-103 y decisión de herramienta backend |
+| `test` | suite backend, frontend e integración | `python -m pytest tests backend/tests`; `npm --prefix frontend run test` |
+| `lint` | estilo estático de Python y TypeScript | Ruff y `npm --prefix frontend run lint` |
+| `typecheck` | tipos de backend y frontend | frontend incluido en `npm --prefix frontend run build`; backend pendiente |
 | `verify` | tests, lint, tipos, referencias y migraciones | pendiente DEV-106 |
 | `up` | levantar el entorno local | pendiente DEV-105 |
 
@@ -15,6 +15,9 @@ Hasta que exista el ejecutor común, los únicos comandos canónicos disponibles
 ```text
 python -m pytest tests backend/tests
 python -m ruff check backend/src backend/tests
+npm --prefix frontend run test
+npm --prefix frontend run lint
+npm --prefix frontend run build
 python scripts/verify_reference_files.py
 ```
 

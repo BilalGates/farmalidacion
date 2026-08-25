@@ -11,6 +11,7 @@ node_modules/
 dist/
 coverage/
 .vite/
+*.tsbuildinfo
 
 # Local configuration and secrets
 .env

@@ -1,5 +1,14 @@
 # Frontend
 
-Límite de la aplicación React/TypeScript. DEV-103 incorporará Vite, Vitest, lint y un shell técnico mínimo.
+Shell técnico React/TypeScript de DEV-103. No es la interfaz farmacéutica definitiva y no contiene propuestas ni campos clínicos.
 
-DEV-101 no contiene interfaz farmacéutica ni lógica de validación.
+```text
+cd frontend
+npm ci
+npm run test
+npm run lint
+npm run build
+npm run dev
+```
+
+La URL del backend se configura con `VITE_API_BASE_URL`. El shell no realiza todavía llamadas de red.

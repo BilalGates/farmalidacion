@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 1 iniciada. DEV-101 y DEV-102 están completados; el siguiente issue recomendado es DEV-103. El esquema físico definitivo permanece pendiente.
+Fase 1 iniciada. DEV-101 a DEV-103 están completados; el siguiente issue recomendado es DEV-104. El esquema físico definitivo permanece pendiente hasta ese issue.
 
 ## Fase 0A — Cerrada
 
@@ -124,6 +124,14 @@ DEV-101 quedó autorizado por esta puerta y se completó sin avanzar automática
 - `GET /health` comprueba el proceso; no simula conectividad de base de datos.
 - Pytest y Ruff configurados para el backend.
 - Sin modelos canónicos físicos, migraciones, endpoints de dominio ni acceso a datos.
+
+## DEV-103 — Completado
+
+- Frontend React/TypeScript/Vite con shell técnico accesible y textos en español.
+- Configuración de URL de API por entorno, todavía sin llamadas de red.
+- Vitest y Testing Library verificados sobre happy-dom; ESLint y build configurados.
+- El shell explicita que no contiene datos de pacientes, propuestas clínicas ni exportación.
+- Sin pantalla farmacéutica definitiva, persistencia, CIMA o LLM.
 
 ## Decisiones pendientes
 
