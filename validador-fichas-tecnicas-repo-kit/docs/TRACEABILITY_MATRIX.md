@@ -11,6 +11,7 @@
 | Overrides CHAR(100) | Especificación 6.1 | 3 | regla de importación | test de ambos campos |
 | Bloques repetibles | Ficheros reales | 0B, 1, 3 | `instancia_bloque` o decisión equivalente | round-trip omeprazol |
 | Modelo conceptual canónico | Especificación 5-7; inventario; DEV-002 | 0B | `docs/CANONICAL_CONCEPTUAL_MODEL.md`; ADR-0001 propuesto | cobertura documental 22/22 hojas sin concatenar ni deduplicar ocurrencias |
+| Puerta formal de Fase 0B | Plan de desarrollo; phase gate | 0B | `docs/PHASE_0B_GATE_REVIEW.md` | estado por criterio y bloqueos; avance detenido mientras no se resuelvan |
 | Documento, versión y registro destino separados | Especificación 5, 11, 13; D-002/D-020 | 0B, 2 | conceptos y vínculos del modelo candidato | cada valor referencia versión y fragmento; decisión aún propuesta |
 | Identidad nregistro/CN/medicamento/especialidad/principio activo | Especificación 5.1; maestros; D-006 | 0B | ADR-0006 aceptado; vínculos tipados | no fusionar; cardinalidad factual CIMA pendiente de Fase 2 |
 | Grafo de registros destino | Maestros; DEV-004/DEV-005 | 0B | `docs/TARGET_RECORD_RELATIONSHIP_EVIDENCE.md`; ADR-0006 propuesto | especialidad→medicamento y composición→principio activo sin huérfanos |

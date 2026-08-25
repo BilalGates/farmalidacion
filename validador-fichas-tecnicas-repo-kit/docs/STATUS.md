@@ -104,6 +104,8 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-008 est�
 
 ## Puerta 0B — No superada
 
+Revisión formal en `docs/PHASE_0B_GATE_REVIEW.md`: la no pérdida está demostrada, pero cinco bloqueos documentales/de decisión impiden avanzar.
+
 DEV-011 está completado para el modelo interno: D-010 y ADR-0004 quedan aceptados en semántica, autoridad, comentarios, reversibilidad y doble validación. La serialización de `no_consta`/`not_applicable` sigue abierta bajo D-011; no se supera la puerta 0B ni se autoriza Fase 1.
 
 Faltan cerrar o aceptar explícitamente las claves y relaciones todavía propuestas, validar humanamente el modelo candidato y aceptar o sustituir ADR-0001. No se autoriza avanzar a Fase 1.
