@@ -1,6 +1,6 @@
 # ADR-0003 — Separar interacciones del piloto de extracción de fichas técnicas
 
-- Estado: propuesto
+- Estado: aceptado
 - Fecha: 2026-08-24
 - Decisiones relacionadas: D-009
 - Responsables: producto, farmacia y tecnología
@@ -26,6 +26,10 @@ Mantener la entidad en el modelo canónico y en el contrato de exportación, per
 ## Decisión propuesta
 
 Adoptar la opción C. No usar el LLM para generar interacciones. Incluir solo el soporte estructural necesario para no bloquear la carga final.
+
+## Evidencia de aceptación
+
+Decisión humana explícita del 24 de agosto de 2026: el maestro de interacciones queda fuera del piloto de extracción de fichas técnicas y se trata como línea separada de migración y conciliación.
 
 ## Consecuencias
 

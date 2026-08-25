@@ -10,6 +10,18 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 **Aceptación:** Codex enumera instrucciones, agentes y skill; el verificador de hashes pasa; `STATUS.md` refleja el arranque.
 
+**Estado:** completada el 24 de agosto de 2026. Evidencia: 8/8 referencias `OK`, código 0, y Fase 0A cerrada en `STATUS.md`.
+
+### DEV-002A — Definir contrato de perfilado reproducible (`P0`)
+
+**Objetivo:** fijar entradas, invariantes, seguridad, reproducibilidad y formatos del perfilado sin implementarlo.
+
+**Salida:** `docs/contracts/PROFILING_CONTRACT.md` con manifiesto, JSON agregado por libro/hoja, CSV de columnas, incidencias resumidas y resumen Markdown. Relaciones detalladas diferidas a DEV-004/DEV-006.
+
+**Aceptación:** contrato revisado, siete Excel identificados, originales inmutables, ocurrencias explícitas y ninguna normalización implícita.
+
+**Estado:** completada documentalmente el 24 de agosto de 2026.
+
 ### DEV-002 — Crear perfilador reproducible de Excel (`P0`)
 
 **Objetivo:** inspeccionar todas las hojas sin modificar los originales.
@@ -17,6 +29,8 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 **Salida:** JSON/CSV y Markdown con filas materialmente pobladas, columnas, tipos observados, nulos, longitudes, duplicados, fórmulas y claves candidatas.
 
 **Aceptación:** dos ejecuciones sobre los mismos hashes producen el mismo informe.
+
+**Estado:** completada el 25 de agosto de 2026. Evidencia: 7/7 Excel, 730 columnas, tests 5/5 y dos corridas de 115,605 s y 321,479 s con hash común `1999097257b99fe5cc52ab903da873085dd9abe5deb7b0a1d327670f04875976`. Cardinalidades superiores a 100.000 valores quedan estimadas y señaladas; relaciones/huérfanos detallados permanecen pendientes.
 
 ### DEV-003 — Reconstruir el catálogo canónico (`P0`)
 
@@ -54,6 +68,24 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 **Aceptación:** cero pérdidas; diferencias clasificadas y aprobadas.
 
+**Estado:** pendiente. El contrato de comparación está definido en `docs/contracts/OMEPRAZOLE_SEMANTIC_COMPARISON_CONTRACT.md`; no se ha ejecutado el round-trip.
+
+### DEV-008A — Definir contrato semántico del round-trip (`P0`)
+
+**Objetivo:** fijar igualdad literal, normalizaciones autorizadas, multiplicidad, relaciones, clasificación de diferencias e informe para las 22 hojas.
+
+**Aceptación:** ninguna normalización implícita; toda diferencia tiene evidencia y categoría; defecto o diferencia no resuelta produce fallo.
+
+**Estado:** completada documentalmente el 24 de agosto de 2026.
+
+### DEV-011 — Validar semántica de estados D-010 (`P0`)
+
+**Objetivo:** validar con farmacia y proveedor las diferencias entre vacío de fuente, pendiente, `no_consta`, `no_aplica` y valor presente.
+
+**Aceptación:** ADR-0004 aceptado o sustituido con reglas de autoridad, transición y exportación verificadas.
+
+**Estado:** pendiente; ADR-0004 está propuesto.
+
 ### DEV-009 — Reproducir incidencias de integridad (`P1`)
 
 **Objetivo:** comprobar huérfanos de excipientes, duplicados y límites de longitud.
@@ -65,6 +97,8 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 **Objetivo:** aceptar, cambiar o descartar ADR-0003.
 
 **Aceptación:** alcance y backlog separados claramente.
+
+**Estado:** completada el 24 de agosto de 2026. D-009 cerrada y ADR-0003 aceptado por decisión humana; la migración/conciliación permanece como línea separada.
 
 ## EPIC E1 — Scaffold de aplicación
 
@@ -230,6 +264,6 @@ Longitudes, tipos, duplicados, huérfanos, nulos y catálogos.
 
 ## Orden recomendado de las primeras issues
 
-`DEV-001 → DEV-002 → DEV-003 → DEV-004 → DEV-005 → DEV-006 → DEV-007 → DEV-008 → DEV-009 → DEV-010`
+`DEV-001 (completada) → DEV-002A (completada) → DEV-002 → DEV-003 → DEV-004 → DEV-005 → DEV-006 → DEV-007 → DEV-008A (completada) → DEV-008 → DEV-009 → DEV-010 (completada) → DEV-011`
 
 Solo después: `DEV-101` en adelante.

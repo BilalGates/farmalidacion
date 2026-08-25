@@ -6,14 +6,14 @@ Estados: `cerrada`, `propuesta`, `pendiente`, `bloqueada`, `descartada`. Una dec
 |---|---|---|---|---|---|
 | D-001 | Unidad que revisa el farmacéutico | pendiente | Fase 0B | Revisar un registro destino con acceso a todas sus fuentes vinculadas | ADR-0001 |
 | D-002 | Modelo canónico de documentos, registros y vínculos | propuesta | Fase 0B | Separar documento/versiones, registro destino y vínculo N:M | ADR-0001 |
-| D-003 | Representación de bloques repetibles | propuesta | Fase 0B | Entidad `instancia_bloque` con ocurrencias y orden | ADR-0001 |
+| D-003 | Representación de bloques repetibles | cerrada | Fase 0B | Ocurrencias explícitas; prohibido concatenarlas | Aprobación humana 2026-08-24; ADR-0001 sigue propuesto para el modelo completo |
 | D-004 | Claves naturales y reglas de identidad por bloque | pendiente | Fase 0B | Derivarlas de cada hoja y validarlas por round-trip | Por crear |
 | D-005 | Significado de `S*` y `N*` | pendiente | Fase 0B | Conservar literal hasta respuesta del proveedor | Por crear |
 | D-006 | Relación `nregistro` / CN / medicamento / especialidad / principio activo | pendiente | Fase 0B | Vínculos explícitos con rol y vigencia | ADR-0001 |
-| D-007 | Estrategia para maestros actuales | propuesta | Fase 0B | Línea base híbrida, no simple referencia ni reconstrucción desde cero | ADR-0002 |
+| D-007 | Estrategia para maestros actuales | cerrada | Fase 0B | Línea base con procedencia, consolidada con CIMA, FT y decisiones farmacéuticas | ADR-0002; aprobación humana 2026-08-24 |
 | D-008 | Matriz de fuente y prioridad por campo | pendiente | Fase 3 | Configurable; conflicto visible, sin reemplazo silencioso | Por crear |
-| D-009 | Alcance de interacciones | propuesta | Fase 0B | Subproyecto de migración/conciliación separado del extractor | ADR-0003 |
-| D-010 | Semántica de vacío, pendiente, no consta y no aplica | pendiente | Fase 0B | Estados separados y exportación configurada | Por crear |
+| D-009 | Alcance de interacciones | cerrada | Fase 0B | Línea separada de migración/conciliación, fuera del piloto de extracción FT | ADR-0003; aprobación humana 2026-08-24 |
+| D-010 | Semántica de vacío, pendiente, no consta y no aplica | propuesta | Fase 0B | Estados separados del valor; semántica y exportación por validar | ADR-0004 |
 | D-011 | Contrato exacto de exportación | pendiente | Fase 6 | Obtener ejemplo aceptado y prueba en entorno proveedor | Por crear |
 | D-012 | Separador decimal | pendiente | Fase 6 | Punto provisional y configurable | Especificación v2 |
 | D-013 | Hardware GPU | pendiente | Fase 4 | Medir dos tamaños compatibles con el hardware real | Especificación v2 |

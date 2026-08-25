@@ -1,6 +1,6 @@
 # ADR-0002 — Usar los maestros existentes como línea base híbrida
 
-- Estado: propuesto
+- Estado: aceptado
 - Fecha: 2026-08-24
 - Decisiones relacionadas: D-007, D-008
 - Responsables: producto, farmacia y tecnología
@@ -26,6 +26,10 @@ Importar los maestros como una versión de fuente, conservar valores originales,
 ## Decisión propuesta
 
 Adoptar la opción C. Cada valor importado conserva fichero, hoja, fila/lote, hash y estado. Las prioridades se configuran por campo y los conflictos nunca se resuelven silenciosamente.
+
+## Evidencia de aceptación
+
+Decisión humana explícita del 24 de agosto de 2026: los maestros actuales son la línea base y deben conservar procedencia; CIMA estructurado, la ficha técnica y las decisiones farmacéuticas se consolidan como fuentes adicionales. Esta aceptación no cierra D-008 ni define prioridades por campo.
 
 ## Consecuencias
 

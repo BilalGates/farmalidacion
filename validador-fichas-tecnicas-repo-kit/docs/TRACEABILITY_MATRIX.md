@@ -10,6 +10,15 @@
 | Catálogo gobernado por configuración | Especificación 6 | 0B, 3 | importador de catálogo | añadir campo sin cambiar código |
 | Overrides CHAR(100) | Especificación 6.1 | 3 | regla de importación | test de ambos campos |
 | Bloques repetibles | Ficheros reales | 0B, 1, 3 | `instancia_bloque` o decisión equivalente | round-trip omeprazol |
+| Perfilado reproducible de siete Excel | Plan Fase 0B; inventario de fuentes | 0B | `scripts/profile_reference_files.py`; contrato y manifiestos generados | dos corridas: hash `1999097257b99fe5cc52ab903da873085dd9abe5deb7b0a1d327670f04875976`; originales intactos |
+| Filas materialmente pobladas | Inventario de fuentes | 0B | JSON agregado por libro/hoja | dimensión aparente separada de filas materiales; 7/7 libros procesados |
+| Calidad agregada por columna | Inventario de fuentes; DEV-002 | 0B | `columns.csv`, `incidents-summary.csv`, resumen Markdown | 730 columnas; tipos, nulos, longitudes, fórmulas, duplicados y cardinalidad informados |
+| Relaciones y huérfanos detallados | Inventario de fuentes; D-004/D-006 | 0B, 3 | pendiente de DEV-004/DEV-006 | no materializados en DEV-002; requieren reglas e identidad aprobadas |
+| Round-trip semántico de 22 hojas | Plan Fase 0B; omeprazol de referencia | 0B | `docs/contracts/OMEPRAZOLE_SEMANTIC_COMPARISON_CONTRACT.md` | 22/22 hojas; cero defectos, descartes o concatenaciones |
+| Sin normalización implícita | AGENTS.md; reglas no negociables | 0B, 3, 6 | reglas versionadas y diferencias clasificadas | toda transformación referencia decisión aceptada |
+| Estados vacío/pendiente/no consta/no aplica | Especificación 7.1; D-010 | 0B, 5, 6 | ADR-0004 propuesto | tabla de decisión y round-trip sin sustituciones implícitas |
+| Maestros como línea base con procedencia | D-007; ADR-0002 | 0B, 3 | contrato de perfilado y futura consolidación | valor trazable a fichero, hash, hoja y coordenada |
+| Interacciones como línea separada | D-009; ADR-0003 | 0B, 3 | perfilado incluido; extracción FT excluida | alcance e informes separados |
 | Procedencia múltiple | Ficheros reales y análisis | 0B, 3 | modelo de evidencia/procedencia | maestro, CIMA, FT y humano |
 | Versiones inmutables | Especificación 11, 13 | 0B, 2, 7 | tablas de versión | cambio no sobrescribe anterior |
 | Ninguna propuesta sin cita | Especificación 8.1 | 4 | verificador literal | rechazo de cita inventada |

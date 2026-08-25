@@ -2,31 +2,50 @@
 
 ## Estado global
 
-`PREPARACIÓN DEL REPOSITORIO`
+`FASE 0A CERRADA — FASE 0B EN DESCUBRIMIENTO`
 
 ## Fase actual
 
-Fase 0A — Gobierno del repositorio y arranque de Codex.
+Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 está completado; el modelo canónico y el round-trip todavía no están implementados.
 
-## Completado
+## Fase 0A — Cerrada
 
-- Especificación v2 recibida.
-- Maestros y ejemplo de omeprazol recibidos.
-- Lectura estructural inicial realizada.
-- Riesgos principales del modelo v2 identificados.
-- Plan de desarrollo, registro de decisiones, agentes y skill preparados en este kit.
+- Instrucciones, agentes y skill del proyecto disponibles y aplicados.
+- Especificación, inventario, plan, decisiones, ADRs, backlog y trazabilidad disponibles.
+- Ocho referencias verificadas por hash con código 0.
+- No existe código de producto ni un modelo definitivo congelado.
 
-## Siguiente puerta
+## DEV-002 — Completado
 
-Codex debe cargar las instrucciones, verificar los ficheros y generar el primer informe de descubrimiento sin escribir código de producto.
+- Perfilador agregado OOXML en streaming implementado en `scripts/profile_reference_files.py`.
+- Siete Excel y todas sus hojas procesados sin modificar originales.
+- Salidas limitadas a agregados por libro, hoja y columna; no se vuelcan celdas ni relaciones fila a fila.
+- 730 columnas perfiladas.
+- Dos ejecuciones completas: 115,605 s y 321,479 s.
+- Hash reproducible idéntico: `1999097257b99fe5cc52ab903da873085dd9abe5deb7b0a1d327670f04875976`.
+- Incidencias agregadas: 34.314 duplicados de fila observados o estimados, distribuidos en cinco hojas, y una cabecera duplicada en una hoja.
+- Cardinalidad exacta hasta 100.000 valores distintos; por encima se informa estimación `linear_counting` y no se propone clave candidata.
+- Relaciones detalladas, cardinalidades entre bloques y huérfanos diferidos a DEV-004/DEV-006.
+- Tests unitarios: 5/5 OK.
+- Referencias verificadas de nuevo: 8/8 OK, código 0.
 
-## Bloqueos actuales
+## Otros trabajos documentales de Fase 0B
 
-- Repositorio remoto todavía no conectado.
-- Decisiones D-001 a D-010 pendientes o propuestas.
-- Contrato de exportación no recibido.
-- Hardware de inferencia no confirmado.
+- Contrato semántico del round-trip de omeprazol definido, todavía no ejecutado.
+- Bloques repetibles exigidos como ocurrencias explícitas; concatenación prohibida.
+- ADR-0004/D-010 continúa propuesto.
+- ADR-0001 continúa propuesto; DEV-002 por sí solo no lo acepta.
+
+## Puerta 0B — No superada
+
+Faltan el catálogo ampliado, claves y relaciones verificadas, el modelo candidato, la importación/exportación real de omeprazol, la comparación de sus 22 hojas y la aceptación de ADR-0001. No se autoriza avanzar a Fase 1.
+
+## Decisiones pendientes
+
+- D-001, D-002, D-004, D-005, D-006 y D-010 requieren evidencia y validación humana.
+- D-008 queda pendiente para Fase 3.
+- Contrato de exportación, separador decimal y hardware de inferencia siguen pendientes en sus fases.
 
 ## Última actualización
 
-24 de agosto de 2026.
+25 de agosto de 2026.
