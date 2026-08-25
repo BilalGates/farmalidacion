@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 está completado; el modelo canónico y el round-trip todavía no están implementados.
+Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 y el trabajo documental de DEV-003 están completados; el modelo físico y el round-trip todavía no están implementados.
 
 ## Fase 0A — Cerrada
 
@@ -36,9 +36,18 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 está completa
 - ADR-0004/D-010 continúa propuesto.
 - ADR-0001 continúa propuesto; DEV-002 por sí solo no lo acepta.
 
+## DEV-003 — Completado documentalmente
+
+- Definidos `documento_fuente`, `documento_fuente_version`, `fragmento_fuente`, `registro_destino`, `instancia_bloque`, `valor_campo` y sus vínculos conceptuales.
+- Diagrama y tabla de entidades, bloques, cardinalidades conservadoras y claves candidatas documentados en `docs/CANONICAL_CONCEPTUAL_MODEL.md`.
+- Las 22 hojas de omeprazol tienen representación sin concatenar, deduplicar ni descartar ocurrencias.
+- La demostración es de capacidad conceptual; la importación y comparación real siguen pendientes en DEV-007/DEV-008.
+- D-004 y D-006 no se han cerrado; las claves y cardinalidades no demostradas permanecen abiertas.
+- ADR-0001 permanece propuesto y no se ha iniciado DEV-004.
+
 ## Puerta 0B — No superada
 
-Faltan el catálogo ampliado, claves y relaciones verificadas, el modelo candidato, la importación/exportación real de omeprazol, la comparación de sus 22 hojas y la aceptación de ADR-0001. No se autoriza avanzar a Fase 1.
+Faltan el catálogo ampliado, claves y relaciones verificadas, la validación humana del modelo candidato, la importación/exportación real de omeprazol, la comparación de sus 22 hojas y la aceptación de ADR-0001. No se autoriza avanzar a Fase 1.
 
 ## Decisiones pendientes
 

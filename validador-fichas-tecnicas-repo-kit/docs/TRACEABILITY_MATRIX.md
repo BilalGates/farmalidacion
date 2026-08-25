@@ -10,6 +10,9 @@
 | Catálogo gobernado por configuración | Especificación 6 | 0B, 3 | importador de catálogo | añadir campo sin cambiar código |
 | Overrides CHAR(100) | Especificación 6.1 | 3 | regla de importación | test de ambos campos |
 | Bloques repetibles | Ficheros reales | 0B, 1, 3 | `instancia_bloque` o decisión equivalente | round-trip omeprazol |
+| Modelo conceptual canónico | Especificación 5-7; inventario; DEV-002 | 0B | `docs/CANONICAL_CONCEPTUAL_MODEL.md`; ADR-0001 propuesto | cobertura documental 22/22 hojas sin concatenar ni deduplicar ocurrencias |
+| Documento, versión y registro destino separados | Especificación 5, 11, 13; D-002/D-020 | 0B, 2 | conceptos y vínculos del modelo candidato | cada valor referencia versión y fragmento; decisión aún propuesta |
+| Identidad nregistro/CN/medicamento/especialidad/principio activo | Especificación 5.1; maestros; D-006 | 0B | vínculos tipados conservadores en el modelo conceptual | no fusionar por identificador supuesto; cierre pendiente DEV-004/DEV-005 |
 | Perfilado reproducible de siete Excel | Plan Fase 0B; inventario de fuentes | 0B | `scripts/profile_reference_files.py`; contrato y manifiestos generados | dos corridas: hash `1999097257b99fe5cc52ab903da873085dd9abe5deb7b0a1d327670f04875976`; originales intactos |
 | Filas materialmente pobladas | Inventario de fuentes | 0B | JSON agregado por libro/hoja | dimensión aparente separada de filas materiales; 7/7 libros procesados |
 | Calidad agregada por columna | Inventario de fuentes; DEV-002 | 0B | `columns.csv`, `incidents-summary.csv`, resumen Markdown | 730 columnas; tipos, nulos, longitudes, fórmulas, duplicados y cardinalidad informados |

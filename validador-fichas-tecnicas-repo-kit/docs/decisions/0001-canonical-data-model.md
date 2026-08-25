@@ -35,6 +35,8 @@ Separar documento/versiones, registro destino y vínculos. Representar cada fila
 
 Adoptar la opción C, con un enfoque híbrido: núcleo canónico configurable para importación, revisión y exportación; tablas tipadas adicionales para relaciones críticas si las pruebas demuestran que son necesarias.
 
+El contrato conceptual, diagrama, cardinalidades conservadoras y cobertura de las 22 hojas de omeprazol se desarrollan en `docs/CANONICAL_CONCEPTUAL_MODEL.md`. La evidencia de DEV-003 demuestra capacidad de representación sin pérdida de ocurrencias, pero no resuelve las claves de negocio ni ejecuta el round-trip; por ello este ADR permanece propuesto.
+
 ## Consecuencias
 
 ### Positivas
@@ -72,3 +74,5 @@ No implementar migraciones definitivas hasta aprobar el ADR. Un spike puede usar
 - Clave natural de cada bloque.
 - Cuándo una ocurrencia se comparte entre presentaciones.
 - Qué tablas merecen modelado tipado específico.
+- Relación y cardinalidad exactas entre `nregistro`, CN, autorización CIMA, medicamento, especialidad/presentación y principio activo.
+- Semántica e identidad de los conceptos transversales.

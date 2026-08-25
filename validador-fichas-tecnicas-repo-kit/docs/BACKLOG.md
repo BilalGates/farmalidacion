@@ -34,9 +34,11 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 ### DEV-003 — Reconstruir el catálogo canónico (`P0`)
 
-**Objetivo:** ampliar las 353 definiciones con entidad, bloque, subbloque, rol, cardinalidad, columna de exportación y obligatoriedad original.
+**Objetivo:** definir el modelo conceptual canónico capaz de representar sin pérdida maestros, CIMA, ficha técnica y bloques repetibles, sin fijar esquema físico.
 
-**Aceptación:** no quedan colisiones sin identificador distinto; se preservan `S/N/S*/N*`.
+**Aceptación:** ADR, diagrama, tabla de entidades/bloques/cardinalidades/claves candidatas y cobertura documental de las 22 hojas de omeprazol sin pérdida de ocurrencias.
+
+**Estado:** completada documentalmente el 25 de agosto de 2026. Evidencia: `docs/CANONICAL_CONCEPTUAL_MODEL.md` y ADR-0001 ampliado, que continúa propuesto. D-004/D-006, las claves naturales y las cardinalidades no demostradas permanecen abiertas; no se ha iniciado DEV-004.
 
 ### DEV-004 — Mapear cardinalidades y claves por bloque (`P0`)
 
