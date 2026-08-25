@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-007 están completados en su alcance aprobado; el modelo físico y el round-trip de exportación todavía no están implementados.
+Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-008 están completados en su alcance de spike; el modelo físico no está implementado y la puerta requiere todavía decisiones y validación humana.
 
 ## Fase 0A — Cerrada
 
@@ -85,9 +85,18 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-007 est�
 - Evidencia y límites en `docs/OMEPRAZOLE_CANONICAL_IMPORT_EVIDENCE.md`.
 - ADR-0001 permanece propuesto: DEV-008 debe reconstruir y comparar semánticamente las 22 hojas.
 
+## DEV-008 — Completado como round-trip reversible
+
+- Reconstrucción OOXML temporal implementada en `scripts/roundtrip_omeprazole_fixture.py`; usa el original verificado como plantilla estructural inmutable y restaura los contenidos materiales desde DEV-007.
+- Comparadas 22/22 hojas y 2.674/2.674 valores, tipos, fórmulas, estilos de celda, orden, visibilidad y estructura auxiliar, sin normalizaciones.
+- Cero diferencias, defectos, pendientes, truncamientos, descartes, concatenaciones o partes auxiliares alteradas.
+- Dos corridas de 8,165 s y 7,373 s produjeron XLSX e informes idénticos con hash reproducible `7d474de536f4e168636c286aabd4ab3339715dde04c3164900c58c5204926adf`.
+- Suite completa 14/14 OK; la prueba de mutación confirma que un valor alterado se clasifica como defecto.
+- Evidencia en `docs/OMEPRAZOLE_ROUNDTRIP_EVIDENCE.md`. No es el exportador final y ADR-0001 permanece propuesto.
+
 ## Puerta 0B — No superada
 
-Faltan cerrar las claves y relaciones todavía propuestas, la validación humana del modelo candidato, la exportación real de omeprazol, la comparación semántica de sus 22 hojas y la aceptación de ADR-0001. No se autoriza avanzar a Fase 1.
+Faltan cerrar o aceptar explícitamente las claves y relaciones todavía propuestas, validar humanamente el modelo candidato y aceptar o sustituir ADR-0001. No se autoriza avanzar a Fase 1.
 
 ## Decisiones pendientes
 

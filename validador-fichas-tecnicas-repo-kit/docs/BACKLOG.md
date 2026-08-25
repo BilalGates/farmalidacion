@@ -78,7 +78,7 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 **Aceptación:** cero pérdidas; diferencias clasificadas y aprobadas.
 
-**Estado:** pendiente. El contrato de comparación está definido en `docs/contracts/OMEPRAZOLE_SEMANTIC_COMPARISON_CONTRACT.md`; no se ha ejecutado el round-trip.
+**Estado:** completada el 25 de agosto de 2026 como spike reversible. Dos corridas conciliaron 22/22 hojas y 2.674/2.674 valores con cero diferencias, hash reproducible `7d474de536f4e168636c286aabd4ab3339715dde04c3164900c58c5204926adf` y original intacto. Evidencia en `docs/OMEPRAZOLE_ROUNDTRIP_EVIDENCE.md`. No constituye el exportador final ni acepta ADR-0001.
 
 ### DEV-008A — Definir contrato semántico del round-trip (`P0`)
 
