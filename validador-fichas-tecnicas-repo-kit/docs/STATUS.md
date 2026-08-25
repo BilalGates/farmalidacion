@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 1 iniciada. DEV-101 está completado; el siguiente issue recomendado es DEV-102. El esquema físico definitivo permanece pendiente.
+Fase 1 iniciada. DEV-101 y DEV-102 están completados; el siguiente issue recomendado es DEV-103. El esquema físico definitivo permanece pendiente.
 
 ## Fase 0A — Cerrada
 
@@ -116,6 +116,14 @@ DEV-101 quedó autorizado por esta puerta y se completó sin avanzar automática
 - Añadida configuración local de ejemplo sin secretos y documentada una única superficie futura de comandos.
 - No se instalaron dependencias ni se implementaron API, interfaz, modelo físico, migraciones, contenedores, CIMA, LLM o exportación.
 - Un test de arquitectura protege la presencia del scaffold y la ausencia de marcadores de secretos en `.env.example`.
+
+## DEV-102 — Completado
+
+- Backend FastAPI empaquetado de forma independiente con configuración tipada por entorno.
+- Logging JSON y respuestas de error en español sin exposición de detalles internos.
+- `GET /health` comprueba el proceso; no simula conectividad de base de datos.
+- Pytest y Ruff configurados para el backend.
+- Sin modelos canónicos físicos, migraciones, endpoints de dominio ni acceso a datos.
 
 ## Decisiones pendientes
 

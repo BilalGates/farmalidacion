@@ -128,6 +128,8 @@ Backend, frontend, infraestructura, scripts, docs y datos de ejemplo.
 
 FastAPI, configuración, logging, health check, pytest y lint.
 
+**Estado:** completado el 25 de agosto de 2026. Paquete backend aislado con configuración Pydantic, logs JSON, errores seguros, health check, pytest y Ruff; sin persistencia ni lógica de producto.
+
 ### DEV-103 — Configurar frontend (`P0`)
 
 React, TypeScript, Vite, Vitest, lint y shell visual mínimo.

@@ -1,5 +1,14 @@
 # Backend
 
-Límite del backend Python. DEV-102 incorporará FastAPI, configuración tipada, logging, health check, pytest y lint.
+Backend HTTP de la aplicación. DEV-102 proporciona infraestructura técnica: factoría FastAPI, configuración tipada, logging JSON, errores seguros y `GET /health`.
 
-DEV-101 no contiene endpoints, modelos físicos, migraciones ni lógica de dominio.
+## Desarrollo
+
+```text
+python -m pip install -e 'backend[dev]'
+python -m pytest tests backend/tests
+python -m ruff check backend/src backend/tests
+python -m uvicorn pharma_validator_api.main:app --app-dir backend/src
+```
+
+El health check confirma el proceso. La base de datos se comprobará tras DEV-104.
