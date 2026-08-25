@@ -120,7 +120,9 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 Backend, frontend, infraestructura, scripts, docs y datos de ejemplo.
 
-**Estado:** autorizado como siguiente issue; no iniciado.
+**Aceptación:** límites de componentes documentados, configuración de ejemplo sin secretos, datos de ejemplo separados y superficie única de comandos definida sin simular herramientas aún no configuradas.
+
+**Estado:** completado el 25 de agosto de 2026. Scaffold estructural creado sin frameworks, lógica de producto, esquema físico, migraciones ni servicios.
 
 ### DEV-102 — Configurar backend (`P0`)
 

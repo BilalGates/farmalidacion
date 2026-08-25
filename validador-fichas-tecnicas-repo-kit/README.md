@@ -1,6 +1,6 @@
 # Validador asistido de fichas técnicas
 
-Kit inicial para arrancar el proyecto con Codex de forma controlada. Este repositorio no debe comenzar por la interfaz ni por el modelo local: comienza por reconciliar el modelo de datos real, las fuentes existentes y el contrato de exportación.
+Aplicación interna para consolidar y validar datos de medicamentos con procedencia verificable. La Fase 0B está cerrada y el repositorio inicia su scaffold ejecutable en Fase 1.
 
 ## Orden de lectura
 
@@ -11,17 +11,27 @@ Kit inicial para arrancar el proyecto con Codex de forma controlada. Este reposi
 5. `docs/BACKLOG.md`
 6. `docs/reference/ESPEC_validador_fichas_tecnicas_v2.md`
 
-## Primer objetivo
+## Estructura
 
-Demostrar que el modelo canónico puede importar el ejemplo completo de omeprazol, conservar todas las filas repetibles, claves y relaciones, y volver a exportarlo sin pérdida de información. Hasta superar esa puerta no se considera estable el modelo de dominio.
+- `backend/`: aplicación y pruebas del backend a partir de DEV-102.
+- `frontend/`: aplicación web y pruebas a partir de DEV-103.
+- `infra/`: composición y soporte local a partir de DEV-105.
+- `data/examples/`: fixtures pequeños, anonimizados y versionables.
+- `scripts/`: utilidades reproducibles del repositorio.
+- `docs/`: contratos, decisiones, evidencias y estado.
 
-## Uso inicial con Codex
+DEV-101 solo establece estos límites. No instala frameworks ni fija el esquema físico.
 
-1. Copiar este kit a la raíz del repositorio recién creado.
-2. Colocar los Excel originales en `data/reference/raw/`; esa carpeta está ignorada por Git.
-3. Ejecutar `python scripts/verify_reference_files.py`.
-4. Abrir Codex en la raíz y pedir: `Resume las instrucciones activas y ejecuta el arranque descrito en docs/INITIAL_CODEX_PROMPT.md sin escribir código de producto todavía.`
-5. Trabajar una incidencia y una rama por unidad de cambio.
+## Desarrollo
+
+Los comandos canónicos y su estado de disponibilidad se documentan en `docs/COMMANDS.md`. Por ahora:
+
+```text
+python -m unittest discover -s tests -v
+python scripts/verify_reference_files.py
+```
+
+La configuración local partirá de `.env.example`; nunca se versionan secretos ni ficheros `.env` reales.
 
 ## Principios
 

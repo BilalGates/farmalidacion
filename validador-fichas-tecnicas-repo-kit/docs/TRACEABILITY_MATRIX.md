@@ -54,3 +54,4 @@
 | UI <100 ms por campo | Especificación 14 | 5 | precarga/cache local | prueba de rendimiento |
 | Docker Compose | Especificación 15.9 | 1 en adelante | compose y fixtures | arranque limpio |
 | Operación offline | Especificación 15.10 | 2 en adelante | fixtures/corpus local | bloqueo de red durante prueba |
+| Scaffold de aplicación | Plan Fase 1; DEV-101 | 1 | `backend/`, `frontend/`, `infra/`, `data/examples/`, `.env.example`, `docs/COMMANDS.md` | test de límites y configuración sin secretos |

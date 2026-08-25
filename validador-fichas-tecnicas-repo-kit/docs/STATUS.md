@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 1 autorizada, todavía no iniciada. El siguiente issue es DEV-101 y el esquema físico definitivo permanece pendiente.
+Fase 1 iniciada. DEV-101 está completado; el siguiente issue recomendado es DEV-102. El esquema físico definitivo permanece pendiente.
 
 ## Fase 0A — Cerrada
 
@@ -108,7 +108,14 @@ Revisión formal en `docs/PHASE_0B_GATE_REVIEW.md`. Excepción humana aprobada p
 
 DEV-011 queda cerrado bajo la excepción: modelo interno aceptado y serialización externa trasladada a PROVIDER-002.
 
-DEV-101 puede iniciarse. No se autoriza avanzar automáticamente más allá de ese issue.
+DEV-101 quedó autorizado por esta puerta y se completó sin avanzar automáticamente a DEV-102.
+
+## DEV-101 — Completado
+
+- Creados los límites `backend/`, `frontend/`, `infra/` y `data/examples/` con responsabilidades explícitas.
+- Añadida configuración local de ejemplo sin secretos y documentada una única superficie futura de comandos.
+- No se instalaron dependencias ni se implementaron API, interfaz, modelo físico, migraciones, contenedores, CIMA, LLM o exportación.
+- Un test de arquitectura protege la presencia del scaffold y la ausencia de marcadores de secretos en `.env.example`.
 
 ## Decisiones pendientes
 
