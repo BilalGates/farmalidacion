@@ -85,3 +85,7 @@ No hay migración en esta fase. El modelo candidato debe mantener el valor y est
 - ¿Puede un bloque completo ser no aplicable y cómo se conservan ocurrencias previas?
 - ¿Qué estados admite exactamente el proveedor y cómo se exporta cada uno?
 - ¿Qué transiciones requieren comentario o doble validación?
+
+## Evidencia DEV-011
+
+`docs/VALUE_STATE_VALIDATION_TABLE.md` separa observación, trabajo y decisión. La especificación respalda `no_consta` como decisión distinta de vacío y pendiente, y excluye `pending` de exportación. `not_applicable`, fuentes mínimas, transiciones y serialización siguen sin evidencia suficiente. El ADR permanece **propuesto** y DEV-011 requiere validación de farmacia y proveedor.

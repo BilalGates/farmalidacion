@@ -104,6 +104,8 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 a DEV-008 est�
 
 ## Puerta 0B — No superada
 
+DEV-011 está preparado para validación mediante `docs/VALUE_STATE_VALIDATION_TABLE.md`. `no_consta` y la exclusión de `pending` tienen respaldo normativo; `not_applicable`, transiciones, comentarios y serialización siguen abiertos. ADR-0004 permanece propuesto.
+
 Faltan cerrar o aceptar explícitamente las claves y relaciones todavía propuestas, validar humanamente el modelo candidato y aceptar o sustituir ADR-0001. No se autoriza avanzar a Fase 1.
 
 ## Decisiones pendientes

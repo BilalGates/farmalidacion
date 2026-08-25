@@ -96,6 +96,8 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 **Estado:** pendiente; ADR-0004 está propuesto.
 
+**Preparación DEV-011:** tabla disponible en `docs/VALUE_STATE_VALIDATION_TABLE.md`. Pendiente de farmacia y proveedor; no se considera completada ni se acepta ADR-0004.
+
 ### DEV-009 — Reproducir incidencias de integridad (`P1`)
 
 **Objetivo:** comprobar huérfanos de excipientes, duplicados y límites de longitud.

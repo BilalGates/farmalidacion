@@ -27,7 +27,7 @@
 | Round-trip semántico de 22 hojas | Plan Fase 0B; omeprazol de referencia | 0B | `scripts/roundtrip_omeprazole_fixture.py`; `docs/OMEPRAZOLE_ROUNDTRIP_EVIDENCE.md` | 22/22 hojas y 2.674/2.674 valores; cero diferencias; dos corridas con hash `7d474de536f4e168636c286aabd4ab3339715dde04c3164900c58c5204926adf` |
 | Importación canónica temporal de omeprazol | Plan Fase 0B; DEV-007 | 0B | `scripts/import_omeprazole_fixture.py`; `docs/OMEPRAZOLE_CANONICAL_IMPORT_EVIDENCE.md` | 22/22 hojas, 616 ocurrencias y 2.674 valores; dos instantáneas idénticas con hash `5e8564dcd726380aec23f031f6060e4450d2c0fa09f559589e9c6d32caebdb5f` |
 | Sin normalización implícita | AGENTS.md; reglas no negociables | 0B, 3, 6 | reglas versionadas y diferencias clasificadas | toda transformación referencia decisión aceptada |
-| Estados vacío/pendiente/no consta/no aplica | Especificación 7.1; D-010 | 0B, 5, 6 | ADR-0004 propuesto | tabla de decisión y round-trip sin sustituciones implícitas |
+| Estados vacío/pendiente/no consta/no aplica | Especificación 7.1; D-010 | 0B, 5, 6 | ADR-0004 propuesto; `docs/VALUE_STATE_VALIDATION_TABLE.md` | tabla preparada; `not_applicable` y serialización pendientes de farmacia/proveedor |
 | Maestros como línea base con procedencia | D-007; ADR-0002 | 0B, 3 | contrato de perfilado y futura consolidación | valor trazable a fichero, hash, hoja y coordenada |
 | Interacciones como línea separada | D-009; ADR-0003 | 0B, 3 | perfilado incluido; extracción FT excluida | alcance e informes separados |
 | Procedencia múltiple | Ficheros reales y análisis | 0B, 3 | modelo de evidencia/procedencia | maestro, CIMA, FT y humano |
