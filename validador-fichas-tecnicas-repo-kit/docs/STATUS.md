@@ -64,7 +64,17 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 y el trabajo d
 - Los maestros no contienen `nregistro`; la cardinalidad `nregistro`↔CN no se ha inferido y requiere evidencia CIMA.
 - ADR-0006 aceptado por decisión humana; D-001, D-002 y D-006 cerradas en su alcance conceptual.
 - La cardinalidad factual `nregistro`↔CN sigue pendiente de verificación en Fase 2 y no se ha supuesto.
-- No se ha iniciado integración CIMA, modelo físico ni DEV-006.
+- No se ha iniciado integración CIMA ni modelo físico.
+
+## DEV-006 — Completado y aceptado
+
+- Matriz contractual de fuentes definida para los 353 campos del catálogo.
+- Cobertura: 204 no procedentes de FT, 53 directos, 79 parciales y 17 interpretables.
+- Maestro actual conservado como línea base, nunca como verdad autoritativa automática.
+- Toda prioridad no aprobada queda `pending_human_validation` y todo conflicto conserva las afirmaciones y procedencias.
+- CIMA estructurado permanece fuente candidata condicionada a mapeo verificado; no se ha integrado ni consultado.
+- ADR-0007 aceptado y D-008 cerrada; D-005 y D-010 siguen pendientes/propuestos.
+- No se ha iniciado DEV-007.
 
 ## Puerta 0B — No superada
 
@@ -73,7 +83,7 @@ Faltan el catálogo ampliado, claves y relaciones verificadas, la validación hu
 ## Decisiones pendientes
 
 - D-004, D-005 y D-010 requieren validación humana o evidencia adicional.
-- D-008 queda pendiente para Fase 3.
+- Las excepciones concretas por campo y el mapeo CIMA se verificarán en sus fases sin reabrir prioridades implícitas.
 - Contrato de exportación, separador decimal y hardware de inferencia siguen pendientes en sus fases.
 
 ## Última actualización

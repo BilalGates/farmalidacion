@@ -11,7 +11,7 @@ Estados: `cerrada`, `propuesta`, `pendiente`, `bloqueada`, `descartada`. Una dec
 | D-005 | Significado de `S*` y `N*` | pendiente | Fase 0B | Conservar literal hasta respuesta del proveedor | Por crear |
 | D-006 | Relación `nregistro` / CN / medicamento / especialidad / principio activo | cerrada | Fase 0B | Identidades separadas y vínculos con rol, procedencia y vigencia; cardinalidad factual `nregistro`↔CN se verifica en Fase 2 | ADR-0006 aceptado; aprobación humana 2026-08-25 |
 | D-007 | Estrategia para maestros actuales | cerrada | Fase 0B | Línea base con procedencia, consolidada con CIMA, FT y decisiones farmacéuticas | ADR-0002; aprobación humana 2026-08-24 |
-| D-008 | Matriz de fuente y prioridad por campo | pendiente | Fase 3 | Configurable; conflicto visible, sin reemplazo silencioso | Por crear |
+| D-008 | Matriz de fuente y prioridad por campo | cerrada | Fase 3 | Línea base + prioridad configurable; conflicto visible y acción humana si falta regla | ADR-0007 aceptado; aprobación humana 2026-08-25 |
 | D-009 | Alcance de interacciones | cerrada | Fase 0B | Línea separada de migración/conciliación, fuera del piloto de extracción FT | ADR-0003; aprobación humana 2026-08-24 |
 | D-010 | Semántica de vacío, pendiente, no consta y no aplica | propuesta | Fase 0B | Estados separados del valor; semántica y exportación por validar | ADR-0004 |
 | D-011 | Contrato exacto de exportación | pendiente | Fase 6 | Obtener ejemplo aceptado y prueba en entorno proveedor | Por crear |

@@ -62,6 +62,8 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 **Aceptación:** todos los campos activos tienen regla o estado explícito pendiente.
 
+**Estado:** completada y aceptada el 25 de agosto de 2026. Las 353 filas del catálogo quedan cubiertas mediante cuatro reglas de clasificación FT: 204 `No`, 53 directas, 79 parciales y 17 interpretables. Todas conservan el maestro como línea base y una prioridad autoritativa explícita o `pending_human_validation`. ADR-0007 aceptado y D-008 cerrada; excepciones concretas y mapeo CIMA siguen pendientes de evidencia.
+
 ### DEV-007 — Prueba de importación de omeprazol (`P0`)
 
 **Objetivo:** representar las 22 hojas en el modelo canónico candidato.
