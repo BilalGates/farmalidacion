@@ -53,7 +53,18 @@ Fase 0B — Descubrimiento de dominio y modelo canónico. DEV-002 y el trabajo d
 - Cardinalidades observadas documentadas, incluidos bloques 0..N y hojas vacías 0..0.
 - Reproducidas 275 filas huérfanas de excipientes, equivalentes a 184 claves paternas distintas.
 - Hash de evidencia: `c685c293172fd3702db881eff6823409a6f9b8447772ab283ef159bba2f23a6c`.
-- D-004/ADR-0005 siguen propuestos y D-006 continúa abierta. DEV-005 no se ha iniciado.
+- D-004/ADR-0005 siguen propuestos; D-006 pasa a propuesta documental en DEV-005, sin aceptación.
+
+## DEV-005 — Completado y aceptado
+
+- Verificados sin huérfanos los enlaces composición→principio activo y especialidad→medicamento.
+- Cardinalidades observadas: principio activo→composiciones 0..83 y medicamento→especialidades 1..643.
+- Definidos por separado `nregistro`, CN, especialidad/presentación, medicamento y principio activo.
+- Propuesto un expediente contextual de revisión con decisiones atribuidas al nivel destino correspondiente.
+- Los maestros no contienen `nregistro`; la cardinalidad `nregistro`↔CN no se ha inferido y requiere evidencia CIMA.
+- ADR-0006 aceptado por decisión humana; D-001, D-002 y D-006 cerradas en su alcance conceptual.
+- La cardinalidad factual `nregistro`↔CN sigue pendiente de verificación en Fase 2 y no se ha supuesto.
+- No se ha iniciado integración CIMA, modelo físico ni DEV-006.
 
 ## Puerta 0B — No superada
 
@@ -61,7 +72,7 @@ Faltan el catálogo ampliado, claves y relaciones verificadas, la validación hu
 
 ## Decisiones pendientes
 
-- D-001, D-002, D-004, D-005, D-006 y D-010 requieren validación humana o evidencia adicional.
+- D-004, D-005 y D-010 requieren validación humana o evidencia adicional.
 - D-008 queda pendiente para Fase 3.
 - Contrato de exportación, separador decimal y hardware de inferencia siguen pendientes en sus fases.
 

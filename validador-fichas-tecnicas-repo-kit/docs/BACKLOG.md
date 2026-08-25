@@ -54,6 +54,8 @@ Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o en
 
 **Aceptación:** ADR-0001 aceptado o reemplazado; ejemplos de uno-a-varios y varios-a-varios.
 
+**Estado:** completada y aceptada el 25 de agosto de 2026. Los maestros demuestran especialidad→medicamento y composición→principio activo, pero no contienen `nregistro`. ADR-0006 aceptado; D-001, D-002 y D-006 cerradas en su alcance conceptual. La cardinalidad factual `nregistro`↔CN se verificará con CIMA estructurado en Fase 2 sin reabrir equivalencias implícitas.
+
 ### DEV-006 — Definir matriz de fuentes por campo (`P0`)
 
 **Objetivo:** indicar fuente primaria, secundaria, prioridad, conflicto y acción humana.

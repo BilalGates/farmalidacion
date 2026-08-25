@@ -37,6 +37,10 @@ Adoptar la opción C, con un enfoque híbrido: núcleo canónico configurable pa
 
 El contrato conceptual, diagrama, cardinalidades conservadoras y cobertura de las 22 hojas de omeprazol se desarrollan en `docs/CANONICAL_CONCEPTUAL_MODEL.md`. La evidencia de DEV-003 demuestra capacidad de representación sin pérdida de ocurrencias, pero no resuelve las claves de negocio ni ejecuta el round-trip; por ello este ADR permanece propuesto.
 
+DEV-005 desarrolla la unidad de revisión y el grafo entre destinos en `docs/TARGET_RECORD_RELATIONSHIP_EVIDENCE.md` y ADR-0006. La relación `nregistro`↔CN sigue pendiente de evidencia CIMA, por lo que este ADR no cambia de estado.
+
+ADR-0006 fue aceptado el 25 de agosto de 2026 y cierra D-001, D-002 y D-006 en su alcance conceptual. ADR-0001 permanece propuesto hasta el round-trip y la aceptación del modelo completo.
+
 ## Consecuencias
 
 ### Positivas
