@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 1 iniciada. DEV-101 a DEV-103 están completados; el siguiente issue recomendado es DEV-104. El esquema físico definitivo permanece pendiente hasta ese issue.
+Fase 1 iniciada. DEV-101 a DEV-104 están completados; el siguiente issue recomendado es DEV-105. Existe un núcleo físico inicial reversible, no un contrato físico definitivo de proveedor.
 
 ## Fase 0A — Cerrada
 
@@ -132,6 +132,14 @@ DEV-101 quedó autorizado por esta puerta y se completó sin avanzar automática
 - Vitest y Testing Library verificados sobre happy-dom; ESLint y build configurados.
 - El shell explicita que no contiene datos de pacientes, propuestas clínicas ni exportación.
 - Sin pantalla farmacéutica definitiva, persistencia, CIMA o LLM.
+
+## DEV-104 — Completado
+
+- SQLAlchemy 2 y Alembic configurados sobre SQLite con claves foráneas activas.
+- Migración inicial reversible para documentos/versiones, fragmentos, registros destino, identificadores externos, vínculos, bloques, valores y procedencia.
+- PK canónicas internas y única restricción externa aprobada por sistema, identificador y versión.
+- Dos ocurrencias idénticas se conservan como filas distintas; no se infieren claves farmacéuticas ni cardinalidades máximas.
+- Upgrade y downgrade verificados sobre bases temporales; sin datos reales importados.
 
 ## Decisiones pendientes
 

@@ -140,6 +140,8 @@ React, TypeScript, Vite, Vitest, lint y shell visual mínimo.
 
 Migración inicial del modelo aceptado, upgrade/downgrade y fixtures.
 
+**Estado:** completado el 25 de agosto de 2026. Núcleo físico inicial reversible con UUID canónica, identificadores externos versionados, documentos/versiones, destinos, vínculos, bloques, valores y procedencia. Tests sobre SQLite temporal; fixture de omeprazol diferido a DEV-107.
+
 ### DEV-105 — Crear Docker Compose (`P0`)
 
 Arranque limpio con backend, frontend y datos de demostración.

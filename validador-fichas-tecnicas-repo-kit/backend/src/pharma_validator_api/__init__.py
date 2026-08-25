@@ -1,1 +1,1 @@
-'''Backend HTTP del validador de fichas técnicas.'''
+"""Backend HTTP del validador de fichas técnicas."""

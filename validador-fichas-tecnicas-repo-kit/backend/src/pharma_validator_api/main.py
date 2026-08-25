@@ -17,15 +17,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging(active.log_level)
     application = FastAPI(
         title=active.app_name,
-        version='0.1.0',
-        docs_url='/docs' if active.env != 'production' else None,
+        version="0.1.0",
+        docs_url="/docs" if active.env != "production" else None,
         redoc_url=None,
     )
     register_error_handlers(application)
 
-    @application.get('/health', response_model=HealthResponse, tags=['sistema'])
+    @application.get("/health", response_model=HealthResponse, tags=["sistema"])
     async def health() -> HealthResponse:
-        return HealthResponse(status='ok', service=active.app_name, environment=active.env)
+        return HealthResponse(status="ok", service=active.app_name, environment=active.env)
 
     return application
 

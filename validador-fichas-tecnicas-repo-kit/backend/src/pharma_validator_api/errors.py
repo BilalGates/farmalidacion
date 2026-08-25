@@ -16,12 +16,12 @@ class ApplicationError(Exception):
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApplicationError)
     async def controlled(request: Request, exc: ApplicationError) -> JSONResponse:
-        logger.warning('Error controlado en %s', request.url.path)
-        return JSONResponse(status_code=exc.status_code, content={'detail': exc.message})
+        logger.warning("Error controlado en %s", request.url.path)
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
 
     @app.exception_handler(Exception)
     async def unexpected(request: Request, exc: Exception) -> JSONResponse:
-        logger.exception('Error inesperado en %s', request.url.path, exc_info=exc)
+        logger.exception("Error inesperado en %s", request.url.path, exc_info=exc)
         return JSONResponse(
-            status_code=500, content={'detail': 'Se ha producido un error interno.'}
+            status_code=500, content={"detail": "Se ha producido un error interno."}
         )

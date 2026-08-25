@@ -7,7 +7,13 @@ name = 'pharma-validator-api'
 version = '0.1.0'
 description = 'Backend del validador interno de fichas técnicas'
 requires-python = '>=3.11'
-dependencies = ['fastapi>=0.115,<1', 'pydantic-settings>=2.7,<3', 'uvicorn>=0.34,<1']
+dependencies = [
+    'alembic>=1.19,<2',
+    'fastapi>=0.115,<1',
+    'pydantic-settings>=2.7,<3',
+    'sqlalchemy>=2.0.52,<3',
+    'uvicorn>=0.34,<1',
+]
 
 [project.optional-dependencies]
 dev = ['httpx>=0.28,<1', 'pytest>=8.3,<9', 'ruff>=0.9,<1']
