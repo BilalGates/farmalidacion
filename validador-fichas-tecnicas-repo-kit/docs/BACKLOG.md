@@ -152,6 +152,8 @@ Arranque limpio con backend, frontend y datos de demostración.
 
 Tests, lint, typecheck, build y verificación de migraciones.
 
+**Estado:** completado el 26 de agosto de 2026. GitHub Actions ejecuta el verificador único con Python 3.12 y Node 24. La verificación local completa pasó 26/26 tests Python, 1/1 test frontend, Ruff, mypy estricto, ESLint, build Vite, Compose, 8/8 hashes y Alembic upgrade/downgrade. CI omite únicamente las referencias originales no versionadas mediante una opción explícita.
+
 ### DEV-107 — Primer corte vertical de lectura (`P0`)
 
 Importar fixture y visualizar por API un registro con bloques repetibles.

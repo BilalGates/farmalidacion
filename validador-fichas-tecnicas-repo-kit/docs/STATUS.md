@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 1 iniciada. DEV-101 a DEV-105 están completados; el siguiente issue recomendado es DEV-106. Existe un núcleo físico inicial reversible, no un contrato físico definitivo de proveedor.
+Fase 1 iniciada. DEV-101 a DEV-106 están completados; el siguiente issue recomendado es DEV-107. Existe un núcleo físico inicial reversible, no un contrato físico definitivo de proveedor.
 
 ## Fase 0A — Cerrada
 
@@ -149,6 +149,14 @@ DEV-101 quedó autorizado por esta puerta y se completó sin avanzar automática
 - Puertos locales: backend 8000 y frontend 5173.
 - El volumen de prueba contiene solo esquema; fixture canónico de demostración pendiente de DEV-107.
 
+## DEV-106 — Completado
+
+- Workflow de GitHub Actions creado para `push` a `main` y pull requests, con Python 3.12, Node 24 y timeout de 20 minutos.
+- `python scripts/verify_project.py` unifica pytest, Ruff, mypy estricto, Vitest, ESLint, build Vite, validación de Compose, hashes de referencias y round-trip Alembic sobre SQLite temporal.
+- Verificación local completa: 26/26 tests Python, 1/1 test frontend, Ruff, mypy sobre 7 módulos, ESLint, build, Compose, 8/8 referencias y Alembic upgrade/downgrade, todo con código 0.
+- CI omite explícitamente solo los hashes de originales no versionados mediante `--skip-references`; no inventa ni descarga referencias.
+- No se añadieron endpoints, datos de producto, integraciones ni cambios de esquema.
+
 ## Decisiones pendientes
 
 - PROVIDER-001 debe resolverse antes de reglas condicionales definitivas; PROVIDER-002 antes del exportador definitivo.
@@ -157,4 +165,4 @@ DEV-101 quedó autorizado por esta puerta y se completó sin avanzar automática
 
 ## Última actualización
 
-25 de agosto de 2026.
+26 de agosto de 2026.

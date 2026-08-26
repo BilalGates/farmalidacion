@@ -1,5 +1,7 @@
 from sqlalchemy import Engine, create_engine, event
+from sqlalchemy.engine.interfaces import DBAPIConnection
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import ConnectionPoolEntry
 
 from pharma_validator_api.config import Settings
 
@@ -11,7 +13,10 @@ def create_database_engine(settings: Settings) -> Engine:
     return engine
 
 
-def _enable_sqlite_foreign_keys(dbapi_connection, _connection_record) -> None:
+def _enable_sqlite_foreign_keys(
+    dbapi_connection: DBAPIConnection,
+    _connection_record: ConnectionPoolEntry,
+) -> None:
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
