@@ -1,0 +1,45 @@
+name: pharma-validator
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: infra/backend.Dockerfile
+    environment:
+      APP_ENV: development
+      APP_LOG_LEVEL: INFO
+      APP_DATABASE_URL: sqlite:////app/data/validator.db
+    command:
+      - sh
+      - -c
+      - python -m alembic -c backend/alembic.ini upgrade head && python -m uvicorn pharma_validator_api.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - app-data:/app/data
+    ports:
+      - '127.0.0.1:8000:8000'
+    healthcheck:
+      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: infra/frontend.Dockerfile
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:5173:8080'
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://127.0.0.1:8080/healthz']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  app-data:

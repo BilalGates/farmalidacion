@@ -146,6 +146,8 @@ Migración inicial del modelo aceptado, upgrade/downgrade y fixtures.
 
 Arranque limpio con backend, frontend y datos de demostración.
 
+**Estado:** completado el 26 de agosto de 2026 en alcance de scaffold. Backend y frontend construyen y quedan saludables; Alembic aplica de forma idempotente sobre volumen SQLite. El fixture canónico de demostración sigue asignado a DEV-107.
+
 ### DEV-106 — Crear CI (`P1`)
 
 Tests, lint, typecheck, build y verificación de migraciones.

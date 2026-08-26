@@ -58,3 +58,4 @@
 | Backend base y health check | Plan Fase 1; DEV-102 | 1 | `backend/src/pharma_validator_api/`; `backend/pyproject.toml` | pytest de configuración, salud y errores; Ruff |
 | Frontend técnico base | Plan Fase 1; DEV-103 | 1 | `frontend/src/`; Vite y TypeScript | Vitest/Testing Library, ESLint y build de producción |
 | Núcleo físico reversible | ADR-0001/0005/0006; DEV-104 | 1 | modelos SQLAlchemy y migración Alembic 0001 | upgrade/downgrade; bloques duplicados; identidad externa versionada |
+| Arranque local reproducible | Plan Fase 1; DEV-105 | 1 | Dockerfiles, nginx y `compose.yaml` | dos ciclos saludables; Alembic idempotente; backend no-root |
