@@ -209,6 +209,12 @@ real; D-016 permanece abierta y no se ha recomendado un modo de muestreo.
 
 Documento, versión, sección, hash y metadatos.
 
+**Estado:** completado como capacidad reversible el 27 de agosto de 2026.
+Los artefactos CIMA originales se conservan byte a byte en versiones
+content-addressed e idempotentes; un cambio crea otra versión y la anterior no
+se modifica. D-020 sigue propuesta porque no se infiere `source_version` ni se
+ha validado todavía la revisión documental sobre respuestas reales.
+
 ### DEV-206 — Detección y diff de versiones (`P1`)
 
 Preparación para mantenimiento continuo.

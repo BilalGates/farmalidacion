@@ -11,6 +11,7 @@ from pharma_validator_api.models import BlockInstance, ExternalIdentifier, Field
 
 BACKEND = Path(__file__).resolve().parents[1]
 DOMAIN_TABLES = {
+    'source_document_artifact',
     'sampling_item',
     'sampling_run',
     "block_instance",

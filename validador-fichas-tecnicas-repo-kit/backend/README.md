@@ -50,3 +50,9 @@ el ejemplo operativo están en `docs/CIMA_SAMPLING_CONTRACT.md` y
 `pharma_validator_api.composition_report` genera el informe multilabel de ATC,
 forma y vía en JSON, CSV y Markdown desde respuestas de medicamento cacheadas.
 Exige cobertura exacta de la muestra y no normaliza ni sobrescribe metadatos.
+
+`pharma_validator_api.document_versions` persiste paquetes CIMA
+content-addressed con cuerpos binarios y metadatos de respuesta. Las versiones
+y artefactos son históricos inmutables; la reconstrucción verifica SHA-256. El
+contrato técnico y los límites de D-020 están en
+`docs/CIMA_DOCUMENT_VERSIONING.md`.

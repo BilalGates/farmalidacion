@@ -1,7 +1,16 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    DateTime,
+    ForeignKey,
+    Integer,
+    LargeBinary,
+    String,
+    Text,
+    UniqueConstraint,
+    event,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -37,6 +46,42 @@ class SourceFragment(Base):
     locator_type: Mapped[str] = mapped_column(String(40))
     locator: Mapped[str] = mapped_column(Text)
     literal_text: Mapped[str | None] = mapped_column(Text)
+
+
+class SourceDocumentArtifact(Base):
+    __tablename__ = 'source_document_artifact'
+    __table_args__ = (
+        UniqueConstraint(
+            'document_version_id',
+            'artifact_role',
+            'ordinal',
+            name='uq_source_document_artifact_occurrence',
+        ),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    document_version_id: Mapped[str] = mapped_column(ForeignKey('source_document_version.id'))
+    artifact_role: Mapped[str] = mapped_column(String(40))
+    ordinal: Mapped[int] = mapped_column(Integer)
+    locator: Mapped[str] = mapped_column(Text)
+    source_url: Mapped[str] = mapped_column(Text)
+    status_code: Mapped[int] = mapped_column(Integer)
+    media_type: Mapped[str | None] = mapped_column(Text)
+    response_headers: Mapped[str] = mapped_column(Text)
+    content_hash: Mapped[str] = mapped_column(String(64))
+    body: Mapped[bytes] = mapped_column(LargeBinary)
+    fetched_at: Mapped[str] = mapped_column(Text)
+
+
+class ImmutableHistoryError(RuntimeError):
+    pass
+
+
+@event.listens_for(SourceDocumentVersion, 'before_update')
+@event.listens_for(SourceDocumentVersion, 'before_delete')
+@event.listens_for(SourceDocumentArtifact, 'before_update')
+@event.listens_for(SourceDocumentArtifact, 'before_delete')
+def _reject_historical_mutation(*_: object) -> None:
+    raise ImmutableHistoryError('Las versiones y artefactos documentales son inmutables.')
 
 
 class TargetRecord(Base):

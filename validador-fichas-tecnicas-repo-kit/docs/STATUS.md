@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 2 en curso. DEV-204 implementa y verifica offline el informe de composición; el siguiente issue recomendado es DEV-205, que no se ha iniciado. Gate 1 permanece PASS y Gate 2 continúa abierto.
+Fase 2 en curso. DEV-205 implementa y verifica offline el versionado documental inmutable; el siguiente issue recomendado es DEV-206, que no se ha iniciado. Gate 1 permanece PASS y Gate 2 continúa abierto.
 
 ## Fase 0A — Cerrada
 
@@ -210,6 +210,17 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Salidas JSON, CSV y Markdown reproducibles e inmutables, ligadas a la ejecución de muestra y hashes de cada respuesta.
 - No se descargó corpus real ni se produjo evidencia para elegir modo; D-016 y Gate 2 siguen abiertos.
 - Contrato en `docs/CIMA_COMPOSITION_REPORT.md`; no se inició DEV-205.
+
+## DEV-205 — Completado como capacidad reversible
+
+- Persistencia content-addressed de paquetes CIMA con documentos, versiones y artefactos separados.
+- Cuerpo original binario, URL, estado, tipo, cabeceras, fecha literal, localizador, rol, ordinal y hashes conservados.
+- Una repetición idéntica es idempotente; cambiar una sección crea otra versión sin sobrescribir la anterior.
+- Reconstrucción byte a byte con verificación SHA-256 y soporte de contenido no decodificable.
+- Mutaciones y borrados históricos rechazados desde el ORM; corrupción de cuerpo detectable al leer.
+- Migración reversible `e3c83b4ed201`; no se descargaron documentos ni se modificaron fuentes.
+- D-020 permanece propuesta: `source_version` no se infiere y falta aceptación humana/evidencia CIMA real.
+- Contrato en `docs/CIMA_DOCUMENT_VERSIONING.md`; no se inició DEV-206 y Gate 2 sigue abierto.
 
 ## Decisiones pendientes
 

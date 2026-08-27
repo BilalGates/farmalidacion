@@ -36,7 +36,7 @@
 | Matriz de fuentes por campo | Catálogo; ADR-0002; D-008 | 0B, 3 | `docs/SOURCE_PRIORITY_MATRIX.md`; ADR-0007 aceptado | 353/353 campos con regla o prioridad pendiente explícita |
 | Conflicto entre fuentes | ADR-0002; D-008 | 0B, 3 | afirmaciones separadas y acción humana contractual | ninguna sustitución silenciosa; campo sin regla queda pendiente |
 | Límites por clasificación FT | Catálogo; especificación 8-9 | 0B, 4, 5 | reglas `No`/directo/parcial/interpretación | parciales e interpretables nunca producen valor automático |
-| Versiones inmutables | Especificación 11, 13 | 0B, 2, 7 | tablas de versión | cambio no sobrescribe anterior |
+| Versiones inmutables | Especificación 11, 13; D-020; DEV-205 | 0B, 2, 7 | `source_document_version`; `source_document_artifact`; `pharma_validator_api.document_versions`; contrato DEV-205 | repetición idempotente; cambio crea versión; bytes reconstruibles; mutación ORM bloqueada; D-020 propuesta |
 | Ninguna propuesta sin cita | Especificación 8.1 | 4 | verificador literal | rechazo de cita inventada |
 | Salida estructurada | Especificación 8.3 | 4 | esquema de respuesta | respuesta inválida no persiste |
 | Degradación a solo evidencia | Especificación 8.4 | 4 | configuración por campo | cambio sin despliegue |
