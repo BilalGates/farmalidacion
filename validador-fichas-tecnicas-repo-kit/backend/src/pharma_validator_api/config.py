@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     database_url: str = Field(default="sqlite:///./data/local/validator.db", repr=False)
     load_demo_fixture: bool = False
     demo_fixture_path: Path = Path('data/examples/omeprazole-demo.json')
+    cima_base_url: str = 'https://cima.aemps.es/cima/rest'
+    cima_timeout_seconds: float = 15.0
+    cima_requests_per_second: float = 5.0
+    cima_max_retries: int = 3
+    cima_backoff_seconds: float = 0.5
+    cima_max_retry_delay_seconds: float = 30.0
+    cima_cache_dir: Path = Path('data/local/cima-cache')
 
 
 @lru_cache

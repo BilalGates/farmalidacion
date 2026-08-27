@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 2 iniciada documentalmente. DEV-201 verifica el contrato oficial CIMA sin implementar el cliente; el siguiente issue recomendado es DEV-202. Gate 1 permanece PASS y el núcleo físico sigue siendo reversible, no un contrato definitivo del proveedor.
+Fase 2 en curso. DEV-202 implementa y verifica offline el cliente CIMA robusto; el siguiente issue recomendado es DEV-203, que no se ha iniciado. Gate 1 permanece PASS y el núcleo físico sigue siendo reversible, no un contrato definitivo del proveedor.
 
 ## Fase 0A — Cerrada
 
@@ -178,6 +178,17 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Separados contrato oficial, observaciones vivas y políticas internas; el límite de 5 peticiones/s no se atribuye a AEMPS.
 - Dos fallos consecutivos impidieron validar el formato vivo de `docSegmentado/contenido`; el punto exacto y la prueba pendiente quedan registrados para DEV-202.
 - No se implementó cliente, persistencia, descarga de corpus ni cambios de esquema.
+
+## DEV-202 — Completado
+
+- Cliente CIMA de solo lectura con base HTTPS, timeout, límite de ritmo y reintentos exponenciales configurables.
+- Reintentos limitados a fallos de transporte y HTTP 429/500/502/503/504; errores y esperas superiores al máximo fallan de forma visible.
+- Caché local inmutable por URL y `Accept`, con manifiesto, cuerpo original byte a byte y verificación SHA-256 antes de cada reutilización.
+- Las respuestas no exitosas no se cachean; una entrada incompleta o alterada no se repara ni sobrescribe silenciosamente.
+- Métodos mínimos para medicamento, presentaciones, secciones, contenido segmentado y registro de cambios, preservando parámetros `nregistro` repetidos.
+- Siete pruebas HTTP completamente offline cubren éxito, contenido no decodificable, caché, corrupción, timeout, 429, 404, espera insegura, parámetros y alcance de URL.
+- No se hicieron nuevas solicitudes vivas, no se descargó corpus y no se persistieron datos CIMA en el modelo canónico.
+- El comportamiento vivo de `docSegmentado/contenido`, `Retry-After` con fecha HTTP y las formas de payload se verificarán en el muestreo controlado; no se han supuesto.
 
 ## Decisiones pendientes
 

@@ -179,6 +179,13 @@ fallos de cliente; no se implementó integración.
 
 Rate limit, reintentos, timeouts, cache e idempotencia.
 
+**Estado:** completado el 27 de agosto de 2026. Cliente de solo lectura con
+configuración por entorno, límite de ritmo, timeout, reintentos acotados y
+caché inmutable verificada por SHA-256. Las pruebas HTTP son offline y
+preservan el cuerpo original byte a byte; no se descargó corpus ni se persistió
+información CIMA. La validación viva y reproducible de contenido segmentado se
+traslada a DEV-203 sin asumir formato ni semántica.
+
 ### DEV-203 — Muestreo reproducible (`P0`)
 
 Aleatorio y estratificado, semilla, criterios y persistencia.

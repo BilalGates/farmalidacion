@@ -148,3 +148,22 @@ Antes de persistir datos, DEV-202 debe probar con fixtures HTTP:
 5. timeout, error transitorio y límite de ritmo;
 6. reintento idempotente y caché;
 7. preservación byte a byte de la respuesta original.
+
+## Resultado de DEV-202
+
+El cliente implementa la política interna mediante configuración por entorno y
+sin persistencia canónica. Las pruebas con transporte HTTP simulado verifican
+respuesta 200, negociación de `Accept`, cuerpo arbitrario preservado byte a
+byte, timeout, 429, error no reintentable, reintento idempotente, límite de
+ritmo, parámetros repetibles y caché inmutable con SHA-256.
+
+La caché identifica cada GET por URL final y `Accept`; conserva por separado el
+cuerpo original y un manifiesto con URL, estado, cabeceras, fecha y hash. Solo
+se almacenan respuestas 2xx. Una entrada incompleta, ilegible o cuyo hash no
+coincide produce un error explícito y nunca se sobrescribe silenciosamente.
+
+No se repitió en DEV-202 la consulta viva bloqueada en DEV-201. El cliente ya
+permite capturar su cuerpo y cabeceras sin forzar una decodificación, pero el
+formato real de `docSegmentado/contenido` se comprobará de forma reproducible
+en DEV-203. Solo se interpreta `Retry-After` numérico; la variante de fecha HTTP
+permanece pendiente y no se presenta como soportada.

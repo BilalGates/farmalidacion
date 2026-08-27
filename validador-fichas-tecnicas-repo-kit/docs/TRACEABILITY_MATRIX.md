@@ -5,7 +5,7 @@
 | Corpus 500, oro 20, medida 50 | Especificación 1.1 | 2, 4, 5 | modelos de conjunto y comandos | misma semilla, mismos registros |
 | Muestreo aleatorio/estratificado | Especificación 1.2 | 2 | servicio y CLI de muestreo | reproducibilidad + informe composición |
 | Sin datos de paciente | Especificación 2-3 | todas | límites de dominio y revisión | búsqueda de esquemas/endpoints prohibidos |
-| CIMA cacheada y limitada | Especificación 5.1 | 2 | cliente CIMA | retry, rate limit, cache hit |
+| CIMA cacheada y limitada | Especificación 5.1; DEV-202 | 2 | `pharma_validator_api.cima_client`; configuración por entorno; caché inmutable | fixtures HTTP offline: retry, rate limit, cache hit, SHA-256 y cuerpo byte a byte |
 | Relación nregistro-presentaciones | Especificación 5.1 | 0B, 2 | modelo canónico | fixture con varios CN |
 | Catálogo gobernado por configuración | Especificación 6 | 0B, 3 | importador de catálogo | añadir campo sin cambiar código |
 | Overrides CHAR(100) | Especificación 6.1 | 3 | regla de importación | test de ambos campos |
@@ -61,4 +61,4 @@
 | Arranque local reproducible | Plan Fase 1; DEV-105 | 1 | Dockerfiles, nginx y `compose.yaml` | dos ciclos saludables; Alembic idempotente; backend no-root |
 | Gate automatizado de calidad | Plan Fase 1; DEV-106 | 1 | `.github/workflows/ci.yml`; `scripts/verify_project.py`; mypy estricto | 26/26 pytest, 1/1 Vitest, Ruff, mypy, ESLint, build, Compose, 8/8 referencias y Alembic upgrade/downgrade |
 | Fixture API con bloques repetibles | Plan Fase 1; DEV-107; ADR-0001 | 1 | `data/examples/omeprazole-demo.json`; `GET /records/{id}` | dos ocurrencias con IDs, ordinales y procedencias distintas; reinicio idempotente en Compose |
-| Contrato oficial API CIMA | Especificación 5.1; DEV-201; AEMPS CIMA REST API v1.23 | 2 | `docs/CIMA_API_CONTRACT.md` | endpoints y parámetros verificados; contenido segmentado vivo pendiente reproducible para DEV-202 |
+| Contrato oficial API CIMA | Especificación 5.1; DEV-201; AEMPS CIMA REST API v1.23 | 2 | `docs/CIMA_API_CONTRACT.md`; cliente DEV-202 | endpoints y parámetros codificados; contenido segmentado vivo pendiente reproducible para DEV-203 |
