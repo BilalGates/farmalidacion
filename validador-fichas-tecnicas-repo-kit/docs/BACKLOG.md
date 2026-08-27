@@ -169,6 +169,12 @@ bloques tras reiniciar el backend. Gate 1 cerrado; Fase 2 no iniciada.
 
 Documentar endpoints y parámetros exactos desde fuente oficial.
 
+**Estado:** completado documentalmente el 27 de agosto de 2026. Contrato CIMA
+REST API v1.23 registrado en `docs/CIMA_API_CONTRACT.md` con endpoints,
+parámetros, respuestas, ambigüedades y evidencia puntual. La negociación viva
+de `docSegmentado/contenido` queda como prueba explícita de DEV-202 tras dos
+fallos de cliente; no se implementó integración.
+
 ### DEV-202 — Cliente CIMA robusto (`P0`)
 
 Rate limit, reintentos, timeouts, cache e idempotencia.

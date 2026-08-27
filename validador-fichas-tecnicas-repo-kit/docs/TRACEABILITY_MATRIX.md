@@ -61,3 +61,4 @@
 | Arranque local reproducible | Plan Fase 1; DEV-105 | 1 | Dockerfiles, nginx y `compose.yaml` | dos ciclos saludables; Alembic idempotente; backend no-root |
 | Gate automatizado de calidad | Plan Fase 1; DEV-106 | 1 | `.github/workflows/ci.yml`; `scripts/verify_project.py`; mypy estricto | 26/26 pytest, 1/1 Vitest, Ruff, mypy, ESLint, build, Compose, 8/8 referencias y Alembic upgrade/downgrade |
 | Fixture API con bloques repetibles | Plan Fase 1; DEV-107; ADR-0001 | 1 | `data/examples/omeprazole-demo.json`; `GET /records/{id}` | dos ocurrencias con IDs, ordinales y procedencias distintas; reinicio idempotente en Compose |
+| Contrato oficial API CIMA | Especificación 5.1; DEV-201; AEMPS CIMA REST API v1.23 | 2 | `docs/CIMA_API_CONTRACT.md` | endpoints y parámetros verificados; contenido segmentado vivo pendiente reproducible para DEV-202 |

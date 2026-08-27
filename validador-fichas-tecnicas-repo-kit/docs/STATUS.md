@@ -2,11 +2,11 @@
 
 ## Estado global
 
-`FASE 0A CERRADA — FASE 0B CERRADA CON DEPENDENCIAS EXTERNAS — FASE 1 CERRADA`
+`FASE 0A CERRADA — FASE 0B CERRADA CON DEPENDENCIAS EXTERNAS — FASE 1 CERRADA — FASE 2 INICIADA`
 
 ## Fase actual
 
-Fase 1 cerrada. DEV-101 a DEV-107 están completados y Gate 1 es PASS. La Fase 2 no se ha iniciado; el siguiente issue recomendado es DEV-201. Existe un núcleo físico inicial reversible, no un contrato físico definitivo de proveedor.
+Fase 2 iniciada documentalmente. DEV-201 verifica el contrato oficial CIMA sin implementar el cliente; el siguiente issue recomendado es DEV-202. Gate 1 permanece PASS y el núcleo físico sigue siendo reversible, no un contrato definitivo del proveedor.
 
 ## Fase 0A — Cerrada
 
@@ -170,6 +170,14 @@ DEV-101 quedó autorizado por esta puerta y se completó sin avanzar automática
 Revisión formal en `docs/PHASE_1_GATE_REVIEW.md`. El scaffold ejecutable,
 migraciones reversibles, fixture API, gate de calidad y arranque con datos
 locales quedan demostrados. No se inicia automáticamente la Fase 2.
+
+## DEV-201 — Completado documentalmente
+
+- Verificada la documentación oficial CIMA REST API v1.23 y su publicación en el portal de datos abiertos de AEMPS.
+- Documentados base URL, endpoints mínimos, parámetros exactos, paginación, modelos relevantes, negociación de contenido y registro de cambios.
+- Separados contrato oficial, observaciones vivas y políticas internas; el límite de 5 peticiones/s no se atribuye a AEMPS.
+- Dos fallos consecutivos impidieron validar el formato vivo de `docSegmentado/contenido`; el punto exacto y la prueba pendiente quedan registrados para DEV-202.
+- No se implementó cliente, persistencia, descarga de corpus ni cambios de esquema.
 
 ## Decisiones pendientes
 
