@@ -193,3 +193,22 @@ def test_input_scope_and_rate_limiter_are_explicit(tmp_path: Path) -> None:
     limiter.wait()
     limiter.wait()
     assert clock.sleeps == [0.2]
+
+
+def test_medication_inventory_requests_only_authorized_commercialized_page(
+    tmp_path: Path,
+) -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json={'resultados': []}, request=request)
+
+    with client(tmp_path, httpx.MockTransport(handler)) as cima:
+        cima.medications(pagina=3)
+
+    assert requests[0].url.params.multi_items() == [
+        ('pagina', '3'),
+        ('autorizados', '1'),
+        ('comerc', '1'),
+    ]

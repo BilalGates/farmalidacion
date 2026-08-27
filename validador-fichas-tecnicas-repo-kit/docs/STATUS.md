@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 2 en curso. DEV-202 implementa y verifica offline el cliente CIMA robusto; el siguiente issue recomendado es DEV-203, que no se ha iniciado. Gate 1 permanece PASS y el núcleo físico sigue siendo reversible, no un contrato definitivo del proveedor.
+Fase 2 en curso. DEV-203 implementa y verifica offline el muestreo reproducible; el siguiente issue recomendado es DEV-204, que no se ha iniciado. Gate 1 permanece PASS y Gate 2 continúa abierto.
 
 ## Fase 0A — Cerrada
 
@@ -189,6 +189,17 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Siete pruebas HTTP completamente offline cubren éxito, contenido no decodificable, caché, corrupción, timeout, 429, 404, espera insegura, parámetros y alcance de URL.
 - No se hicieron nuevas solicitudes vivas, no se descargó corpus y no se persistieron datos CIMA en el modelo canónico.
 - El comportamiento vivo de `docSegmentado/contenido`, `Retry-After` con fecha HTTP y las formas de payload se verificarán en el muestreo controlado; no se han supuesto.
+
+## DEV-203 — Completado como capacidad reproducible
+
+- Muestreo aleatorio y estratificado explícito, con semilla, tamaño y versión de algoritmo.
+- Solo son elegibles medicamentos con `estado.aut` presente y `comerc = true`.
+- El inventario paginado debe ser completo y sin páginas ni `nregistro` repetidos; las inconsistencias detienen la ejecución.
+- El modo estratificado usa reparto proporcional por restos mayores y falla ante primer nivel ATC ausente o ambiguo.
+- Ejecuciones e ítems se persisten de forma idempotente con hashes de inventario y respuesta fuente mediante una migración reversible.
+- Una prueba sintética reproduce exactamente la misma lista de 500 documentos con la misma semilla; ambos modos se verifican offline.
+- D-016 permanece abierta: no se ha elegido el modo del piloto ni descargado el corpus real. DEV-204 debe producir el informe de composición antes de esa decisión.
+- Contrato y límites en `docs/CIMA_SAMPLING_CONTRACT.md`; no se inició DEV-204.
 
 ## Decisiones pendientes
 

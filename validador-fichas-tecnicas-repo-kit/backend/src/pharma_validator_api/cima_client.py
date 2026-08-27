@@ -292,6 +292,12 @@ class CimaClient:
         name, value = ('nregistro', nregistro) if nregistro is not None else ('cn', cn)
         return self.get('/medicamento', params=[(name, value or '')])
 
+    def medications(self, *, pagina: int = 1) -> CimaResponse:
+        return self.get(
+            '/medicamentos',
+            params=[('pagina', str(pagina)), ('autorizados', '1'), ('comerc', '1')],
+        )
+
     def presentations(self, *, nregistro: str, pagina: int = 1) -> CimaResponse:
         return self.get(
             '/presentaciones',

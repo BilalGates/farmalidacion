@@ -32,3 +32,13 @@ docker compose down
 ```
 
 No deben crearse convenciones paralelas por componente.
+
+El muestreo CIMA se ejecuta sobre páginas originales ya cacheadas y con una base
+migrada, sin consultar la red:
+
+```text
+python -m pharma_validator_api.sampling --input pagina-1.json --input pagina-2.json --modo aleatorio --seed 203 --size 500 --output muestra.json
+```
+
+`--modo` es obligatorio (`aleatorio` o `estratificado`); no existe un modo del
+piloto decidido por defecto mientras D-016 siga abierta.

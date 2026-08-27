@@ -40,3 +40,9 @@ SHA-256. Una discrepancia de integridad detiene la lectura; no vuelve a pedir ni
 sobrescribe automáticamente la evidencia. Solo se cachean respuestas 2xx y no
 se interpretan los datos ni se persisten en el modelo canónico. Las pruebas del
 cliente usan transporte simulado y no necesitan red.
+
+El módulo `pharma_validator_api.sampling` consume páginas originales de
+`/medicamentos` desde disco, exige inventario completo y persiste criterios e
+ítems sin duplicarlos. Ambos modos requieren `--modo` y `--seed`; el contrato y
+el ejemplo operativo están en `docs/CIMA_SAMPLING_CONTRACT.md` y
+`docs/COMMANDS.md`.

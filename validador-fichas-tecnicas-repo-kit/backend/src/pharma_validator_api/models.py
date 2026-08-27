@@ -104,3 +104,30 @@ class ValueProvenance(Base):
     field_value_id: Mapped[str] = mapped_column(ForeignKey("field_value.id"))
     source_fragment_id: Mapped[str] = mapped_column(ForeignKey("source_fragment.id"))
     provenance_role: Mapped[str] = mapped_column(String(80))
+
+
+class SamplingRun(Base):
+    __tablename__ = 'sampling_run'
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    mode: Mapped[str] = mapped_column(String(20))
+    seed: Mapped[int] = mapped_column(Integer)
+    requested_size: Mapped[int] = mapped_column(Integer)
+    eligible_count: Mapped[int] = mapped_column(Integer)
+    excluded_count: Mapped[int] = mapped_column(Integer)
+    source_snapshot_hash: Mapped[str] = mapped_column(String(64))
+    algorithm_version: Mapped[str] = mapped_column(String(40))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class SamplingItem(Base):
+    __tablename__ = 'sampling_item'
+    __table_args__ = (
+        UniqueConstraint('sampling_run_id', 'ordinal', name='uq_sampling_item_ordinal'),
+        UniqueConstraint('sampling_run_id', 'nregistro', name='uq_sampling_item_nregistro'),
+    )
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    sampling_run_id: Mapped[str] = mapped_column(ForeignKey('sampling_run.id'))
+    ordinal: Mapped[int] = mapped_column(Integer)
+    nregistro: Mapped[str] = mapped_column(Text)
+    atc_stratum: Mapped[str | None] = mapped_column(String(20))
+    source_response_hash: Mapped[str] = mapped_column(String(64))

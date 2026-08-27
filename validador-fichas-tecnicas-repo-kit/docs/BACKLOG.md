@@ -190,6 +190,12 @@ traslada a DEV-203 sin asumir formato ni semántica.
 
 Aleatorio y estratificado, semilla, criterios y persistencia.
 
+**Estado:** completado como capacidad reproducible el 27 de agosto de 2026.
+Ambos modos, filtros de elegibilidad, integridad paginada, manifiesto y
+persistencia idempotente están verificados offline, incluida una muestra
+sintética exacta de 500. No se descargó ni seleccionó el corpus real. D-016
+continúa pendiente del informe de composición de DEV-204.
+
 ### DEV-204 — Informe de composición (`P1`)
 
 ATC, forma y vía; salida legible y datos exportables.
