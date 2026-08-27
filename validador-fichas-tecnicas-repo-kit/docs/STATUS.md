@@ -2,11 +2,11 @@
 
 ## Estado global
 
-`FASE 0A CERRADA — FASE 0B CERRADA CON DEPENDENCIAS EXTERNAS — FASE 1 AUTORIZADA`
+`FASE 0A CERRADA — FASE 0B CERRADA CON DEPENDENCIAS EXTERNAS — FASE 1 CERRADA`
 
 ## Fase actual
 
-Fase 1 iniciada. DEV-101 a DEV-106 están completados; el siguiente issue recomendado es DEV-107. Existe un núcleo físico inicial reversible, no un contrato físico definitivo de proveedor.
+Fase 1 cerrada. DEV-101 a DEV-107 están completados y Gate 1 es PASS. La Fase 2 no se ha iniciado; el siguiente issue recomendado es DEV-201. Existe un núcleo físico inicial reversible, no un contrato físico definitivo de proveedor.
 
 ## Fase 0A — Cerrada
 
@@ -157,6 +157,20 @@ DEV-101 quedó autorizado por esta puerta y se completó sin avanzar automática
 - CI omite explícitamente solo los hashes de originales no versionados mediante `--skip-references`; no inventa ni descarga referencias.
 - No se añadieron endpoints, datos de producto, integraciones ni cambios de esquema.
 
+## DEV-107 — Completado
+
+- Fixture sintético offline de omeprazol con una versión documental, dos fragmentos y dos ocurrencias explícitas de composición.
+- Las dos ocurrencias conservan IDs, ordinales y procedencias distintas aunque su valor literal sea idéntico; no se concatenan ni deduplican.
+- La carga configurable es idempotente y rechaza colisiones parciales o distintas sin sobrescribir.
+- `GET /records/{record_id}` devuelve identificadores externos versionados, bloques, valores y procedencia; un ID inexistente responde 404 en español.
+- Compose verificó el registro antes y después de reiniciar el backend: dos bloques, ordinales 1/2 y localizadores `composition/1` y `composition/2`.
+
+## Gate 1 — PASS
+
+Revisión formal en `docs/PHASE_1_GATE_REVIEW.md`. El scaffold ejecutable,
+migraciones reversibles, fixture API, gate de calidad y arranque con datos
+locales quedan demostrados. No se inicia automáticamente la Fase 2.
+
 ## Decisiones pendientes
 
 - PROVIDER-001 debe resolverse antes de reglas condicionales definitivas; PROVIDER-002 antes del exportador definitivo.
@@ -165,4 +179,4 @@ DEV-101 quedó autorizado por esta puerta y se completó sin avanzar automática
 
 ## Última actualización
 
-26 de agosto de 2026.
+27 de agosto de 2026.

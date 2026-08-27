@@ -7,4 +7,12 @@ Fixtures pequeños, sintéticos o derivados de referencias autorizadas para prue
 - Documentar procedencia, transformación y finalidad de cada fixture.
 - Conservar bloques repetibles como ocurrencias separadas.
 
-Los fixtures ejecutables se añadirán en los issues que definan su contrato.
+## Fixture ejecutable DEV-107
+
+`omeprazole-demo.json` es sintético: no copia el Excel original ni contiene
+datos de pacientes. Demuestra offline que dos ocurrencias repetibles con el
+mismo valor literal mantienen identidad, orden y procedencia separados a través
+de SQLite y `GET /records/{id}`.
+
+La carga es idempotente y no sobrescribe colisiones. Compose la activa mediante
+configuración explícita; el backend no la carga por defecto.

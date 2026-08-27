@@ -158,6 +158,11 @@ Tests, lint, typecheck, build y verificación de migraciones.
 
 Importar fixture y visualizar por API un registro con bloques repetibles.
 
+**Estado:** completado el 27 de agosto de 2026. Fixture sintético cargado de
+forma idempotente; API de solo lectura verificada con dos ocurrencias idénticas
+pero separadas y con procedencia distinta. Compose conserva exactamente dos
+bloques tras reiniciar el backend. Gate 1 cerrado; Fase 2 no iniciada.
+
 ## EPIC E2 — CIMA y documentos
 
 ### DEV-201 — Verificar contrato de API CIMA (`P0`)

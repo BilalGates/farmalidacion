@@ -9,6 +9,8 @@ services:
       APP_ENV: development
       APP_LOG_LEVEL: INFO
       APP_DATABASE_URL: sqlite:////app/data/validator.db
+      APP_LOAD_DEMO_FIXTURE: 'true'
+      APP_DEMO_FIXTURE_PATH: /app/data/examples/omeprazole-demo.json
     command:
       - sh
       - -c
