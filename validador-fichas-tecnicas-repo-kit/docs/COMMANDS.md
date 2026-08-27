@@ -42,3 +42,12 @@ python -m pharma_validator_api.sampling --input pagina-1.json --input pagina-2.j
 
 `--modo` es obligatorio (`aleatorio` o `estratificado`); no existe un modo del
 piloto decidido por defecto mientras D-016 siga abierta.
+
+El informe usa el manifiesto anterior y una respuesta original cacheada de
+`/medicamento` por cada elemento seleccionado:
+
+```text
+python -m pharma_validator_api.composition_report --sample muestra.json --medication medicamento-1.json --medication medicamento-2.json --output-dir informe-composicion
+```
+
+El comando no consulta la red ni sobrescribe informes distintos existentes.

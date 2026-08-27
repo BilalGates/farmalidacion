@@ -46,3 +46,7 @@ El módulo `pharma_validator_api.sampling` consume páginas originales de
 ítems sin duplicarlos. Ambos modos requieren `--modo` y `--seed`; el contrato y
 el ejemplo operativo están en `docs/CIMA_SAMPLING_CONTRACT.md` y
 `docs/COMMANDS.md`.
+
+`pharma_validator_api.composition_report` genera el informe multilabel de ATC,
+forma y vía en JSON, CSV y Markdown desde respuestas de medicamento cacheadas.
+Exige cobertura exacta de la muestra y no normaliza ni sobrescribe metadatos.

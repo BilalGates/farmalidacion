@@ -200,6 +200,11 @@ continúa pendiente del informe de composición de DEV-204.
 
 ATC, forma y vía; salida legible y datos exportables.
 
+**Estado:** completado como capacidad reproducible el 27 de agosto de 2026.
+Genera JSON, CSV y Markdown inmutables con recuento multilabel de documentos y
+ocurrencias, sin normalizar metadatos CIMA. No existe aún informe del corpus
+real; D-016 permanece abierta y no se ha recomendado un modo de muestreo.
+
 ### DEV-205 — Versionado inmutable (`P0`)
 
 Documento, versión, sección, hash y metadatos.

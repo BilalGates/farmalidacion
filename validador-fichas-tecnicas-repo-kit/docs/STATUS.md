@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 2 en curso. DEV-203 implementa y verifica offline el muestreo reproducible; el siguiente issue recomendado es DEV-204, que no se ha iniciado. Gate 1 permanece PASS y Gate 2 continúa abierto.
+Fase 2 en curso. DEV-204 implementa y verifica offline el informe de composición; el siguiente issue recomendado es DEV-205, que no se ha iniciado. Gate 1 permanece PASS y Gate 2 continúa abierto.
 
 ## Fase 0A — Cerrada
 
@@ -200,6 +200,16 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Una prueba sintética reproduce exactamente la misma lista de 500 documentos con la misma semilla; ambos modos se verifican offline.
 - D-016 permanece abierta: no se ha elegido el modo del piloto ni descargado el corpus real. DEV-204 debe producir el informe de composición antes de esa decisión.
 - Contrato y límites en `docs/CIMA_SAMPLING_CONTRACT.md`; no se inició DEV-204.
+
+## DEV-204 — Completado como capacidad reproducible
+
+- Informe automático por primer nivel ATC, forma farmacéutica y vía desde respuestas originales de medicamento ya cacheadas.
+- Política multilabel explícita: documentos distintos y ocurrencias se cuentan por separado; no se concatenan ni deduplican listas.
+- Ausencias clasificadas como diagnóstico interno `__MISSING__`, sin convertirlas en `no_consta` o `no_aplica`.
+- ATC incompatible, respuesta faltante, duplicada o fuera de muestra detienen la generación sin normalización implícita.
+- Salidas JSON, CSV y Markdown reproducibles e inmutables, ligadas a la ejecución de muestra y hashes de cada respuesta.
+- No se descargó corpus real ni se produjo evidencia para elegir modo; D-016 y Gate 2 siguen abiertos.
+- Contrato en `docs/CIMA_COMPOSITION_REPORT.md`; no se inició DEV-205.
 
 ## Decisiones pendientes
 

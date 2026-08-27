@@ -3,7 +3,8 @@
 | Requisito | Fuente | Fase | Evidencia de implementación | Prueba mínima |
 |---|---|---|---|---|
 | Corpus 500, oro 20, medida 50 | Especificación 1.1 | 2, 4, 5 | modelos de conjunto y comandos | misma semilla, mismos registros |
-| Muestreo aleatorio/estratificado | Especificación 1.2; DEV-203 | 2 | `pharma_validator_api.sampling`; `sampling_run`; `sampling_item`; `docs/CIMA_SAMPLING_CONTRACT.md` | misma entrada/modo/semilla: misma lista; prueba sintética exacta de 500; informe pendiente DEV-204 |
+| Muestreo aleatorio/estratificado | Especificación 1.2; DEV-203 | 2 | `pharma_validator_api.sampling`; `sampling_run`; `sampling_item`; `docs/CIMA_SAMPLING_CONTRACT.md` | misma entrada/modo/semilla: misma lista; prueba sintética exacta de 500; elección D-016 pendiente de corpus real |
+| Informe de composición CIMA | Especificación 1.2; DEV-204 | 2 | `pharma_validator_api.composition_report`; `docs/CIMA_COMPOSITION_REPORT.md` | JSON/CSV/Markdown reproducibles; ATC, forma y vía multilabel; faltantes y ocurrencias explícitos |
 | Sin datos de paciente | Especificación 2-3 | todas | límites de dominio y revisión | búsqueda de esquemas/endpoints prohibidos |
 | CIMA cacheada y limitada | Especificación 5.1; DEV-202 | 2 | `pharma_validator_api.cima_client`; configuración por entorno; caché inmutable | fixtures HTTP offline: retry, rate limit, cache hit, SHA-256 y cuerpo byte a byte |
 | Relación nregistro-presentaciones | Especificación 5.1 | 0B, 2 | modelo canónico | fixture con varios CN |
