@@ -27,6 +27,8 @@ artifacts/
 !data/examples/cima-offline-corpus/artifacts/*
 exports/
 reports/generated/
+data/local/cima-cache/
+data/local/cima-inventory-*/
 
 # Reference source files are local inputs, not repository content
 data/reference/raw/*

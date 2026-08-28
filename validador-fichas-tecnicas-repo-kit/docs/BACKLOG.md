@@ -233,6 +233,16 @@ Manifiesto, hashes, carga idempotente, reconstrucción y diff se prueban con
 sockets bloqueados sobre dos versiones sintéticas. El corpus real de 500 fichas
 no se ha descargado y Gate 2 permanece abierto.
 
+### DEV-208 — Captura comparativa real CIMA (`P0`)
+
+**Estado:** captura de inventario completada y decisión bloqueada el 28 de
+agosto de 2026. Una caché ZIP atómica compatible con Windows permitió conservar
+81/81 páginas, 16.093 candidatos y 19.353.056 bytes; instantánea
+`72e9b05fd60a524fa9115c09fee9f29e98779a8c5c95565fe6d0bee4395c27cb`.
+La muestra aleatoria candidata (semilla 203) se generó, pero las 16.093 filas
+del inventario omiten ATC y no permiten estratificar. No se elige D-016 ni se
+hacen 16.093 consultas adicionales sin decisión humana. Gate 2 sigue abierto.
+
 ## EPIC E3 — Maestros y consolidación
 
 ### DEV-301 — Infraestructura común de importadores (`P0`)

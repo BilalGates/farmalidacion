@@ -1,4 +1,5 @@
 import hashlib
+import zipfile
 from pathlib import Path
 
 import httpx
@@ -76,6 +77,30 @@ def test_success_is_cached_byte_for_byte_without_second_request(tmp_path: Path) 
     assert second.content_type == 'text/html; charset=iso-8859-1'
 
 
+def test_relative_cache_path_uses_one_absolute_atomic_target(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(200, content=b'cuerpo', request=request)
+
+    transport = httpx.MockTransport(handler)
+    with CimaClient(
+        base_url='https://cima.example.test/rest',
+        cache_dir=Path('cache-relativa'),
+        transport=transport,
+    ) as cima:
+        assert cima.medication(nregistro='51347').body == b'cuerpo'
+        assert cima.medication(nregistro='51347').from_cache is True
+
+    assert calls == 1
+    assert len(list((tmp_path / 'cache-relativa').glob('*.zip'))) == 1
+
+
 def test_cache_corruption_fails_instead_of_refetching_or_overwriting(tmp_path: Path) -> None:
     calls = 0
 
@@ -86,12 +111,34 @@ def test_cache_corruption_fails_instead_of_refetching_or_overwriting(tmp_path: P
 
     with client(tmp_path, httpx.MockTransport(handler)) as cima:
         cima.medication(nregistro='51347')
-        body_path = next((tmp_path / 'cache').glob('*/response.body'))
-        body_path.write_bytes(b'alterado')
+        archive_path = next((tmp_path / 'cache').glob('*.zip'))
+        with zipfile.ZipFile(archive_path) as archive:
+            manifest = archive.read('manifest.json')
+        with zipfile.ZipFile(archive_path, 'w') as archive:
+            archive.writestr('response.body', b'alterado')
+            archive.writestr('manifest.json', manifest)
         with pytest.raises(CimaCacheIntegrityError, match='Hash'):
             cima.medication(nregistro='51347')
 
     assert calls == 1
+
+
+def test_atomic_permission_failure_is_never_reported_as_cached(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, request=request))
+    original_rename = Path.rename
+
+    def denied_rename(source: Path, target: Path) -> Path:
+        if source.suffix == '.zip':
+            raise PermissionError('denegado')
+        return original_rename(source, target)
+
+    monkeypatch.setattr(Path, 'rename', denied_rename)
+    with client(tmp_path, transport) as cima, pytest.raises(PermissionError, match='denegado'):
+        cima.medication(nregistro='51347')
+
+    assert not list((tmp_path / 'cache').glob('*.zip'))
 
 
 def test_transport_and_429_are_retried_then_cached(tmp_path: Path) -> None:

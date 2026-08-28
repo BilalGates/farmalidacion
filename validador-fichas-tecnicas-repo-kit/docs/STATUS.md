@@ -242,6 +242,18 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - No se descargaron las 500 fichas ni se verificaron respuestas regulatorias reales; D-016, D-020 y Gate 2 siguen abiertos.
 - Contrato en `docs/CIMA_OFFLINE_CORPUS.md`; no se inicia automáticamente otro issue.
 
+## DEV-208 — Inventario capturado; D-016 bloqueada
+
+- La API oficial respondió 200 y declaró 16.093 candidatos en páginas de 200 (81 páginas).
+- Se autorizó comparar muestras aleatoria y estratificada con semilla 203 sin elegir D-016.
+- El renombrado de directorios falló dos veces; tras autorización humana, una entrada ZIP atómica resolvió la caché Windows conservando compatibilidad de lectura.
+- Se capturaron 81/81 páginas, 16.093 candidatos y 19.353.056 bytes con instantánea `72e9b05fd60a524fa9115c09fee9f29e98779a8c5c95565fe6d0bee4395c27cb`.
+- La muestra aleatoria candidata de 500 (semilla 203) tiene SHA-256 `ebeb1f8c3823c5cd206bf3044f9f9adef194ed93d23048806268309b9fee8929`.
+- Las 16.093 filas del inventario carecen de ATC; la muestra estratificada no puede calcularse con esa fuente.
+- No se infiere exclusión ni estrato y no se lanzan 16.093 consultas de detalle sin decisión humana; D-016 sigue pendiente.
+- Los 19 MB de evidencia y la caché permanecen en `data/local/`, fuera de Git.
+- Gate 2 sigue abierto y Fase 3 no se inicia.
+
 ## Decisiones pendientes
 
 - PROVIDER-001 debe resolverse antes de reglas condicionales definitivas; PROVIDER-002 antes del exportador definitivo.

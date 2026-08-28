@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-import shutil
 import tempfile
 import threading
 import time
+import zipfile
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -89,7 +89,7 @@ class RateLimiter:
 
 class ImmutableCimaCache:
     def __init__(self, root: Path) -> None:
-        self.root = root
+        self.root = root.resolve()
 
     @staticmethod
     def key(url: str, accept: str) -> str:
@@ -102,6 +102,17 @@ class ImmutableCimaCache:
         return hashlib.sha256(payload).hexdigest()
 
     def load(self, key: str) -> CimaResponse | None:
+        archive = self.root / f'{key}.zip'
+        if archive.exists():
+            try:
+                with zipfile.ZipFile(archive) as stored:
+                    if set(stored.namelist()) != {'response.body', 'manifest.json'}:
+                        raise CimaCacheIntegrityError(f'Entrada de caché incompleta: {key}')
+                    body = stored.read('response.body')
+                    manifest_body = stored.read('manifest.json')
+            except (OSError, zipfile.BadZipFile, KeyError) as exc:
+                raise CimaCacheIntegrityError(f'Archivo de caché inválido: {key}') from exc
+            return self._response(key, body, manifest_body)
         entry = self.root / key
         if not entry.exists():
             return None
@@ -109,9 +120,12 @@ class ImmutableCimaCache:
         manifest_path = entry / 'manifest.json'
         if not body_path.is_file() or not manifest_path.is_file():
             raise CimaCacheIntegrityError(f'Entrada de caché incompleta: {key}')
-        body = body_path.read_bytes()
+        return self._response(key, body_path.read_bytes(), manifest_path.read_bytes())
+
+    @staticmethod
+    def _response(key: str, body: bytes, manifest_body: bytes) -> CimaResponse:
         try:
-            manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+            manifest = json.loads(manifest_body)
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
             raise CimaCacheIntegrityError(f'Manifiesto de caché inválido: {key}') from exc
         digest = hashlib.sha256(body).hexdigest()
@@ -135,9 +149,11 @@ class ImmutableCimaCache:
         current = self.load(key)
         if current is not None:
             return current
-        temporary = Path(tempfile.mkdtemp(prefix=f'.{key}-', dir=self.root))
+        with tempfile.NamedTemporaryFile(
+            prefix=f'.{key}-', suffix='.zip', dir=self.root, delete=False
+        ) as temporary_file:
+            temporary = Path(temporary_file.name)
         try:
-            (temporary / 'response.body').write_bytes(response.body)
             manifest = {
                 'schema_version': '1.0.0',
                 'url': response.url,
@@ -146,18 +162,25 @@ class ImmutableCimaCache:
                 'content_sha256': response.content_sha256,
                 'fetched_at': response.fetched_at,
             }
-            (temporary / 'manifest.json').write_text(
-                json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2) + '\n',
-                encoding='utf-8',
-            )
+            manifest_body = (
+                json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2) + '\n'
+            ).encode()
+            with zipfile.ZipFile(temporary, 'w', compression=zipfile.ZIP_STORED) as archive:
+                archive.writestr('response.body', response.body)
+                archive.writestr('manifest.json', manifest_body)
             try:
-                temporary.rename(self.root / key)
+                temporary.rename(self.root / f'{key}.zip')
             except FileExistsError:
                 return self.load(key) or response
+            except PermissionError:
+                concurrent = self.load(key)
+                if concurrent is None:
+                    raise
+                return concurrent
             return response
         finally:
             if temporary.exists():
-                shutil.rmtree(temporary)
+                temporary.unlink()
 
 
 class CimaClient:
