@@ -23,6 +23,8 @@ coverage/
 *.sqlite
 *.sqlite3
 artifacts/
+!data/examples/cima-offline-corpus/artifacts/
+!data/examples/cima-offline-corpus/artifacts/*
 exports/
 reports/generated/
 

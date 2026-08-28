@@ -228,6 +228,11 @@ marca validaciones y no implementa todavía la tarea de `registroCambios`.
 
 Fixtures y operación sin red.
 
+**Estado:** completado como capacidad verificable el 28 de agosto de 2026.
+Manifiesto, hashes, carga idempotente, reconstrucción y diff se prueban con
+sockets bloqueados sobre dos versiones sintéticas. El corpus real de 500 fichas
+no se ha descargado y Gate 2 permanece abierto.
+
 ## EPIC E3 — Maestros y consolidación
 
 ### DEV-301 — Infraestructura común de importadores (`P0`)

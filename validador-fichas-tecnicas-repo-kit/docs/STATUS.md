@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 2 en curso. DEV-206 implementa y verifica offline el diff entre versiones documentales; el siguiente issue recomendado es DEV-207, que no se ha iniciado. Gate 1 permanece PASS y Gate 2 continúa abierto.
+Fase 2 en curso. DEV-207 implementa y verifica el contrato de corpus offline con un fixture sintético; no se ha descargado el corpus real y Gate 2 continúa abierto. Gate 1 permanece PASS.
 
 ## Fase 0A — Cerrada
 
@@ -230,7 +230,17 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Cambios de metadatos visibles aunque el cuerpo sea idéntico y hashes verificados antes de comparar.
 - Salidas JSON y Markdown reproducibles e inmutables; invertir anterior/nueva produce otro identificador.
 - Sin descargas, cambios de validación, tareas `revision_pendiente`, consulta programada ni migraciones.
-- D-020 y Gate 2 siguen abiertos; contrato en `docs/CIMA_VERSION_DIFF.md` y DEV-207 no iniciado.
+- D-020 y Gate 2 seguían abiertos al cerrar DEV-206; contrato en `docs/CIMA_VERSION_DIFF.md`.
+
+## DEV-207 — Completado como capacidad verificable
+
+- Manifiesto versionado con dos versiones sintéticas, cuatro cuerpos y SHA-256 explícitos.
+- Verificación estricta de rutas, ocurrencias, ficheros declarados e integridad antes de cargar.
+- Carga idempotente mediante DEV-205, reconstrucción exacta y diff de DEV-206 sin cliente HTTP.
+- La prueba bloquea la creación de sockets y completa todo el recorrido usando solo disco y SQLite.
+- El fixture está marcado como sintético y sus URLs `example.test` no se presentan como evidencia CIMA.
+- No se descargaron las 500 fichas ni se verificaron respuestas regulatorias reales; D-016, D-020 y Gate 2 siguen abiertos.
+- Contrato en `docs/CIMA_OFFLINE_CORPUS.md`; no se inicia automáticamente otro issue.
 
 ## Decisiones pendientes
 

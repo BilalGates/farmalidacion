@@ -60,3 +60,7 @@ contrato técnico y los límites de D-020 están en
 `pharma_validator_api.version_diff` compara artefactos de dos versiones del
 mismo documento y genera JSON/Markdown reproducibles. Solo produce diff textual
 con decodificación estricta; los binarios permanecen identificados por hash.
+
+`pharma_validator_api.offline_corpus` verifica un manifiesto y sus cuerpos por
+SHA-256 y los carga mediante el versionado inmutable sin usar la red. El ejemplo
+versionado es sintético y no representa evidencia CIMA real.

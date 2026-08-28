@@ -16,3 +16,10 @@ de SQLite y `GET /records/{id}`.
 
 La carga es idempotente y no sobrescribe colisiones. Compose la activa mediante
 configuración explícita; el backend no la carga por defecto.
+
+## Corpus sintético DEV-207
+
+`cima-offline-corpus/` contiene dos versiones y cuatro cuerpos sintéticos
+declarados en un manifiesto con hashes. Sus URLs `example.test` no representan
+CIMA real. El fixture demuestra verificación, carga inmutable, reconstrucción y
+diff con cualquier acceso de red bloqueado.

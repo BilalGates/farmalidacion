@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0.0",
+  "corpus_id": "dev-207-synthetic-v1",
+  "corpus_kind": "synthetic_test_fixture",
+  "description": "Dos versiones sintéticas para verificar la operación CIMA sin red; no son datos regulatorios.",
+  "documents": [
+    {
+      "nregistro": "51347",
+      "document_type": 1,
+      "source_version": "synthetic-dev-207-v1",
+      "artifacts": [
+        {
+          "artifact_role": "metadata",
+          "ordinal": 1,
+          "locator": "medicamento",
+          "relative_path": "artifacts/51347-v1-metadata.json",
+          "source_url": "https://cima.example.test/rest/medicamento?nregistro=51347",
+          "status_code": 200,
+          "headers": [["Content-Type", "application/json; charset=utf-8"]],
+          "content_sha256": "82f0c1035ec30926a26bdff592117b028fedb079e98c28c45f6d161b31a41ce1",
+          "fetched_at": "2026-08-28T08:00:00+00:00"
+        },
+        {
+          "artifact_role": "section",
+          "ordinal": 1,
+          "locator": "1",
+          "relative_path": "artifacts/51347-v1-section-1.html",
+          "source_url": "https://cima.example.test/rest/docSegmentado/contenido/1?nregistro=51347&seccion=1",
+          "status_code": 200,
+          "headers": [["Content-Type", "text/html; charset=utf-8"]],
+          "content_sha256": "c11bf17bc8391a8bd7aa89eb990b62500f467277c95753c989f23a3753d75481",
+          "fetched_at": "2026-08-28T08:00:01+00:00"
+        }
+      ]
+    },
+    {
+      "nregistro": "51347",
+      "document_type": 1,
+      "source_version": "synthetic-dev-207-v2",
+      "artifacts": [
+        {
+          "artifact_role": "metadata",
+          "ordinal": 1,
+          "locator": "medicamento",
+          "relative_path": "artifacts/51347-v2-metadata.json",
+          "source_url": "https://cima.example.test/rest/medicamento?nregistro=51347",
+          "status_code": 200,
+          "headers": [["Content-Type", "application/json; charset=utf-8"]],
+          "content_sha256": "82f0c1035ec30926a26bdff592117b028fedb079e98c28c45f6d161b31a41ce1",
+          "fetched_at": "2026-08-28T09:00:00+00:00"
+        },
+        {
+          "artifact_role": "section",
+          "ordinal": 1,
+          "locator": "1",
+          "relative_path": "artifacts/51347-v2-section-1.html",
+          "source_url": "https://cima.example.test/rest/docSegmentado/contenido/1?nregistro=51347&seccion=1",
+          "status_code": 200,
+          "headers": [["Content-Type", "text/html; charset=utf-8"]],
+          "content_sha256": "35531b59c36efcb59b80b886b4d4b05a621dad91c07848d9b324262e3a110ab0",
+          "fetched_at": "2026-08-28T09:00:01+00:00"
+        }
+      ]
+    }
+  ]
+}

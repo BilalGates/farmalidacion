@@ -60,3 +60,12 @@ python -m pharma_validator_api.version_diff --old-version-id VERSION_1 --new-ver
 
 El orden no implica vigencia regulatoria y un informe diferente existente no
 se sobrescribe.
+
+El corpus offline sintético se verifica sin escribir en base de datos:
+
+```text
+python -m pharma_validator_api.offline_corpus --corpus-dir data/examples/cima-offline-corpus
+```
+
+Para cargar un corpus verificado en la base configurada se añade `--load`. El
+comando no descarga ni completa artefactos ausentes.
