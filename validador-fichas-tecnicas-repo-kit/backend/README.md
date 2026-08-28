@@ -56,3 +56,7 @@ content-addressed con cuerpos binarios y metadatos de respuesta. Las versiones
 y artefactos son históricos inmutables; la reconstrucción verifica SHA-256. El
 contrato técnico y los límites de D-020 están en
 `docs/CIMA_DOCUMENT_VERSIONING.md`.
+
+`pharma_validator_api.version_diff` compara artefactos de dos versiones del
+mismo documento y genera JSON/Markdown reproducibles. Solo produce diff textual
+con decodificación estricta; los binarios permanecen identificados por hash.

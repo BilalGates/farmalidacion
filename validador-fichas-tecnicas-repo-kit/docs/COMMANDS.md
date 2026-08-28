@@ -51,3 +51,12 @@ python -m pharma_validator_api.composition_report --sample muestra.json --medica
 ```
 
 El comando no consulta la red ni sobrescribe informes distintos existentes.
+
+El diff compara dos versiones persistidas indicadas explícitamente:
+
+```text
+python -m pharma_validator_api.version_diff --old-version-id VERSION_1 --new-version-id VERSION_2 --output-dir informe-diff
+```
+
+El orden no implica vigencia regulatoria y un informe diferente existente no
+se sobrescribe.

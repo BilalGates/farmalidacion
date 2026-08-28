@@ -219,6 +219,11 @@ ha validado todavía la revisión documental sobre respuestas reales.
 
 Preparación para mantenimiento continuo.
 
+**Estado:** completado como capacidad reproducible el 28 de agosto de 2026.
+Compara artefactos inmutables por rol/ordinal y genera JSON/Markdown con diff
+textual completo o clasificación binaria explícita. No decide vigencia, no
+marca validaciones y no implementa todavía la tarea de `registroCambios`.
+
 ### DEV-207 — Corpus offline (`P0`)
 
 Fixtures y operación sin red.

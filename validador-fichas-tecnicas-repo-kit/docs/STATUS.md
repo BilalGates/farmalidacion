@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 2 en curso. DEV-205 implementa y verifica offline el versionado documental inmutable; el siguiente issue recomendado es DEV-206, que no se ha iniciado. Gate 1 permanece PASS y Gate 2 continúa abierto.
+Fase 2 en curso. DEV-206 implementa y verifica offline el diff entre versiones documentales; el siguiente issue recomendado es DEV-207, que no se ha iniciado. Gate 1 permanece PASS y Gate 2 continúa abierto.
 
 ## Fase 0A — Cerrada
 
@@ -222,6 +222,16 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - D-020 permanece propuesta: `source_version` no se infiere y falta aceptación humana/evidencia CIMA real.
 - Contrato en `docs/CIMA_DOCUMENT_VERSIONING.md`; no se inició DEV-206 y Gate 2 sigue abierto.
 
+## DEV-206 — Completado como capacidad reproducible
+
+- Comparación dirigida entre dos versiones explícitas del mismo documento, sin inferir vigencia.
+- Artefactos emparejados solo por rol y ordinal; añadidos, eliminados, modificados e idénticos quedan separados.
+- Diff unificado completo para texto estrictamente decodificable; binarios o codificaciones incompatibles permanecen como hashes sin conversión.
+- Cambios de metadatos visibles aunque el cuerpo sea idéntico y hashes verificados antes de comparar.
+- Salidas JSON y Markdown reproducibles e inmutables; invertir anterior/nueva produce otro identificador.
+- Sin descargas, cambios de validación, tareas `revision_pendiente`, consulta programada ni migraciones.
+- D-020 y Gate 2 siguen abiertos; contrato en `docs/CIMA_VERSION_DIFF.md` y DEV-207 no iniciado.
+
 ## Decisiones pendientes
 
 - PROVIDER-001 debe resolverse antes de reglas condicionales definitivas; PROVIDER-002 antes del exportador definitivo.
@@ -230,4 +240,4 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 
 ## Última actualización
 
-27 de agosto de 2026.
+28 de agosto de 2026.
