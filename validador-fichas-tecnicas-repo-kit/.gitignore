@@ -29,6 +29,8 @@ exports/
 reports/generated/
 data/local/cima-cache/
 data/local/cima-inventory-*/
+data/local/cima-corpus-*/
+data/local/cima-composition-*/
 
 # Reference source files are local inputs, not repository content
 data/reference/raw/*

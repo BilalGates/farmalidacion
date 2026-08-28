@@ -4,7 +4,7 @@
 |---|---|---|---|---|
 | Corpus 500, oro 20, medida 50 | Especificación 1.1 | 2, 4, 5 | modelos de conjunto y comandos | misma semilla, mismos registros |
 | Muestreo aleatorio/estratificado | Especificación 1.2; DEV-203 | 2 | `pharma_validator_api.sampling`; `sampling_run`; `sampling_item`; `docs/CIMA_SAMPLING_CONTRACT.md` | misma entrada/modo/semilla: misma lista; prueba sintética exacta de 500; elección D-016 pendiente de corpus real |
-| Inventario CIMA real | Especificación 1.2; DEV-208 | 2 | 81 respuestas originales locales; caché ZIP inmutable; snapshot documentado | 16.093 candidatos; aleatoria candidata reproducible; inventario sin ATC impide estratificación |
+| Inventario y corpus CIMA real | Especificación 1.2, 15.10; DEV-208 | 2 | 81 respuestas de inventario; `corpus_capture`; 500 metadatos y 500 fichas locales | 115.583.103 bytes verificados; 500 versiones y segunda carga 0 con sockets bloqueados |
 | Informe de composición CIMA | Especificación 1.2; DEV-204 | 2 | `pharma_validator_api.composition_report`; `docs/CIMA_COMPOSITION_REPORT.md` | JSON/CSV/Markdown reproducibles; ATC, forma y vía multilabel; faltantes y ocurrencias explícitos |
 | Sin datos de paciente | Especificación 2-3 | todas | límites de dominio y revisión | búsqueda de esquemas/endpoints prohibidos |
 | CIMA cacheada y limitada | Especificación 5.1; DEV-202 | 2 | `pharma_validator_api.cima_client`; configuración por entorno; caché inmutable | fixtures HTTP offline: retry, rate limit, cache hit, SHA-256 y cuerpo byte a byte |

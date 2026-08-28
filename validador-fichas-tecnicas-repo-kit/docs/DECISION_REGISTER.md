@@ -19,7 +19,7 @@ Estados: `cerrada`, `propuesta`, `pendiente`, `bloqueada`, `descartada`. Una dec
 | D-013 | Hardware GPU | pendiente | Fase 4 | Medir dos tamaños compatibles con el hardware real | Especificación v2 |
 | D-014 | Modelo/servidor de inferencia | pendiente | Fase 4 | Interfaz compatible OpenAI; elegir tras benchmark | Por crear |
 | D-015 | Umbrales para `proponer_valor` y degradación | pendiente | Fase 4 | Definir por precisión, cobertura y tasa de corrección | Por crear |
-| D-016 | Selección aleatoria o estratificada | pendiente | Fase 2 | Decidir tras informe de composición | Especificación v2 |
+| D-016 | Selección aleatoria o estratificada | cerrada | Fase 2 | Muestra aleatoria, semilla 203, sobre instantánea reproducible | Elección humana al continuar el 28-08-2026; informe real `bb80992258d07a5e49f1beef46e983f3f56a57e7d48ad20d5aef19e3bffa5fe7` |
 | D-017 | Reglas ATC adicionales a `L04` | pendiente | Fase 6 | Decisión exclusiva de farmacia | Especificación v2 |
 | D-018 | Autenticación real | cerrada para piloto | Fase 8 | No en piloto; reevaluar para auditoría formal | Especificación v2 |
 | D-019 | Base de datos del piloto | cerrada | Fase 1 | SQLite con tipos portables y Alembic | Especificación v2 |

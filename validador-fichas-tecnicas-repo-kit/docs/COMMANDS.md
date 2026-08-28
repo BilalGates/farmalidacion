@@ -69,3 +69,11 @@ python -m pharma_validator_api.offline_corpus --corpus-dir data/examples/cima-of
 
 Para cargar un corpus verificado en la base configurada se añade `--load`. El
 comando no descarga ni completa artefactos ausentes.
+
+Una muestra previamente aprobada se descarga como corpus autocontenido con:
+
+```text
+python -m pharma_validator_api.corpus_capture --sample muestra.json --output-dir corpus-local
+```
+
+La repetición exige bytes idénticos y nunca sobrescribe un artefacto diferente.

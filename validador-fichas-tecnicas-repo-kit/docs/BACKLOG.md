@@ -239,9 +239,10 @@ no se ha descargado y Gate 2 permanece abierto.
 agosto de 2026. Una caché ZIP atómica compatible con Windows permitió conservar
 81/81 páginas, 16.093 candidatos y 19.353.056 bytes; instantánea
 `72e9b05fd60a524fa9115c09fee9f29e98779a8c5c95565fe6d0bee4395c27cb`.
-La muestra aleatoria candidata (semilla 203) se generó, pero las 16.093 filas
-del inventario omiten ATC y no permiten estratificar. No se elige D-016 ni se
-hacen 16.093 consultas adicionales sin decisión humana. Gate 2 sigue abierto.
+Las 16.093 filas del inventario omiten ATC y no permiten estratificar. Se aceptó
+la muestra aleatoria con semilla 203 sin lanzar 16.093 consultas adicionales.
+Se descargaron y verificaron offline 500 documentos, 1.000 artefactos y
+115.583.103 bytes. D-016 queda cerrada; Gate 2 espera aceptación de D-020.
 
 ## EPIC E3 — Maestros y consolidación
 

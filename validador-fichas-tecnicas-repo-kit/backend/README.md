@@ -64,3 +64,7 @@ con decodificación estricta; los binarios permanecen identificados por hash.
 `pharma_validator_api.offline_corpus` verifica un manifiesto y sus cuerpos por
 SHA-256 y los carga mediante el versionado inmutable sin usar la red. El ejemplo
 versionado es sintético y no representa evidencia CIMA real.
+
+`pharma_validator_api.corpus_capture` descarga los metadatos y la ficha completa
+de cada elemento de una muestra aprobada. Reanuda solo con bytes idénticos,
+escribe el manifiesto al final y mantiene `source_version` sin inferir.

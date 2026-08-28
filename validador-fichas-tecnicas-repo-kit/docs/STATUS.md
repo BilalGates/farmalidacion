@@ -242,7 +242,7 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - No se descargaron las 500 fichas ni se verificaron respuestas regulatorias reales; D-016, D-020 y Gate 2 siguen abiertos.
 - Contrato en `docs/CIMA_OFFLINE_CORPUS.md`; no se inicia automáticamente otro issue.
 
-## DEV-208 — Inventario capturado; D-016 bloqueada
+## DEV-208 — Corpus real capturado; D-016 cerrada
 
 - La API oficial respondió 200 y declaró 16.093 candidatos en páginas de 200 (81 páginas).
 - Se autorizó comparar muestras aleatoria y estratificada con semilla 203 sin elegir D-016.
@@ -250,9 +250,12 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Se capturaron 81/81 páginas, 16.093 candidatos y 19.353.056 bytes con instantánea `72e9b05fd60a524fa9115c09fee9f29e98779a8c5c95565fe6d0bee4395c27cb`.
 - La muestra aleatoria candidata de 500 (semilla 203) tiene SHA-256 `ebeb1f8c3823c5cd206bf3044f9f9adef194ed93d23048806268309b9fee8929`.
 - Las 16.093 filas del inventario carecen de ATC; la muestra estratificada no puede calcularse con esa fuente.
-- No se infiere exclusión ni estrato y no se lanzan 16.093 consultas de detalle sin decisión humana; D-016 sigue pendiente.
-- Los 19 MB de evidencia y la caché permanecen en `data/local/`, fuera de Git.
-- Gate 2 sigue abierto y Fase 3 no se inicia.
+- Se aceptó la muestra aleatoria con semilla 203; no se infirió exclusión ni estrato ni se lanzaron 16.093 consultas adicionales. D-016 queda cerrada.
+- Se descargaron 500 metadatos y 500 fichas completas: 1.000 artefactos, 115.583.103 bytes y manifiesto `34d2216d09150bb07615fada4adc4ea45f7a35cbb7b96c011fa689d6d6759fb3`.
+- El informe real contiene 109 filas y tiene ID `bb80992258d07a5e49f1beef46e983f3f56a57e7d48ad20d5aef19e3bffa5fe7`.
+- Con sockets bloqueados, una SQLite temporal creó 500 versiones y la segunda carga creó 0; código 0.
+- Evidencia, caché, corpus e informes permanecen en `data/local/`, fuera de Git.
+- Los criterios técnicos de Gate 2 están demostrados; el cierre formal espera aceptación humana de D-020 y Fase 3 no se inicia.
 
 ## Decisiones pendientes
 
