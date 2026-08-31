@@ -255,6 +255,8 @@ Lotes, hashes, idempotencia, diagnósticos y cuarentena.
 
 Incluye overrides CHAR(100) y preserva tipos originales.
 
+**Estado:** completada el 31 de agosto de 2026. Importadas 353/353 definiciones con fila, payload, tipo OOXML y tipo declarado conservados; segunda ejecución idempotente. D-021/D-026 se aplican como overrides trazables sin truncar ni modificar el Excel. Se mantienen cinco identidades repetidas y dos conflictos de tipo como siete diagnósticos. DEV-303 no iniciado.
+
 ### DEV-303 — Importador de principio activo (`P1`)
 
 ### DEV-304 — Importador de medicamento (`P1`)

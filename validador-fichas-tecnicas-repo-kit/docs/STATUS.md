@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 3 en curso. DEV-301 está completado y DEV-302 no se ha iniciado. Gate 2 permanece PASS.
+Fase 3 en curso. DEV-301 y DEV-302 están completados; DEV-303 no se ha iniciado. Gate 2 permanece PASS.
 
 ## Fase 0A — Cerrada
 
@@ -266,6 +266,16 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Los diagnósticos y filas en cuarentena tienen claves reproducibles por lote; el payload literal y su SHA-256 se conservan sin normalizar, corregir ni deduplicar datos clínicos.
 - Los lotes fallidos conservan sus diagnósticos. No se ha importado ningún maestro ni resuelto ningún huérfano.
 - Contrato en `docs/IMPORT_BATCH_INFRASTRUCTURE.md`; DEV-302 no iniciado.
+
+## DEV-302 — Completado
+
+- Importador OOXML seguro para `Catalogo_campos_clinicos_medicamentos.xlsx`, ligado a la infraestructura de lotes de DEV-301.
+- Cabecera localizada por la única fila que contiene `Entidad`, `Campo` y `Tipo`; 353/353 definiciones activas importadas en secuencia 1..353.
+- Cada definición conserva hoja, fila física, valores y tipos OOXML literales, fórmula si existe, payload reproducible, tipo declarado y tipo efectivo.
+- Se conservaron cinco identidades `(bloque, campo)` repetidas y dos conflictos de tipo; no se fusionaron ni declararon erróneos por duplicación.
+- D-021 aplica `CHAR(100)` a `EX_DESCRIPCION` y `ME_DESCRIPCION`; D-026 aplica `CHAR(100)` a Composición/DESCRIPCION y `CHAR(255)` a Links/DESCRIPCION. Los tipos originales permanecen intactos y estos límites no son contrato del proveedor.
+- Dos importaciones del mismo fichero producen un lote y 353 definiciones; el hash original sigue `a10160ebe5c7fe0b5d2a35a12d4597c982bacdafe04cb0f8d98c437183d19eac`.
+- Contrato en `docs/CATALOG_IMPORT_CONTRACT.md`; DEV-303 no iniciado.
 
 ## Decisiones pendientes
 

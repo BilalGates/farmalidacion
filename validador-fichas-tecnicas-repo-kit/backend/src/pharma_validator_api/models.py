@@ -212,6 +212,31 @@ class QuarantinedSourceRow(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+class CatalogFieldDefinition(Base):
+    __tablename__ = "catalog_field_definition"
+    __table_args__ = (
+        UniqueConstraint(
+            "import_batch_id", "source_row_number", name="uq_catalog_field_source_row"
+        ),
+    )
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    import_batch_id: Mapped[str] = mapped_column(ForeignKey("import_batch.id"))
+    sheet_name: Mapped[str] = mapped_column(Text)
+    source_row_number: Mapped[int] = mapped_column(Integer)
+    sequence_literal: Mapped[str] = mapped_column(Text)
+    entity_literal: Mapped[str] = mapped_column(Text)
+    block_literal: Mapped[str] = mapped_column(Text)
+    field_name_literal: Mapped[str] = mapped_column(Text)
+    declared_type_literal: Mapped[str] = mapped_column(Text)
+    effective_type: Mapped[str] = mapped_column(Text)
+    override_decision: Mapped[str | None] = mapped_column(String(40))
+    required_literal: Mapped[str | None] = mapped_column(Text)
+    from_ft_literal: Mapped[str | None] = mapped_column(Text)
+    ft_section_literal: Mapped[str | None] = mapped_column(Text)
+    comment_literal: Mapped[str | None] = mapped_column(Text)
+    raw_payload: Mapped[str] = mapped_column(Text)
+
+
 class SamplingRun(Base):
     __tablename__ = "sampling_run"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
