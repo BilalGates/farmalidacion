@@ -249,6 +249,8 @@ Se descargaron y verificaron offline 500 documentos, 1.000 artefactos y
 
 Lotes, hashes, idempotencia, diagnósticos y cuarentena.
 
+**Estado:** completada el 31 de agosto de 2026. Migración reversible y servicio común con identidad content-addressed/versionada, diagnósticos y cuarentena literal; 7 pruebas dirigidas. No se importó ningún maestro y DEV-302 no se inició.
+
 ### DEV-302 — Importador de catálogo (`P0`)
 
 Incluye overrides CHAR(100) y preserva tipos originales.

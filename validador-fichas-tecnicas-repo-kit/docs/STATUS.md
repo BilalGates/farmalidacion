@@ -2,11 +2,11 @@
 
 ## Estado global
 
-`FASE 0A CERRADA — FASE 0B CERRADA CON DEPENDENCIAS EXTERNAS — FASE 1 CERRADA — FASE 2 CERRADA — FASE 3 AUTORIZADA NO INICIADA`
+`FASE 0A CERRADA — FASE 0B CERRADA CON DEPENDENCIAS EXTERNAS — FASE 1 CERRADA — FASE 2 CERRADA — FASE 3 EN CURSO`
 
 ## Fase actual
 
-Fase 2 cerrada con Gate 2 PASS. D-016 y D-020 están aceptadas; Fase 3 queda autorizada, pero DEV-301 no se ha iniciado. Gate 1 permanece PASS.
+Fase 3 en curso. DEV-301 está completado y DEV-302 no se ha iniciado. Gate 2 permanece PASS.
 
 ## Fase 0A — Cerrada
 
@@ -256,7 +256,16 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Con sockets bloqueados, una SQLite temporal creó 500 versiones y la segunda carga creó 0; código 0.
 - Evidencia, caché, corpus e informes permanecen en `data/local/`, fuera de Git.
 - D-020 fue aceptada el 31 de agosto de 2026: versiones content-addressed e inmutables, `source_version` literal/opcional y nunca inferida.
-- Gate 2 es PASS según `docs/PHASE_2_GATE_REVIEW.md`; Fase 3 está autorizada y DEV-301 no iniciado.
+- Gate 2 es PASS según `docs/PHASE_2_GATE_REVIEW.md`; Fase 3 quedó autorizada.
+
+## DEV-301 — Completado
+
+- Infraestructura común para lotes, diagnósticos y filas en cuarentena mediante una migración Alembic reversible.
+- La identidad idempotente conserva sistema y localizador de fuente, `source_version` literal opcional, SHA-256 exacto e identidad/versión del importador.
+- Reejecutar la misma combinación devuelve el lote existente; cambiar bytes, versión literal o versión del importador produce otro lote.
+- Los diagnósticos y filas en cuarentena tienen claves reproducibles por lote; el payload literal y su SHA-256 se conservan sin normalizar, corregir ni deduplicar datos clínicos.
+- Los lotes fallidos conservan sus diagnósticos. No se ha importado ningún maestro ni resuelto ningún huérfano.
+- Contrato en `docs/IMPORT_BATCH_INFRASTRUCTURE.md`; DEV-302 no iniciado.
 
 ## Decisiones pendientes
 

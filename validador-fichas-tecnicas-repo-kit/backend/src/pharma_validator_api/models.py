@@ -49,17 +49,17 @@ class SourceFragment(Base):
 
 
 class SourceDocumentArtifact(Base):
-    __tablename__ = 'source_document_artifact'
+    __tablename__ = "source_document_artifact"
     __table_args__ = (
         UniqueConstraint(
-            'document_version_id',
-            'artifact_role',
-            'ordinal',
-            name='uq_source_document_artifact_occurrence',
+            "document_version_id",
+            "artifact_role",
+            "ordinal",
+            name="uq_source_document_artifact_occurrence",
         ),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    document_version_id: Mapped[str] = mapped_column(ForeignKey('source_document_version.id'))
+    document_version_id: Mapped[str] = mapped_column(ForeignKey("source_document_version.id"))
     artifact_role: Mapped[str] = mapped_column(String(40))
     ordinal: Mapped[int] = mapped_column(Integer)
     locator: Mapped[str] = mapped_column(Text)
@@ -76,12 +76,12 @@ class ImmutableHistoryError(RuntimeError):
     pass
 
 
-@event.listens_for(SourceDocumentVersion, 'before_update')
-@event.listens_for(SourceDocumentVersion, 'before_delete')
-@event.listens_for(SourceDocumentArtifact, 'before_update')
-@event.listens_for(SourceDocumentArtifact, 'before_delete')
+@event.listens_for(SourceDocumentVersion, "before_update")
+@event.listens_for(SourceDocumentVersion, "before_delete")
+@event.listens_for(SourceDocumentArtifact, "before_update")
+@event.listens_for(SourceDocumentArtifact, "before_delete")
 def _reject_historical_mutation(*_: object) -> None:
-    raise ImmutableHistoryError('Las versiones y artefactos documentales son inmutables.')
+    raise ImmutableHistoryError("Las versiones y artefactos documentales son inmutables.")
 
 
 class TargetRecord(Base):
@@ -151,8 +151,69 @@ class ValueProvenance(Base):
     provenance_role: Mapped[str] = mapped_column(String(80))
 
 
+class ImportBatch(Base):
+    __tablename__ = "import_batch"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_system",
+            "source_locator",
+            "source_version",
+            "content_hash",
+            "importer_name",
+            "importer_version",
+            name="uq_import_batch_identity",
+        ),
+    )
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    source_system: Mapped[str] = mapped_column(String(100))
+    source_locator: Mapped[str] = mapped_column(Text)
+    source_version: Mapped[str | None] = mapped_column(Text)
+    content_hash: Mapped[str] = mapped_column(String(64))
+    importer_name: Mapped[str] = mapped_column(String(120))
+    importer_version: Mapped[str] = mapped_column(String(80))
+    status: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    source_document_version_id: Mapped[str | None] = mapped_column(
+        ForeignKey("source_document_version.id")
+    )
+
+
+class ImportDiagnostic(Base):
+    __tablename__ = "import_diagnostic"
+    __table_args__ = (
+        UniqueConstraint("import_batch_id", "diagnostic_key", name="uq_import_diagnostic_key"),
+    )
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    import_batch_id: Mapped[str] = mapped_column(ForeignKey("import_batch.id"))
+    diagnostic_key: Mapped[str] = mapped_column(String(64))
+    severity: Mapped[str] = mapped_column(String(20))
+    code: Mapped[str] = mapped_column(String(80))
+    source_locator: Mapped[str | None] = mapped_column(Text)
+    message: Mapped[str] = mapped_column(Text)
+    details_literal: Mapped[str | None] = mapped_column(Text)
+    occurrence_count: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class QuarantinedSourceRow(Base):
+    __tablename__ = "quarantined_source_row"
+    __table_args__ = (
+        UniqueConstraint("import_batch_id", "quarantine_key", name="uq_quarantined_source_row_key"),
+    )
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    import_batch_id: Mapped[str] = mapped_column(ForeignKey("import_batch.id"))
+    quarantine_key: Mapped[str] = mapped_column(String(64))
+    source_locator: Mapped[str] = mapped_column(Text)
+    reason_code: Mapped[str] = mapped_column(String(80))
+    reason: Mapped[str] = mapped_column(Text)
+    raw_payload: Mapped[str] = mapped_column(Text)
+    payload_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class SamplingRun(Base):
-    __tablename__ = 'sampling_run'
+    __tablename__ = "sampling_run"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     mode: Mapped[str] = mapped_column(String(20))
     seed: Mapped[int] = mapped_column(Integer)
@@ -165,13 +226,13 @@ class SamplingRun(Base):
 
 
 class SamplingItem(Base):
-    __tablename__ = 'sampling_item'
+    __tablename__ = "sampling_item"
     __table_args__ = (
-        UniqueConstraint('sampling_run_id', 'ordinal', name='uq_sampling_item_ordinal'),
-        UniqueConstraint('sampling_run_id', 'nregistro', name='uq_sampling_item_nregistro'),
+        UniqueConstraint("sampling_run_id", "ordinal", name="uq_sampling_item_ordinal"),
+        UniqueConstraint("sampling_run_id", "nregistro", name="uq_sampling_item_nregistro"),
     )
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    sampling_run_id: Mapped[str] = mapped_column(ForeignKey('sampling_run.id'))
+    sampling_run_id: Mapped[str] = mapped_column(ForeignKey("sampling_run.id"))
     ordinal: Mapped[int] = mapped_column(Integer)
     nregistro: Mapped[str] = mapped_column(Text)
     atc_stratum: Mapped[str | None] = mapped_column(String(20))
