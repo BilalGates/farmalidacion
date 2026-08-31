@@ -47,6 +47,11 @@ DEV-007 demostró que el núcleo candidato importa las 22 hojas sin perder 616 o
 
 DEV-008 completó dos round-trips reversibles sin diferencias. Esta evidencia y la aprobación humana permiten aceptar el modelo conceptual; no aceptan un esquema físico definitivo ni claves naturales de fuente.
 
+El 31 de agosto de 2026 se aceptó también D-020 tras verificar 500 documentos
+CIMA reales offline. Las versiones son content-addressed e inmutables;
+`source_version` es literal y opcional y nunca se infiere. Esta aceptación no
+declara vigencia regulatoria ni convierte `nregistro` en identidad canónica.
+
 ## Consecuencias
 
 ### Positivas

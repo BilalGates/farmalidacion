@@ -2,11 +2,11 @@
 
 ## Estado global
 
-`FASE 0A CERRADA — FASE 0B CERRADA CON DEPENDENCIAS EXTERNAS — FASE 1 CERRADA — FASE 2 INICIADA`
+`FASE 0A CERRADA — FASE 0B CERRADA CON DEPENDENCIAS EXTERNAS — FASE 1 CERRADA — FASE 2 CERRADA — FASE 3 AUTORIZADA NO INICIADA`
 
 ## Fase actual
 
-Fase 2 en curso. DEV-207 implementa y verifica el contrato de corpus offline con un fixture sintético; no se ha descargado el corpus real y Gate 2 continúa abierto. Gate 1 permanece PASS.
+Fase 2 cerrada con Gate 2 PASS. D-016 y D-020 están aceptadas; Fase 3 queda autorizada, pero DEV-301 no se ha iniciado. Gate 1 permanece PASS.
 
 ## Fase 0A — Cerrada
 
@@ -208,7 +208,7 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Ausencias clasificadas como diagnóstico interno `__MISSING__`, sin convertirlas en `no_consta` o `no_aplica`.
 - ATC incompatible, respuesta faltante, duplicada o fuera de muestra detienen la generación sin normalización implícita.
 - Salidas JSON, CSV y Markdown reproducibles e inmutables, ligadas a la ejecución de muestra y hashes de cada respuesta.
-- No se descargó corpus real ni se produjo evidencia para elegir modo; D-016 y Gate 2 siguen abiertos.
+- Al cerrar DEV-204 no se había descargado corpus real; D-016 y Gate 2 seguían abiertos.
 - Contrato en `docs/CIMA_COMPOSITION_REPORT.md`; no se inició DEV-205.
 
 ## DEV-205 — Completado como capacidad reversible
@@ -219,8 +219,8 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Reconstrucción byte a byte con verificación SHA-256 y soporte de contenido no decodificable.
 - Mutaciones y borrados históricos rechazados desde el ORM; corrupción de cuerpo detectable al leer.
 - Migración reversible `e3c83b4ed201`; no se descargaron documentos ni se modificaron fuentes.
-- D-020 permanece propuesta: `source_version` no se infiere y falta aceptación humana/evidencia CIMA real.
-- Contrato en `docs/CIMA_DOCUMENT_VERSIONING.md`; no se inició DEV-206 y Gate 2 sigue abierto.
+- Al cerrar DEV-205, D-020 permanecía propuesta: `source_version` no se infería y faltaba evidencia CIMA real.
+- Contrato en `docs/CIMA_DOCUMENT_VERSIONING.md`; DEV-206 aún no se había iniciado y Gate 2 seguía abierto.
 
 ## DEV-206 — Completado como capacidad reproducible
 
@@ -239,7 +239,7 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Carga idempotente mediante DEV-205, reconstrucción exacta y diff de DEV-206 sin cliente HTTP.
 - La prueba bloquea la creación de sockets y completa todo el recorrido usando solo disco y SQLite.
 - El fixture está marcado como sintético y sus URLs `example.test` no se presentan como evidencia CIMA.
-- No se descargaron las 500 fichas ni se verificaron respuestas regulatorias reales; D-016, D-020 y Gate 2 siguen abiertos.
+- Al cerrar DEV-207 no se habían descargado las 500 fichas; D-016, D-020 y Gate 2 seguían abiertos.
 - Contrato en `docs/CIMA_OFFLINE_CORPUS.md`; no se inicia automáticamente otro issue.
 
 ## DEV-208 — Corpus real capturado; D-016 cerrada
@@ -255,7 +255,8 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - El informe real contiene 109 filas y tiene ID `bb80992258d07a5e49f1beef46e983f3f56a57e7d48ad20d5aef19e3bffa5fe7`.
 - Con sockets bloqueados, una SQLite temporal creó 500 versiones y la segunda carga creó 0; código 0.
 - Evidencia, caché, corpus e informes permanecen en `data/local/`, fuera de Git.
-- Los criterios técnicos de Gate 2 están demostrados; el cierre formal espera aceptación humana de D-020 y Fase 3 no se inicia.
+- D-020 fue aceptada el 31 de agosto de 2026: versiones content-addressed e inmutables, `source_version` literal/opcional y nunca inferida.
+- Gate 2 es PASS según `docs/PHASE_2_GATE_REVIEW.md`; Fase 3 está autorizada y DEV-301 no iniciado.
 
 ## Decisiones pendientes
 
@@ -265,4 +266,4 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 
 ## Última actualización
 
-28 de agosto de 2026.
+31 de agosto de 2026.

@@ -2,7 +2,7 @@
 
 - Issue: DEV-205
 - Fase: 2
-- Estado: implementación reversible; D-020 permanece propuesta
+- Estado: aceptado para el modelo interno; D-020 cerrada
 
 ## Alcance
 
@@ -73,10 +73,9 @@ Fixtures offline verifican:
 - detección de cuerpo corrupto;
 - ocurrencias repetidas rechazadas y downgrade reversible.
 
-## Decisiones y trabajo pendientes
+## Aceptación y límites
 
-D-020 permanece propuesta porque aún falta aceptación humana de la estrategia
-completa y evidencia CIMA real sobre el valor de revisión documental. DEV-206
-podrá detectar y describir cambios entre paquetes, pero no debe inferir vigencia
-regulatoria. La descarga del corpus y la asociación de fragmentos analizables
-también siguen pendientes; Gate 2 no se cierra con DEV-205.
+D-020 fue aceptada el 31 de agosto de 2026 tras verificar el corpus real de 500
+documentos. La aceptación conserva `source_version` opcional y literal; no
+autoriza inferirla de fechas, orden, cabeceras o contenido ni declarar vigencia
+regulatoria. DEV-206 describe diferencias sin decidir cuál versión es vigente.

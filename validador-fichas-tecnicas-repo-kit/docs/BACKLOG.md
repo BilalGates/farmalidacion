@@ -212,8 +212,8 @@ Documento, versión, sección, hash y metadatos.
 **Estado:** completado como capacidad reversible el 27 de agosto de 2026.
 Los artefactos CIMA originales se conservan byte a byte en versiones
 content-addressed e idempotentes; un cambio crea otra versión y la anterior no
-se modifica. D-020 sigue propuesta porque no se infiere `source_version` ni se
-ha validado todavía la revisión documental sobre respuestas reales.
+se modifica. D-020 permaneció propuesta al cerrar DEV-205 porque no se infería
+`source_version` y aún faltaba evidencia documental real; DEV-208 permitió aceptarla.
 
 ### DEV-206 — Detección y diff de versiones (`P1`)
 
@@ -228,10 +228,9 @@ marca validaciones y no implementa todavía la tarea de `registroCambios`.
 
 Fixtures y operación sin red.
 
-**Estado:** completado como capacidad verificable el 28 de agosto de 2026.
-Manifiesto, hashes, carga idempotente, reconstrucción y diff se prueban con
-sockets bloqueados sobre dos versiones sintéticas. El corpus real de 500 fichas
-no se ha descargado y Gate 2 permanece abierto.
+**Estado:** completado primero con fixture sintético y confirmado después sobre
+el corpus real de DEV-208: 500 documentos, 1.000 artefactos y segunda carga
+idempotente con sockets bloqueados.
 
 ### DEV-208 — Captura comparativa real CIMA (`P0`)
 
@@ -242,7 +241,7 @@ agosto de 2026. Una caché ZIP atómica compatible con Windows permitió conserv
 Las 16.093 filas del inventario omiten ATC y no permiten estratificar. Se aceptó
 la muestra aleatoria con semilla 203 sin lanzar 16.093 consultas adicionales.
 Se descargaron y verificaron offline 500 documentos, 1.000 artefactos y
-115.583.103 bytes. D-016 queda cerrada; Gate 2 espera aceptación de D-020.
+115.583.103 bytes. D-016 y D-020 quedan cerradas; Gate 2 es PASS.
 
 ## EPIC E3 — Maestros y consolidación
 

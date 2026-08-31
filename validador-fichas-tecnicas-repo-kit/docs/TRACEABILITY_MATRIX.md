@@ -3,7 +3,7 @@
 | Requisito | Fuente | Fase | Evidencia de implementación | Prueba mínima |
 |---|---|---|---|---|
 | Corpus 500, oro 20, medida 50 | Especificación 1.1 | 2, 4, 5 | modelos de conjunto y comandos | misma semilla, mismos registros |
-| Muestreo aleatorio/estratificado | Especificación 1.2; DEV-203 | 2 | `pharma_validator_api.sampling`; `sampling_run`; `sampling_item`; `docs/CIMA_SAMPLING_CONTRACT.md` | misma entrada/modo/semilla: misma lista; prueba sintética exacta de 500; elección D-016 pendiente de corpus real |
+| Muestreo aleatorio/estratificado | Especificación 1.2; DEV-203/208 | 2 | `pharma_validator_api.sampling`; muestra aleatoria aceptada, semilla 203 | misma instantánea/modo/semilla: mismos 500; D-016 cerrada |
 | Inventario y corpus CIMA real | Especificación 1.2, 15.10; DEV-208 | 2 | 81 respuestas de inventario; `corpus_capture`; 500 metadatos y 500 fichas locales | 115.583.103 bytes verificados; 500 versiones y segunda carga 0 con sockets bloqueados |
 | Informe de composición CIMA | Especificación 1.2; DEV-204 | 2 | `pharma_validator_api.composition_report`; `docs/CIMA_COMPOSITION_REPORT.md` | JSON/CSV/Markdown reproducibles; ATC, forma y vía multilabel; faltantes y ocurrencias explícitos |
 | Sin datos de paciente | Especificación 2-3 | todas | límites de dominio y revisión | búsqueda de esquemas/endpoints prohibidos |
@@ -14,7 +14,7 @@
 | Bloques repetibles | Ficheros reales | 0B, 1, 3 | `instancia_bloque` o decisión equivalente | round-trip omeprazol |
 | Modelo conceptual canónico | Especificación 5-7; inventario; DEV-002 | 0B | `docs/CANONICAL_CONCEPTUAL_MODEL.md`; ADR-0001 aceptado | 22/22 hojas sin pérdida; esquema físico pendiente |
 | Puerta formal de Fase 0B | Plan de desarrollo; phase gate | 0B | `docs/PHASE_0B_GATE_REVIEW.md`; `docs/EXTERNAL_DEPENDENCIES.md` | PASS WITH EXTERNAL DEPENDENCIES; Fase 1 autorizada |
-| Documento, versión y registro destino separados | Especificación 5, 11, 13; D-002/D-020 | 0B, 2 | conceptos y vínculos del modelo candidato | cada valor referencia versión y fragmento; decisión aún propuesta |
+| Documento, versión y registro destino separados | Especificación 5, 11, 13; D-002/D-020 | 0B, 2 | ADR-0001; versionado DEV-205; corpus DEV-208 | identidades separadas; D-020 aceptada; vigencia no inferida |
 | Identidad nregistro/CN/medicamento/especialidad/principio activo | Especificación 5.1; maestros; D-006 | 0B | ADR-0006 aceptado; vínculos tipados | no fusionar; cardinalidad factual CIMA pendiente de Fase 2 |
 | Grafo de registros destino | Maestros; DEV-004/DEV-005 | 0B | `docs/TARGET_RECORD_RELATIONSHIP_EVIDENCE.md`; ADR-0006 propuesto | especialidad→medicamento y composición→principio activo sin huérfanos |
 | Unidad de revisión contextual | Especificación 7, 10; D-001 | 0B, 5 | expediente contextual aceptado en ADR-0006 | caso con varias presentaciones pendiente de round-trip |
@@ -37,7 +37,7 @@
 | Matriz de fuentes por campo | Catálogo; ADR-0002; D-008 | 0B, 3 | `docs/SOURCE_PRIORITY_MATRIX.md`; ADR-0007 aceptado | 353/353 campos con regla o prioridad pendiente explícita |
 | Conflicto entre fuentes | ADR-0002; D-008 | 0B, 3 | afirmaciones separadas y acción humana contractual | ninguna sustitución silenciosa; campo sin regla queda pendiente |
 | Límites por clasificación FT | Catálogo; especificación 8-9 | 0B, 4, 5 | reglas `No`/directo/parcial/interpretación | parciales e interpretables nunca producen valor automático |
-| Versiones inmutables | Especificación 11, 13; D-020; DEV-205 | 0B, 2, 7 | `source_document_version`; `source_document_artifact`; `pharma_validator_api.document_versions`; contrato DEV-205 | repetición idempotente; cambio crea versión; bytes reconstruibles; mutación ORM bloqueada; D-020 propuesta |
+| Versiones inmutables | Especificación 11, 13; D-020; DEV-205/208 | 0B, 2, 7 | `source_document_version`; `source_document_artifact`; contrato aceptado | repetición idempotente; cambio crea versión; bytes reconstruibles; D-020 cerrada |
 | Diff de versiones documentales | Especificación 13; DEV-206 | 2, 7 | `pharma_validator_api.version_diff`; `docs/CIMA_VERSION_DIFF.md` | añadido/eliminado/modificado/idéntico; texto completo; binario sin conversión; salida reproducible |
 | Ninguna propuesta sin cita | Especificación 8.1 | 4 | verificador literal | rechazo de cita inventada |
 | Salida estructurada | Especificación 8.3 | 4 | esquema de respuesta | respuesta inválida no persiste |
@@ -56,7 +56,7 @@
 | Registro de cambios CIMA | Especificación 13 | 7 | tarea programada | nueva versión + diff |
 | UI <100 ms por campo | Especificación 14 | 5 | precarga/cache local | prueba de rendimiento |
 | Docker Compose | Especificación 15.9 | 1 en adelante | compose y fixtures | arranque limpio |
-| Operación offline | Especificación 15.10; DEV-207 | 2 en adelante | `pharma_validator_api.offline_corpus`; `data/examples/cima-offline-corpus`; `docs/CIMA_OFFLINE_CORPUS.md` | socket bloqueado; manifiesto/hash, carga idempotente, reconstrucción y diff; corpus real pendiente |
+| Operación offline | Especificación 15.10; DEV-207/208 | 2 en adelante | `offline_corpus`; corpus real local; `PHASE_2_GATE_REVIEW.md` | 500 versiones creadas y segunda carga 0 con sockets bloqueados |
 | Scaffold de aplicación | Plan Fase 1; DEV-101 | 1 | `backend/`, `frontend/`, `infra/`, `data/examples/`, `.env.example`, `docs/COMMANDS.md` | test de límites y configuración sin secretos |
 | Backend base y health check | Plan Fase 1; DEV-102 | 1 | `backend/src/pharma_validator_api/`; `backend/pyproject.toml` | pytest de configuración, salud y errores; Ruff |
 | Frontend técnico base | Plan Fase 1; DEV-103 | 1 | `frontend/src/`; Vite y TypeScript | Vitest/Testing Library, ESLint y build de producción |

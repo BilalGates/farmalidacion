@@ -23,7 +23,7 @@ Estados: `cerrada`, `propuesta`, `pendiente`, `bloqueada`, `descartada`. Una dec
 | D-017 | Reglas ATC adicionales a `L04` | pendiente | Fase 6 | Decisión exclusiva de farmacia | Especificación v2 |
 | D-018 | Autenticación real | cerrada para piloto | Fase 8 | No en piloto; reevaluar para auditoría formal | Especificación v2 |
 | D-019 | Base de datos del piloto | cerrada | Fase 1 | SQLite con tipos portables y Alembic | Especificación v2 |
-| D-020 | Estrategia de versiones de ficha técnica | propuesta | Fase 2 | Versiones content-addressed inmutables; `source_version` literal y opcional, nunca inferida | ADR-0001; implementación reversible DEV-205; falta aceptación humana y evidencia CIMA real |
+| D-020 | Estrategia de versiones de ficha técnica | cerrada | Fase 2 | Versiones content-addressed inmutables; `source_version` literal y opcional, nunca inferida | ADR-0001 aceptado; DEV-205/208; aceptación humana 31-08-2026 |
 | D-021 | Campos `EX_DESCRIPCION` y `ME_DESCRIPCION` | cerrada | Fase 3 | `CHAR(100)` mediante overrides trazables | Especificación v2 |
 | D-022 | Datos de paciente | cerrada | Siempre | Fuera de alcance | Especificación v2 |
 | D-023 | Preselección en campos interpretables o clínicos | cerrada | Siempre | Prohibida | Especificación v2 |

@@ -56,7 +56,7 @@ dirección inversa; repetición byte a byte; documentos distintos y corrupción.
 
 ## Pendientes
 
-- D-020 continúa propuesta y ninguna versión se declara vigente.
+- D-020 está aceptada; ninguna versión se declara vigente ni se infiere su orden regulatorio.
 - La consulta diaria de `registroCambios` pertenece a DEV-701.
 - El marcado selectivo de validaciones requiere fases posteriores.
-- Gate 2 sigue abierto hasta demostrar corpus descargado y operación offline.
+- Gate 2 quedó en PASS tras demostrar corpus descargado y operación offline en DEV-208.
