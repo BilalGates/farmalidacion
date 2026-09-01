@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 3 en curso. DEV-301 a DEV-304 están completados; DEV-305 no se ha iniciado. Gate 2 permanece PASS.
+Fase 3 en curso. DEV-301 a DEV-305 están completados; DEV-306 no se ha iniciado. Gate 2 permanece PASS.
 
 ## Fase 0A — Cerrada
 
@@ -298,6 +298,16 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Hash original intacto: `4b87aeac96ea220126c090d755fa5bfbaabe7aec304cfccb2e15537bd96cbf1b`.
 - Contrato en `docs/MEDICATION_IMPORT_CONTRACT.md`; DEV-305 no iniciado.
 
+## DEV-305 — Completado
+
+- Importador canónico por lotes de `Especialidades-CargaMaster190626.xlsx`, integrado con DEV-301 y los medicamentos importados por DEV-304.
+- Dos hojas registradas; 48.195 ocurrencias válidas y 1.623.810 valores conservan literal, tipo OOXML, hoja, fila, versión documental y procedencia `master_baseline`.
+- Las 29.850 especialidades enlazan a medicamento por `ME_IDEXTERNO` literal y único; no se concilia por nombre o semejanza.
+- `Excipientes` conserva 18.345 ocurrencias repetibles. Sus 275 filas sin padre, correspondientes a 184 `BN_IDEXTERNO`, quedan reproducidas individualmente en cuarentena con payload literal; no se reparan ni descartan.
+- Dos ejecuciones producen un lote y los mismos recuentos. Prueba real completa: 171,99 s incluyendo las precargas DEV-303 y DEV-304.
+- Hash original intacto: `2117c3e33c05158dd10f81ce07424dd1ea2d0f36747faea3ad9c630b2d4ab37b`.
+- Contrato en `docs/SPECIALTY_IMPORT_CONTRACT.md`; DEV-306 no iniciado.
+
 ## Decisiones pendientes
 
 - PROVIDER-001 debe resolverse antes de reglas condicionales definitivas; PROVIDER-002 antes del exportador definitivo.
@@ -306,4 +316,4 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 
 ## Última actualización
 
-31 de agosto de 2026.
+1 de septiembre de 2026.

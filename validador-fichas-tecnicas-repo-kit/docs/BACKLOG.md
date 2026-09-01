@@ -267,6 +267,8 @@ Incluye overrides CHAR(100) y preserva tipos originales.
 
 ### DEV-305 — Importador de especialidad (`P1`)
 
+**Estado:** completada el 1 de septiembre de 2026. Importadas dos hojas: 48.195 ocurrencias válidas y 1.623.810 valores con procedencia; 29.850 vínculos especialidad→medicamento. Las 275 filas de excipiente sin padre, correspondientes a 184 identificadores, quedan reproducidas individualmente en cuarentena y no se reparan. Segunda ejecución idempotente; prueba real en 171,99 s; original intacto. DEV-306 no iniciado.
+
 ### DEV-306 — Importador o exclusión formal de interacciones (`P1`)
 
 ### DEV-307 — Motor de conflictos de procedencia (`P0`)
