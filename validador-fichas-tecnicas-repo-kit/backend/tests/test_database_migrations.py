@@ -14,6 +14,7 @@ DOMAIN_TABLES = {
     "catalog_field_definition",
     "import_batch",
     "import_diagnostic",
+    "imported_source_sheet",
     "quarantined_source_row",
     "source_document_artifact",
     "sampling_item",

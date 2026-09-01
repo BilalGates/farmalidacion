@@ -259,6 +259,8 @@ Incluye overrides CHAR(100) y preserva tipos originales.
 
 ### DEV-303 — Importador de principio activo (`P1`)
 
+**Estado:** completada el 1 de septiembre de 2026. Importadas cinco hojas, 7.189 ocurrencias y 35.945 valores con versión, fragmento y procedencia; segunda ejecución idempotente. Cuatro hojas solo-cabecera quedan como diagnósticos informativos, no como cardinalidad canónica. Cero cuarentenas; original intacto. DEV-304 no iniciado.
+
 ### DEV-304 — Importador de medicamento (`P1`)
 
 ### DEV-305 — Importador de especialidad (`P1`)

@@ -237,6 +237,23 @@ class CatalogFieldDefinition(Base):
     raw_payload: Mapped[str] = mapped_column(Text)
 
 
+class ImportedSourceSheet(Base):
+    __tablename__ = "imported_source_sheet"
+    __table_args__ = (
+        UniqueConstraint(
+            "import_batch_id", "sheet_ordinal", name="uq_imported_source_sheet_ordinal"
+        ),
+    )
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    import_batch_id: Mapped[str] = mapped_column(ForeignKey("import_batch.id"))
+    sheet_name: Mapped[str] = mapped_column(Text)
+    sheet_ordinal: Mapped[int] = mapped_column(Integer)
+    header_row_number: Mapped[int] = mapped_column(Integer)
+    header_payload: Mapped[str] = mapped_column(Text)
+    data_row_count: Mapped[int] = mapped_column(Integer)
+    material_value_count: Mapped[int] = mapped_column(Integer)
+
+
 class SamplingRun(Base):
     __tablename__ = "sampling_run"
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
