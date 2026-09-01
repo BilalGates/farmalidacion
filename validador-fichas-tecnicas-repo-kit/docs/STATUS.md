@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 3 en curso. DEV-301, DEV-302 y DEV-303 están completados; DEV-304 no se ha iniciado. Gate 2 permanece PASS.
+Fase 3 en curso. DEV-301 a DEV-304 están completados; DEV-305 no se ha iniciado. Gate 2 permanece PASS.
 
 ## Fase 0A — Cerrada
 
@@ -286,6 +286,17 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - No se usa `IDEXTERNO` como identidad canónica ni se fusionan filas por su valor; queda disponible únicamente como observación fuente para conciliación posterior.
 - Dos ejecuciones producen un lote, 7.189 registros/ocurrencias y 35.945 valores; cero cuarentenas. El hash original permanece `89e6806b4cba7d6724533bfdc29ea834056223872385f08c080b72b965448e6c`.
 - Contrato en `docs/ACTIVE_INGREDIENT_IMPORT_CONTRACT.md`; DEV-304 no iniciado.
+
+## DEV-304 — Completado
+
+- Importador canónico por lotes de `Medicamento-cargaMaster25062026.xlsx`, integrado con DEV-301 y con los principios activos importados por DEV-303.
+- Siete hojas registradas; 58.256 ocurrencias y 509.496 valores conservan literal, tipo OOXML, hoja, fila, versión documental y procedencia `master_baseline`.
+- `Composicion`, `Indicacion`, `Via` y `Links` son bloques 1:N explícitos. Los duplicados observados no se fusionan; las dos columnas `DESCRIPCION` de `Links` permanecen separadas por columna dentro del payload fuente.
+- 4.211 filas de composición enlazan por coincidencia literal y única con principio activo; no se concilia por nombre ni semejanza.
+- `Frecuencia` y `Prescripcion` contienen solo cabecera: dos diagnósticos informativos, sin inferir cardinalidad de dominio 0.
+- Dos ejecuciones producen un lote y los mismos recuentos; cero cuarentenas. Prueba real completa: 208,47 s incluyendo la precarga DEV-303.
+- Hash original intacto: `4b87aeac96ea220126c090d755fa5bfbaabe7aec304cfccb2e15537bd96cbf1b`.
+- Contrato en `docs/MEDICATION_IMPORT_CONTRACT.md`; DEV-305 no iniciado.
 
 ## Decisiones pendientes
 

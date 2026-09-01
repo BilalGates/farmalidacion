@@ -263,6 +263,8 @@ Incluye overrides CHAR(100) y preserva tipos originales.
 
 ### DEV-304 — Importador de medicamento (`P1`)
 
+**Estado:** completada el 1 de septiembre de 2026. Importadas siete hojas, 58.256 ocurrencias y 509.496 valores con procedencia; 4.211 vínculos de composición a principio activo; segunda ejecución idempotente y cero cuarentenas. Dos hojas solo-cabecera quedan como diagnósticos informativos. Prueba real completa en 208,47 s; original intacto. DEV-305 no iniciado.
+
 ### DEV-305 — Importador de especialidad (`P1`)
 
 ### DEV-306 — Importador o exclusión formal de interacciones (`P1`)
