@@ -32,7 +32,7 @@
 | Sin normalización implícita | AGENTS.md; reglas no negociables | 0B, 3, 6 | reglas versionadas y diferencias clasificadas | toda transformación referencia decisión aceptada |
 | Estados vacío/pendiente/no consta/no aplica | Especificación 7.1; D-010 | 0B, 5, 6 | ADR-0004 aceptado internamente; `docs/VALUE_STATE_VALIDATION_TABLE.md` | semántica interna aprobada; traducción externa pendiente bajo D-011 |
 | Maestros como línea base con procedencia | D-007; ADR-0002 | 0B, 3 | contrato de perfilado y futura consolidación | valor trazable a fichero, hash, hoja y coordenada |
-| Interacciones como línea separada | D-009; ADR-0003 | 0B, 3 | perfilado incluido; extracción FT excluida | alcance e informes separados |
+| Interacciones como línea separada | D-009; ADR-0003; DEV-306 | 0B, 3 | `docs/INTERACTION_MIGRATION_BOUNDARY.md`; perfilado e integridad incluidos; importación/extracción FT excluidas del piloto | 872.296 filas no materializadas; original intacto; INT-001..005 antes de migración completa; Gate 3 permanece abierto |
 | Procedencia múltiple | Ficheros reales y análisis | 0B, 3 | modelo de evidencia/procedencia | maestro, CIMA, FT y humano |
 | Matriz de fuentes por campo | Catálogo; ADR-0002; D-008 | 0B, 3 | `docs/SOURCE_PRIORITY_MATRIX.md`; ADR-0007 aceptado | 353/353 campos con regla o prioridad pendiente explícita |
 | Conflicto entre fuentes | ADR-0002; D-008 | 0B, 3 | afirmaciones separadas y acción humana contractual | ninguna sustitución silenciosa; campo sin regla queda pendiente |

@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 3 en curso. DEV-301 a DEV-305 están completados; DEV-306 no se ha iniciado. Gate 2 permanece PASS.
+Fase 3 en curso. DEV-301 a DEV-306 están completados; DEV-307 no se ha iniciado. Gate 2 permanece PASS y Gate 3 sigue abierto.
 
 ## Fase 0A — Cerrada
 
@@ -307,6 +307,14 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Dos ejecuciones producen un lote y los mismos recuentos. Prueba real completa: 171,99 s incluyendo las precargas DEV-303 y DEV-304.
 - Hash original intacto: `2117c3e33c05158dd10f81ce07424dd1ea2d0f36747faea3ad9c630b2d4ab37b`.
 - Contrato en `docs/SPECIALTY_IMPORT_CONTRACT.md`; DEV-306 no iniciado.
+
+## DEV-306 — Completado por exclusión formal del piloto
+
+- D-009 y ADR-0003 se aplican sin reinterpretación: interacciones quedan fuera de la importación/consolidación del piloto de fichas técnicas y permanecen como línea separada de migración y conciliación.
+- `Interacciones-cargaMaster250626.xlsx` conserva su hash inventariado; no se modificó ni se creó un importador que materialice sus 872.296 filas de datos.
+- Se registran la relación observada de 436.148 filas `AplicaA`, cardinalidad 1..21 y cero huérfanos, sin aceptar `IDEXTERNO` como clave canónica ni deduplicar repeticiones.
+- INT-001..INT-005 delimitan fuente/versionado, identidad, ciclo de vida, muestra de importación y contrato de entrega que deben resolverse antes de reabrir la migración completa.
+- Contrato en `docs/INTERACTION_MIGRATION_BOUNDARY.md`. Gate 3 sigue abierto; DEV-307 no iniciado.
 
 ## Decisiones pendientes
 

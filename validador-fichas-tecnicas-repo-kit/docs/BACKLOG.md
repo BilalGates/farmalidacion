@@ -271,6 +271,16 @@ Incluye overrides CHAR(100) y preserva tipos originales.
 
 ### DEV-306 — Importador o exclusión formal de interacciones (`P1`)
 
+**Estado:** completada el 1 de septiembre de 2026 por exclusión formal y reversible de la importación del piloto, conforme a D-009/ADR-0003. El maestro permanece en el proyecto como línea separada de migración/conciliación; no se importaron ni descartaron sus 872.296 filas. `docs/INTERACTION_MIGRATION_BOUNDARY.md` registra evidencia y los trabajos INT-001..INT-005 sobre fuente, identidad, ciclo de vida, muestra y entrega. Gate 3 sigue abierto; DEV-307 no iniciado.
+
+**Backlog separado de interacciones:**
+
+- `INT-001`: confirmar fuente autoritativa, actualización y versionado.
+- `INT-002`: aprobar identidad y claves sin deduplicación implícita.
+- `INT-003`: definir altas, modificaciones, bajas y conciliación histórica.
+- `INT-004`: importar una muestra reproducible y estimar el flujo completo.
+- `INT-005`: confirmar contrato y separación de entrega con el proveedor.
+
 ### DEV-307 — Motor de conflictos de procedencia (`P0`)
 
 ### DEV-308 — Informes de calidad de datos (`P1`)
