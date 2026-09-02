@@ -283,6 +283,8 @@ Incluye overrides CHAR(100) y preserva tipos originales.
 
 ### DEV-307 — Motor de conflictos de procedencia (`P0`)
 
+**Estado:** completada el 2 de septiembre de 2026. Motor determinista sobre afirmaciones explícitas, identidad completa de catálogo y comparación exacta de estado/literal. Las reglas pendientes no seleccionan; una regla aceptada requiere decisión humana y campo exacto. Se conservan todas las afirmaciones y procedencias, incluso al resolver por prioridad. Sin prioridades concretas, matching implícito, migración o exportación. Contrato en `docs/PROVENANCE_CONFLICT_ENGINE.md`; DEV-308 no iniciado y Gate 3 sigue abierto.
+
 ### DEV-308 — Informes de calidad de datos (`P1`)
 
 Longitudes, tipos, duplicados, huérfanos, nulos y catálogos.

@@ -35,6 +35,7 @@
 | Interacciones como línea separada | D-009; ADR-0003; DEV-306 | 0B, 3 | `docs/INTERACTION_MIGRATION_BOUNDARY.md`; perfilado e integridad incluidos; importación/extracción FT excluidas del piloto | 872.296 filas no materializadas; original intacto; INT-001..005 antes de migración completa; Gate 3 permanece abierto |
 | Procedencia múltiple | Ficheros reales y análisis | 0B, 3 | modelo de evidencia/procedencia | maestro, CIMA, FT y humano |
 | Matriz de fuentes por campo | Catálogo; ADR-0002; D-008 | 0B, 3 | `docs/SOURCE_PRIORITY_MATRIX.md`; ADR-0007 aceptado | 353/353 campos con regla o prioridad pendiente explícita |
+| Conflictos de procedencia | D-007/D-008; ADR-0002/0007; DEV-307 | 3 | `provenance_conflicts`; `docs/PROVENANCE_CONFLICT_ENGINE.md` | comparación exacta estado/literal; pendiente no selecciona; regla aceptada requiere decisión; todas las afirmaciones conservadas; ambigüedad prioritaria queda abierta |
 | Conflicto entre fuentes | ADR-0002; D-008 | 0B, 3 | afirmaciones separadas y acción humana contractual | ninguna sustitución silenciosa; campo sin regla queda pendiente |
 | Límites por clasificación FT | Catálogo; especificación 8-9 | 0B, 4, 5 | reglas `No`/directo/parcial/interpretación | parciales e interpretables nunca producen valor automático |
 | Versiones inmutables | Especificación 11, 13; D-020; DEV-205/208 | 0B, 2, 7 | `source_document_version`; `source_document_artifact`; contrato aceptado | repetición idempotente; cambio crea versión; bytes reconstruibles; D-020 cerrada |

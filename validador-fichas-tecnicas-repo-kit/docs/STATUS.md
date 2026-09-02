@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 3 en curso. DEV-301 a DEV-306 están completados; DEV-307 no se ha iniciado. Gate 2 permanece PASS y Gate 3 sigue abierto.
+Fase 3 en curso. DEV-301 a DEV-307 están completados; DEV-308 no se ha iniciado. Gate 2 permanece PASS y Gate 3 sigue abierto.
 
 ## Fase 0A — Cerrada
 
@@ -316,6 +316,15 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - INT-001..INT-005 delimitan fuente/versionado, identidad, ciclo de vida, muestra de importación y contrato de entrega que deben resolverse antes de reabrir la migración completa.
 - Contrato en `docs/INTERACTION_MIGRATION_BOUNDARY.md`. Gate 3 sigue abierto; DEV-307 no iniciado.
 
+## DEV-307 — Completado
+
+- Motor puro y determinista para comparar afirmaciones de procedencia sobre una identidad exacta de ordinal, entidad, bloque y campo.
+- La igualdad compara sin normalizar estado lógico y valor literal; espacios, mayúsculas y los estados no_consta/no_aplica permanecen diferenciados.
+- Una prioridad pendiente nunca selecciona valor. Una prioridad aceptada exige orden explícito y referencia de decisión humana; las reglas de otro campo se rechazan.
+- Coincidencias exactas conservan todas las procedencias. Conflictos resueltos por regla también conservan todas las afirmaciones; una fuente prioritaria internamente contradictoria permanece sin resolver.
+- No se añadieron prioridades concretas, heurísticas de matching, persistencia, migraciones, integración CIMA/FT ni exportación.
+- Contrato en docs/PROVENANCE_CONFLICT_ENGINE.md; DEV-308 no iniciado y Gate 3 sigue abierto.
+
 ## Decisiones pendientes
 
 - PROVIDER-001 debe resolverse antes de reglas condicionales definitivas; PROVIDER-002 antes del exportador definitivo.
@@ -324,4 +333,4 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 
 ## Última actualización
 
-1 de septiembre de 2026.
+2 de septiembre de 2026.
