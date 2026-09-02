@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     cima_backoff_seconds: float = 0.5
     cima_max_retry_delay_seconds: float = 30.0
     cima_cache_dir: Path = Path('data/local/cima-cache')
+    # 10.1: lista configurable de revisores, formato `identificador:Nombre`.
+    # Sin entradas no se puede firmar ninguna validación.
+    reviewers: tuple[str, ...] = ()
 
 
 @lru_cache
