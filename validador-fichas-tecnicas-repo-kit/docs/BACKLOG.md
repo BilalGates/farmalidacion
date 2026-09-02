@@ -271,7 +271,7 @@ Incluye overrides CHAR(100) y preserva tipos originales.
 
 ### DEV-306 — Importador o exclusión formal de interacciones (`P1`)
 
-**Estado:** completada el 1 de septiembre de 2026 por exclusión formal y reversible de la importación del piloto, conforme a D-009/ADR-0003. El maestro permanece en el proyecto como línea separada de migración/conciliación; no se importaron ni descartaron sus 872.296 filas. `docs/INTERACTION_MIGRATION_BOUNDARY.md` registra evidencia y los trabajos INT-001..INT-005 sobre fuente, identidad, ciclo de vida, muestra y entrega. Gate 3 sigue abierto; DEV-307 no iniciado.
+**Estado:** completada el 1 de septiembre de 2026 por exclusión formal y reversible de la importación del piloto, conforme a D-009/ADR-0003. El maestro permanece en el proyecto como línea separada de migración/conciliación; no se importaron ni descartaron sus 872.296 filas. `docs/INTERACTION_MIGRATION_BOUNDARY.md` registra evidencia y los trabajos INT-001..INT-005 sobre fuente, identidad, ciclo de vida, muestra y entrega. Al cerrar DEV-306, Gate 3 seguía abierto y DEV-307 no se había iniciado.
 
 **Backlog separado de interacciones:**
 
@@ -283,11 +283,15 @@ Incluye overrides CHAR(100) y preserva tipos originales.
 
 ### DEV-307 — Motor de conflictos de procedencia (`P0`)
 
-**Estado:** completada el 2 de septiembre de 2026. Motor determinista sobre afirmaciones explícitas, identidad completa de catálogo y comparación exacta de estado/literal. Las reglas pendientes no seleccionan; una regla aceptada requiere decisión humana y campo exacto. Se conservan todas las afirmaciones y procedencias, incluso al resolver por prioridad. Sin prioridades concretas, matching implícito, migración o exportación. Contrato en `docs/PROVENANCE_CONFLICT_ENGINE.md`; DEV-308 no iniciado y Gate 3 sigue abierto.
+**Estado:** completada el 2 de septiembre de 2026. Motor determinista sobre afirmaciones explícitas, identidad completa de catálogo y comparación exacta de estado/literal. Las reglas pendientes no seleccionan; una regla aceptada requiere decisión humana y campo exacto. Se conservan todas las afirmaciones y procedencias, incluso al resolver por prioridad. Sin prioridades concretas, matching implícito, migración o exportación. Contrato en `docs/PROVENANCE_CONFLICT_ENGINE.md`; al cerrar DEV-307, DEV-308 no se había iniciado y Gate 3 seguía abierto.
 
 ### DEV-308 — Informes de calidad de datos (`P1`)
 
-**Estado:** completada el 2 de septiembre de 2026. Consolidador agregado sobre DEV-002/009, sin salida por celda. Dos corridas de 0,462 s y 0,336 s produjeron artefactos idénticos y el hash 4009cac62bb27974ee3ff15a6b863a03cbb090816e220cb2aee66da128745d48. Reproduce 275 huérfanos/184 claves, 6 grupos de duplicados, 4 excesos y 24 valores al límite. Gate 3 queda abierto para revisión formal; Fase 4 no iniciada.
+**Estado:** completada el 2 de septiembre de 2026. Consolidador agregado sobre DEV-002/009, sin salida por celda. Dos corridas de 0,462 s y 0,336 s produjeron artefactos idénticos y el hash 4009cac62bb27974ee3ff15a6b863a03cbb090816e220cb2aee66da128745d48. Reproduce 275 huérfanos/184 claves, 6 grupos de duplicados, 4 excesos y 24 valores al límite. Gate 3 fue cerrado posteriormente como PASS; Fase 4 no iniciada.
+
+## Gate 3 — PASS
+
+Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Fase 3 cerrada; antes de iniciar DEV-401 deben confirmarse el hardware GPU (D-013) y la definición/anotación del conjunto oro.
 
 ## EPIC E4 — Extractor local
 

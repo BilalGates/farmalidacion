@@ -2,11 +2,11 @@
 
 ## Estado global
 
-`FASE 0A CERRADA — FASE 0B CERRADA CON DEPENDENCIAS EXTERNAS — FASE 1 CERRADA — FASE 2 CERRADA — FASE 3 EN CURSO`
+`FASE 0A CERRADA — FASE 0B CERRADA CON DEPENDENCIAS EXTERNAS — FASE 1 CERRADA — FASE 2 CERRADA — FASE 3 CERRADA`
 
 ## Fase actual
 
-Fase 3 en curso. DEV-301 a DEV-308 están completados. Gate 2 permanece PASS y Gate 3 sigue abierto pendiente de revisión formal.
+Fase 3 cerrada. Gate 3 es PASS según docs/PHASE_3_GATE_REVIEW.md. Fase 4 no se ha iniciado: hardware GPU (D-013) y conjunto oro definido/anotado siguen pendientes como prerrequisitos.
 
 ## Fase 0A — Cerrada
 
@@ -314,7 +314,7 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - `Interacciones-cargaMaster250626.xlsx` conserva su hash inventariado; no se modificó ni se creó un importador que materialice sus 872.296 filas de datos.
 - Se registran la relación observada de 436.148 filas `AplicaA`, cardinalidad 1..21 y cero huérfanos, sin aceptar `IDEXTERNO` como clave canónica ni deduplicar repeticiones.
 - INT-001..INT-005 delimitan fuente/versionado, identidad, ciclo de vida, muestra de importación y contrato de entrega que deben resolverse antes de reabrir la migración completa.
-- Contrato en `docs/INTERACTION_MIGRATION_BOUNDARY.md`. Gate 3 sigue abierto; DEV-307 no iniciado.
+- Contrato en `docs/INTERACTION_MIGRATION_BOUNDARY.md`. Al cerrar DEV-306, Gate 3 seguía abierto y DEV-307 no se había iniciado.
 
 ## DEV-307 — Completado
 
@@ -323,7 +323,7 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Una prioridad pendiente nunca selecciona valor. Una prioridad aceptada exige orden explícito y referencia de decisión humana; las reglas de otro campo se rechazan.
 - Coincidencias exactas conservan todas las procedencias. Conflictos resueltos por regla también conservan todas las afirmaciones; una fuente prioritaria internamente contradictoria permanece sin resolver.
 - No se añadieron prioridades concretas, heurísticas de matching, persistencia, migraciones, integración CIMA/FT ni exportación.
-- Contrato en docs/PROVENANCE_CONFLICT_ENGINE.md; DEV-308 se completó posteriormente y Gate 3 sigue abierto.
+- Contrato en docs/PROVENANCE_CONFLICT_ENGINE.md. Al cerrar DEV-307, Gate 3 seguía abierto; DEV-308 se completó posteriormente.
 
 ## DEV-308 — Completado
 
@@ -332,7 +332,13 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Dos informes reales tardaron 0,462 s y 0,336 s, fueron idénticos byte a byte y produjeron el hash 4009cac62bb27974ee3ff15a6b863a03cbb090816e220cb2aee66da128745d48.
 - Resultados: 730 columnas, 9.301.670 valores materiales, 6.510.031 nulos, 52 fórmulas, 106 claves candidatas observadas, seis grupos de duplicados, cuatro excesos, 24 valores al límite y 275 huérfanos/184 claves.
 - Las claves candidatas y los duplicados no se reinterpretan como decisiones de dominio; no se reparó, normalizó, truncó ni deduplicó ningún original.
-- Contrato en docs/DATA_QUALITY_REPORT.md. DEV-308 queda completado; Gate 3 permanece abierto pendiente de revisión formal y no se inicia Fase 4.
+- Contrato en docs/DATA_QUALITY_REPORT.md. Al cerrar DEV-308, Gate 3 quedó pendiente de la revisión formal realizada posteriormente; Fase 4 no se inició.
+
+## Gate 3 — PASS
+
+Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Los maestros en alcance se importan idempotentemente o están excluidos por decisión aceptada; cada valor importado conserva lote y procedencia; los 275 huérfanos/184 claves permanecen clasificados en cuarentena; las incidencias se informan sin normalización ni reparación silenciosa.
+
+Fase 3 queda cerrada. Fase 4 no se inicia automáticamente y sus prerrequisitos de hardware GPU (D-013) y conjunto oro definido/anotado siguen pendientes.
 
 ## Decisiones pendientes
 
