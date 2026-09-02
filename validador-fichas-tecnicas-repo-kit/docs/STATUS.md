@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 3 cerrada. Gate 3 es PASS según docs/PHASE_3_GATE_REVIEW.md. Fase 4 no se ha iniciado: hardware GPU (D-013) y conjunto oro definido/anotado siguen pendientes como prerrequisitos.
+Fase 3 cerrada. Gate 3 es PASS según docs/PHASE_3_GATE_REVIEW.md. Fase 4 no se ha iniciado. D-013 está cerrada con un servidor interno de al menos 24 GB de VRAM; el contrato del conjunto oro fija semilla 407 y ausencia de estratificación ATC inicial, pero GOLD-002, la herramienta y la anotación real siguen pendientes.
 
 ## Fase 0A — Cerrada
 
@@ -338,13 +338,182 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 
 Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Los maestros en alcance se importan idempotentemente o están excluidos por decisión aceptada; cada valor importado conserva lote y procedencia; los 275 huérfanos/184 claves permanecen clasificados en cuarentena; las incidencias se informan sin normalización ni reparación silenciosa.
 
-Fase 3 queda cerrada. Fase 4 no se inicia automáticamente y sus prerrequisitos de hardware GPU (D-013) y conjunto oro definido/anotado siguen pendientes.
+Fase 3 queda cerrada. Fase 4 no se inicia automáticamente: D-013 está cerrada, pero el conjunto oro aún no está implementado ni anotado y faltan los dos anotadores de GOLD-002.
 
 ## Decisiones pendientes
 
 - PROVIDER-001 debe resolverse antes de reglas condicionales definitivas; PROVIDER-002 antes del exportador definitivo.
 - Las excepciones concretas por campo y el mapeo CIMA se verificarán en sus fases sin reabrir prioridades implícitas.
 - Contrato de exportación, separador decimal y hardware de inferencia siguen pendientes en sus fases.
+
+## Prerrequisitos de Fase 4 — En preparación
+
+- `docs/GOLD_SET_ANNOTATION_CONTRACT.md` define selección, unidad, evidencia, estados, doble anotación y salidas del conjunto oro. La herramienta no está implementada y no se ha anotado ninguna ficha.
+- Las 20 fichas se seleccionarán desde el universo de 500 ya capturado en DEV-208 reutilizando `cima-sampling-v1`; no se descargará nada nuevo ni se estratificará por ATC, ausente en el inventario.
+- La evidencia se cita por desplazamientos sobre el `contenido` HTML literal de la sección, sin desescapar entidades ni normalizar espacios. Un intervalo que parte una entidad o etiqueta se advierte al anotador y no se corrige automáticamente.
+- Los estados de anotación son los ya validados en DEV-011; `pending` bloquea el cierre del conjunto oro.
+- Los desacuerdos entre los dos anotadores se conservan y se concilian de forma identificada; la tasa de acuerdo se publica junto con las métricas y acota lo exigible al modelo.
+- `docs/GPU_SIZING_ANALYSIS.md` registra D-013: servidor interno con al menos 24 GB de VRAM; D-014 conserva abierta la elección exacta tras benchmark.
+- DEV-401, DEV-403, DEV-405 y DEV-407 pueden avanzar sin GPU; DEV-402 y DEV-408 la requieren.
+- GOLD-001 está cerrada con semilla `407`; GOLD-003 está cerrada sin estratificación ATC inicial porque DEV-208 no aporta ese atributo. GOLD-002 (dos anotadores farmacéuticos identificados) sigue abierta.
+- Sin código, migraciones, descargas ni modificación de fuentes en este trabajo.
+
+## DEV-405 — Núcleo preparatorio verificado
+
+- Verificador literal de evidencia implementado en `pharma_validator_api.evidence_verification`: módulo puro, determinista, sin persistencia ni acceso a base de datos.
+- La cita se compara por igualdad exacta contra el texto de la sección tal cual se almacenó; no se desescapan entidades HTML ni se normalizan espacios.
+- Una cita inventada, desplazada un solo carácter o desescapada se rechaza. Una cita que parte una entidad HTML se admite si sus desplazamientos reproducen el literal; expandirla hasta un límite limpio cambiaría el texto citado y está prohibido.
+- Longitud de cita exigida entre 10 y 400 caracteres según la especificación 8.2. `no_encontrado` se admite sin cita solo si no aporta valor ni opciones.
+- Las políticas de pre-relleno se hacen cumplir aquí: `oculto` no persiste nada, `solo_evidencia` nunca admite valor, `proponer_opciones` nunca admite valor único y ningún campo protegido puede llegar preseleccionado.
+- Observación factual sobre el corpus de DEV-208: 1.464 de 13.907 secciones (10,5%) carecen de `contenido` por ser cabeceras de agrupación. Una cita contra ellas se rechaza con un diagnóstico propio, distinto de un intervalo mal calculado. No se repara el corpus ni se sintetiza contenido.
+- Validado además sobre una ficha real: cita válida admitida, cita inventada y cita contra cabecera rechazadas.
+- 19 pruebas específicas. Suite completa 112/112: 91 en `backend/` (819,99 s) y 21 en `tests/`. Ruff y mypy estricto sin incidencias en 23 ficheros. Sin migraciones ni cambios de datos.
+- Contrato en `docs/EVIDENCE_VERIFICATION_CONTRACT.md`. No se ha implementado el extractor, el cliente local ni la persistencia de propuestas.
+
+## DEV-401 — Núcleo preparatorio verificado
+
+- Interfaz `ExtractorLLM` implementada en `pharma_validator_api.extractor`: abstracta, sustituible por configuración, sin sockets, sin modelo y sin dependencia de hardware.
+- La implementación es sustituible; la admisión no lo es. `run_extraction` verifica toda propuesta con el verificador literal de DEV-405 antes de admitirla, de modo que un adaptador devuelve candidatas y nunca decisiones.
+- Una prueba específica confirma que una implementación no puede puentear la barrera afirmando su propia validez: la cita inventada se rechaza igualmente.
+- `SectionRequest` agrupa los campos que dependen de un apartado en una sola llamada, según la especificación 8: de unas 150 llamadas por documento a unas 15.
+- Toda propuesta admitida queda atribuida a versión de extractor y modelo; sin esa identidad, la comparación entre tamaños de DEV-408 no sería interpretable.
+- Un fallo del extractor no bloquea la revisión manual: se registra incidencia y la sección devuelve cero propuestas admitidas. Campo no solicitado, duplicado o ausente también producen incidencia sin inventar ausencia.
+- `NullExtractor` no propone ningún valor y hace ejecutable el resto de la Fase 4 sin GPU, materializando la degradación elegante de 8.4.
+- 12 pruebas; Ruff y mypy estricto sin incidencias en 24 ficheros. Sin migraciones ni cambios de datos.
+- Contrato en `docs/EXTRACTOR_INTERFACE_CONTRACT.md`. No se ha implementado el adaptador real (DEV-402), el esquema guiado (DEV-403) ni la reanudación por lotes (DEV-406).
+
+## DEV-403 — Núcleo preparatorio verificado
+
+- Esquema JSON de salida guiada implementado en `pharma_validator_api.guided_schema`, versión `guided-extraction-v1`.
+- El esquema es cerrado: `additionalProperties` falso en raíz y resultados, `required` sobre las ocho claves de 8.2, recuento de resultados fijado al número de campos pedidos y enum de campo restringido a esos nombres.
+- La longitud de `evidencia_texto` se acota a 10..400 caracteres, el mismo rango que verifica DEV-405.
+- La sección citada la aporta la petición, no el modelo: pedírsela le permitiría declarar un apartado distinto del que se le mostró. Una primera versión la leía de la respuesta y habría dejado sin sección toda propuesta con cita, provocando en DEV-405 un rechazo por motivo equivocado.
+- Los valores se validan contra `tipo_dato` sin reparar: `CHAR` que excede falla sin truncar, `DECIMAL` con exceso de escala falla sin redondear, `BIT` solo admite 0 o 1 y un tipo no reconocido no se relaja a texto libre.
+- Una respuesta malformada es error explícito, nunca una propuesta parcialmente reconstruida.
+- 22 pruebas; Ruff y mypy estricto sin incidencias en 25 ficheros. Sin migraciones ni cambios de datos.
+- Contrato en `docs/GUIDED_SCHEMA_CONTRACT.md`. Con DEV-401 y DEV-405 suman 53 pruebas de Fase 4 sin GPU. La traducción a GBNF y el cliente real siguen en DEV-402.
+
+## DEV-404 — Núcleo preparatorio verificado
+
+- Agrupación por apartado implementada en `pharma_validator_api.section_grouping`: módulo puro que lee `ft_section_literal` tal como lo importó DEV-302, sin reinterpretar el catálogo.
+- Medido sobre el catálogo real: 353 definiciones, 129 campos extraíbles resueltos en 14 llamadas por documento. La especificación estimaba ~150 campos en ~12 apartados.
+- Apartados citados: 1, 2, 3, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 6.1, 6.3, 6.5 y 6.6.
+- Un campo citado en varios apartados se pide en todos: la evidencia puede estar en cualquiera y descartar apartados perdería la cita. El orden del literal no es significativo.
+- Ningún campo desaparece en silencio: 245 diagnósticos, de los cuales 208 son campos sin apartado declarado y 37 repeticiones dentro del mismo apartado.
+- Los 208 sin apartado son del mismo orden que los 204 no procedentes de FT de DEV-006, pero no son la misma cifra ni se ha comprobado que sean el mismo conjunto; la diferencia queda como observación.
+- El catálogo conserva identidades repetidas. La repetición se informa y el campo se solicita una vez; no se deduplica el catálogo ni se fusionan definiciones. Este caso lo detectó la validación contra datos reales, no las pruebas sintéticas.
+- El nivel superior de un apartado nunca es 0: la hoja contiene, fuera de las 353 definiciones, una tabla de resumen con ratios como 0.375 que no son secciones. Las 353 definiciones no contienen numéricos en esa columna.
+- 17 pruebas; Ruff y mypy estricto sin incidencias en 26 ficheros. Sin migraciones ni cambios de datos.
+- Contrato en `docs/SECTION_GROUPING_CONTRACT.md`. Con DEV-401, DEV-403 y DEV-405 suman 70 pruebas de Fase 4 sin GPU.
+
+## DEV-406 — Núcleo preparatorio verificado
+
+- Planificador reanudable implementado en `pharma_validator_api.extraction_batches`: módulo puro, sin sockets ni persistencia; quien ejecuta aporta el estado completado.
+- La unidad reanudable es una llamada: versión documental, apartado y conjunto de campos. El orden de los campos no cambia su clave; el conjunto sí, porque la respuesta depende de qué se preguntó junto.
+- La huella de configuración cubre planificador, versión de extractor, modelo, prompt y esquema. Una unidad solo se reutiliza con la misma huella.
+- Cambiar modelo, prompt o esquema no invalida ni borra el trabajo anterior: lo marca como superado y replanifica. Es lo que permitirá a DEV-408 comparar dos tamaños sobre el mismo corpus sin pisar la primera ejecución.
+- El reintento de incidencias es configurable: una incidencia puede ser transitoria o estable, y la decisión es de quien opera el lote.
+- Las unidades pendientes se ordenan por documento y apartado en orden numérico, no por hash: un lote de 7.500 peticiones debe ser legible mientras avanza. El criterio se comparte con DEV-404 mediante `section_sort_key`.
+- Se distinguen fallo de unidad (esperable, no interrumpe) y error de uso (unidad duplicada o estado repetido, se detiene explícitamente).
+- 17 pruebas; Ruff y mypy estricto sin incidencias en 27 ficheros. Sin migraciones ni cambios de datos.
+- Contrato en `docs/EXTRACTION_BATCH_CONTRACT.md`. Con DEV-401, DEV-403, DEV-404 y DEV-405 suman 87 pruebas de Fase 4 sin GPU.
+
+## DEV-510 — Núcleo preparatorio verificado
+
+- Reglas de pre-relleno implementadas en `pharma_validator_api.prefill_policy`, módulo puro e independiente de la interfaz: la pantalla consumirá estas decisiones en lugar de reimplementarlas.
+- Las cuatro políticas de la especificación 9.2 quedan cubiertas: `proponer_valor` precarga con evidencia, `proponer_opciones` ofrece candidatos sin marcar, `solo_evidencia` deja la casilla vacía con aviso de criterio farmacéutico y `oculto` no aparece.
+- Ejemplo canónico `ADUDOMAXDIA` cubierto por prueba: la evidencia del apartado 4.2 se muestra, la casilla queda vacía y el aviso indica que la ficha no declara dosis máxima.
+- La política es una regla, no una recomendación: un valor pasado a un campo protegido se descarta en lugar de mostrarse, y `assert_no_protected_preselection` detecta incluso un plan construido a mano que intente saltarse la comprobación.
+- Confirmación en bloque conforme a 9.3: solo `proponer_valor` y solo con la evidencia visible, que es un argumento explícito y no una suposición. Un `proponer_valor` sin evidencia tampoco admite bloque.
+- Esta barrera es distinta de la de DEV-405: aquella protege la veracidad de la cita, esta la autoría de la decisión. Ninguna sustituye a la otra.
+- 13 pruebas; Ruff y mypy estricto sin incidencias en 28 ficheros. Sin migraciones ni cambios de datos.
+- Contrato en `docs/PREFILL_POLICY_CONTRACT.md`.
+
+## DEV-501 — Núcleo preparatorio verificado
+
+- Identificación del revisor implementada en `pharma_validator_api.reviewer_identity`, con la lista configurable `APP_REVIEWERS` en formato `identificador:Nombre`.
+- La garantía es `declarada` y está explícita en el tipo, no en un comentario: la firma identifica quién dijo ser, no quién era. El campo permite que una futura autenticación real (D-018, reevaluable en Fase 8) sea un cambio de valor y no una reinterpretación silenciosa.
+- Sin revisor seleccionado no se guarda ninguna validación; un nombre fuera de la lista tampoco firma; una lista vacía no firma nada.
+- Revisor ausente y revisor desconocido son errores distintos con mensajes distintos: uno indica que la pantalla no pidió usuario y el otro un intento de firma indebida.
+- La doble validación de 11.1 exige dos revisores distintos y la comprobación vive junto a la resolución de identidad, no en la pantalla.
+- Verificado de extremo a extremo que el formato documentado en `.env.example` se lee sin adaptaciones.
+- 15 pruebas; Ruff y mypy estricto sin incidencias en 29 ficheros. Sin migraciones ni cambios de datos.
+- Contrato en `docs/REVIEWER_IDENTITY_CONTRACT.md`.
+
+## DEV-506 — Núcleo preparatorio verificado
+
+- Estados de validación implementados en `pharma_validator_api.validation_states`: módulo puro, sin persistencia ni auditoría; la regla vive junto a la decisión para que ninguna vía de entrada la evite.
+- El módulo describe el plano interno y no traduce estados al contrato del proveedor: ADR-0004 está aceptado para el modelo interno y la serialización externa sigue pendiente bajo D-011/PROVIDER-002. Por eso habla de resolución interna y cierre de revisión, no de elegibilidad de exportación.
+- `no_aplica` es un estado propio, distinto de `no_consta`, conforme a DEV-011: uno dice que el dato no está en las fuentes, el otro que el campo no tiene sentido para ese medicamento.
+- `no_consta` exige declarar qué fuentes son aplicables, cuáles obligatorias y cuáles se revisaron, y falla nombrando las que faltan. Sin esa comprobación sería indistinguible de «no lo he mirado».
+- `no_consta` y `no_aplica` solo puede decidirlos un farmacéutico. El comentario es obligatorio donde DEV-011 lo exige: siempre en `no_aplica`, y en `no_consta` solo si el campo es obligatorio.
+- `no_consta` no admite valor final: es una ausencia comprobada, y llevar valor la convertiría en un dato inventado.
+- Nada resuelto vuelve a `pendiente`: revertir borraría la autoría sin rastro. Para deshacer se registra otra decisión, conservando el evento anterior.
+- Revertir `no_consta`/`no_aplica` y salir de `revision_pendiente` exigen comentario explícito.
+- Un cambio de versión documental marca como `revision_pendiente` y no borra ni invalida. Lo que nunca se decidió sigue `pendiente`: marcarlo falsearía el recuento de trabajo hecho.
+- El cierre de revisión distingue retención por estado y por doble validación sin conciliar; un campo `confirmado` bloqueado se retiene igual, con el motivo registrado aparte. Qué se exporta y en qué formato no se decide aquí.
+- 15 pruebas; Ruff y mypy estricto sin incidencias en 30 ficheros. Sin migraciones ni cambios de datos.
+- Contrato en `docs/VALIDATION_STATES_CONTRACT.md`.
+
+## DEV-508 — Núcleo preparatorio verificado
+
+- Medición de `segundos_empleados` implementada en `pharma_validator_api.time_measurement`: módulo puro que recibe intervalos de foco ya observados; no lee relojes ni depende de la interfaz.
+- Se descuenta la inactividad por encima de 60 segundos, según 7.2. Comprobado con un caso real: dos campos, uno de 8 s y otro abandonado 3.600 s, dan una media de 34,0 s por campo frente a 1.804,0 s sin descuento.
+- Un tramo de exactamente 60 segundos no se marca como recortado: el umbral es el límite de lo que cuenta, no el principio de lo que sobra.
+- El tiempo descartado y la marca de recorte se informan junto al contado: descartar en silencio impediría distinguir un campo genuinamente difícil de una pantalla olvidada abierta.
+- Dos intervalos de foco solapados son error explícito, no una duración estimada: el foco no puede estar en dos sitios a la vez y un solapamiento indica captura defectuosa.
+- Un campo sin foco cuenta cero segundos y sigue siendo campo medido; excluirlo haría que la media mejorase sola al ignorar los campos que nadie tocó.
+- 15 pruebas; Ruff y mypy estricto sin incidencias en 31 ficheros. Sin migraciones ni cambios de datos.
+- Contrato en `docs/TIME_MEASUREMENT_CONTRACT.md`.
+
+## DEV-507 — Núcleo preparatorio verificado
+
+- Edición de bloques repetibles implementada en `pharma_validator_api.block_editing`: módulo puro que transforma ocurrencias y describe qué cambió, para que la auditoría consuma esa descripción en lugar de reconstruirla.
+- Las cinco operaciones que pide el plan son justamente las que pueden violar la regla de ocurrencias explícitas, y cada una lleva su salvaguarda.
+- Crear no fabrica procedencia: una ocurrencia añadida por un revisor no puede declarar `origin_provenance`, o una fila inventada sería indistinguible de una importada.
+- Eliminar una ocurrencia importada exige comentario y el mensaje sugiere marcarla no aplicable; una añadida por el revisor se retira sin fricción.
+- Reordenar debe cubrir exactamente las ocurrencias existentes: omitir una la eliminaría de hecho, esquivando la salvaguarda de eliminación.
+- Fusionar exige comentario y falla si ambas ocurrencias afirman valores distintos para el mismo campo: elegir uno sería decidir un dato clínico sin constancia de qué se descartó. Se admiten complementarias, de forma simétrica, y un campo ausente en ambas sigue ausente.
+- Marcar no aplicable conserva los valores intactos, conforme a DEV-011, y es reversible con justificación.
+- Durante la implementación se corrigió un fallo propio: la fusión tomaba como conflicto un ausente en la ocurrencia de origen frente a un valor en la de destino. Lo detectó una prueba antes de que existiera interfaz, y se añadió la prueba de simetría que faltaba.
+- 22 pruebas; Ruff y mypy estricto sin incidencias en 32 ficheros. Sin migraciones ni cambios de datos.
+- Contrato en `docs/BLOCK_EDITING_CONTRACT.md`.
+
+## Integración de la cadena — Verificada
+
+- Suite de integración en `backend/tests/test_phase4_pipeline_integration.py`: comprueba lo que ninguna prueba unitaria puede, que los módulos encajan sin adaptadores y que las barreras siguen en pie cuando los datos atraviesan toda la cadena.
+- Recorrido completo verificado: catálogo → agrupación por apartado → plan de lote → extracción → presentación en pantalla. El campo `oculto` no se pide y los tres restantes caen en dos apartados.
+- Un extractor que devuelve citas inventadas para todos los campos queda detenido antes de la presentación: cero propuestas admitidas y ninguna conserva su valor.
+- Los campos protegidos permanecen vacíos en la pantalla completa: `proponer_valor` precargado, `solo_evidencia` con casilla vacía, `proponer_opciones` sin marcar y `oculto` no visible.
+- Reanudación tras interrupción y cambio de modelo comprobados sobre peticiones reales generadas por la agrupación, no sobre fixtures artificiales.
+- 5 pruebas de integración; Ruff y mypy estricto sin incidencias en 32 ficheros.
+
+## Incidencia observada — Renombrado de directorios en Windows
+
+- Una ejecución del verificador integral falló con `1 failed, 240 passed`: `test_aggregate_profile_is_reproducible` de DEV-002 lanzó `PermissionError [WinError 5]` al ejecutar `staging.replace(output_dir)` en `scripts/profile_reference_files.py:409`.
+- El fallo es de entorno, no de lógica. La prueba pasa en aislamiento y se repitió cinco veces seguidas en verde; solo falló dentro de la suite completa, con los importadores pesados ejecutándose antes.
+- Es el mismo patrón registrado en DEV-208: el renombrado de directorios falló dos veces por la caché de Windows y se resolvió con una entrada ZIP atómica, tras autorización humana.
+- No se ha modificado `scripts/profile_reference_files.py`: DEV-002 está cerrado y su hash reproducible es evidencia de fase. Cambiarlo sin decisión humana alteraría un artefacto ya verificado.
+- El patrón `staging.replace(output_dir)` no es exclusivo del perfilador: aparece en seis scripts —`analyze_integrity_incidents.py:161`, `analyze_reference_relationships.py:200`, `generate_data_quality_report.py:366`, `import_omeprazole_fixture.py:174`, `profile_reference_files.py:409` y `roundtrip_omeprazole_fixture.py:201`—. La incidencia afecta potencialmente a todos ellos, no solo al que falló.
+- Queda como incidencia abierta: la reproducibilidad de estos artefactos no está en cuestión, pero el verificador puede fallar de forma intermitente en Windows por esta causa. Si se decide corregirlo, la solución candidata es la misma que se aceptó en DEV-208 y debería aplicarse a los seis puntos a la vez, no solo al que se manifestó.
+- La ejecución integral posterior del 2 de septiembre de 2026 terminó con código 0 en aproximadamente 5 minutos y medio: 295/295 pruebas Python, Ruff, mypy sobre 32 ficheros, Vitest, ESLint, build, Compose, 8/8 referencias y Alembic upgrade/downgrade. La incidencia queda registrada como intermitente, no reproducida en esta corrida.
+
+## Pureza de los módulos — Verificada
+
+- Suite en `backend/tests/test_module_purity.py`: convierte en comprobable lo que los contratos afirmaban en prosa. Una afirmación documental envejece; esta no.
+- Los diez módulos de Fases 4 y 5 se importan con `socket.socket` bloqueado. Importa para 8.3: no hay salida a internet, y un módulo que abriera una conexión al importarse rompería esa garantía en silencio.
+- Ninguno llama a primitivas de disco ni importa `sqlalchemy`, `httpx`, `requests`, `urllib`, `pathlib` o `shutil`, ni las capas `database`/`models`.
+- La comprobación usa árbol sintáctico y no subcadenas. La primera versión daba dos falsos positivos porque `requests` aparece como nombre de campo (`requests: tuple[SectionRequest, ...]`) y `replace(` como `dataclasses.replace`; el defecto estaba en la prueba, no en los módulos.
+- Se confirmó que la prueba detecta una violación real inyectando `import sqlalchemy` y una escritura a disco en una copia del módulo: ambas se señalan.
+- La primera versión de esta suite rompió 21 pruebas de otras tres suites. Usaba `importlib.reload`, que sustituye las clases del módulo por otras nuevas dentro del mismo intérprete: las excepciones seguían lanzándose, pero `pytest.raises` dejaba de reconocerlas por proceder de una clase distinta. El fallo no se manifestaba al ejecutar cada suite por separado, solo en la suite completa.
+- Corregido importando cada módulo en un intérprete aparte mediante `subprocess`. Una prueba de pureza no puede contaminar el estado global de la sesión que verifica.
+- 30 pruebas; Ruff y mypy estricto sin incidencias en 32 ficheros.
+
+## Fase 5 — No abierta formalmente
+
+DEV-510, DEV-501, DEV-506, DEV-508 y DEV-507 se han adelantado como núcleos de decisión y cálculo verificables sin interfaz. La Fase 5 no está iniciada ni su puerta de salida cumplida: no existen el selector de interfaz, la cola de trabajo (DEV-502), la pantalla de tres zonas (DEV-503), la navegación por teclado (DEV-504), el guardado incremental (DEV-505), la persistencia de las validaciones, la interfaz de edición de bloques ni la captura de foco que alimenta la medición.
+
+Adelantar estos núcleos no sustituye la entrada ni la puerta de salida de Fase 4. D-013 está cerrada; el bloqueo de entrada restante es definir y anotar realmente el conjunto oro con dos farmacéuticos identificados.
 
 ## Última actualización
 

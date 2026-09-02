@@ -291,23 +291,71 @@ Incluye overrides CHAR(100) y preserva tipos originales.
 
 ## Gate 3 — PASS
 
-Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Fase 3 cerrada; antes de iniciar DEV-401 deben confirmarse el hardware GPU (D-013) y la definición/anotación del conjunto oro.
+Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Fase 3 cerrada; D-013 está resuelta con servidor interno de al menos 24 GB de VRAM. La apertura formal de Fase 4 sigue pendiente de herramienta, dos anotadores identificados (GOLD-002) y conjunto oro anotado.
 
 ## EPIC E4 — Extractor local
 
 ### DEV-401 — Contrato `ExtractorLLM` (`P0`)
 
+**Objetivo:** desacoplar el motor de inferencia mediante una interfaz sustituible por configuración, con petición agrupada por sección y verificación obligatoria antes de admitir una propuesta.
+
+**Salida:** `pharma_validator_api.extractor` y `docs/EXTRACTOR_INTERFACE_CONTRACT.md`.
+
+**Aceptación:** la implementación es sustituible pero no puede puentear el verificador de DEV-405; las peticiones agrupan campos por apartado; toda propuesta admitida queda atribuida a versión de extractor y modelo; un fallo del extractor no bloquea la revisión manual; campo no solicitado, duplicado o ausente producen incidencia.
+
+**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-401 ni abre Fase 4. Evidencia: 12 pruebas, Ruff y mypy limpios. No requiere GPU; DEV-402 sí.
+
 ### DEV-402 — Adaptador de servidor local (`P0`)
 
 ### DEV-403 — Esquema de salida guiada (`P0`)
 
+**Objetivo:** gobernar la decodificación del modelo con un esquema JSON cerrado y validar la respuesta contra los tipos declarados en el catálogo, sin reparar.
+
+**Salida:** `pharma_validator_api.guided_schema` y `docs/GUIDED_SCHEMA_CONTRACT.md`.
+
+**Aceptación:** esquema cerrado con `required` completo y recuento de resultados fijado; longitud de evidencia acotada a 10..400; la sección la aporta la petición y no el modelo; `CHAR` que excede, `DECIMAL` con exceso de escala o precisión y `BIT` inválido fallan con error legible sin truncar ni redondear; campo desconocido, duplicado o ausente rechazados.
+
+**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-403 ni abre Fase 4. Evidencia: 22 pruebas, Ruff y mypy limpios. La traducción a GBNF es DEV-402.
+
 ### DEV-404 — Agrupación por sección (`P1`)
+
+**Objetivo:** agrupar los campos extraíbles en una petición por apartado de la ficha técnica, según la especificación 8, sin reinterpretar el catálogo.
+
+**Salida:** `pharma_validator_api.section_grouping` y `docs/SECTION_GROUPING_CONTRACT.md`.
+
+**Aceptación:** literales simples y múltiples reconocidos; orden del literal no significativo; un campo citado en varios apartados se pide en todos; apartado no reconocido, ausente o inexistente produce diagnóstico y nunca una suposición; campo repetido informado sin deduplicar el catálogo; política `oculto` no se solicita.
+
+**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-404 ni abre Fase 4. Evidencia: 17 pruebas y validación sobre el catálogo real (353 definiciones, 129 campos extraíbles, 14 llamadas, 245 diagnósticos). No requiere GPU.
 
 ### DEV-405 — Verificador literal de evidencia (`P0`)
 
+**Objetivo:** impedir por construcción que se persista una propuesta cuya cita no aparezca literalmente en la versión inmutable citada.
+
+**Salida:** `pharma_validator_api.evidence_verification` y `docs/EVIDENCE_VERIFICATION_CONTRACT.md`.
+
+**Aceptación:** cita verificada por igualdad exacta sobre el texto canónico sin desescapar ni normalizar; cita inventada, desplazada o desescapada rechazada; longitud 10..400; `no_encontrado` admitido solo sin valor; campos protegidos nunca preseleccionados; módulo puro y determinista.
+
+**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-405 ni abre Fase 4. Evidencia: 19 pruebas específicas, validación sobre ficha real del corpus, Ruff y mypy limpios. No requiere GPU.
+
 ### DEV-406 — Procesamiento reanudable por lotes (`P1`)
 
+**Objetivo:** planificar la extracción de forma reanudable, con la configuración de prompt, esquema y modelo como parte de la identidad del trabajo.
+
+**Salida:** `pharma_validator_api.extraction_batches` y `docs/EXTRACTION_BATCH_CONTRACT.md`.
+
+**Aceptación:** un lote interrumpido reanuda solo lo que falta; una unidad se reutiliza únicamente con la misma huella de configuración; cambiar modelo, prompt o esquema supera el trabajo anterior sin borrarlo; el reintento de incidencias es configurable; estado ajeno se ignora; dos peticiones con la misma unidad o un estado repetido son errores de uso explícitos.
+
+**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-406 ni abre Fase 4. Evidencia: 17 pruebas, Ruff y mypy limpios. No requiere GPU.
+
 ### DEV-407 — Herramienta de anotación del conjunto oro (`P0`)
+
+**Objetivo:** seleccionar de forma reproducible las 20 fichas del conjunto oro desde el corpus de DEV-208 y permitir su anotación farmacéutica con evidencia literal verificable.
+
+**Salida:** `docs/GOLD_SET_ANNOTATION_CONTRACT.md` (contrato definido) y la herramienta con `gold-selection.json`, `gold-annotations.jsonl`, `gold-disagreements.csv`, `run-manifest.json` y `summary.md`.
+
+**Aceptación:** los nueve criterios del contrato. En particular: selección reproducible desde el universo de 500; evidencia citada por desplazamientos sobre el HTML literal sin desescapar ni normalizar; ocurrencias repetibles sin concatenar; ausencia, vacío, `no_consta` y `not_applicable` distinguibles; desacuerdos conservados sin resolución automática.
+
+**Estado:** contrato definido el 2 de septiembre de 2026; herramienta no implementada. GOLD-001 queda cerrada con semilla `407`, GOLD-003 queda cerrada sin estratificación ATC inicial por ausencia del atributo en DEV-208 y GOLD-002 continúa pendiente. No cierra DEV-407 ni abre Fase 4.
 
 ### DEV-408 — Benchmark de dos modelos (`P0`)
 
@@ -316,6 +364,14 @@ Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Fase 3 cerrada; antes de inicia
 ## EPIC E5 — Revisión farmacéutica
 
 ### DEV-501 — Selector de usuario (`P0`)
+
+**Objetivo:** resolver quién firma una validación desde una lista configurable y rechazar cualquier guardado sin revisor seleccionado.
+
+**Salida:** `pharma_validator_api.reviewer_identity`, ajuste `APP_REVIEWERS` y `docs/REVIEWER_IDENTITY_CONTRACT.md`.
+
+**Aceptación:** lista construida desde configuración; revisor ausente y revisor desconocido son errores distintos; una lista vacía no firma nada; la garantía es `declarada` y está explícita en el tipo; la doble validación exige dos revisores distintos.
+
+**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-501 ni abre Fase 5. Evidencia: 15 pruebas, Ruff y mypy limpios. El selector de interfaz y la persistencia en el navegador no existen todavía.
 
 ### DEV-502 — Cola y asignación de lotes (`P0`)
 
@@ -327,13 +383,45 @@ Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Fase 3 cerrada; antes de inicia
 
 ### DEV-506 — Estados de validación (`P0`)
 
+**Objetivo:** fijar los estados internos de decisión humana, sus transiciones legítimas y el cierre de revisión, de forma verificable e independiente de la interfaz y sin decidir la serialización del proveedor.
+
+**Salida:** `pharma_validator_api.validation_states` y `docs/VALIDATION_STATES_CONTRACT.md`.
+
+**Aceptación:** `no_consta` exige haber revisado las fuentes obligatorias declaradas y solo lo decide un farmacéutico; `no_aplica` es estado propio con comentario obligatorio; ningún estado salvo `confirmado`/`corregido` admite valor final; nada resuelto vuelve a `pendiente`; un cambio de versión marca y no borra; la doble validación sin conciliar retiene el registro. No se traduce al contrato del proveedor.
+
+**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-506 ni abre Fase 5. Evidencia: 15 pruebas, Ruff y mypy limpios. La persistencia, la auditoría y la serialización del proveedor no existen todavía.
+
 ### DEV-507 — Editor de bloques repetibles (`P0`)
 
+**Objetivo:** permitir crear, eliminar, ordenar, fusionar y marcar no aplicable las ocurrencias de un bloque sin violar la regla de ocurrencias explícitas.
+
+**Salida:** `pharma_validator_api.block_editing` y `docs/BLOCK_EDITING_CONTRACT.md`.
+
+**Aceptación:** una ocurrencia creada por un revisor no declara procedencia de origen; eliminar una importada exige comentario; reordenar debe cubrir exactamente las existentes; fusionar exige comentario y falla ante valores en conflicto, admitiendo solo complementarios; marcar no aplicable conserva los valores y es reversible con justificación.
+
+**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-507 ni abre Fase 5. Evidencia: 22 pruebas, Ruff y mypy limpios. La interfaz de edición no existe todavía.
+
 ### DEV-508 — Medición de tiempo (`P1`)
+
+**Objetivo:** calcular `segundos_empleados` por campo descontando la inactividad, para que la comparación del piloto de la sección 17 sea posible.
+
+**Salida:** `pharma_validator_api.time_measurement` y `docs/TIME_MEASUREMENT_CONTRACT.md`.
+
+**Aceptación:** cada tramo de foco cuenta hasta 60 segundos y el exceso se descarta e informa; el umbral exacto no se recorta; los solapamientos son error explícito; un campo sin foco cuenta cero y sigue siendo campo medido; la media de sesión no depende del orden de registro.
+
+**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-508 ni abre Fase 5. Evidencia: 15 pruebas, Ruff y mypy limpios. La captura de foco en la interfaz no existe todavía.
 
 ### DEV-509 — Rendimiento y precarga (`P1`)
 
 ### DEV-510 — Tests de sesgo de automatización (`P0`)
+
+**Objetivo:** convertir las reglas de pre-relleno de la especificación 9 en decisiones ejecutables y comprobables, independientes de la interfaz.
+
+**Salida:** `pharma_validator_api.prefill_policy` y `docs/PREFILL_POLICY_CONTRACT.md`.
+
+**Aceptación:** las cuatro políticas producen la presentación correcta; un valor pasado a un campo protegido se descarta en lugar de mostrarse; una pantalla completa se comprueba de una vez y detecta un plan manipulado; la confirmación en bloque exige `proponer_valor` y evidencia visible.
+
+**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-510 ni abre Fase 5. Evidencia: 13 pruebas, Ruff y mypy limpios. La pantalla que consumirá estas decisiones (DEV-503/504/505) no existe todavía.
 
 ### DEV-511 — Ejecución del conjunto de medida (`P0`)
 
