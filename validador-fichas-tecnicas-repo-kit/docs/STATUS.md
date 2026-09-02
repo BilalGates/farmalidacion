@@ -6,7 +6,7 @@
 
 ## Fase actual
 
-Fase 3 en curso. DEV-301 a DEV-307 están completados; DEV-308 no se ha iniciado. Gate 2 permanece PASS y Gate 3 sigue abierto.
+Fase 3 en curso. DEV-301 a DEV-308 están completados. Gate 2 permanece PASS y Gate 3 sigue abierto pendiente de revisión formal.
 
 ## Fase 0A — Cerrada
 
@@ -323,7 +323,16 @@ locales quedan demostrados. No se inicia automáticamente la Fase 2.
 - Una prioridad pendiente nunca selecciona valor. Una prioridad aceptada exige orden explícito y referencia de decisión humana; las reglas de otro campo se rechazan.
 - Coincidencias exactas conservan todas las procedencias. Conflictos resueltos por regla también conservan todas las afirmaciones; una fuente prioritaria internamente contradictoria permanece sin resolver.
 - No se añadieron prioridades concretas, heurísticas de matching, persistencia, migraciones, integración CIMA/FT ni exportación.
-- Contrato en docs/PROVENANCE_CONFLICT_ENGINE.md; DEV-308 no iniciado y Gate 3 sigue abierto.
+- Contrato en docs/PROVENANCE_CONFLICT_ENGINE.md; DEV-308 se completó posteriormente y Gate 3 sigue abierto.
+
+## DEV-308 — Completado
+
+- Consolidador agregado implementado sobre los artefactos reproducibles de DEV-002 y DEV-009; no vuelve a perfilar celdas ni serializa filas o relaciones.
+- Valida los manifiestos y hashes de entrada, rechaza artefactos modificados y no sobrescribe una salida existente.
+- Dos informes reales tardaron 0,462 s y 0,336 s, fueron idénticos byte a byte y produjeron el hash 4009cac62bb27974ee3ff15a6b863a03cbb090816e220cb2aee66da128745d48.
+- Resultados: 730 columnas, 9.301.670 valores materiales, 6.510.031 nulos, 52 fórmulas, 106 claves candidatas observadas, seis grupos de duplicados, cuatro excesos, 24 valores al límite y 275 huérfanos/184 claves.
+- Las claves candidatas y los duplicados no se reinterpretan como decisiones de dominio; no se reparó, normalizó, truncó ni deduplicó ningún original.
+- Contrato en docs/DATA_QUALITY_REPORT.md. DEV-308 queda completado; Gate 3 permanece abierto pendiente de revisión formal y no se inicia Fase 4.
 
 ## Decisiones pendientes
 

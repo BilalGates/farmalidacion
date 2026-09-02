@@ -287,7 +287,7 @@ Incluye overrides CHAR(100) y preserva tipos originales.
 
 ### DEV-308 — Informes de calidad de datos (`P1`)
 
-Longitudes, tipos, duplicados, huérfanos, nulos y catálogos.
+**Estado:** completada el 2 de septiembre de 2026. Consolidador agregado sobre DEV-002/009, sin salida por celda. Dos corridas de 0,462 s y 0,336 s produjeron artefactos idénticos y el hash 4009cac62bb27974ee3ff15a6b863a03cbb090816e220cb2aee66da128745d48. Reproduce 275 huérfanos/184 claves, 6 grupos de duplicados, 4 excesos y 24 valores al límite. Gate 3 queda abierto para revisión formal; Fase 4 no iniciada.
 
 ## EPIC E4 — Extractor local
 
