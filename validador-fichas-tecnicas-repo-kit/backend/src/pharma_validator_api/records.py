@@ -281,25 +281,32 @@ def _search_predicate(needle: str) -> ColumnElement[bool]:
     """Preselección en SQL de los registros que `q` puede llegar a casar.
 
     Cubre los mismos orígenes que `_matches`: el identificador del registro, los
-    identificadores externos y los campos de nombre y principio activo. `LIKE`
-    en SQLite es insensible a mayúsculas para ASCII, igual que el `casefold` que
-    aplica después `_matches`, que sigue siendo quien decide: esto sólo descarta
-    lo que con certeza no coincide.
+    identificadores externos y los campos de nombre y principio activo.
+
+    La comparación se hace sobre `lower()` en ambos lados y **no** con `LIKE` a
+    secas: `LIKE` sólo ignora mayúsculas para ASCII, de modo que buscar
+    `MAGNÉSICO` no encontraba `magnésico` y la preselección descartaba filas que
+    `_matches` sí aceptaba. Con acentos, que abundan en los nombres de principio
+    activo, eso vaciaba la búsqueda.
+
+    Es deliberadamente amplia: `_matches` sigue siendo quien decide, y esto sólo
+    descarta lo que con certeza no coincide. Los acentos no se normalizan, aquí
+    ni allí: `magnesico` no encuentra `magnésico`, igual que antes.
     """
-    pattern = f'%{needle}%'
+    pattern = f'%{needle.lower()}%'
     named_fields = DISPLAY_NAME_FIELDS + ACTIVE_INGREDIENT_FIELDS
     return or_(
-        TargetRecord.id.like(pattern),
+        func.lower(TargetRecord.id).like(pattern),
         TargetRecord.id.in_(
             select(ExternalIdentifier.target_record_id).where(
-                ExternalIdentifier.source_identifier.like(pattern)
+                func.lower(ExternalIdentifier.source_identifier).like(pattern)
             )
         ),
         TargetRecord.id.in_(
             select(BlockInstance.target_record_id)
             .join(FieldValue, FieldValue.block_instance_id == BlockInstance.id)
             .where(FieldValue.field_name.in_(named_fields))
-            .where(FieldValue.literal_value.like(pattern))
+            .where(func.lower(FieldValue.literal_value).like(pattern))
         ),
     )
 

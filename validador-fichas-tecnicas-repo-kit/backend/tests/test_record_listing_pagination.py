@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from pharma_validator_api.config import Settings
 from pharma_validator_api.main import create_app
-from pharma_validator_api.models import Base, BlockInstance, TargetRecord
+from pharma_validator_api.models import Base, BlockInstance, FieldValue, TargetRecord
 
 REVIEWERS = ('ana:Ana Ruiz',)
 RECORD_COUNT = 12
@@ -101,3 +101,56 @@ def test_search_without_matches_is_empty(tmp_path: Path) -> None:
 
     assert body['items'] == []
     assert body['total'] == 0
+
+
+def accented_client(tmp_path: Path) -> TestClient:
+    """Un registro cuyo nombre lleva acento, como los principios activos reales."""
+    url = f'sqlite:///{(tmp_path / "accents.db").as_posix()}'
+    engine = create_engine(url)
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        session.add(TargetRecord(id='rec-acc', entity_type='active_ingredient'))
+        session.add(
+            BlockInstance(
+                id='blk-acc',
+                target_record_id='rec-acc',
+                block_type='active_ingredient_general',
+                ordinal=1,
+            )
+        )
+        session.add(
+            FieldValue(
+                id='val-acc',
+                block_instance_id='blk-acc',
+                field_name='DESCRIPCION',
+                literal_value='omeprazol magnésico',
+                observed_type='text',
+                logical_state='present',
+            )
+        )
+        session.commit()
+    engine.dispose()
+    settings = Settings(env='test', database_url=url, reviewers=REVIEWERS, _env_file=None)
+    return TestClient(create_app(settings))
+
+
+@pytest.mark.parametrize('needle', ['magnésico', 'MAGNÉSICO', 'Magnésico'])
+def test_search_ignores_case_on_accented_letters(tmp_path: Path, needle: str) -> None:
+    """`LIKE` sólo ignora mayúsculas en ASCII: `É` no casa con `é`.
+
+    La preselección en SQL llegó a descartar filas que el filtro en Python sí
+    aceptaba, y con acentos —que abundan en los nombres de principio activo— la
+    búsqueda se vaciaba entera.
+    """
+    with accented_client(tmp_path) as client:
+        body = client.get('/records', params={'q': needle}).json()
+
+    assert [item['display_name'] for item in body['items']] == ['omeprazol magnésico']
+
+
+def test_search_does_not_normalise_accents(tmp_path: Path) -> None:
+    """Sin acento no encuentra con acento: buscar es literal, y así era antes."""
+    with accented_client(tmp_path) as client:
+        body = client.get('/records', params={'q': 'magnesico'}).json()
+
+    assert body['items'] == []
