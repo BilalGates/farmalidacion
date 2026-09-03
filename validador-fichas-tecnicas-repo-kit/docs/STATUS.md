@@ -532,6 +532,18 @@ La vertical de revisión descrita más abajo tampoco abre la Fase 5: es un spike
 - 20 pruebas de backend y 6 de frontend nuevas. Suite completa: 294/294 Python, 6/6 Vitest, Ruff, mypy estricto sobre 33 ficheros, ESLint, build y Alembic upgrade/downgrade.
 - Alcance, límites, comportamiento provisional y decisiones abiertas en `docs/REVIEW_VERTICAL_SPIKE.md`.
 
+## DEV-407 — Selección del conjunto oro verificada; anotación no implementada
+
+- Algoritmo `gold-selection-v1` implementado en `pharma_validator_api.gold_selection`: módulo puro, sin red ni disco, incorporado a la suite de pureza (33 pruebas sobre 11 módulos).
+- Se implementa **solo la mitad de selección** de DEV-407. La anotación exige dos farmacéuticos identificados y GOLD-002 sigue pendiente de decisión humana. Separarlas permite tener la selección verificada y estable sin inventar anotadores para poder ejecutarla.
+- Selección verificada sobre el corpus real de 500 documentos de DEV-208, sin red y sin modificar el corpus: dos ejecuciones producen el mismo `run_id` `ac843f92c081045bd61ed80d6aef13c703f88275eeab433291ddb6ce9dd792cd` y los mismos 20 `nregistro`. La prueba comprueba además que el manifiesto no se ha tocado.
+- La ordenación previa por `nregistro` no es cosmética: `random.sample` depende del orden de la secuencia, de modo que sin ella el mismo corpus leído en otro orden daría un conjunto oro distinto con la misma semilla. Hay una prueba específica que lo fija.
+- La huella del universo cubre `nregistro` **y** versión documental. Dos corpus con los mismos registros pero versiones distintas no son el mismo universo, y tratarlos como tal permitiría que una selección «reproducible» se refiriese en realidad a documentos diferentes.
+- Una selección que difiera de la publicada detiene el proceso con conflicto en lugar de reescribirla: reescribirla invalidaría en silencio toda anotación hecha sobre el conjunto anterior.
+- GOLD-001 (semilla 407) y GOLD-003 (sin estratificación ATC) se aplican como decisiones ya cerradas; no se ha cerrado ninguna decisión nueva.
+- 13 pruebas; Ruff y mypy estricto sin incidencias en 34 ficheros. Sin migraciones ni cambios de datos.
+- **DEV-407 no queda cerrado y la Fase 4 no se abre**: faltan los criterios 2 a 7 del contrato, que pertenecen a la anotación.
+
 ## Última actualización
 
 3 de septiembre de 2026.
