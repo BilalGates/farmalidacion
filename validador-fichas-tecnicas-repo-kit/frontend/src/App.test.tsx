@@ -243,6 +243,7 @@ beforeEach(() => {
   listPayload = { items: [summary(), OTHER], total: 2 }
   postCount = 0
   window.location.hash = ''
+  localStorage.clear()
   vi.stubGlobal('fetch', mockFetch())
 })
 
@@ -339,7 +340,7 @@ describe('Recorrido de la vertical de revisión', () => {
     expect(within(row as HTMLElement).getByText('1/3')).toBeVisible()
   })
 
-  it('muestra literalmente el motivo cuando el backend rechaza la decisión', async () => {
+  it('valida los requisitos de la decisión antes de enviarla', async () => {
     render(<App />)
 
     await selectReviewer('ana')
@@ -348,11 +349,24 @@ describe('Recorrido de la vertical de revisión', () => {
 
     await click(reviewButtonFor('CANTIDAD'))
     await selectOption(screen.getByRole('combobox', { name: 'Decisión de revisión' }), 'no_aplica')
-    await click(screen.getByRole('button', { name: 'Guardar decisión' }))
 
-    // El mensaje de la barrera se muestra tal cual, sin reformular.
-    expect(
-      await screen.findByText('no_aplica exige comentario del farmacéutico.'),
-    ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Guardar decisión' })).toBeDisabled()
+    expect(screen.getByText('«No aplica» exige un comentario.')).toBeVisible()
+    expect(postCount).toBe(0)
+
+    await typeInto(screen.getByRole('textbox', { name: 'Comentario de revisión' }), 'No corresponde')
+    await click(screen.getByRole('button', { name: 'Guardar decisión' }))
+    expect(await screen.findByText('Decisión guardada.')).toBeVisible()
+    expect(postCount).toBe(1)
+  })
+
+  it('recuerda el revisor declarado entre montajes', async () => {
+    const first = render(<App />)
+    await selectReviewer('ana')
+    expect(localStorage.getItem('farmalidacion.reviewer')).toBe('ana')
+    first.unmount()
+
+    render(<App />)
+    expect(await screen.findByRole('combobox', { name: 'Revisor que firma las decisiones' })).toHaveValue('ana')
   })
 })

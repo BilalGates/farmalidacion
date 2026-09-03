@@ -344,7 +344,7 @@ Fase 3 queda cerrada. Fase 4 no se inicia automáticamente: D-013 está cerrada,
 
 - PROVIDER-001 debe resolverse antes de reglas condicionales definitivas; PROVIDER-002 antes del exportador definitivo.
 - Las excepciones concretas por campo y el mapeo CIMA se verificarán en sus fases sin reabrir prioridades implícitas.
-- Contrato de exportación, separador decimal y hardware de inferencia siguen pendientes en sus fases.
+- Contrato de exportación y separador decimal siguen pendientes en sus fases; D-013 ya cerró el dimensionado de hardware, mientras D-014 mantiene pendiente el modelo/servidor exactos.
 
 ## Prerrequisitos de Fase 4 — En preparación
 
@@ -544,6 +544,32 @@ La vertical de revisión descrita más abajo tampoco abre la Fase 5: es un spike
 - 13 pruebas; Ruff y mypy estricto sin incidencias en 34 ficheros. Sin migraciones ni cambios de datos.
 - **DEV-407 no queda cerrado y la Fase 4 no se abre**: faltan los criterios 2 a 7 del contrato, que pertenecen a la anotación.
 
+## Estabilización operativa de la demo — 3 de septiembre de 2026
+
+- Causa del fallo navegador/API reproducida: Compose no configuraba CORS y el navegador recibía `405` en el preflight `OPTIONS /records` desde `http://localhost:5173`.
+- `compose.yaml` declara ahora los orígenes locales de la demo. El preflight real devuelve `200`, `Access-Control-Allow-Origin` y los métodos `GET, POST`.
+- Verificados frontend y backend saludables, `/health`, `/docs`, seis registros DEMO, dos revisores, Alembic en `d51f7a2c9e04 (head)` y SQLite accesible. El piloto usa SQLite por ADR-0001; PostgreSQL no forma parte de la arquitectura aprobada actual.
+- Smoke test real: decisión firmada guardada, backend reiniciado y decisión recuperada con historial, autor y estado agregado `en_revision` (`1/7`).
+- Regresión añadida al test del scaffold para exigir `APP_CORS_ALLOW_ORIGINS` en Compose.
+- Gate integral posterior: 332/332 pruebas Python, Ruff, mypy estricto sobre 34 módulos, 6/6 Vitest, ESLint, build Vite, Compose, 8/8 referencias y Alembic upgrade/downgrade; código 0.
+- La corrección estabiliza el spike y no abre Fase 5. El siguiente bloque no bloqueado continúa siendo la herramienta offline de anotación DEV-407; la anotación real sigue bloqueada por GOLD-002.
+## DEV-407B — Herramienta offline preparada; anotación humana pendiente
+
+- Núcleo puro `pharma_validator_api.gold_annotations` y CLI `scripts/generate_gold_annotations.py` implementados sin reglas clínicas nuevas.
+- Evidencia `valued` validada por igualdad exacta de offsets sobre el HTML literal de la versión inmutable; no se normaliza ni desescapa.
+- Ocurrencias conservadas por ordinal; `source_absent`, `source_blank`, `no_consta` y `not_applicable` permanecen distintos y aplican sus requisitos.
+- `pending` bloquea `--close`; dos anotaciones se conservan y cualquier diferencia exacta se publica como desacuerdo `open`, sin autorresolución.
+- Salidas deterministas: selección, anotaciones JSONL, desacuerdos CSV, manifiesto con hashes y resumen Markdown. Un directorio existente nunca se sobrescribe.
+- 8 pruebas específicas; 44/44 al incluir pureza; Ruff y mypy estricto sobre 35 módulos correctos.
+- GOLD-002 y la anotación real por dos farmacéuticos siguen pendientes. DEV-407 no se cierra y Fase 4 no se abre.
+- Gate integral posterior: 343/343 pruebas Python, 7/7 Vitest, Ruff, mypy estricto sobre 35 módulos, ESLint, build Vite, Compose, 8/8 referencias y Alembic upgrade/downgrade; código 0.
+
+## Pulido UX del spike de revisión
+
+- El revisor declarado se recuerda en el navegador, sin convertir su identidad declarada en autenticación.
+- La evidencia y la versión documental son visibles; ya no dependen de un tooltip.
+- El cliente bloquea `confirmado`/`corregido` sin valor y `no_aplica` sin comentario, manteniendo el backend como barrera final.
+- 7/7 Vitest, ESLint y build Vite correctos.
 ## Última actualización
 
 3 de septiembre de 2026.

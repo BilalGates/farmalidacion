@@ -14,6 +14,8 @@ services:
       # Conjunto DEMO de la vertical de revisión: datos de demostración, no reales.
       APP_LOAD_SHOWCASE_FIXTURE: 'true'
       APP_SHOWCASE_FIXTURE_PATH: /app/fixtures/showcase-demo.json
+      # El navegador accede al backend directamente durante la demo local.
+      APP_CORS_ALLOW_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173"]'
       APP_REVIEWERS: '["mtorres:M. Torres","jlopez:J. Lopez"]'
     command:
       - sh

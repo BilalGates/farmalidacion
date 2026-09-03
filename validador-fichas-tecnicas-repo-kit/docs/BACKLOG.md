@@ -357,7 +357,7 @@ Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Fase 3 cerrada; D-013 está res
 
 **Estado:** contrato definido el 2 de septiembre de 2026. Selección implementada y verificada el 3 de septiembre de 2026 en `pharma_validator_api.gold_selection`: criterio 1 cumplido sobre el corpus real de 500 (`run_id` estable `ac843f92c081045bd61ed80d6aef13c703f88275eeab433291ddb6ce9dd792cd`), y criterios 8 y 9 cumplidos en lo que atañe a la selección. 13 pruebas, Ruff y mypy limpios.
 
-**Sigue pendiente:** la herramienta de anotación y los criterios 2 a 7 (evidencia por desplazamientos, ocurrencias sin concatenar, estados distinguibles, bloqueo por `pending`, desacuerdos conservados), además de los artefactos `gold-annotations.jsonl`, `gold-disagreements.csv` y `summary.md`. GOLD-001 y GOLD-003 quedan cerradas; **GOLD-002 continúa pendiente** y bloquea la anotación real. No cierra DEV-407 ni abre Fase 4.
+**Actualización técnica:** el núcleo puro `gold_annotations` y la CLI `scripts/generate_gold_annotations.py` implementan los criterios 2 a 8: evidencia por desplazamientos exactos sobre HTML literal, ocurrencias separadas, estados distinguibles, bloqueo de cierre por `pending`, doble anotación y desacuerdos abiertos, más las cinco salidas deterministas sin sobrescritura. Ocho pruebas específicas y 36 pruebas de pureza verifican el comportamiento. **GOLD-002 continúa pendiente** y bloquea la anotación real; por tanto DEV-407 no se cierra ni abre Fase 4.
 
 ### DEV-408 — Benchmark de dos modelos (`P0`)
 

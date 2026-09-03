@@ -35,7 +35,11 @@ export function FieldRow({
   const [comment, setComment] = useState('')
 
   const needsValue = state === 'confirmado' || state === 'corregido'
-  const canSubmit = state !== '' && reviewer !== null && !saving
+  const needsComment = state === 'no_aplica'
+  const missingValue = needsValue && finalValue.trim() === ''
+  const missingComment = needsComment && comment.trim() === ''
+  const canSubmit =
+    state !== '' && reviewer !== null && !saving && !missingValue && !missingComment
 
   return (
     <div className={`field-row${value.has_conflict ? ' field-row--conflict' : ''}`}>
@@ -73,9 +77,11 @@ export function FieldRow({
         {value.provenance.map((item) => (
           <li key={item.source_fragment_id}>
             <span className='sources__role'>{sourceLabel(item.provenance_role)}</span>
-            <span className='sources__locator' title={item.literal_text ?? undefined}>
-              {item.locator}
-            </span>
+            <span className='sources__locator'>{item.locator}</span>
+            <span className='sources__version'>Versión {item.document_version_id}</span>
+            {item.literal_text && (
+              <blockquote className='sources__evidence'>{item.literal_text}</blockquote>
+            )}
           </li>
         ))}
         {value.provenance.length === 0 && (
@@ -124,6 +130,7 @@ export function FieldRow({
               </span>
               <input
                 type='text'
+                aria-label='Comentario de revisión'
                 value={comment}
                 onChange={(event) => setComment(event.target.value)}
               />
@@ -147,6 +154,12 @@ export function FieldRow({
             </button>
             {reviewer === null && (
               <span className='muted'>Seleccione un revisor para poder firmar.</span>
+            )}
+            {missingValue && (
+              <span className='field-error'>Escriba el valor final antes de guardar.</span>
+            )}
+            {missingComment && (
+              <span className='field-error'>«No aplica» exige un comentario.</span>
             )}
           </div>
         </div>

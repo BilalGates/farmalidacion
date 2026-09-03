@@ -111,7 +111,7 @@ function PlaceholderScreen({ item }: { item: NavItem }) {
 export function App() {
   const route = useRoute()
   const [reviewers, setReviewers] = useState<Reviewer[]>([])
-  const [reviewerId, setReviewerId] = useState('')
+  const [reviewerId, setReviewerId] = useState(() => localStorage.getItem('farmalidacion.reviewer') ?? '')
 
   useEffect(() => {
     fetchReviewers()
@@ -159,7 +159,12 @@ export function App() {
             <select
               aria-label='Revisor que firma las decisiones'
               value={reviewerId}
-              onChange={(event) => setReviewerId(event.target.value)}
+              onChange={(event) => {
+                const identifier = event.target.value
+                setReviewerId(identifier)
+                if (identifier) localStorage.setItem('farmalidacion.reviewer', identifier)
+                else localStorage.removeItem('farmalidacion.reviewer')
+              }}
             >
               <option value=''>Sin revisor seleccionado</option>
               {reviewers.map((item) => (

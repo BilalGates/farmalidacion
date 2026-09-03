@@ -109,3 +109,16 @@ Dos ejecuciones sobre las mismas anotaciones producen ficheros idénticos byte a
 - GOLD-002: identidad de los dos anotadores farmacéuticos y su disponibilidad, pendiente.
 - GOLD-003: cerrada sin estratificación ATC para el conjunto oro inicial, porque DEV-208 no contiene ese atributo. No se infiere ATC; la decisión solo se revisará si aparece nueva evidencia versionada.
 - D-013 no bloquea este contrato: seleccionar y anotar no requiere GPU.
+## Estado de implementación técnica
+
+`pharma_validator_api.gold_annotations` valida las unidades sin acceso a red ni
+disco y `scripts/generate_gold_annotations.py` materializa las cinco salidas en
+un directorio nuevo que nunca se sobrescribe. La CLI recibe explícitamente la
+selección, las anotaciones JSONL y las secciones literales versionadas; no crea
+anotadores, valores ni conciliaciones.
+
+Los criterios 2 a 8 están cubiertos con entradas sintéticas por ocho pruebas y
+el núcleo forma parte del gate de pureza. Esta preparación no constituye una
+anotación clínica real: GOLD-002 y la doble anotación farmacéutica de las 20
+fichas siguen pendientes, por lo que DEV-407 y la entrada formal a Fase 4
+continúan abiertos.

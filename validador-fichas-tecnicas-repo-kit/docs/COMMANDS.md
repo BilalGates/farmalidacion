@@ -86,4 +86,13 @@ python scripts/generate_showcase_fixture.py
 
 Su carga requiere activación explícita (`APP_LOAD_SHOWCASE_FIXTURE=true`); el
 backend nunca carga datos de demostración por defecto.
+La herramienta offline del conjunto oro consume únicamente entradas explícitas
+y escribe en un directorio nuevo:
 
+```text
+python scripts/generate_gold_annotations.py --selection gold-selection.json --annotations annotations-input.jsonl --sections immutable-sections.json --output-dir gold-run
+```
+
+`--close` exige que no exista ninguna unidad `pending`. La herramienta no
+inventa anotadores ni anotaciones, no descarga datos y nunca sobrescribe una
+ejecución existente.
