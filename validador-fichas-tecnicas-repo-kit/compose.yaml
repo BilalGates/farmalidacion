@@ -10,10 +10,10 @@ services:
       APP_LOG_LEVEL: INFO
       APP_DATABASE_URL: sqlite:////app/data/validator.db
       APP_LOAD_DEMO_FIXTURE: 'true'
-      APP_DEMO_FIXTURE_PATH: /app/data/examples/omeprazole-demo.json
+      APP_DEMO_FIXTURE_PATH: /app/fixtures/omeprazole-demo.json
       # Conjunto DEMO de la vertical de revisión: datos de demostración, no reales.
       APP_LOAD_SHOWCASE_FIXTURE: 'true'
-      APP_SHOWCASE_FIXTURE_PATH: /app/data/examples/showcase-demo.json
+      APP_SHOWCASE_FIXTURE_PATH: /app/fixtures/showcase-demo.json
       APP_REVIEWERS: '["mtorres:M. Torres","jlopez:J. Lopez"]'
     command:
       - sh

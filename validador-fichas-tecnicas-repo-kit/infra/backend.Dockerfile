@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 COPY backend /app/backend
-COPY data/examples /app/data/examples
+COPY data/examples /app/fixtures
 RUN python -m pip install --no-cache-dir /app/backend \
     && useradd --create-home --uid 10001 appuser \
     && mkdir -p /app/data \
