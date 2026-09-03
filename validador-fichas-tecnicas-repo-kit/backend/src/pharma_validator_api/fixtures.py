@@ -85,6 +85,31 @@ class ValueProvenanceFixture(FixtureRow):
     provenance_role: str
 
 
+class ShowcaseFixture(BaseModel):
+    """Conjunto multi-registro para la vertical de demostración.
+
+    Es un fixture **DEMO**, no datos reales de maestro ni de CIMA. Se identifica
+    como tal en `provenance_note` y en el sistema fuente de cada identificador
+    externo, para que no pueda confundirse después con contenido importado.
+
+    Reutiliza exactamente el mismo modelo canónico que el resto del sistema: no
+    hay tablas paralelas para la demostración.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+    schema_version: str
+    provenance_note: str
+    source_documents: list[SourceDocumentFixture]
+    source_document_versions: list[SourceDocumentVersionFixture]
+    source_fragments: list[SourceFragmentFixture]
+    target_records: list[TargetRecordFixture]
+    external_identifiers: list[ExternalIdentifierFixture]
+    document_record_links: list[DocumentRecordLinkFixture]
+    block_instances: list[BlockInstanceFixture]
+    field_values: list[FieldValueFixture]
+    value_provenances: list[ValueProvenanceFixture]
+
+
 class DemoFixture(BaseModel):
     model_config = ConfigDict(extra='forbid')
     schema_version: str
@@ -154,6 +179,56 @@ def load_demo_fixture(session: Session, path: Path) -> bool:
         [(ValueProvenance, row) for row in fixture.value_provenances],
     ]
     for group in insertion_groups:
+        session.add_all([model(**row.model_dump()) for model, row in group])
+        session.flush()
+    session.commit()
+    return True
+
+
+def read_showcase_fixture(path: Path) -> ShowcaseFixture:
+    return ShowcaseFixture.model_validate_json(path.read_text(encoding='utf-8'))
+
+
+def load_showcase_fixture(session: Session, path: Path) -> bool:
+    """Carga el conjunto de demostración de forma idempotente.
+
+    Repite deliberadamente la política de `load_demo_fixture`: si una fila ya
+    existe con contenido distinto, falla en lugar de sobrescribir. Un fixture no
+    puede pisar datos que alguien haya revisado.
+    """
+    fixture = read_showcase_fixture(path)
+    if fixture.schema_version != '1.0.0':
+        raise FixtureConflictError(f'Versión de fixture no soportada: {fixture.schema_version}')
+    groups: list[list[tuple[type[Any], FixtureRow]]] = [
+        [
+            *((SourceDocument, row) for row in fixture.source_documents),
+            *((TargetRecord, row) for row in fixture.target_records),
+        ],
+        [
+            *((SourceDocumentVersion, row) for row in fixture.source_document_versions),
+            *((ExternalIdentifier, row) for row in fixture.external_identifiers),
+        ],
+        [
+            *((SourceFragment, row) for row in fixture.source_fragments),
+            *((DocumentRecordLink, row) for row in fixture.document_record_links),
+        ],
+        [(BlockInstance, row) for row in fixture.block_instances],
+        [(FieldValue, row) for row in fixture.field_values],
+        [(ValueProvenance, row) for row in fixture.value_provenances],
+    ]
+    rows = [item for group in groups for item in group]
+    existing = [session.get(model, row.id) for model, row in rows]
+    if any(item is not None for item in existing):
+        if not all(item is not None for item in existing):
+            raise FixtureConflictError('El fixture DEMO colisiona con una carga parcial.')
+        for item, (_, row) in zip(existing, rows, strict=True):
+            if any(getattr(item, field) != value for field, value in row.model_dump().items()):
+                raise FixtureConflictError(
+                    'El fixture DEMO colisiona con contenido distinto en '
+                    f'{type(item).__name__}:{row.id}.'
+                )
+        return False
+    for group in groups:
         session.add_all([model(**row.model_dump()) for model, row in group])
         session.flush()
     session.commit()

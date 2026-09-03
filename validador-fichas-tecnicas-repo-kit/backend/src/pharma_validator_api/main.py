@@ -2,12 +2,13 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from pharma_validator_api.config import Settings, get_settings
 from pharma_validator_api.database import create_database_engine, create_session_factory
 from pharma_validator_api.errors import register_error_handlers
-from pharma_validator_api.fixtures import load_demo_fixture
+from pharma_validator_api.fixtures import load_demo_fixture, load_showcase_fixture
 from pharma_validator_api.logging import configure_logging
 from pharma_validator_api.records import router as records_router
 
@@ -29,6 +30,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if active.load_demo_fixture:
             with session_factory() as session:
                 load_demo_fixture(session, active.demo_fixture_path)
+        if active.load_showcase_fixture:
+            with session_factory() as session:
+                load_showcase_fixture(session, active.showcase_fixture_path)
         yield
         engine.dispose()
 
@@ -40,6 +44,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     application.state.session_factory = session_factory
+    application.state.settings = active
+    if active.cors_allow_origins:
+        application.add_middleware(
+            CORSMiddleware,
+            allow_origins=list(active.cors_allow_origins),
+            allow_methods=['GET', 'POST'],
+            allow_headers=['Content-Type'],
+        )
     register_error_handlers(application)
     application.include_router(records_router)
 

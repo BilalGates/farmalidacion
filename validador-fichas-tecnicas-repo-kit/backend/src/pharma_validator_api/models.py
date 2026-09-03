@@ -279,3 +279,43 @@ class SamplingItem(Base):
     nregistro: Mapped[str] = mapped_column(Text)
     atc_stratum: Mapped[str | None] = mapped_column(String(20))
     source_response_hash: Mapped[str] = mapped_column(String(64))
+
+
+class ValidationDecisionRecord(Base):
+    """Evento de decisión de revisión, append-only (DEV-506 / ADR-0004).
+
+    No hay UPDATE ni DELETE: revertir una decisión se registra como otro evento,
+    porque sobrescribir borraría la autoría sin rastro. El estado vigente de un
+    campo es el evento de mayor `sequence` para ese `field_value_id`.
+
+    Las reglas de qué decisión es legítima NO viven aquí: las aplica
+    `pharma_validator_api.validation_states` antes de persistir.
+    """
+
+    __tablename__ = "validation_decision_record"
+    __table_args__ = (
+        UniqueConstraint(
+            "field_value_id", "sequence", name="uq_validation_decision_sequence"
+        ),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    field_value_id: Mapped[str] = mapped_column(ForeignKey("field_value.id"))
+    sequence: Mapped[int] = mapped_column(Integer)
+    field_name: Mapped[str] = mapped_column(String(160))
+    state: Mapped[str] = mapped_column(String(40))
+    final_value: Mapped[str | None] = mapped_column(Text)
+    comment: Mapped[str | None] = mapped_column(Text)
+    reviewer_id: Mapped[str] = mapped_column(String(80))
+    reviewer_role: Mapped[str] = mapped_column(String(40))
+    # 10.1: la firma identifica quién dijo ser, no quién era (D-018).
+    reviewer_assurance: Mapped[str] = mapped_column(String(20))
+    seconds_spent: Mapped[int | None] = mapped_column(Integer)
+    decided_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+@event.listens_for(ValidationDecisionRecord, "before_update")
+@event.listens_for(ValidationDecisionRecord, "before_delete")
+def _reject_decision_mutation(*_: object) -> None:
+    raise ImmutableHistoryError(
+        "Las decisiones de validación son append-only: registre otra decisión."
+    )

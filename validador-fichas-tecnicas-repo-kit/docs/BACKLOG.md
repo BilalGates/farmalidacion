@@ -371,15 +371,25 @@ Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Fase 3 cerrada; D-013 está res
 
 **Aceptación:** lista construida desde configuración; revisor ausente y revisor desconocido son errores distintos; una lista vacía no firma nada; la garantía es `declarada` y está explícita en el tipo; la doble validación exige dos revisores distintos.
 
-**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-501 ni abre Fase 5. Evidencia: 15 pruebas, Ruff y mypy limpios. El selector de interfaz y la persistencia en el navegador no existen todavía.
+**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-501 ni abre Fase 5. Evidencia: 15 pruebas, Ruff y mypy limpios.
+
+La vertical demostrable del 3 de septiembre de 2026 añadió el selector de revisor en la cabecera y el endpoint `GET /records/reviewers`. **Sigue pendiente** la persistencia de la elección en el navegador entre sesiones.
 
 ### DEV-502 — Cola y asignación de lotes (`P0`)
 
+**Estado:** no iniciada. La vertical demostrable ofrece un listado con búsqueda y filtro, que no es una cola de trabajo: no hay lotes, asignación ni prevención de colisiones.
+
 ### DEV-503 — Pantalla de tres zonas (`P0`)
+
+**Estado:** no cerrada. La vertical demostrable incluye una ficha por bloques con valor, fuente, procedencia y estado, pero no la disposición de tres zonas con evidencia contextual que exige la especificación.
 
 ### DEV-504 — Navegación completa por teclado (`P0`)
 
+**Estado:** no iniciada. La vertical usa navegación estándar del navegador; los atajos de revisión sin ratón no existen.
+
 ### DEV-505 — Guardado incremental (`P0`)
+
+**Estado:** parcialmente adelantado por la vertical demostrable. Existe guardado por campo, persistido y verificado tras reinicio (`test_decision_survives_a_restart`). **Siguen pendientes** la precarga del siguiente campo, el objetivo de cambio de campo inferior a 100 ms (DEV-509) y la garantía de que recargar la pestaña a mitad de edición no pierda trabajo no confirmado.
 
 ### DEV-506 — Estados de validación (`P0`)
 
@@ -389,7 +399,9 @@ Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Fase 3 cerrada; D-013 está res
 
 **Aceptación:** `no_consta` exige haber revisado las fuentes obligatorias declaradas y solo lo decide un farmacéutico; `no_aplica` es estado propio con comentario obligatorio; ningún estado salvo `confirmado`/`corregido` admite valor final; nada resuelto vuelve a `pendiente`; un cambio de versión marca y no borra; la doble validación sin conciliar retiene el registro. No se traduce al contrato del proveedor.
 
-**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-506 ni abre Fase 5. Evidencia: 15 pruebas, Ruff y mypy limpios. La persistencia, la auditoría y la serialización del proveedor no existen todavía.
+**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-506 ni abre Fase 5. Evidencia: 15 pruebas, Ruff y mypy limpios. La serialización del proveedor no existe todavía.
+
+La vertical demostrable del 3 de septiembre de 2026 añadió persistencia append-only de las decisiones (`validation_decision_record`) con historial consultable e inmutable, delegando toda la regla en este módulo. **Sigue pendiente** la auditoría transversal (Fase 6) y la traducción al contrato del proveedor (D-011).
 
 ### DEV-507 — Editor de bloques repetibles (`P0`)
 
@@ -422,6 +434,16 @@ Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Fase 3 cerrada; D-013 está res
 **Aceptación:** las cuatro políticas producen la presentación correcta; un valor pasado a un campo protegido se descarta en lugar de mostrarse; una pantalla completa se comprueba de una vez y detecta un plan manipulado; la confirmación en bloque exige `proponer_valor` y evidencia visible.
 
 **Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-510 ni abre Fase 5. Evidencia: 13 pruebas, Ruff y mypy limpios. La pantalla que consumirá estas decisiones (DEV-503/504/505) no existe todavía.
+
+### DEV-512 — Consumo de `prefill_policy` en la pantalla (`P0`)
+
+**Objetivo:** que la pantalla de revisión presente cada campo según su política (`proponer_valor`, `proponer_opciones`, `solo_evidencia`, `oculto`) consumiendo `pharma_validator_api.prefill_policy` en lugar de no precargar nada.
+
+**Contexto:** la vertical demostrable del 3 de septiembre de 2026 no precarga ningún valor, lo cual es seguro por defecto pero no implementa la política. Requiere exponer la política por campo desde el catálogo importado, que hoy no llega a la API de registros.
+
+**Aceptación:** ningún campo protegido aparece preseleccionado; `solo_evidencia` muestra el aviso de criterio farmacéutico; la confirmación en bloque solo se ofrece para `proponer_valor` con evidencia visible.
+
+**Estado:** no iniciada. Depende de D-015 para los umbrales de degradación.
 
 ### DEV-511 — Ejecución del conjunto de medida (`P0`)
 

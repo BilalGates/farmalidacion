@@ -515,6 +515,23 @@ DEV-510, DEV-501, DEV-506, DEV-508 y DEV-507 se han adelantado como núcleos de 
 
 Adelantar estos núcleos no sustituye la entrada ni la puerta de salida de Fase 4. D-013 está cerrada; el bloqueo de entrada restante es definir y anotar realmente el conjunto oro con dos farmacéuticos identificados.
 
+La vertical de revisión descrita más abajo tampoco abre la Fase 5: es un spike de producto demostrable. De su alcance solo quedan parcialmente adelantados el guardado por campo (DEV-505) y la persistencia de estados (DEV-506); la cola de trabajo, la pantalla de tres zonas, la navegación por teclado, la edición de bloques y la medición de foco siguen sin implementarse.
+
+## Vertical funcional de revisión — Spike de producto demostrable
+
+- Recorrido completo ejecutable: listado → búsqueda → ficha → fuentes y procedencia → discrepancias → decisión firmada → guardado → listado con el estado actualizado.
+- **No abre la Fase 5 ni cierra DEV-502/503/504/505/509.** Es un spike de producto para poder enseñar el sistema, no evidencia de que las reglas pendientes estén cerradas. La puerta de entrada de Fase 5 sigue sin cumplirse porque la Fase 4 no está abierta.
+- La capa HTTP no reimplementa ninguna regla clínica: `pharma_validator_api.review` traduce entre la base de datos y los módulos puros ya verificados (`reviewer_identity`, `validation_states`, `provenance_conflicts`) y propaga sus mensajes literalmente hasta la pantalla. Nueve pruebas comprueban que la vía HTTP no puede saltarse ninguna barrera: sin revisor, revisor desconocido, `no_aplica` sin comentario, `no_aplica` firmado por no farmacéutico, `no_consta` sin revisar las fuentes obligatorias, `confirmado` sin valor final, vuelta a `pendiente` y reversión de `no_aplica` sin justificación.
+- Las decisiones se persisten como eventos append-only en `validation_decision_record`. El modelo rechaza UPDATE y DELETE con `ImmutableHistoryError`: revertir se registra como otra decisión y el historial anterior se conserva. Verificado también que el trabajo confirmado sobrevive a un reinicio de la aplicación.
+- Defecto propio detectado y corregido durante la implementación: la evaluación de discrepancias se hacía por fila de `field_value`, de modo que dos fuentes que discrepan producían dos filas y ninguna se comparaba con la otra; el resultado era siempre «sin conflicto». La unidad correcta es el campo dentro de la ocurrencia de bloque, y agrupar por nombre de campo a secas habría fusionado ocurrencias distintas del mismo bloque repetible. Lo detectó la prueba contra el conjunto DEMO, no una prueba sintética.
+- Ninguna discrepancia se resuelve automáticamente: el motor de ADR-0007 se invoca deliberadamente sin regla de prioridad, de modo que un conflicto real queda en `unresolved_pending_priority` con todos los valores y procedencias conservados. La interfaz nunca aparenta que una decisión farmacéutica se haya tomado sola.
+- La pantalla no precarga ningún valor y el desplegable de decisión arranca vacío. La vertical no consume todavía `prefill_policy`; no precargar es el comportamiento seguro por defecto y cumple D-023 sin depender de que la pantalla lo recuerde.
+- Datos de demostración en `data/examples/showcase-demo.json`, generados de forma determinista por `scripts/generate_showcase_fixture.py`. Los nombres de campo y bloque proceden del catálogo real de 353 definiciones; los valores no proceden de los maestros ni de CIMA. Cada registro declara el sistema fuente `demo_showcase` y la interfaz muestra un aviso permanente. Los ficheros originales de referencia no se han modificado.
+- Los módulos todavía inexistentes (Validaciones, Fuentes, Importaciones, Auditoría, Configuración) aparecen anunciados con una nota que declara qué hacen hoy, qué falta y de qué decisión dependen. Representarlos no cierra ninguna decisión ni ADR.
+- Se corrigió una carencia real de la configuración de pruebas del frontend: con `globals` desactivado, la limpieza automática de Testing Library no se registraba y los árboles renderizados se acumulaban entre pruebas.
+- 20 pruebas de backend y 6 de frontend nuevas. Suite completa: 294/294 Python, 6/6 Vitest, Ruff, mypy estricto sobre 33 ficheros, ESLint, build y Alembic upgrade/downgrade.
+- Alcance, límites, comportamiento provisional y decisiones abiertas en `docs/REVIEW_VERTICAL_SPIKE.md`.
+
 ## Última actualización
 
-2 de septiembre de 2026.
+3 de septiembre de 2026.
