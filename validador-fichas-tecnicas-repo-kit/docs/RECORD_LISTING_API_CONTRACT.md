@@ -98,3 +98,17 @@ Para el selector de estado, prefiere «cargar más» a una paginación numerada:
 - `GET /records/{id}` — la ficha de un registro no cambia.
 - `GET /records/reviewers` — sin cambios.
 - `POST /records/values/{field_value_id}/decisions` — sin cambios.
+
+## Comprobado contra datos reales
+
+Sobre los maestros importados (7.189 registros, 35.945 valores):
+
+- `GET /records?q=omeprazol&limit=1` → 200, y la ficha del registro devuelto
+  responde en **0,18 s**, conservando la procedencia por campo
+  (`provenance_role: master_baseline`) y el estado `pendiente`.
+- `GET /records/no-existe` → **404** con error controlado.
+- La búsqueda ignora mayúsculas también en letras acentuadas: `MAGNÉSICO`
+  encuentra `magnésico`. Lo que **no** hace es normalizar acentos: `magnesico`
+  (sin tilde) no encuentra `magnésico`, y es deliberado — buscar es literal, y
+  normalizar cambiaría lo que el usuario escribió por lo que se supone que quiso
+  decir.
