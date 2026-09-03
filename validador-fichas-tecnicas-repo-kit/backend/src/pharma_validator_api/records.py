@@ -1,9 +1,9 @@
 from collections.abc import Iterator, Sequence
 from typing import Annotated, cast
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, func, or_, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from pharma_validator_api.config import Settings, get_settings
@@ -272,32 +272,110 @@ def _summarize(session: Session, record: TargetRecord) -> RecordSummaryRead:
     )
 
 
+# Tamaño del tramo al filtrar por `estado`. Ni tan pequeño que multiplique las
+# consultas, ni tan grande que resuma cientos de registros para descartarlos.
+_ESTADO_SCAN_CHUNK = 100
+
+
+def _search_predicate(needle: str) -> ColumnElement[bool]:
+    """Preselección en SQL de los registros que `q` puede llegar a casar.
+
+    Cubre los mismos orígenes que `_matches`: el identificador del registro, los
+    identificadores externos y los campos de nombre y principio activo. `LIKE`
+    en SQLite es insensible a mayúsculas para ASCII, igual que el `casefold` que
+    aplica después `_matches`, que sigue siendo quien decide: esto sólo descarta
+    lo que con certeza no coincide.
+    """
+    pattern = f'%{needle}%'
+    named_fields = DISPLAY_NAME_FIELDS + ACTIVE_INGREDIENT_FIELDS
+    return or_(
+        TargetRecord.id.like(pattern),
+        TargetRecord.id.in_(
+            select(ExternalIdentifier.target_record_id).where(
+                ExternalIdentifier.source_identifier.like(pattern)
+            )
+        ),
+        TargetRecord.id.in_(
+            select(BlockInstance.target_record_id)
+            .join(FieldValue, FieldValue.block_instance_id == BlockInstance.id)
+            .where(FieldValue.field_name.in_(named_fields))
+            .where(FieldValue.literal_value.like(pattern))
+        ),
+    )
+
+
+def _matches(item: RecordSummaryRead, needle: str) -> bool:
+    """Coincidencia literal, sin normalizar acentos (misma regla que antes)."""
+    folded = needle.casefold()
+    return (
+        folded in (item.display_name or '').casefold()
+        or folded in (item.active_ingredient or '').casefold()
+        or folded in (item.primary_identifier or '').casefold()
+        or folded in item.id.casefold()
+    )
+
+
 @router.get('', response_model=RecordListRead)
 def list_records(
     session: SessionDependency,
     q: str | None = None,
     estado: str | None = None,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
 ) -> RecordListRead:
-    """Listado de registros con su estado de revisión agregado.
+    """Listado paginado de registros con su estado de revisión agregado.
 
     La búsqueda es literal y sin acentuación normalizada: normalizar cambiaría
     lo que el usuario escribió por lo que la herramienta supone que quiso decir.
+
+    El resumen de un registro recorre sus ocurrencias, valores, decisiones y
+    conflictos, así que cuesta proporcionalmente a su tamaño. Con los maestros
+    reales importados (7.189 registros) resumirlos todos para devolver una
+    página tardaba horas: por eso sólo se resume la página pedida. `estado` es
+    la excepción y está documentada abajo.
     """
-    records = session.scalars(select(TargetRecord).order_by(TargetRecord.id)).all()
-    summaries = [_summarize(session, record) for record in records]
-    if q:
-        needle = q.casefold()
-        summaries = [
-            item
-            for item in summaries
-            if needle in (item.display_name or '').casefold()
-            or needle in (item.active_ingredient or '').casefold()
-            or needle in (item.primary_identifier or '').casefold()
-            or needle in item.id.casefold()
-        ]
-    if estado:
-        summaries = [item for item in summaries if item.review_state == estado]
-    return RecordListRead(items=summaries, total=len(summaries))
+    query = select(TargetRecord).order_by(TargetRecord.id)
+    if q is not None:
+        # `q` se compara contra valores que sí son columnas, así que el descarte
+        # ocurre en la base de datos. Sin esto habría que resumir cada registro
+        # sólo para averiguar que no coincide: con los maestros reales, buscar
+        # un principio activo concreto costaba minutos.
+        query = query.where(_search_predicate(q))
+    if estado is None:
+        # `estado` es el único filtro que exige resumir. Sin él, el recuento y el
+        # recorte ocurren en la base de datos y sólo se resume la página.
+        total = session.scalar(select(func.count()).select_from(query.subquery())) or 0
+        records = session.scalars(query.offset(offset).limit(limit)).all()
+        summaries = [_summarize(session, record) for record in records]
+        if q is not None:
+            # La preselección es deliberadamente amplia; `_matches` decide.
+            summaries = [item for item in summaries if _matches(item, q)]
+        return RecordListRead(items=summaries, total=total)
+
+    # `estado` se deriva del resumen, no es una columna, así que filtrar por él
+    # exige resumir. Se recorre por tramos y se para en cuanto la página está
+    # completa, en lugar de resumir el maestro entero.
+    matched: list[RecordSummaryRead] = []
+    scanned = 0
+    needed = offset + limit
+    while True:
+        batch = session.scalars(query.offset(scanned).limit(_ESTADO_SCAN_CHUNK)).all()
+        if not batch:
+            break
+        scanned += len(batch)
+        for record in batch:
+            summary = _summarize(session, record)
+            if estado is not None and summary.review_state != estado:
+                continue
+            if q is not None and not _matches(summary, q):
+                continue
+            matched.append(summary)
+        if len(matched) >= needed:
+            break
+    # `total` cuenta las coincidencias halladas hasta donde se ha recorrido, que
+    # con un filtro activo puede ser menos que el maestro completo: afirmar un
+    # total exacto exigiría resumirlo entero, que es lo que se evita.
+    return RecordListRead(items=matched[offset : offset + limit], total=len(matched))
 
 
 @router.get('/reviewers', response_model=list[ReviewerRead])
