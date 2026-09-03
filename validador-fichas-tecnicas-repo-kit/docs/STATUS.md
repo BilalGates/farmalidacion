@@ -544,6 +544,52 @@ La vertical de revisión descrita más abajo tampoco abre la Fase 5: es un spike
 - 13 pruebas; Ruff y mypy estricto sin incidencias en 34 ficheros. Sin migraciones ni cambios de datos.
 - **DEV-407 no queda cerrado y la Fase 4 no se abre**: faltan los criterios 2 a 7 del contrato, que pertenecen a la anotación.
 
+## Ingesta ejecutable de maestros y rendimiento de la API con datos reales
+
+- Los importadores de Fase 3 ya existían y estaban verificados, pero **no había
+  ningún punto de entrada que los ejecutara** sobre una misma base: se invocaban
+  únicamente desde las pruebas. `pharma_validator_api.master_ingestion` los
+  compone y `scripts/ingest_masters.py` los ejecuta contra la URL configurada.
+  No se reimplementa ninguna ingesta.
+- El orden lo fija el módulo, no quien llama, porque es una dependencia real de
+  datos: medicamentos resuelve la composición contra principios activos ya
+  presentes, y especialidades contra medicamentos. Invertirlo no falla de forma
+  ruidosa: produce enlaces vacíos y filas en cuarentena.
+- Idempotencia comprobada **en la base y no en el informe**: tras una segunda
+  pasada, los recuentos de `catalog_field_definition`, `target_record`,
+  `block_instance`, `field_value` e `import_batch` no varían.
+- **Defecto de rendimiento detectado al probar la API contra datos reales**, no
+  contra el conjunto DEMO: `GET /records` no llegaba a responder. Dos causas
+  independientes:
+  1. **Ningún índice sobre las claves foráneas** en todo el modelo. SQLite
+     resolvía `WHERE field_value_id = ?` con un SCAN de 35.945 filas y una sola
+     consulta costaba ~163 ms. Con cinco registros DEMO no se notaba.
+  2. El listado resumía todos los registros para devolver una página, y el
+     resumen recorre ocurrencias, valores, decisiones y conflictos de cada uno.
+- Corregido con la migración `f19a4c7b6d82` (índices declarados también en el
+  modelo, para que esquema y migraciones no diverjan) y con paginación
+  (`limit` por defecto 50, techo 200; `offset`). Medido sobre los maestros
+  reales: el listado pasa de 152 s a ~1,1 s y la búsqueda de 320 s a ~0,5 s. El
+  listado sin paginar se estimó en unas 5,8 horas.
+- Defecto propio detectado y corregido: la preselección en SQL de la búsqueda
+  usaba `LIKE`, que sólo ignora mayúsculas en ASCII, de modo que `MAGNÉSICO` no
+  encontraba `magnésico` y devolvía 0 resultados donde antes había 20. Los
+  acentos abundan en los nombres de principio activo. Ahora compara sobre
+  `lower()` en ambos lados. Los acentos siguen **sin** normalizarse: la búsqueda
+  es literal por decisión, y `magnesico` no encuentra `magnésico`.
+- `total` es exacto sin filtro y con `q`; **con `estado` es aproximado** y así
+  queda documentado, porque `estado` se deriva del resumen y no es una columna.
+- El motor sigue siendo SQLite, como fija la especificación. La portabilidad a
+  PostgreSQL queda razonada y preparada en `docs/DATABASE_PORTABILITY.md`, con
+  el servicio tras el perfil `postgres` de Compose para que `docker compose up`
+  no lo levante. **No se ha ejecutado** esa verificación todavía: falta
+  `psycopg`. Migrar de motor exigiría un ADR.
+- El contrato del listado para la sesión que trabaja el frontend está en
+  `docs/RECORD_LISTING_API_CONTRACT.md`. **No se ha modificado ningún archivo de
+  frontend.**
+- Esto **no reabre ni modifica el Gate 3**, que sigue cerrado como PASS: no
+  cambia ninguna regla de importación ni ningún dato importado.
+
 ## Última actualización
 
 3 de septiembre de 2026.
