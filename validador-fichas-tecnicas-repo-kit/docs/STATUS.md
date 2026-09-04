@@ -6,7 +6,9 @@
 
 ## Fase actual
 
-Fase 3 cerrada. Gate 3 es PASS según docs/PHASE_3_GATE_REVIEW.md. Fase 4 no se ha iniciado. D-013 está cerrada con un servidor interno de al menos 24 GB de VRAM; el contrato del conjunto oro fija semilla 407 y ausencia de estratificación ATC inicial, pero GOLD-002, la herramienta y la anotación real siguen pendientes.
+Fase 3 cerrada. Gate 3 es PASS según docs/PHASE_3_GATE_REVIEW.md.
+
+**Fase 4 preparada y bloqueada por decisiones humanas. Gate 4 es BLOCKED** según `docs/PHASE_4_GATE_REVIEW.md`. Todo el trabajo técnicamente ejecutable de Fase 4 está terminado: selección oro materializada, herramienta de anotación, comprobador de completitud, orquestador del pipeline, motor de evaluación y transporte de inferencia agnóstico al modelo. **No se ha anotado ninguna ficha y no se ha ejecutado ninguna extracción real**, porque ambas cosas dependen de decisiones que corresponden a personas: GOLD-002 (los dos farmacéuticos) y D-014 (el modelo).
 
 ## Fase 0A — Cerrada
 
@@ -344,7 +346,7 @@ Fase 3 queda cerrada. Fase 4 no se inicia automáticamente: D-013 está cerrada,
 
 - PROVIDER-001 debe resolverse antes de reglas condicionales definitivas; PROVIDER-002 antes del exportador definitivo.
 - Las excepciones concretas por campo y el mapeo CIMA se verificarán en sus fases sin reabrir prioridades implícitas.
-- Contrato de exportación, separador decimal y hardware de inferencia siguen pendientes en sus fases.
+- Contrato de exportación y separador decimal siguen pendientes en sus fases; D-013 ya cerró el dimensionado de hardware, mientras D-014 mantiene pendiente el modelo/servidor exactos.
 
 ## Prerrequisitos de Fase 4 — En preparación
 
@@ -604,7 +606,64 @@ La vertical de revisión descrita más abajo tampoco abre la Fase 5: es un spike
   cambio sería una conjetura.
 - Esto **no reabre ni modifica el Gate 3**, que sigue cerrado como PASS: no
   cambia ninguna regla de importación ni ningún dato importado.
+## Estabilización operativa de la demo — 3 de septiembre de 2026
+
+- Causa del fallo navegador/API reproducida: Compose no configuraba CORS y el navegador recibía `405` en el preflight `OPTIONS /records` desde `http://localhost:5173`.
+- `compose.yaml` declara ahora los orígenes locales de la demo. El preflight real devuelve `200`, `Access-Control-Allow-Origin` y los métodos `GET, POST`.
+- Verificados frontend y backend saludables, `/health`, `/docs`, seis registros DEMO, dos revisores, Alembic en `d51f7a2c9e04 (head)` y SQLite accesible. El piloto usa SQLite por ADR-0001; PostgreSQL no forma parte de la arquitectura aprobada actual.
+- Smoke test real: decisión firmada guardada, backend reiniciado y decisión recuperada con historial, autor y estado agregado `en_revision` (`1/7`).
+- Regresión añadida al test del scaffold para exigir `APP_CORS_ALLOW_ORIGINS` en Compose.
+- Gate integral posterior: 332/332 pruebas Python, Ruff, mypy estricto sobre 34 módulos, 6/6 Vitest, ESLint, build Vite, Compose, 8/8 referencias y Alembic upgrade/downgrade; código 0.
+- La corrección estabiliza el spike y no abre Fase 5. El siguiente bloque no bloqueado continúa siendo la herramienta offline de anotación DEV-407; la anotación real sigue bloqueada por GOLD-002.
+## DEV-407B — Herramienta offline preparada; anotación humana pendiente
+
+- Núcleo puro `pharma_validator_api.gold_annotations` y CLI `scripts/generate_gold_annotations.py` implementados sin reglas clínicas nuevas.
+- Evidencia `valued` validada por igualdad exacta de offsets sobre el HTML literal de la versión inmutable; no se normaliza ni desescapa.
+- Ocurrencias conservadas por ordinal; `source_absent`, `source_blank`, `no_consta` y `not_applicable` permanecen distintos y aplican sus requisitos.
+- `pending` bloquea `--close`; dos anotaciones se conservan y cualquier diferencia exacta se publica como desacuerdo `open`, sin autorresolución.
+- Salidas deterministas: selección, anotaciones JSONL, desacuerdos CSV, manifiesto con hashes y resumen Markdown. Un directorio existente nunca se sobrescribe.
+- 8 pruebas específicas; 44/44 al incluir pureza; Ruff y mypy estricto sobre 35 módulos correctos.
+- GOLD-002 y la anotación real por dos farmacéuticos siguen pendientes. DEV-407 no se cierra y Fase 4 no se abre.
+- Gate integral posterior: 343/343 pruebas Python, 7/7 Vitest, Ruff, mypy estricto sobre 35 módulos, ESLint, build Vite, Compose, 8/8 referencias y Alembic upgrade/downgrade; código 0.
+
+## Pulido UX del spike de revisión
+
+- El revisor declarado se recuerda en el navegador, sin convertir su identidad declarada en autenticación.
+- La evidencia y la versión documental son visibles; ya no dependen de un tooltip.
+- El cliente bloquea `confirmado`/`corregido` sin valor y `no_aplica` sin comentario, manteniendo el backend como barrera final.
+- 7/7 Vitest, ESLint y build Vite correctos.
+## Fase 4 — Preparada; Gate 4 BLOCKED
+
+Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
+
+### Hecho y validado
+
+- **Selección oro materializada** sobre el corpus real: 20 fichas, `run_id` estable `ac843f92c081045bd61ed80d6aef13c703f88275eeab433291ddb6ce9dd792cd`, 552 secciones citables y 58 sin contenido. `scripts/materialize_gold_set.py`, ejecutado; el corpus no se modifica.
+- **Comprobador de completitud** `pharma_validator_api.gold_completeness` y `scripts/check_gold.py`: fichas esperadas/anotadas por revisor, unidades completadas, pendientes, evidencia ausente, errores estructurales, progreso y veredicto. Sale con código 1 mientras el conjunto oro no esté listo. Sólo mide completitud y consistencia estructural; no juzga calidad clínica. 10 pruebas.
+- **Motor de evaluación** `pharma_validator_api.gold_evaluation`: exactitud, precisión, recall, F1, cobertura, evidencia válida, alucinaciones, coincidencia normalizada, latencia y throughput, por campo y global, con la clasificación exigida por el plan. Una unidad con desacuerdo humano sin conciliar no puntúa y las exclusiones se informan siempre. 13 pruebas.
+- **Transporte de inferencia** `pharma_validator_api.inference_backend`: parámetros reproducibles por defecto, salida guiada estricta por JSON Schema, clasificación de fallos, reintentos sólo para lo transitorio y rechazo de una respuesta servida por un modelo distinto del solicitado. **No contiene ningún nombre de modelo**: `BackendConfig` exige `model` explícito y falla sin él. 11 pruebas.
+- **Orquestador** `scripts/run_gold_pipeline.py`: anotaciones → verificación → conciliación → gold final → evaluación → métricas. Se detiene si el conjunto oro no está cerrado en lugar de producir métricas que parecerían válidas.
+- **Runbook operativo** `docs/GOLD_ANNOTATION_RUNBOOK.md`: entorno, las 20 fichas, orden, campos, evidencia por desplazamientos, estados, independencia entre revisores, conciliación, artefactos y criterios de completitud.
+- **ADR-0008** (D-014) y **ADR-0009** (D-015), ambos **propuestos**, no aceptados.
+- **Suite estratificada**: 21:25 → 78 s para iterar, sin perder cobertura. `docs/TEST_SUITE_PERFORMANCE.md`.
+
+- **Alta de anotadores resuelta sin registro nuevo.** `check_gold.py` y el orquestador aceptan `--reviewers` y, por omisión, leen `APP_REVIEWERS`. Se reutiliza `ReviewerDirectory` (DEV-501) en lugar de crear un registro paralelo de anotadores: quién puede firmar ya era una lista configurada. Un `annotator_id` no registrado es error estructural, y `require_distinct` impide que la misma persona firme las dos anotaciones. 3 pruebas.
+- **Adaptador del extractor local** `pharma_validator_api.llm_extractor`: une esquema guiado, transporte y verificación literal detrás de `ExtractorLLM`. 9 pruebas sin red ni GPU. Verifica lo importante: **una cita inventada la rechaza el verificador aunque la emita el adaptador**; un servidor caído es incidencia y no bloquea la revisión manual; una respuesta malformada no se repara. El envío HTTP queda inyectado porque su implementación depende del runtime de D-014.
+- **Pipeline verificado extremo a extremo con fixtures**: anotaciones → checker → conciliación → gold final → evaluación → métricas. 5 pruebas que cubren el camino feliz, un desacuerdo que sobrevive hasta el CSV sin puntuar, `pending` bloqueando el cierre, artefactos idénticos byte a byte y una alucinación penalizada. Estas pruebas existen porque cada etapa estaba cubierta por separado pero nada garantizaba que **encajasen**.
+
+### Provisional
+
+- ADR-0008 y ADR-0009 son recomendaciones. Ninguna decisión nueva se ha cerrado.
+
+### Bloqueado — pendiente humano
+
+- **GOLD-002**: dos farmacéuticos anotadores identificados. Bloquea la anotación, y con ella toda medición. El alta técnica está resuelta: basta declararlos en `APP_REVIEWERS` con formato `id:Nombre`.
+- **Campaña de anotación** de las 20 fichas por ambos, y su conciliación.
+- **D-014**: modelo y servidor de inferencia. La integración está construida y probada; lo único pendiente al aceptar es el envío HTTP real (una función con `httpx`). Bloquea DEV-402 y DEV-408.
+- **D-015**: umbrales. Depende de las métricas, que dependen de lo anterior.
+
+**Fase 4 no está cerrada y Fase 5 no se abre.** Cero fichas anotadas de 20 requeridas; cero extracciones reales ejecutadas.
 
 ## Última actualización
 
-3 de septiembre de 2026.
+4 de septiembre de 2026.

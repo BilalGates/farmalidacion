@@ -61,3 +61,37 @@ Su existencia no es un atajo de pruebas. La especificación es explícita: la ma
 - No reanuda lotes: es DEV-406.
 - No fija umbrales de confianza ni política por campo: es D-015, pendiente de DEV-408.
 - No segmenta la ficha en secciones: consume secciones ya identificadas.
+
+## Transporte hacia el servidor de inferencia (DEV-402) — 4 de septiembre de 2026
+
+`pharma_validator_api.inference_backend` define **cómo se habla** con un servidor
+compatible con la API de chat de OpenAI, no **con qué modelo** se habla. La
+separación es deliberada: D-014 sigue pendiente de aceptación humana, y fijar el
+modelo en el código convertiría en decisión de ingeniería una decisión que el
+registro reserva a una persona.
+
+Por eso `BackendConfig` exige `model` explícito y **falla sin él**. No existe
+valor por defecto, ni endpoint por defecto, ni cuantización por defecto.
+
+Garantías del transporte:
+
+- **Reproducibilidad por defecto.** `temperature=0.0` y semilla fija. Una
+  evaluación que no se puede repetir no es evidencia; el muestreo creativo debe
+  pedirse explícitamente.
+- **Salida guiada estricta.** Se solicita `response_format` de tipo
+  `json_schema` con `strict`. Es la barrera que evita tener que "reparar" JSON,
+  y reparar una respuesta malformada sería inventar contenido.
+- **Los fallos se clasifican.** `timeout`, `transport` y `server_error` son
+  transitorios y se reintentan con espera creciente. `invalid_json`,
+  `schema_violation` y `empty_response` **no se reintentan**: con temperatura 0
+  y semilla fija, repetir produce exactamente el mismo error y sólo gasta
+  tiempo de GPU.
+- **La atribución no se pierde.** Si el servidor responde con un modelo distinto
+  del solicitado, la llamada falla. Publicar métricas de un modelo bajo el
+  nombre de otro invalidaría toda la comparación de DEV-408.
+
+Módulo puro: el envío HTTP se inyecta como función, de modo que el contrato se
+prueba sin levantar un servidor. 11 pruebas.
+
+**No cierra DEV-402.** El cliente HTTP real y la traducción del esquema a GBNF
+—si el runtime elegido lo requiere— dependen de qué se acepte en D-014.

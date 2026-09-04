@@ -109,3 +109,44 @@ Dos ejecuciones sobre las mismas anotaciones producen ficheros idénticos byte a
 - GOLD-002: identidad de los dos anotadores farmacéuticos y su disponibilidad, pendiente.
 - GOLD-003: cerrada sin estratificación ATC para el conjunto oro inicial, porque DEV-208 no contiene ese atributo. No se infiere ATC; la decisión solo se revisará si aparece nueva evidencia versionada.
 - D-013 no bloquea este contrato: seleccionar y anotar no requiere GPU.
+## Estado de implementación técnica
+
+`pharma_validator_api.gold_annotations` valida las unidades sin acceso a red ni
+disco y `scripts/generate_gold_annotations.py` materializa las cinco salidas en
+un directorio nuevo que nunca se sobrescribe. La CLI recibe explícitamente la
+selección, las anotaciones JSONL y las secciones literales versionadas; no crea
+anotadores, valores ni conciliaciones.
+
+Los criterios 2 a 8 están cubiertos con entradas sintéticas por ocho pruebas y
+el núcleo forma parte del gate de pureza. Esta preparación no constituye una
+anotación clínica real: GOLD-002 y la doble anotación farmacéutica de las 20
+fichas siguen pendientes, por lo que DEV-407 y la entrada formal a Fase 4
+continúan abiertos.
+
+## Actualización de estado — 4 de septiembre de 2026
+
+Las entradas de anotación están materializadas y verificadas sobre el corpus
+real. `scripts/materialize_gold_set.py` produce `gold-selection.json` y
+`gold-sections.json` en `data/local/gold-set-407/`: las 20 fichas del `run_id`
+`ac843f92c081045bd61ed80d6aef13c703f88275eeab433291ddb6ce9dd792cd`, con 552
+secciones citables y 58 secciones sin contenido. El corpus se abre en solo
+lectura y no se descarga nada nuevo, de acuerdo con el criterio 9.
+
+Dos hechos del corpus se tratan explícitamente en lugar de disimularse: los
+encabezados de bloque existen sin `contenido` y no se convierten en una cadena
+vacía indistinguible de una sección realmente vacía; y una respuesta CIMA que
+declara no tener secciones no se transforma en sección vacía. Ninguna de las 20
+fichas del conjunto oro carece de contenido.
+
+`pharma_validator_api.gold_completeness` y `scripts/check_gold.py` verifican los
+criterios 5, 6 y 7 sobre anotaciones reales y responden si el conjunto oro está
+listo para evaluación. Comprueban completitud y consistencia estructural; no
+emiten ningún juicio clínico. El veredicto es deliberadamente estricto: una sola
+anotación no es doble anotación, y cualquier duda se resuelve como "no listo".
+
+`docs/GOLD_ANNOTATION_RUNBOOK.md` es el procedimiento operativo para los dos
+anotadores.
+
+**No existe todavía ninguna anotación real: cero unidades de las 20 fichas.**
+GOLD-002 sigue pendiente y es el único bloqueo para empezar. DEV-407 no se
+cierra y la Fase 4 no se abre.

@@ -22,16 +22,24 @@ Aplicación interna para consolidar y validar datos de medicamentos con proceden
 
 DEV-101 solo establece estos límites. No instala frameworks ni fija el esquema físico.
 
-## Desarrollo
+## Arranque reproducible
 
-Los comandos canónicos y su estado de disponibilidad se documentan en `docs/COMMANDS.md`. Por ahora:
+La única ruta soportada para levantar la demostración completa es:
 
 ```text
-python -m unittest discover -s tests -v
-python scripts/verify_reference_files.py
+docker compose up --build --detach --wait
 ```
 
-La configuración local partirá de `.env.example`; nunca se versionan secretos ni ficheros `.env` reales.
+Después quedan disponibles la interfaz en `http://localhost:5173`, la API en
+`http://localhost:8000`, su documentación en `http://localhost:8000/docs` y la
+salud en `http://localhost:8000/health`. Compose aplica las migraciones antes de
+arrancar la API y carga de forma idempotente los fixtures DEMO sobre el volumen
+SQLite `app-data`; las decisiones sobreviven a los reinicios.
+
+El gate completo del repositorio es `python scripts/verify_project.py`. El resto
+de comandos canónicos se documenta en `docs/COMMANDS.md`. `.env.example` sirve
+solo para desarrollo fuera de contenedores; nunca se versionan secretos ni
+ficheros `.env` reales.
 
 ## Principios
 

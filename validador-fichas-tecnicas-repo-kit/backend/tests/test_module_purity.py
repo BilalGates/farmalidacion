@@ -20,6 +20,7 @@ PURE_MODULES = (
     "evidence_verification",
     "extraction_batches",
     "extractor",
+    "gold_annotations",
     "gold_selection",
     "guided_schema",
     "prefill_policy",

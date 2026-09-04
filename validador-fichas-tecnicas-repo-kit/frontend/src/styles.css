@@ -288,6 +288,18 @@ input:focus-visible, select:focus-visible, button:focus-visible {
 }
 .sources__role { font-weight: 660; color: var(--ink-soft); }
 .sources__locator { color: var(--ink-faint); font-family: ui-monospace, monospace; }
+.sources__version { color: var(--ink-faint); font-size: .76rem; }
+.sources__evidence {
+  flex-basis: 100%;
+  margin: .25rem 0 0;
+  padding: .55rem .7rem;
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: .84rem;
+  line-height: 1.45;
+}
+.field-error { color: var(--danger); font-size: .82rem; font-weight: 650; }
 
 .review { margin-top: .8rem; padding-top: .8rem; border-top: 1px dashed var(--line); }
 .review__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .8rem; }

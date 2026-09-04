@@ -19,6 +19,15 @@ dependencies = [
 [project.optional-dependencies]
 dev = ['mypy>=2.3,<3', 'pytest>=8.3,<9', 'ruff>=0.9,<1']
 
+[tool.pytest.ini_options]
+testpaths = ['tests']
+# Los marcadores sólo permiten *seleccionar* subconjuntos. Ninguna prueba se
+# elimina ni se debilita: `make verify` y CI siguen ejecutándolas todas.
+markers = [
+    "slow: importa maestros Excel reales sobre una base migrada (minutos por prueba)",
+    "reference: depende de los ficheros de referencia de data/reference/raw",
+]
+
 [tool.mypy]
 python_version = '3.11'
 strict = true
