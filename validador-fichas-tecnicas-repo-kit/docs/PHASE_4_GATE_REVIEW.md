@@ -81,12 +81,12 @@ Falta la confirmación sobre una ejecución real, que depende de D-014.
 | Trabajo | Issue | Estado | Evidencia |
 |---|---|---|---|
 | Interfaz `ExtractorLLM` desacoplada | DEV-401 | **PASS** | 12 pruebas; `docs/EXTRACTOR_INTERFACE_CONTRACT.md` |
-| Servidor local compatible con OpenAI chat | DEV-402 | **BLOCKED** | Contrato de transporte agnóstico implementado (`inference_backend`, 11 pruebas). El cliente real exige modelo aceptado: D-014 |
+| Servidor local compatible con OpenAI chat | DEV-402 | **BLOCKED** | Transporte agnóstico (`inference_backend`, 11 pruebas) y adaptador `llm_extractor` tras `ExtractorLLM` (9 pruebas). Falta sólo el envío HTTP real, que depende del runtime de D-014 |
 | Salida guiada por esquema | DEV-403 | **PASS** | 22 pruebas; `docs/GUIDED_SCHEMA_CONTRACT.md`. La traducción a GBNF depende del runtime de D-014 |
 | Llamadas agrupadas por sección | DEV-404 | **PASS** | 17 pruebas; validado sobre catálogo real (353 definiciones, 129 campos extraíbles, 14 llamadas) |
 | Verificación literal antes de persistir | DEV-405 | **PASS** | 19 pruebas; `docs/EVIDENCE_VERIFICATION_CONTRACT.md` |
 | Reanudación de lotes y versionado | DEV-406 | **PASS** | 17 pruebas; `docs/EXTRACTION_BATCH_CONTRACT.md` |
-| Herramienta de anotación del conjunto oro | DEV-407 | **BLOCKED** | Selección, herramienta, completitud y pipeline listos. Falta la anotación humana: GOLD-002 |
+| Herramienta de anotación del conjunto oro | DEV-407 | **BLOCKED** | Selección, herramienta, completitud, alta de anotadores y pipeline verificado extremo a extremo (5 pruebas). Falta la anotación humana: GOLD-002 |
 | Comparación de al menos dos tamaños de modelo | DEV-408 | **BLOCKED** | Motor de evaluación implementado (`gold_evaluation`, 13 pruebas). Faltan gold y modelos: GOLD-002 + D-014 |
 | Métricas por campo, política, entidad y sección | DEV-408 | **BLOCKED** | Calculadas por `gold_evaluation`; sin datos que alimentarlas |
 | Degradación configurable a `solo_evidencia` | DEV-409 | **BLOCKED** | Mecanismo disponible en `prefill_policy`; los umbrales son D-015 |
@@ -125,7 +125,7 @@ Se revisan porque su incumplimiento invalidaría el gate con independencia de la
 
 | # | Bloqueo | Quién decide | Evidencia ya disponible | Acción que desbloquea |
 |---|---|---|---|---|
-| 1 | **GOLD-002**: identidad de los dos farmacéuticos anotadores | Responsable funcional / farmacia | Contrato de anotación, selección reproducible de 20 fichas, herramienta, comprobador de completitud, runbook operativo | Nombrar dos personas y registrarlas en `APP_REVIEWERS`. Los valores actuales del `.env.example` son marcadores, no personas |
+| 1 | **GOLD-002**: identidad de los dos farmacéuticos anotadores | Responsable funcional / farmacia | Contrato, selección de 20 fichas, herramienta, comprobador, runbook y alta de anotadores ya operativa | Declarar dos personas en `APP_REVIEWERS` con formato `id:Nombre`. A partir de ahí el comprobador valida identidades solo. Los valores del `.env.example` son marcadores, no personas |
 | 2 | **Campaña de anotación** de las 20 fichas por ambos | Los dos farmacéuticos | Runbook `docs/GOLD_ANNOTATION_RUNBOOK.md`; entradas materializadas; `check_gold.py` mide progreso | Ejecutar la anotación independiente y la conciliación |
 | 3 | **D-014**: modelo y servidor de inferencia | Responsable funcional con criterio técnico | ADR-0008 con 3 candidatos comparados y recomendación argumentada | Aceptar una opción del ADR |
 | 4 | **D-015**: umbrales de `proponer_valor` y degradación | Responsable funcional / farmacia | ADR-0009 con el método de cálculo definido; faltan los datos | Aceptar tras publicar métricas del gold |

@@ -15,11 +15,13 @@ import json
 from pathlib import Path
 from typing import Any
 
+from pharma_validator_api.config import get_settings
 from pharma_validator_api.gold_annotations import GoldAnnotation, GoldEvidence
 from pharma_validator_api.gold_completeness import (
     check_gold_completeness,
     render_report,
 )
+from pharma_validator_api.reviewer_identity import ReviewerDirectory
 
 
 def _read_annotations(paths: list[Path]) -> tuple[GoldAnnotation, ...]:
@@ -49,6 +51,22 @@ def _read_annotations(paths: list[Path]) -> tuple[GoldAnnotation, ...]:
     return tuple(annotations)
 
 
+def _resolve_directory(entries: list[str] | None) -> ReviewerDirectory | None:
+    """Resuelve la lista de revisores desde la CLI o desde la configuración.
+
+    Devuelve `None` cuando no hay ninguna lista configurada. Es deliberado: sin
+    revisores dados de alta todavía no se puede comprobar la identidad de los
+    anotadores, y el informe ya declara "no listo" por otras razones. Inventar
+    aquí una lista por defecto daría por buenos identificadores arbitrarios.
+    """
+    if entries:
+        return ReviewerDirectory.from_configuration(tuple(entries))
+    configured = get_settings().reviewers
+    if configured:
+        return ReviewerDirectory.from_configuration(tuple(configured))
+    return None
+
+
 def _read_sections(path: Path) -> dict[tuple[str, str], str]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     return {
@@ -76,15 +94,27 @@ def main() -> int:
         default=None,
         help="Alcance de campos acordado por ficha. Sin él no se detecta un campo que nadie anotó.",
     )
+    parser.add_argument(
+        "--reviewers",
+        nargs="*",
+        default=None,
+        help=(
+            "Revisores registrados en formato 'id:Nombre' (GOLD-002). Si se aportan, "
+            "todo anotador debe pertenecer a la lista y deben ser dos distintos. "
+            "Por omisión se lee APP_REVIEWERS."
+        ),
+    )
     parser.add_argument("--json", action="store_true", help="Salida en JSON.")
     args = parser.parse_args()
 
+    directory = _resolve_directory(args.reviewers)
     selection = json.loads(args.selection.read_text(encoding="utf-8"))
     report = check_gold_completeness(
         selection,
         _read_annotations(list(args.annotations)),
         _read_sections(args.sections),
         expected_units_per_document=args.expected_units_per_document,
+        directory=directory,
     )
 
     if args.json:

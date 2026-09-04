@@ -51,6 +51,41 @@ Produce:
 
 El script **no sobrescribe** un directorio existente. Si ya existe, no se vuelve a ejecutar: reejecutarlo no aporta nada porque la selección es determinista.
 
+## 1 bis. Alta de los dos anotadores (GOLD-002)
+
+Antes de anotar, las dos personas deben estar **dadas de alta**. No hay registro
+nuevo que crear: se reutiliza la lista de revisores que ya existe (DEV-501).
+
+En `.env` (o `.env.example` como plantilla):
+
+```
+APP_REVIEWERS=["ana.ruiz:Ana Ruiz","luis.gil:Luis Gil"]
+```
+
+Formato `identificador:Nombre visible`. El identificador es el que se escribe en
+`annotator_id` de cada línea del JSONL, y debe coincidir exactamente.
+
+A partir de ese momento, `check_gold.py` comprueba la identidad de los
+anotadores automáticamente:
+
+- un `annotator_id` que no esté en la lista es **error estructural**;
+- dos anotaciones firmadas por la misma persona **no** son doble anotación.
+
+Sin esa comprobación, un identificador mal escrito crearía un tercer anotador
+fantasma y la doble anotación quedaría rota sin que nada lo señalase.
+
+Para comprobar la lista sin tocar el `.env`:
+
+```bash
+PYTHONPATH=src python ../scripts/check_gold.py \
+  --selection ../data/local/gold-set-407/gold-selection.json \
+  --sections  ../data/local/gold-set-407/gold-sections.json \
+  --reviewers "ana.ruiz:Ana Ruiz" "luis.gil:Luis Gil"
+```
+
+Los valores `mtorres` / `jlopez` que trae `.env.example` son **marcadores de
+ejemplo, no personas**. Sustitúyelos antes de empezar.
+
 ## 2. Las 20 fichas del conjunto oro
 
 Selección `gold-selection-v1`, semilla `407` (GOLD-001), sobre el universo de 500 de DEV-208.

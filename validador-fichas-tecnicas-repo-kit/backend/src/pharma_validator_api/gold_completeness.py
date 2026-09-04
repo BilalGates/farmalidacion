@@ -28,6 +28,10 @@ from pharma_validator_api.gold_annotations import (
     GoldAnnotationError,
     validate_annotation,
 )
+from pharma_validator_api.reviewer_identity import (
+    ReviewerDirectory,
+    ReviewerIdentityError,
+)
 
 CHECK_VERSION = "gold-completeness-v1"
 
@@ -98,6 +102,7 @@ def check_gold_completeness(
     section_contents: Mapping[tuple[str, str], str],
     *,
     expected_units_per_document: int | None = None,
+    directory: ReviewerDirectory | None = None,
 ) -> GoldCompletenessReport:
     """Evalúa completitud estructural sin emitir ningún juicio clínico.
 
@@ -105,6 +110,13 @@ def check_gold_completeness(
     Cuando no se aporta, el universo esperado son las unidades realmente
     anotadas: sirve para vigilar consistencia y doble cobertura, pero no puede
     detectar un campo que nadie anotó. La diferencia se refleja en el informe.
+
+    `directory` es la lista de revisores ya configurada (DEV-501). Cuando se
+    aporta, cada `annotator_id` debe pertenecer a ella: sin esa comprobación, un
+    identificador mal escrito produciría un tercer "anotador" fantasma y la
+    doble anotación quedaría rota sin que nada lo señalase. Se reutiliza el
+    directorio existente en lugar de inventar un registro paralelo de
+    anotadores, porque quién puede firmar ya es una lista configurada.
     """
     expected_docs = _expected_documents(selection)
     report = GoldCompletenessReport(expected_documents=len(expected_docs))
@@ -202,6 +214,23 @@ def check_gold_completeness(
         structural.append(
             f"El contrato exige exactamente dos anotadores; hay {len(progress)}."
         )
+
+    if directory is not None:
+        for item in progress:
+            try:
+                directory.resolve(item.annotator_id)
+            except ReviewerIdentityError as error:
+                structural.append(f"Anotador no registrado: {error}")
+        if len(progress) == 2:
+            # GOLD-002 exige dos anotadores **distintos**. La comprobación ya
+            # existe para la doble validación; se reutiliza en lugar de
+            # duplicar la regla.
+            try:
+                directory.require_distinct(
+                    progress[0].annotator_id, progress[1].annotator_id
+                )
+            except ReviewerIdentityError as error:
+                structural.append(str(error))
 
     report = GoldCompletenessReport(
         expected_documents=len(expected_docs),

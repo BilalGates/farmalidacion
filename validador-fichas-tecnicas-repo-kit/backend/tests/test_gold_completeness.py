@@ -10,6 +10,7 @@ from pharma_validator_api.gold_completeness import (
     check_gold_completeness,
     render_report,
 )
+from pharma_validator_api.reviewer_identity import ReviewerDirectory
 
 HASH = "a" * 64
 SELECTION = {
@@ -185,3 +186,46 @@ def test_report_states_the_verdict_explicitly() -> None:
 
     assert "GOLD NO LISTO" in text
     assert "Fichas esperadas: 1" in text
+
+
+def directory() -> ReviewerDirectory:
+    return ReviewerDirectory.from_configuration(
+        ("f1:Farmacéutica Uno", "f2:Farmacéutico Dos")
+    )
+
+
+def test_registered_annotators_pass_identity_check() -> None:
+    """GOLD-002 se satisface con revisores dados de alta, no con cadenas libres."""
+    report = check_gold_completeness(
+        SELECTION,
+        (annotation(annotator="f1"), annotation(annotator="f2")),
+        SECTIONS,
+        directory=directory(),
+    )
+
+    assert report.is_ready
+    assert not report.structural_errors
+
+
+def test_an_unregistered_annotator_is_a_structural_error() -> None:
+    """Un identificador mal escrito crearía un anotador fantasma silencioso."""
+    report = check_gold_completeness(
+        SELECTION,
+        (annotation(annotator="f1"), annotation(annotator="typo")),
+        SECTIONS,
+        directory=directory(),
+    )
+
+    assert not report.is_ready
+    assert any("no registrado" in error for error in report.structural_errors)
+
+
+def test_without_a_directory_identities_are_not_checked() -> None:
+    """Sin revisores dados de alta no se inventa una lista por defecto."""
+    report = check_gold_completeness(
+        SELECTION,
+        (annotation(annotator="f1"), annotation(annotator="f2")),
+        SECTIONS,
+    )
+
+    assert report.is_ready

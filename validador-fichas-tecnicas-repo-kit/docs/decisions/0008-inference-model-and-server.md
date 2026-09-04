@@ -143,3 +143,41 @@ Coste de cambio **bajo por diseño**: el modelo se declara en `BackendConfig`; n
 - ¿Se acepta la terna, o farmacia prefiere incluir un modelo específicamente biomédico?
 - ¿Se asume la confusión tamaño/cuantización en 24 GB, o se amplía a 48 GB antes de medir?
 - ¿Se ejecuta C como control, o se descarta?
+
+## Anexo — Estado de la integración (4 de septiembre de 2026)
+
+Revisión de qué queda por hacer el día que se acepte una opción.
+
+La integración **ya está construida y probada**, salvo una pieza. La cadena
+completa existe y encaja:
+
+```
+build_schema (DEV-403) → inference_backend (transporte) → parse_response (DEV-403)
+                       → run_extraction → verify_extraction (DEV-405)
+```
+
+`pharma_validator_api.llm_extractor.LocalServerExtractor` implementa
+`ExtractorLLM` y une esas piezas. Verificado con 9 pruebas, sin red y sin GPU:
+una respuesta bien formada produce una propuesta admitida; **una cita inventada
+la rechaza el verificador literal aunque la haya emitido el adaptador**; un
+servidor caído se convierte en incidencia y no bloquea la revisión manual; una
+respuesta malformada no se repara; la petición exige salida guiada estricta con
+`temperature` 0.
+
+Lo único que falta es **el envío HTTP real**, que se inyecta como función
+(`sender`). Se ha dejado inyectable a propósito por dos razones: permite probar
+todo lo anterior sin levantar un servidor, y su implementación concreta depende
+del runtime que se acepte aquí.
+
+Coste estimado de cerrar DEV-402 una vez aceptada una opción: una función que
+haga `POST {base_url}/chat/completions` con `httpx` (ya es dependencia) y
+traduzca los errores de transporte a `InferenceBackendError`. El resto no
+cambia.
+
+Si se aceptase la opción C (llama.cpp), habría además que traducir el esquema
+JSON a GBNF; con las opciones A y B ese trabajo no existe, porque vLLM consume
+el JSON Schema directamente. Es una razón práctica más a favor de vLLM, y no
+estaba cuantificada en la comparación original.
+
+Ninguna parte del código elige modelo: `BackendConfig` exige `model` explícito y
+falla sin él, y hay una prueba que lo fija.

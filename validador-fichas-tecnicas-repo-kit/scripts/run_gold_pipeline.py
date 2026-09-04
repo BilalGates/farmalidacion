@@ -19,6 +19,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from pharma_validator_api.config import get_settings
 from pharma_validator_api.gold_annotations import (
     GoldAnnotation,
     GoldEvidence,
@@ -33,6 +34,7 @@ from pharma_validator_api.gold_evaluation import (
     evaluate,
     render_evaluation,
 )
+from pharma_validator_api.reviewer_identity import ReviewerDirectory
 
 
 def _read_annotations(paths: list[Path]) -> tuple[GoldAnnotation, ...]:
@@ -103,6 +105,14 @@ def main() -> int:
         help="Modelo que produjo las propuestas. Obligatorio para evaluar.",
     )
     parser.add_argument(
+        "--reviewers",
+        nargs="*",
+        default=None,
+        help=(
+            "Revisores registrados 'id:Nombre' (GOLD-002). Por omisión se lee APP_REVIEWERS."
+        ),
+    )
+    parser.add_argument(
         "--allow-incomplete",
         action="store_true",
         help="Genera artefactos de un conjunto oro incompleto. Nunca evalúa.",
@@ -119,7 +129,16 @@ def main() -> int:
     annotations = _read_annotations(list(args.annotations))
 
     # 1-2. Verificación y completitud.
-    report = check_gold_completeness(selection, annotations, sections)
+    directory: ReviewerDirectory | None = None
+    if args.reviewers:
+        directory = ReviewerDirectory.from_configuration(tuple(args.reviewers))
+    elif get_settings().reviewers:
+        directory = ReviewerDirectory.from_configuration(
+            tuple(get_settings().reviewers)
+        )
+    report = check_gold_completeness(
+        selection, annotations, sections, directory=directory
+    )
     args.output_dir.mkdir(parents=True)
     (args.output_dir / "gold-completeness.md").write_text(
         render_report(report), encoding="utf-8"

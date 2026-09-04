@@ -313,7 +313,9 @@ Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Fase 3 cerrada; D-013 está res
 
 **Aceptación:** parámetros reproducibles por defecto (`temperature=0`, semilla fija); salida guiada estricta por JSON Schema; los fallos se clasifican y sólo se reintenta lo transitorio; una respuesta servida por un modelo distinto del solicitado se rechaza; ninguna respuesta se repara.
 
-**Estado:** parte agnóstica al modelo implementada el 4 de septiembre de 2026; 11 pruebas, Ruff y mypy limpios. **`BackendConfig` exige `model` explícito y falla sin él**, de modo que ningún camino de código elige modelo mientras D-014 esté pendiente. El cliente HTTP real y la traducción a GBNF esperan a D-014. No cierra DEV-402.
+**Estado:** parte agnóstica al modelo implementada el 4 de septiembre de 2026; 11 pruebas, Ruff y mypy limpios. **`BackendConfig` exige `model` explícito y falla sin él**, de modo que ningún camino de código elige modelo mientras D-014 esté pendiente.
+
+**Actualización:** `pharma_validator_api.llm_extractor.LocalServerExtractor` implementa `ExtractorLLM` uniendo esquema guiado, transporte y verificación literal; 9 pruebas sin red ni GPU confirman que una cita inventada se rechaza aunque la emita el adaptador, que un servidor caído es incidencia y que una respuesta malformada no se repara. Falta **sólo el envío HTTP real**, inyectado como función porque depende del runtime de D-014. No cierra DEV-402.
 
 ### DEV-403 — Esquema de salida guiada (`P0`)
 
@@ -377,7 +379,7 @@ Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Fase 3 cerrada; D-013 está res
 
 **Aceptación:** exactitud, precisión, recall, F1, cobertura, evidencia válida, alucinaciones, coincidencia normalizada, latencia y throughput, por campo y global; clasificación en correcta / parcial / incorrecta / no localizada / evidencia inválida / no parseable / alucinación; una unidad con desacuerdo humano sin conciliar no puntúa y las exclusiones se informan; toda métrica queda atribuida a un modelo.
 
-**Estado:** motor implementado y probado el 4 de septiembre de 2026 con entradas sintéticas; 13 pruebas. **No se ha ejecutado ninguna evaluación real**: faltan el conjunto oro anotado (GOLD-002) y un modelo aceptado (D-014). No cierra DEV-408.
+**Estado:** motor implementado y probado el 4 de septiembre de 2026 con entradas sintéticas; 13 pruebas, más 5 de recorrido completo que verifican el encaje entre etapas (anotaciones → checker → conciliación → gold final → evaluación → métricas). **No se ha ejecutado ninguna evaluación real**: faltan el conjunto oro anotado (GOLD-002) y un modelo aceptado (D-014). No cierra DEV-408.
 
 ### DEV-409 — Política configurable por resultados (`P0`)
 

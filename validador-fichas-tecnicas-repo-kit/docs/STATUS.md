@@ -587,15 +587,19 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
 - **ADR-0008** (D-014) y **ADR-0009** (D-015), ambos **propuestos**, no aceptados.
 - **Suite estratificada**: 21:25 → 78 s para iterar, sin perder cobertura. `docs/TEST_SUITE_PERFORMANCE.md`.
 
+- **Alta de anotadores resuelta sin registro nuevo.** `check_gold.py` y el orquestador aceptan `--reviewers` y, por omisión, leen `APP_REVIEWERS`. Se reutiliza `ReviewerDirectory` (DEV-501) en lugar de crear un registro paralelo de anotadores: quién puede firmar ya era una lista configurada. Un `annotator_id` no registrado es error estructural, y `require_distinct` impide que la misma persona firme las dos anotaciones. 3 pruebas.
+- **Adaptador del extractor local** `pharma_validator_api.llm_extractor`: une esquema guiado, transporte y verificación literal detrás de `ExtractorLLM`. 9 pruebas sin red ni GPU. Verifica lo importante: **una cita inventada la rechaza el verificador aunque la emita el adaptador**; un servidor caído es incidencia y no bloquea la revisión manual; una respuesta malformada no se repara. El envío HTTP queda inyectado porque su implementación depende del runtime de D-014.
+- **Pipeline verificado extremo a extremo con fixtures**: anotaciones → checker → conciliación → gold final → evaluación → métricas. 5 pruebas que cubren el camino feliz, un desacuerdo que sobrevive hasta el CSV sin puntuar, `pending` bloqueando el cierre, artefactos idénticos byte a byte y una alucinación penalizada. Estas pruebas existen porque cada etapa estaba cubierta por separado pero nada garantizaba que **encajasen**.
+
 ### Provisional
 
 - ADR-0008 y ADR-0009 son recomendaciones. Ninguna decisión nueva se ha cerrado.
 
 ### Bloqueado — pendiente humano
 
-- **GOLD-002**: dos farmacéuticos anotadores identificados. Bloquea la anotación, y con ella toda medición.
+- **GOLD-002**: dos farmacéuticos anotadores identificados. Bloquea la anotación, y con ella toda medición. El alta técnica está resuelta: basta declararlos en `APP_REVIEWERS` con formato `id:Nombre`.
 - **Campaña de anotación** de las 20 fichas por ambos, y su conciliación.
-- **D-014**: modelo y servidor de inferencia. Bloquea DEV-402 y DEV-408.
+- **D-014**: modelo y servidor de inferencia. La integración está construida y probada; lo único pendiente al aceptar es el envío HTTP real (una función con `httpx`). Bloquea DEV-402 y DEV-408.
 - **D-015**: umbrales. Depende de las métricas, que dependen de lo anterior.
 
 **Fase 4 no está cerrada y Fase 5 no se abre.** Cero fichas anotadas de 20 requeridas; cero extracciones reales ejecutadas.
