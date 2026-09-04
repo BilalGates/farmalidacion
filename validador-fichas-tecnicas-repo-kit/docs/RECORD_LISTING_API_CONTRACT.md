@@ -99,6 +99,20 @@ Para el selector de estado, prefiere «cargar más» a una paginación numerada:
 - `GET /records/reviewers` — sin cambios.
 - `POST /records/values/{field_value_id}/decisions` — sin cambios.
 
+## Cómo levantar datos reales para probar
+
+El conjunto DEMO tiene cinco registros y no ejercita la paginación. Para tener
+7.189 registros reales (35.945 valores) en menos de un minuto — medido en 37 s
+desde una base vacía:
+
+```text
+python -m alembic -c backend/alembic.ini upgrade head
+python scripts/ingest_masters.py --only catalog --only active_ingredients
+```
+
+Los maestros de medicamentos y especialidades tardan mucho más y no hacen falta
+para probar la pantalla; el motivo está en `docs/MASTER_INGESTION_THROUGHPUT.md`.
+
 ## Comprobado contra datos reales
 
 Sobre los maestros importados (7.189 registros, 35.945 valores):

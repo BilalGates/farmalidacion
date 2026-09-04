@@ -15,10 +15,12 @@ Esto es **comportamiento preexistente**, no una regresión introducida por los
 
 Sobre SQLite migrada a `head`, con los ficheros reales:
 
-| Maestro | Resultado | Tiempo |
-|---|---|---|
-| Catálogo | 353 definiciones | segundos |
-| Principios activos | 7.189 ocurrencias, 35.945 valores, 0 cuarentena | ~30 s |
+| Maestro | Resultado |
+|---|---|
+| Catálogo | 353 definiciones |
+| Principios activos | 7.189 ocurrencias, 35.945 valores, 0 cuarentena |
+
+Los dos juntos, desde una base vacía y recién migrada: **37 s**.
 
 Segunda pasada: reutiliza los lotes, y los recuentos de
 `catalog_field_definition`, `target_record`, `block_instance`, `field_value` e
