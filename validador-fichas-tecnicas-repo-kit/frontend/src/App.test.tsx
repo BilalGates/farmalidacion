@@ -242,7 +242,9 @@ async function selectOption(element: HTMLElement, value: string) {
 beforeEach(() => {
   listPayload = { items: [summary(), OTHER], total: 2 }
   postCount = 0
-  window.location.hash = ''
+  // La vertical de revisión DEMO ya no es la pantalla de inicio: el inicio es
+  // el panel de datos reales. Estas pruebas arrancan en su ruta propia.
+  window.location.hash = '#/fichas'
   localStorage.clear()
   vi.stubGlobal('fetch', mockFetch())
 })
@@ -256,15 +258,14 @@ describe('Recorrido de la vertical de revisión', () => {
     render(<App />)
 
     expect(screen.getByText(/Datos de demostración/)).toBeVisible()
-    expect(screen.getByRole('button', { name: /Fichas técnicas/ })).toBeVisible()
+    expect(screen.getByRole('button', { name: /Revisión \(DEMO\)/ })).toBeVisible()
     // Un módulo no desarrollado se anuncia, no se oculta.
-    expect(screen.getByRole('button', { name: /Importaciones\s*Pronto/ })).toBeVisible()
+    expect(screen.getByRole('button', { name: /Validaciones\s*Pronto/ })).toBeVisible()
   })
 
   it('lista las fichas, filtra por búsqueda y abre el detalle', async () => {
     render(<App />)
 
-    await click(screen.getByRole('button', { name: 'Ir a las fichas técnicas' }))
     expect(await screen.findByText('Metotrexato 2,5 mg comprimidos')).toBeVisible()
     expect(screen.getByText('Omeprazol 20 mg cápsulas duras')).toBeVisible()
 

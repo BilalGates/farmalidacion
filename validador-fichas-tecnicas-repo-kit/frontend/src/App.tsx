@@ -6,8 +6,13 @@ import { RoadmapNote } from './components/RoadmapNote'
 import { SoonBadge } from './components/StateBadge'
 import { DEMO_DATA_NOTICE, ROADMAP_NOTES } from './domain/vocabulary'
 import { navigate, useRoute } from './navigation'
+import { DashboardScreen } from './screens/DashboardScreen'
+import { ImportsScreen } from './screens/ImportsScreen'
+import { RealRecordDetailScreen } from './screens/RealRecordDetailScreen'
+import { RealRecordListScreen } from './screens/RealRecordListScreen'
 import { RecordDetailScreen } from './screens/RecordDetailScreen'
 import { RecordListScreen } from './screens/RecordListScreen'
+import { SourcesScreen } from './screens/SourcesScreen'
 
 interface NavItem {
   readonly id: string
@@ -19,73 +24,22 @@ interface NavItem {
 
 const NAV: readonly NavItem[] = [
   { id: 'inicio', label: 'Inicio', available: true },
-  { id: 'fichas', label: 'Fichas técnicas', available: true },
+  { id: 'registros', label: 'Fichas técnicas', available: true },
+  { id: 'fuentes', label: 'Fuentes', available: true },
+  { id: 'importaciones', label: 'Importaciones', available: true },
+  { id: 'fichas', label: 'Revisión (DEMO)', available: true },
   { id: 'validaciones', label: 'Validaciones', available: false, note: 'dobleValidacion' },
-  { id: 'fuentes', label: 'Fuentes', available: false, note: 'cima' },
-  { id: 'importaciones', label: 'Importaciones', available: false, note: 'importaciones' },
   { id: 'auditoria', label: 'Historial / Auditoría', available: false, note: 'auditoria' },
   { id: 'configuracion', label: 'Configuración', available: false, note: 'exportacion' },
 ]
 
 function activeNavId(routeName: string, routeId: string | null): string {
   if (routeName === 'ficha' || routeName === 'fichas') return 'fichas'
+  if (routeName === 'registro' || routeName === 'registros') return 'registros'
+  if (routeName === 'fuentes') return 'fuentes'
+  if (routeName === 'importaciones') return 'importaciones'
   if (routeName === 'seccion' && routeId) return routeId
   return 'inicio'
-}
-
-function HomeScreen() {
-  return (
-    <div className='screen'>
-      <div className='screen__head'>
-        <div>
-          <p className='eyebrow'>Farmalidación</p>
-          <h1>Consolidación y validación del catálogo</h1>
-          <p className='lede'>
-            Farmalidación reúne el maestro actual, los metadatos de CIMA y el texto de la ficha
-            técnica junto al campo que hay que validar, para que la decisión sea rápida, trazable y
-            siempre de una persona identificada.
-          </p>
-        </div>
-      </div>
-
-      <div className='cards'>
-        <article className='card'>
-          <h2>Qué funciona hoy</h2>
-          <ul>
-            <li>Listado de registros con estado de revisión y búsqueda.</li>
-            <li>Ficha por bloques, con valor, fuente y procedencia de cada campo.</li>
-            <li>Detección de discrepancias entre fuentes, sin resolverlas automáticamente.</li>
-            <li>Decisión de revisión firmada y persistida como historial.</li>
-          </ul>
-        </article>
-        <article className='card'>
-          <h2>Qué llegará después</h2>
-          <ul>
-            <li>Extracción asistida con evidencia literal verificable.</li>
-            <li>Contraste versionado con CIMA.</li>
-            <li>Doble validación y conciliación de discrepancias.</li>
-            <li>Exportación al sistema destino.</li>
-          </ul>
-        </article>
-      </div>
-
-      <div className='cards'>
-        <article className='card card--plain'>
-          <h2>Límites del producto</h2>
-          <ul className='boundary-list'>
-            <li>No procesa datos de pacientes</li>
-            <li>No emite recomendaciones clínicas</li>
-            <li>No decide valores que requieren criterio profesional</li>
-            <li>No oculta conflictos entre fuentes</li>
-          </ul>
-        </article>
-      </div>
-
-      <button type='button' className='button button--primary' onClick={() => navigate('/fichas')}>
-        Ir a las fichas técnicas
-      </button>
-    </div>
-  )
 }
 
 function PlaceholderScreen({ item }: { item: NavItem }) {
@@ -176,13 +130,23 @@ export function App() {
           </label>
         </header>
 
-        <p className='demo-banner'>{DEMO_DATA_NOTICE}</p>
-
         <main className='content'>
-          {route.name === 'inicio' && <HomeScreen />}
-          {route.name === 'fichas' && <RecordListScreen />}
+          {route.name === 'inicio' && <DashboardScreen />}
+          {route.name === 'registros' && <RealRecordListScreen />}
+          {route.name === 'registro' && <RealRecordDetailScreen recordId={route.id} />}
+          {route.name === 'fuentes' && <SourcesScreen />}
+          {route.name === 'importaciones' && <ImportsScreen />}
+          {route.name === 'fichas' && (
+            <>
+              <p className='demo-banner'>{DEMO_DATA_NOTICE}</p>
+              <RecordListScreen />
+            </>
+          )}
           {route.name === 'ficha' && (
-            <RecordDetailScreen recordId={route.id} reviewer={reviewer} />
+            <>
+              <p className='demo-banner'>{DEMO_DATA_NOTICE}</p>
+              <RecordDetailScreen recordId={route.id} reviewer={reviewer} />
+            </>
           )}
           {route.name === 'seccion' && (
             <PlaceholderScreen
