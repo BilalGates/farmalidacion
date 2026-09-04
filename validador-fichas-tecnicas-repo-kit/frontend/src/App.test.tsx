@@ -260,7 +260,7 @@ beforeEach(() => {
   postCount = 0
   // La vertical de revisión DEMO ya no es la pantalla de inicio: el inicio es
   // el panel de datos reales. Estas pruebas arrancan en su ruta propia.
-  window.location.hash = '#/fichas'
+  window.location.hash = '#/registros'
   localStorage.clear()
   vi.stubGlobal('fetch', mockFetch())
 })
@@ -298,7 +298,7 @@ describe('Recorrido de la vertical de revisión', () => {
 
   it('muestra cada valor con su fuente y la discrepancia sin resolverla', async () => {
     render(<App />)
-    await goTo('/fichas/rec-1')
+    await goTo('/registros/rec-1')
 
     await screen.findByRole('heading', { level: 1, name: 'Metotrexato 2,5 mg comprimidos' })
 
@@ -323,7 +323,7 @@ describe('Recorrido de la vertical de revisión', () => {
 
   it('no permite firmar sin revisor y no preselecciona ninguna decisión', async () => {
     render(<App />)
-    await goTo('/fichas/rec-1')
+    await goTo('/registros/rec-1')
     await screen.findByRole('heading', { level: 1, name: 'Metotrexato 2,5 mg comprimidos' })
 
     await click(reviewButtonFor('CANTIDAD'))
@@ -339,7 +339,7 @@ describe('Recorrido de la vertical de revisión', () => {
     render(<App />)
 
     await selectReviewer('ana')
-    await goTo('/fichas/rec-1')
+    await goTo('/registros/rec-1')
     await screen.findByRole('heading', { level: 1, name: 'Metotrexato 2,5 mg comprimidos' })
 
     await click(reviewButtonFor('CANTIDAD'))
@@ -361,7 +361,7 @@ describe('Recorrido de la vertical de revisión', () => {
     render(<App />)
 
     await selectReviewer('ana')
-    await goTo('/fichas/rec-1')
+    await goTo('/registros/rec-1')
     await screen.findByRole('heading', { level: 1, name: 'Metotrexato 2,5 mg comprimidos' })
 
     await click(reviewButtonFor('CANTIDAD'))
@@ -384,6 +384,12 @@ describe('Recorrido de la vertical de revisión', () => {
     first.unmount()
 
     render(<App />)
-    expect(await screen.findByRole('combobox', { name: 'Revisor que firma las decisiones' })).toHaveValue('ana')
+    const select = await screen.findByRole('combobox', {
+      name: 'Revisor que firma las decisiones',
+    })
+    await waitFor(() =>
+      expect(within(select).getByRole('option', { name: 'Ana Ruiz' })).toBeDefined(),
+    )
+    expect(select).toHaveValue('ana')
   })
 })

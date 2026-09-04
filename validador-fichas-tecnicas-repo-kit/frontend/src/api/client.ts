@@ -33,14 +33,22 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 30_000)
   let response: Response
   try {
     response = await fetch(`${appConfig.apiBaseUrl}${path}`, {
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       ...init,
     })
   } catch {
+    if (controller.signal.aborted) {
+      throw new ApiError('La solicitud ha tardado demasiado. Inténtelo de nuevo.', 0)
+    }
     throw new ApiError('No se ha podido contactar con el servidor.', 0)
+  } finally {
+    clearTimeout(timeout)
   }
   if (!response.ok) {
     let detail = 'Se ha producido un error inesperado.'

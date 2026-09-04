@@ -82,7 +82,7 @@ export function RecordDetailScreen({
     return (
       <div className='screen'>
         <p className='alert alert--error'>{error}</p>
-        <button type='button' className='button' onClick={() => navigate('/fichas')}>
+        <button type='button' className='button' onClick={() => navigate('/registros')}>
           Volver al listado
         </button>
       </div>
@@ -101,7 +101,7 @@ export function RecordDetailScreen({
 
   return (
     <div className='screen'>
-      <button type='button' className='button button--ghost back' onClick={() => navigate('/fichas')}>
+      <button type='button' className='button button--ghost back' onClick={() => navigate('/registros')}>
         ← Volver al listado
       </button>
 

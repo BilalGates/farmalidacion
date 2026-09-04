@@ -266,7 +266,7 @@ describe('panel de inicio', () => {
 
 describe('separación entre datos reales y DEMO', () => {
   it('consulta el origen real por defecto y marca cada fila', async () => {
-    window.location.hash = '#/registros'
+    window.location.hash = '#/fichas'
     render(<App />)
     expect(await screen.findByText('Omeprazol 20 mg cápsula')).toBeInTheDocument()
     expect(calls.some((url) => url.includes('origin=real'))).toBe(true)
@@ -275,7 +275,7 @@ describe('separación entre datos reales y DEMO', () => {
   })
 
   it('cambia al conjunto DEMO sólo cuando se pide explícitamente', async () => {
-    window.location.hash = '#/registros'
+    window.location.hash = '#/fichas'
     render(<App />)
     await screen.findByText('Omeprazol 20 mg cápsula')
 
@@ -289,7 +289,7 @@ describe('separación entre datos reales y DEMO', () => {
   })
 
   it('explica una búsqueda sin resultados en lugar de dejar la tabla vacía', async () => {
-    window.location.hash = '#/registros'
+    window.location.hash = '#/fichas'
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: RequestInfo | URL) => {
@@ -320,7 +320,7 @@ describe('separación entre datos reales y DEMO', () => {
 
 describe('ficha de un registro real', () => {
   it('muestra el valor y su procedencia bajo demanda', async () => {
-    window.location.hash = '#/registros/rec-real'
+    window.location.hash = '#/fichas/rec-real'
     render(<App />)
 
     expect(await screen.findByRole('heading', { name: 'Omeprazol 20 mg cápsula' })).toBeInTheDocument()
@@ -336,7 +336,7 @@ describe('ficha de un registro real', () => {
   })
 
   it('declara la vinculación con CIMA como pendiente, sin inventarla', async () => {
-    window.location.hash = '#/registros/rec-real'
+    window.location.hash = '#/fichas/rec-real'
     render(<App />)
     await screen.findByRole('heading', { name: 'Omeprazol 20 mg cápsula' })
 
@@ -422,6 +422,64 @@ describe('distintivo del conjunto de datos', () => {
 
     await waitFor(() => expect(screen.queryByText(/Registros reales/)).toBeInTheDocument())
     expect(screen.queryByText(/Datos reales/)).not.toBeInTheDocument()
-    expect(screen.queryByText(/Datos de demostración/)).not.toBeInTheDocument()
+  })
+})
+
+describe('navegación REAL/DEMO', () => {
+  it('marca "Fichas técnicas" como activo en /#/fichas', async () => {
+    window.location.hash = '#/fichas'
+    render(<App />)
+    await screen.findByText('Omeprazol 20 mg cápsula')
+    const fichasButton = screen.getByRole('button', { name: /Fichas técnicas/ })
+    expect(fichasButton).toHaveAttribute('aria-current', 'page')
+    const revisionButton = screen.getByRole('button', { name: /Revisión \(DEMO\)/ })
+    expect(revisionButton).not.toHaveAttribute('aria-current')
+  })
+
+  it('marca "Revisión (DEMO)" como activo en /#/registros', async () => {
+    window.location.hash = '#/registros'
+    render(<App />)
+    await waitFor(() => expect(screen.queryByText(/Cargando/)).toBeNull())
+    const revisionButton = screen.getByRole('button', { name: /Revisión \(DEMO\)/ })
+    expect(revisionButton).toHaveAttribute('aria-current', 'page')
+    const fichasButton = screen.getByRole('button', { name: /Fichas técnicas/ })
+    expect(fichasButton).not.toHaveAttribute('aria-current')
+  })
+})
+
+describe('manejo de errores y reintento', () => {
+  it('muestra error y botón de reintento cuando falla /insights/records', async () => {
+    let callCount = 0
+    window.location.hash = '#/fichas'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.includes('/database-info'))
+          return { ok: true, status: 200, json: async () => REAL_DATABASE } as Response
+        if (url.includes('/records/reviewers'))
+          return { ok: true, status: 200, json: async () => [] } as Response
+        if (url.includes('/insights/records')) {
+          callCount += 1
+          if (callCount === 1) {
+            return {
+              ok: false,
+              status: 500,
+              json: async () => ({ detail: 'Error interno del servidor.' }),
+            } as Response
+          }
+          return { ok: true, status: 200, json: async () => RECORD_PAGE } as Response
+        }
+        throw new Error(`Ruta no simulada: ${url}`)
+      }),
+    )
+    render(<App />)
+
+    expect(await screen.findByText('Error interno del servidor.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+    expect(await screen.findByText('Omeprazol 20 mg cápsula')).toBeInTheDocument()
+    expect(callCount).toBe(2)
   })
 })

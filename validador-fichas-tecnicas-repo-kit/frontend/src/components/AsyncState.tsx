@@ -17,11 +17,22 @@ export function LoadingState({ label = 'Cargando…' }: { label?: string }) {
   )
 }
 
-export function ErrorState({ message }: { message: string }) {
+export function ErrorState({
+  message,
+  onRetry,
+}: {
+  message: string
+  onRetry?: () => void
+}) {
   return (
-    <p className='state state--error' role='alert'>
-      {message}
-    </p>
+    <div className='state state--error' role='alert'>
+      <p>{message}</p>
+      {onRetry && (
+        <button type='button' className='button' onClick={onRetry}>
+          Reintentar
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -41,6 +52,7 @@ export function AsyncBoundary({
   empty,
   emptyTitle,
   emptyDetail,
+  onRetry,
   children,
 }: {
   loading: boolean
@@ -48,10 +60,11 @@ export function AsyncBoundary({
   empty: boolean
   emptyTitle: string
   emptyDetail: string
+  onRetry?: () => void
   children: ReactNode
 }) {
   if (loading) return <LoadingState />
-  if (error) return <ErrorState message={error} />
+  if (error) return <ErrorState message={error} onRetry={onRetry} />
   if (empty) return <EmptyState title={emptyTitle} detail={emptyDetail} />
   return <>{children}</>
 }

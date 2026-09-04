@@ -25,10 +25,10 @@ interface NavItem {
 
 const NAV: readonly NavItem[] = [
   { id: 'inicio', label: 'Inicio', available: true },
-  { id: 'registros', label: 'Fichas técnicas', available: true },
+  { id: 'fichas', label: 'Fichas técnicas', available: true },
   { id: 'fuentes', label: 'Fuentes', available: true },
   { id: 'importaciones', label: 'Importaciones', available: true },
-  { id: 'fichas', label: 'Revisión (DEMO)', available: true },
+  { id: 'registros', label: 'Revisión (DEMO)', available: true },
   { id: 'validaciones', label: 'Validaciones', available: false, note: 'dobleValidacion' },
   { id: 'auditoria', label: 'Historial / Auditoría', available: false, note: 'auditoria' },
   { id: 'configuracion', label: 'Configuración', available: false, note: 'exportacion' },
@@ -150,12 +150,12 @@ export function App() {
         <main className='content'>
           <ModeBanner info={database} />
           {route.name === 'inicio' && <DashboardScreen />}
-          {route.name === 'registros' && <RealRecordListScreen />}
-          {route.name === 'registro' && <RealRecordDetailScreen recordId={route.id} />}
+          {route.name === 'fichas' && <RealRecordListScreen />}
+          {route.name === 'ficha' && <RealRecordDetailScreen recordId={route.id} />}
           {route.name === 'fuentes' && <SourcesScreen />}
           {route.name === 'importaciones' && <ImportsScreen />}
-          {route.name === 'fichas' && <RecordListScreen />}
-          {route.name === 'ficha' && (
+          {route.name === 'registros' && <RecordListScreen />}
+          {route.name === 'registro' && (
             <RecordDetailScreen recordId={route.id} reviewer={reviewer} />
           )}
           {route.name === 'seccion' && (

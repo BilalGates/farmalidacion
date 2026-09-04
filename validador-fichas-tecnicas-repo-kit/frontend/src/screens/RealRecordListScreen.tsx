@@ -29,10 +29,11 @@ export function RealRecordListScreen() {
   const [term, setTerm] = useState('')
   const [query, setQuery] = useState('')
   const [offset, setOffset] = useState(0)
+  const [retryKey, setRetryKey] = useState(0)
 
   const { data, error, loading } = useQuery(
     () => fetchRealRecords({ origin, q: query || undefined, limit: PAGE_SIZE, offset }),
-    [origin, query, offset],
+    [origin, query, offset, retryKey],
   )
 
   function search(event: React.FormEvent) {
@@ -114,6 +115,7 @@ export function RealRecordListScreen() {
               ? 'No hay registros importados. Ejecute scripts/ingest_master_files.py para cargar los maestros Excel.'
               : 'El conjunto de demostración no está cargado en esta base de datos.'
         }
+        onRetry={() => setRetryKey((k) => k + 1)}
       >
         {data && (
           <>

@@ -21,6 +21,7 @@ export function RecordListScreen() {
   const [data, setData] = useState<RecordList | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -42,13 +43,13 @@ export function RecordListScreen() {
     return () => {
       cancelled = true
     }
-  }, [query, filter])
+  }, [query, filter, retryKey])
 
   return (
     <div className='screen'>
       <div className='screen__head'>
         <div>
-          <p className='eyebrow'>Fichas técnicas</p>
+          <p className='eyebrow'>Revisión (DEMO)</p>
           <h1>Registros en revisión</h1>
           <p className='lede'>
             Cada fila es un registro destino. El estado resume la revisión de sus campos y no
@@ -82,7 +83,14 @@ export function RecordListScreen() {
         </div>
       </div>
 
-      {error && <p className='alert alert--error'>{error}</p>}
+      {error && (
+        <div className='alert alert--error' role='alert'>
+          <p>{error}</p>
+          <button type='button' className='button' onClick={() => setRetryKey((k) => k + 1)}>
+            Reintentar
+          </button>
+        </div>
+      )}
       {loading && !data && <p className='muted'>Cargando registros…</p>}
 
       {data && (
@@ -136,7 +144,7 @@ export function RecordListScreen() {
                       <button
                         type='button'
                         className='button button--ghost'
-                        onClick={() => navigate(`/fichas/${encodeURIComponent(item.id)}`)}
+                        onClick={() => navigate(`/registros/${encodeURIComponent(item.id)}`)}
                       >
                         Abrir ficha
                       </button>

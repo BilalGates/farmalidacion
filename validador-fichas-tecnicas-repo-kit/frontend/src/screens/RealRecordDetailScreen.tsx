@@ -112,7 +112,7 @@ export function RealRecordDetailScreen({ recordId }: { recordId: string }) {
 
   return (
     <div className='screen'>
-      <button type='button' className='button' onClick={() => navigate('/registros')}>
+      <button type='button' className='button' onClick={() => navigate('/fichas')}>
         ← Volver al listado
       </button>
 
