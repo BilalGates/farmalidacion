@@ -165,8 +165,26 @@ const IMPORTS = {
   total: 1,
 }
 
+/**
+ * Diagnóstico de la base servida. Es lo que decide el distintivo REAL/DEMO,
+ * así que las pruebas lo sustituyen por completo cuando quieren el otro modo.
+ */
+const REAL_DATABASE = {
+  mode: 'real' as const,
+  backend: 'sqlite',
+  database: 'real',
+  records_total: 43381,
+  records_real: 43381,
+  records_demo: 0,
+  import_batches: 4,
+  consistent: true,
+}
+
+let databaseInfo: unknown = REAL_DATABASE
+
 /** Devuelve la respuesta simulada según la ruta pedida. */
 function route(url: string): unknown {
+  if (url.includes('/database-info')) return databaseInfo
   if (url.includes('/insights/dashboard')) return DASHBOARD
   if (url.includes('/insights/sources')) return SOURCES
   if (url.includes('/insights/imports')) return IMPORTS
@@ -182,6 +200,7 @@ let calls: string[] = []
 
 beforeEach(() => {
   calls = []
+  databaseInfo = REAL_DATABASE
   window.location.hash = ''
   vi.stubGlobal(
     'fetch',
@@ -344,5 +363,65 @@ describe('fuentes e importaciones', () => {
     expect(await screen.findByText('specialty_master')).toBeInTheDocument()
     expect(screen.getByText('48.470')).toBeInTheDocument()
     expect(screen.getByText('Completada')).toBeInTheDocument()
+  })
+})
+
+describe('distintivo del conjunto de datos', () => {
+  it('declara datos reales y no habla de demostración cuando el modo es REAL', async () => {
+    render(<App />)
+
+    const banner = await screen.findByText(/Datos reales/)
+    expect(banner.parentElement?.textContent).toContain('43.381')
+    expect(screen.queryByText(/Datos de demostración/)).not.toBeInTheDocument()
+  })
+
+  it('declara datos de demostración cuando el modo es DEMO', async () => {
+    databaseInfo = {
+      mode: 'demo',
+      backend: 'sqlite',
+      database: 'demo',
+      records_total: 6,
+      records_real: 0,
+      records_demo: 6,
+      import_batches: 0,
+      consistent: true,
+    }
+    render(<App />)
+
+    expect(await screen.findByText(/Datos de demostración/)).toBeInTheDocument()
+    expect(screen.queryByText(/Datos reales/)).not.toBeInTheDocument()
+  })
+
+  it('avisa cuando el modo REAL no encuentra ningún registro importado', async () => {
+    // Es exactamente la avería que motivó el diagnóstico: base migrada, ingesta
+    // sin ejecutar. Callarlo devolvería al usuario a mirar una demo sin saberlo.
+    databaseInfo = { ...REAL_DATABASE, records_total: 0, records_real: 0, consistent: false }
+    render(<App />)
+
+    const banner = await screen.findByText(/Modo REAL sin datos importados/)
+    expect(banner.parentElement?.textContent).toContain('ingest_real_data')
+  })
+
+  it('rotula el modo activo en la barra superior', async () => {
+    render(<App />)
+    expect(await screen.findByText('REAL')).toBeInTheDocument()
+  })
+
+  it('no anuncia ningún modo si el diagnóstico no responde', async () => {
+    // Sin diagnóstico no se adivina: afirmar «real» sin saberlo sería el fallo
+    // que este distintivo existe para impedir.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.includes('/database-info')) throw new Error('sin respuesta')
+        return { ok: true, status: 200, json: async () => route(url) } as Response
+      }),
+    )
+    render(<App />)
+
+    await waitFor(() => expect(screen.queryByText(/Registros reales/)).toBeInTheDocument())
+    expect(screen.queryByText(/Datos reales/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Datos de demostración/)).not.toBeInTheDocument()
   })
 })

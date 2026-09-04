@@ -149,6 +149,22 @@ function mockFetch() {
 
     if (url.includes('/records/reviewers')) return ok(REVIEWERS)
 
+    // El aviso de datos DEMO ya no está escrito en la interfaz: lo declara el
+    // backend según la base que esté sirviendo. Esta suite ejercita la vertical
+    // de revisión, que es DEMO por definición.
+    if (url.includes('/database-info')) {
+      return ok({
+        mode: 'demo',
+        backend: 'sqlite',
+        database: 'demo',
+        records_total: 2,
+        records_real: 0,
+        records_demo: 2,
+        import_batches: 0,
+        consistent: true,
+      })
+    }
+
     if (init?.method === 'POST') {
       postCount += 1
       const body = JSON.parse(String(init.body)) as { state: string; comment: string | null }
@@ -257,7 +273,7 @@ describe('Recorrido de la vertical de revisión', () => {
   it('muestra el aviso de datos DEMO y los módulos previstos en la navegación', async () => {
     render(<App />)
 
-    expect(screen.getByText(/Datos de demostración/)).toBeVisible()
+    expect(await screen.findByText(/Datos de demostración/)).toBeVisible()
     expect(screen.getByRole('button', { name: /Revisión \(DEMO\)/ })).toBeVisible()
     // Un módulo no desarrollado se anuncia, no se oculta.
     expect(screen.getByRole('button', { name: /Validaciones\s*Pronto/ })).toBeVisible()

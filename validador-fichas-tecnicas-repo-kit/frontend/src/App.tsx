@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 
-import { fetchReviewers } from './api/client'
-import type { Reviewer } from './api/types'
+import { fetchDatabaseInfo, fetchReviewers } from './api/client'
+import type { DatabaseInfo, Reviewer } from './api/types'
+import { ModeBanner } from './components/ModeBanner'
 import { RoadmapNote } from './components/RoadmapNote'
 import { SoonBadge } from './components/StateBadge'
-import { DEMO_DATA_NOTICE, ROADMAP_NOTES } from './domain/vocabulary'
+import { ROADMAP_NOTES } from './domain/vocabulary'
 import { navigate, useRoute } from './navigation'
 import { DashboardScreen } from './screens/DashboardScreen'
 import { ImportsScreen } from './screens/ImportsScreen'
@@ -66,11 +67,20 @@ export function App() {
   const route = useRoute()
   const [reviewers, setReviewers] = useState<Reviewer[]>([])
   const [reviewerId, setReviewerId] = useState(() => localStorage.getItem('farmalidacion.reviewer') ?? '')
+  const [database, setDatabase] = useState<DatabaseInfo | null>(null)
 
   useEffect(() => {
     fetchReviewers()
       .then(setReviewers)
       .catch(() => setReviewers([]))
+  }, [])
+
+  // El modo se consulta una vez al arrancar: no cambia mientras la pestaña vive,
+  // porque cambiarlo exige reiniciar el backend contra otra base.
+  useEffect(() => {
+    fetchDatabaseInfo()
+      .then(setDatabase)
+      .catch(() => setDatabase(null))
   }, [])
 
   const reviewer = reviewers.find((item) => item.identifier === reviewerId) ?? null
@@ -107,7 +117,14 @@ export function App() {
 
       <div className='main'>
         <header className='topbar'>
-          <p className='topbar__context'>Validador de fichas técnicas</p>
+          <p className='topbar__context'>
+            Validador de fichas técnicas
+            {database && (
+              <span className={`mode-chip mode-chip--${database.mode}`}>
+                {database.mode === 'real' ? 'REAL' : 'DEMO'}
+              </span>
+            )}
+          </p>
           <label className='field field--inline'>
             <span className='field__label'>Revisor</span>
             <select
@@ -131,22 +148,15 @@ export function App() {
         </header>
 
         <main className='content'>
+          <ModeBanner info={database} />
           {route.name === 'inicio' && <DashboardScreen />}
           {route.name === 'registros' && <RealRecordListScreen />}
           {route.name === 'registro' && <RealRecordDetailScreen recordId={route.id} />}
           {route.name === 'fuentes' && <SourcesScreen />}
           {route.name === 'importaciones' && <ImportsScreen />}
-          {route.name === 'fichas' && (
-            <>
-              <p className='demo-banner'>{DEMO_DATA_NOTICE}</p>
-              <RecordListScreen />
-            </>
-          )}
+          {route.name === 'fichas' && <RecordListScreen />}
           {route.name === 'ficha' && (
-            <>
-              <p className='demo-banner'>{DEMO_DATA_NOTICE}</p>
-              <RecordDetailScreen recordId={route.id} reviewer={reviewer} />
-            </>
+            <RecordDetailScreen recordId={route.id} reviewer={reviewer} />
           )}
           {route.name === 'seccion' && (
             <PlaceholderScreen

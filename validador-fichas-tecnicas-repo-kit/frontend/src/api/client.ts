@@ -1,6 +1,7 @@
 import { appConfig } from '../config'
 import type {
   Dashboard,
+  DatabaseInfo,
   DataOrigin,
   DecisionWrite,
   ImportDetail,
@@ -80,6 +81,10 @@ export function saveDecision(fieldValueId: string, payload: DecisionWrite): Prom
 /* --------------------------------------------------------------------------
  * Consulta de datos reales.
  * ------------------------------------------------------------------------ */
+
+export function fetchDatabaseInfo(): Promise<DatabaseInfo> {
+  return request<DatabaseInfo>('/database-info')
+}
 
 export function fetchDashboard(): Promise<Dashboard> {
   return request<Dashboard>('/insights/dashboard')

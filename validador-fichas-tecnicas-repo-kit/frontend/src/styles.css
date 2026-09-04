@@ -97,14 +97,59 @@ h2 { font-size: 1.02rem; font-weight: 660; letter-spacing: -0.005em; margin-bott
 }
 .topbar__context { margin: 0; color: var(--ink-soft); font-size: .88rem; font-weight: 600; }
 
-.demo-banner {
-  margin: 0;
-  padding: .5rem 1.8rem;
-  background: var(--warn-soft);
-  border-bottom: 1px solid #f0dcc2;
-  color: var(--warn);
-  font-size: .78rem;
+/*
+ * Distintivo del conjunto de datos activo.
+ *
+ * REAL y DEMO no se diferencian sólo por el texto: cambian de color y de barra
+ * lateral, de modo que la distinción sobreviva a una lectura rápida. Es la
+ * garantía de que un valor de demostración no pueda leerse como importado.
+ */
+.mode-banner {
+  margin: 0 0 1.4rem;
+  padding: .6rem .9rem;
+  border-radius: var(--radius);
+  border-left: 4px solid;
+  font-size: .8rem;
+  line-height: 1.45;
 }
+
+.mode-banner code {
+  background: rgba(0, 0, 0, .06);
+  padding: .05rem .3rem;
+  border-radius: 4px;
+}
+
+.mode-banner--real {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.mode-banner--demo {
+  background: var(--warn-soft);
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.mode-banner--warning {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Indicador permanente en la barra superior, visible en cualquier pantalla. */
+.mode-chip {
+  margin-left: .55rem;
+  padding: .1rem .45rem;
+  border-radius: 999px;
+  font-size: .64rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  vertical-align: middle;
+}
+
+.mode-chip--real { background: var(--accent); color: #fff; }
+.mode-chip--demo { background: var(--warn); color: #fff; }
 
 .content { padding: 1.8rem; }
 .screen { width: min(1180px, 100%); display: grid; gap: 1.4rem; }
@@ -346,7 +391,7 @@ input:focus-visible, select:focus-visible, button:focus-visible {
   .sidebar nav ul { grid-auto-flow: column; }
   .nav__item { white-space: nowrap; }
   .sidebar__foot { display: none; }
-  .content, .topbar, .demo-banner { padding-left: 1rem; padding-right: 1rem; }
+  .content, .topbar { padding-left: 1rem; padding-right: 1rem; }
   .field-row__main { grid-template-columns: 1fr; }
   .field-row__states { justify-content: flex-start; }
 }

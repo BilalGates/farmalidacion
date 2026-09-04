@@ -13,6 +13,12 @@ class Settings(BaseSettings):
 
     app_name: str = "Validador de fichas técnicas"
     env: Literal["development", "test", "production"] = "development"
+    # Modo de datos declarado por quien arranca el servicio. No decide de dónde
+    # salen los datos —eso lo fija `database_url` y lo que se haya importado—,
+    # sino qué promete la interfaz al revisor. Se contrasta con el contenido
+    # real de la base en `/database-info`, de modo que una discrepancia entre lo
+    # declarado y lo almacenado sea visible en lugar de silenciosa.
+    data_mode: Literal["real", "demo"] = "demo"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     database_url: str = Field(default="sqlite:///./data/local/validator.db", repr=False)
     load_demo_fixture: bool = False

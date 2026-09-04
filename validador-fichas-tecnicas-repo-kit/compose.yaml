@@ -12,14 +12,22 @@ name: pharma-validator
 # Ver docs/DATABASE_PORTABILITY.md.
 
 services:
+  # Modo DEMO: datos de demostración, base propia y desechable.
+  #
+  #   docker compose --profile demo up --build
+  #
+  # No comparte volumen con el modo REAL. Que un revisor no pueda confundir un
+  # valor de demostración con uno importado empieza por no guardarlos juntos.
   backend:
+    profiles: ['demo']
     build:
       context: .
       dockerfile: infra/backend.Dockerfile
     environment:
       APP_ENV: development
       APP_LOG_LEVEL: INFO
-      APP_DATABASE_URL: sqlite:////app/data/validator.db
+      APP_DATA_MODE: demo
+      APP_DATABASE_URL: sqlite:////app/data/demo.db
       APP_LOAD_DEMO_FIXTURE: 'true'
       APP_DEMO_FIXTURE_PATH: /app/fixtures/omeprazole-demo.json
       # Conjunto DEMO de la vertical de revisión: datos de demostración, no reales.
@@ -33,7 +41,50 @@ services:
       - -c
       - python -m alembic -c backend/alembic.ini upgrade head && python -m uvicorn pharma_validator_api.main:app --host 0.0.0.0 --port 8000
     volumes:
-      - app-data:/app/data
+      - demo-data:/app/data
+    ports:
+      - '127.0.0.1:8000:8000'
+    healthcheck:
+      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  # Modo REAL: maestros ya importados en data/local/real.db.
+  #
+  #   docker compose --profile real up --build
+  #
+  # La base se monta desde el host en lugar de vivir en un volumen: la ingesta
+  # tarda ~25 minutos y debe sobrevivir a `docker compose down -v`. El montaje
+  # es de sólo lectura para el propio contenedor en cuanto al fichero de origen
+  # no: la vertical de revisión escribe decisiones, así que se monta el
+  # directorio completo en lectura y escritura.
+  #
+  # Ningún fixture de demostración se carga aquí: las dos variables de fixture
+  # quedan explícitamente en 'false' para que un cambio en los valores por
+  # defecto no pueda contaminar la base real.
+  backend-real:
+    profiles: ['real']
+    build:
+      context: .
+      dockerfile: infra/backend.Dockerfile
+    environment:
+      APP_ENV: development
+      APP_LOG_LEVEL: INFO
+      APP_DATA_MODE: real
+      APP_DATABASE_URL: sqlite:////app/data/real.db
+      APP_LOAD_DEMO_FIXTURE: 'false'
+      APP_LOAD_SHOWCASE_FIXTURE: 'false'
+      APP_CORS_ALLOW_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173"]'
+      APP_REVIEWERS: '["mtorres:M. Torres","jlopez:J. Lopez"]'
+    command:
+      - sh
+      - -c
+      - python -m alembic -c backend/alembic.ini upgrade head && python -m uvicorn pharma_validator_api.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - ./data/local:/app/data
     ports:
       - '127.0.0.1:8000:8000'
     healthcheck:
@@ -45,11 +96,29 @@ services:
     restart: unless-stopped
 
   frontend:
+    profiles: ['demo']
     build:
       context: .
       dockerfile: infra/frontend.Dockerfile
     depends_on:
       backend:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:5173:8080'
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://127.0.0.1:8080/healthz']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  frontend-real:
+    profiles: ['real']
+    build:
+      context: .
+      dockerfile: infra/frontend.Dockerfile
+    depends_on:
+      backend-real:
         condition: service_healthy
     ports:
       - '127.0.0.1:5173:8080'
@@ -79,5 +148,5 @@ services:
       retries: 10
 
 volumes:
-  app-data:
+  demo-data:
   postgres-data:

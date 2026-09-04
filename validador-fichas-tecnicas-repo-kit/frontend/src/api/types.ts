@@ -126,6 +126,27 @@ export interface DecisionWrite {
 
 export type DataOrigin = 'real' | 'demo'
 
+/** Modo declarado por el backend que sirve la aplicación. */
+export type DataMode = 'real' | 'demo'
+
+/**
+ * Diagnóstico de qué base está sirviendo el backend.
+ *
+ * `mode` es lo declarado al arrancar; los recuentos son lo almacenado. La
+ * interfaz muestra ambos porque pueden contradecirse: arrancar en REAL sobre
+ * una base sin importar deja `consistent` en falso, y eso debe verse.
+ */
+export interface DatabaseInfo {
+  readonly mode: DataMode
+  readonly backend: string
+  readonly database: string
+  readonly records_total: number
+  readonly records_real: number
+  readonly records_demo: number
+  readonly import_batches: number
+  readonly consistent: boolean
+}
+
 export interface Metric {
   key: string
   label: string
