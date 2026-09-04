@@ -587,6 +587,21 @@ La vertical de revisión descrita más abajo tampoco abre la Fase 5: es un spike
 - El contrato del listado para la sesión que trabaja el frontend está en
   `docs/RECORD_LISTING_API_CONTRACT.md`. **No se ha modificado ningún archivo de
   frontend.**
+- **La ingesta completa de los cuatro maestros no se ha logrado en una sola
+  ejecución.** Se lanzó y se abandonó tras unas 18 horas, con la base en 1,4 GB
+  y especialidades sin terminar. Verificados quedan catálogo y principios
+  activos; medicamentos y especialidades **no** se han contrastado en esta
+  sesión contra las cifras del Gate 3, que siguen respaldadas por la evidencia
+  de DEV-304/DEV-305.
+- Se sospechó que los índices nuevos encarecían la escritura y **se midió: es
+  falso**. Sobre el mismo maestro y esquemas idénticos salvo los índices, la
+  ingesta pasa de 28,9 s a 29,6 s (×1,02); instrumentando el importador de
+  especialidades, con índices completa 26 volcados en 240 s frente a 23 sin
+  ellos. La lentitud es del importador y es preexistente. Detalle y
+  recomendación de uso en `docs/MASTER_INGESTION_THROUGHPUT.md`.
+- No se ha intentado optimizar ese importador: tocaría código que ya pasó el
+  Gate 3 con evidencia publicada, y sin un contraste completo disponible el
+  cambio sería una conjetura.
 - Esto **no reabre ni modifica el Gate 3**, que sigue cerrado como PASS: no
   cambia ninguna regla de importación ni ningún dato importado.
 
