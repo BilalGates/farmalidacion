@@ -307,6 +307,14 @@ Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Fase 3 cerrada; D-013 está res
 
 ### DEV-402 — Adaptador de servidor local (`P0`)
 
+**Objetivo:** hablar con un servidor local compatible con OpenAI-chat sin que el código conozca el modelo concreto.
+
+**Salida:** `pharma_validator_api.inference_backend`.
+
+**Aceptación:** parámetros reproducibles por defecto (`temperature=0`, semilla fija); salida guiada estricta por JSON Schema; los fallos se clasifican y sólo se reintenta lo transitorio; una respuesta servida por un modelo distinto del solicitado se rechaza; ninguna respuesta se repara.
+
+**Estado:** parte agnóstica al modelo implementada el 4 de septiembre de 2026; 11 pruebas, Ruff y mypy limpios. **`BackendConfig` exige `model` explícito y falla sin él**, de modo que ningún camino de código elige modelo mientras D-014 esté pendiente. El cliente HTTP real y la traducción a GBNF esperan a D-014. No cierra DEV-402.
+
 ### DEV-403 — Esquema de salida guiada (`P0`)
 
 **Objetivo:** gobernar la decodificación del modelo con un esquema JSON cerrado y validar la respuesta contra los tipos declarados en el catálogo, sin reparar.
@@ -357,11 +365,23 @@ Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Fase 3 cerrada; D-013 está res
 
 **Estado:** contrato definido el 2 de septiembre de 2026. Selección implementada y verificada el 3 de septiembre de 2026 en `pharma_validator_api.gold_selection`: criterio 1 cumplido sobre el corpus real de 500 (`run_id` estable `ac843f92c081045bd61ed80d6aef13c703f88275eeab433291ddb6ce9dd792cd`), y criterios 8 y 9 cumplidos en lo que atañe a la selección. 13 pruebas, Ruff y mypy limpios.
 
+**Actualización 4-09-2026:** entradas de anotación materializadas sobre el corpus real (`scripts/materialize_gold_set.py`: 20 fichas, 552 secciones citables, 58 sin contenido); comprobador de completitud `gold_completeness` + `scripts/check_gold.py` (10 pruebas); orquestador `scripts/run_gold_pipeline.py`; runbook operativo `docs/GOLD_ANNOTATION_RUNBOOK.md`. **Cero fichas anotadas de 20.** GOLD-002 sigue siendo el único bloqueo de la anotación.
+
 **Actualización técnica:** el núcleo puro `gold_annotations` y la CLI `scripts/generate_gold_annotations.py` implementan los criterios 2 a 8: evidencia por desplazamientos exactos sobre HTML literal, ocurrencias separadas, estados distinguibles, bloqueo de cierre por `pending`, doble anotación y desacuerdos abiertos, más las cinco salidas deterministas sin sobrescritura. Ocho pruebas específicas y 36 pruebas de pureza verifican el comportamiento. **GOLD-002 continúa pendiente** y bloquea la anotación real; por tanto DEV-407 no se cierra ni abre Fase 4.
 
 ### DEV-408 — Benchmark de dos modelos (`P0`)
 
+**Objetivo:** medir el extractor sobre el conjunto oro y comparar al menos dos tamaños de modelo.
+
+**Salida:** `pharma_validator_api.gold_evaluation`, `scripts/run_gold_pipeline.py`.
+
+**Aceptación:** exactitud, precisión, recall, F1, cobertura, evidencia válida, alucinaciones, coincidencia normalizada, latencia y throughput, por campo y global; clasificación en correcta / parcial / incorrecta / no localizada / evidencia inválida / no parseable / alucinación; una unidad con desacuerdo humano sin conciliar no puntúa y las exclusiones se informan; toda métrica queda atribuida a un modelo.
+
+**Estado:** motor implementado y probado el 4 de septiembre de 2026 con entradas sintéticas; 13 pruebas. **No se ha ejecutado ninguna evaluación real**: faltan el conjunto oro anotado (GOLD-002) y un modelo aceptado (D-014). No cierra DEV-408.
+
 ### DEV-409 — Política configurable por resultados (`P0`)
+
+**Estado:** bloqueado por D-015. El mecanismo de degradación existe en `prefill_policy` y las políticas por restricción funcional (D-023) ya están cerradas y probadas. Los umbrales por resultados no pueden fijarse sin métricas: el método de cálculo queda definido en ADR-0009 (propuesto).
 
 ## EPIC E5 — Revisión farmacéutica
 

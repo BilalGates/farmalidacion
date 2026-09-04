@@ -2,6 +2,7 @@ import hashlib
 import json
 from pathlib import Path
 
+import pytest
 from alembic import command
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
@@ -49,6 +50,8 @@ def file_hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+@pytest.mark.slow
+@pytest.mark.reference
 def test_real_master_import_preserves_valid_rows_and_quarantines_orphans(
     tmp_path: Path,
 ) -> None:

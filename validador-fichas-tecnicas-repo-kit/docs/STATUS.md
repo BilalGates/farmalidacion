@@ -6,7 +6,9 @@
 
 ## Fase actual
 
-Fase 3 cerrada. Gate 3 es PASS según docs/PHASE_3_GATE_REVIEW.md. Fase 4 no se ha iniciado. D-013 está cerrada con un servidor interno de al menos 24 GB de VRAM; el contrato del conjunto oro fija semilla 407 y ausencia de estratificación ATC inicial, pero GOLD-002, la herramienta y la anotación real siguen pendientes.
+Fase 3 cerrada. Gate 3 es PASS según docs/PHASE_3_GATE_REVIEW.md.
+
+**Fase 4 preparada y bloqueada por decisiones humanas. Gate 4 es BLOCKED** según `docs/PHASE_4_GATE_REVIEW.md`. Todo el trabajo técnicamente ejecutable de Fase 4 está terminado: selección oro materializada, herramienta de anotación, comprobador de completitud, orquestador del pipeline, motor de evaluación y transporte de inferencia agnóstico al modelo. **No se ha anotado ninguna ficha y no se ha ejecutado ninguna extracción real**, porque ambas cosas dependen de decisiones que corresponden a personas: GOLD-002 (los dos farmacéuticos) y D-014 (el modelo).
 
 ## Fase 0A — Cerrada
 
@@ -570,6 +572,34 @@ La vertical de revisión descrita más abajo tampoco abre la Fase 5: es un spike
 - La evidencia y la versión documental son visibles; ya no dependen de un tooltip.
 - El cliente bloquea `confirmado`/`corregido` sin valor y `no_aplica` sin comentario, manteniendo el backend como barrera final.
 - 7/7 Vitest, ESLint y build Vite correctos.
+## Fase 4 — Preparada; Gate 4 BLOCKED
+
+Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
+
+### Hecho y validado
+
+- **Selección oro materializada** sobre el corpus real: 20 fichas, `run_id` estable `ac843f92c081045bd61ed80d6aef13c703f88275eeab433291ddb6ce9dd792cd`, 552 secciones citables y 58 sin contenido. `scripts/materialize_gold_set.py`, ejecutado; el corpus no se modifica.
+- **Comprobador de completitud** `pharma_validator_api.gold_completeness` y `scripts/check_gold.py`: fichas esperadas/anotadas por revisor, unidades completadas, pendientes, evidencia ausente, errores estructurales, progreso y veredicto. Sale con código 1 mientras el conjunto oro no esté listo. Sólo mide completitud y consistencia estructural; no juzga calidad clínica. 10 pruebas.
+- **Motor de evaluación** `pharma_validator_api.gold_evaluation`: exactitud, precisión, recall, F1, cobertura, evidencia válida, alucinaciones, coincidencia normalizada, latencia y throughput, por campo y global, con la clasificación exigida por el plan. Una unidad con desacuerdo humano sin conciliar no puntúa y las exclusiones se informan siempre. 13 pruebas.
+- **Transporte de inferencia** `pharma_validator_api.inference_backend`: parámetros reproducibles por defecto, salida guiada estricta por JSON Schema, clasificación de fallos, reintentos sólo para lo transitorio y rechazo de una respuesta servida por un modelo distinto del solicitado. **No contiene ningún nombre de modelo**: `BackendConfig` exige `model` explícito y falla sin él. 11 pruebas.
+- **Orquestador** `scripts/run_gold_pipeline.py`: anotaciones → verificación → conciliación → gold final → evaluación → métricas. Se detiene si el conjunto oro no está cerrado en lugar de producir métricas que parecerían válidas.
+- **Runbook operativo** `docs/GOLD_ANNOTATION_RUNBOOK.md`: entorno, las 20 fichas, orden, campos, evidencia por desplazamientos, estados, independencia entre revisores, conciliación, artefactos y criterios de completitud.
+- **ADR-0008** (D-014) y **ADR-0009** (D-015), ambos **propuestos**, no aceptados.
+- **Suite estratificada**: 21:25 → 78 s para iterar, sin perder cobertura. `docs/TEST_SUITE_PERFORMANCE.md`.
+
+### Provisional
+
+- ADR-0008 y ADR-0009 son recomendaciones. Ninguna decisión nueva se ha cerrado.
+
+### Bloqueado — pendiente humano
+
+- **GOLD-002**: dos farmacéuticos anotadores identificados. Bloquea la anotación, y con ella toda medición.
+- **Campaña de anotación** de las 20 fichas por ambos, y su conciliación.
+- **D-014**: modelo y servidor de inferencia. Bloquea DEV-402 y DEV-408.
+- **D-015**: umbrales. Depende de las métricas, que dependen de lo anterior.
+
+**Fase 4 no está cerrada y Fase 5 no se abre.** Cero fichas anotadas de 20 requeridas; cero extracciones reales ejecutadas.
+
 ## Última actualización
 
-3 de septiembre de 2026.
+4 de septiembre de 2026.

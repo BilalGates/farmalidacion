@@ -31,6 +31,11 @@ data/local/cima-cache/
 data/local/cima-inventory-*/
 data/local/cima-corpus-*/
 data/local/cima-composition-*/
+# Entradas del conjunto oro: derivadas del corpus ignorado y regenerables con
+# scripts/materialize_gold_set.py de forma determinista (run_id estable).
+data/local/gold-set-*/
+# Anotaciones y ejecuciones del conjunto oro
+data/local/gold-run-*/
 
 # Reference source files are local inputs, not repository content
 data/reference/raw/*
