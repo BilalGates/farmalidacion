@@ -4,6 +4,7 @@ from uuid import uuid4
 from sqlalchemy import (
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     LargeBinary,
     String,
@@ -42,7 +43,9 @@ class SourceDocumentVersion(Base):
 class SourceFragment(Base):
     __tablename__ = "source_fragment"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    document_version_id: Mapped[str] = mapped_column(ForeignKey("source_document_version.id"))
+    document_version_id: Mapped[str] = mapped_column(
+        ForeignKey("source_document_version.id"), index=True
+    )
     locator_type: Mapped[str] = mapped_column(String(40))
     locator: Mapped[str] = mapped_column(Text)
     literal_text: Mapped[str | None] = mapped_column(Text)
@@ -101,7 +104,9 @@ class ExternalIdentifier(Base):
         ),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    target_record_id: Mapped[str] = mapped_column(ForeignKey("target_record.id"))
+    target_record_id: Mapped[str] = mapped_column(
+        ForeignKey("target_record.id"), index=True
+    )
     source_system: Mapped[str] = mapped_column(String(100))
     source_identifier: Mapped[str] = mapped_column(Text)
     source_version: Mapped[str] = mapped_column(Text)
@@ -111,15 +116,21 @@ class DocumentRecordLink(Base):
     __tablename__ = "document_record_link"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     document_version_id: Mapped[str] = mapped_column(ForeignKey("source_document_version.id"))
-    target_record_id: Mapped[str] = mapped_column(ForeignKey("target_record.id"))
+    target_record_id: Mapped[str] = mapped_column(
+        ForeignKey("target_record.id"), index=True
+    )
     link_type: Mapped[str] = mapped_column(String(80))
 
 
 class TargetRecordLink(Base):
     __tablename__ = "target_record_link"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    source_record_id: Mapped[str] = mapped_column(ForeignKey("target_record.id"))
-    target_record_id: Mapped[str] = mapped_column(ForeignKey("target_record.id"))
+    source_record_id: Mapped[str] = mapped_column(
+        ForeignKey("target_record.id"), index=True
+    )
+    target_record_id: Mapped[str] = mapped_column(
+        ForeignKey("target_record.id"), index=True
+    )
     link_type: Mapped[str] = mapped_column(String(80))
     source_fragment_id: Mapped[str | None] = mapped_column(ForeignKey("source_fragment.id"))
 
@@ -127,7 +138,9 @@ class TargetRecordLink(Base):
 class BlockInstance(Base):
     __tablename__ = "block_instance"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    target_record_id: Mapped[str] = mapped_column(ForeignKey("target_record.id"))
+    target_record_id: Mapped[str] = mapped_column(
+        ForeignKey("target_record.id"), index=True
+    )
     block_type: Mapped[str] = mapped_column(String(120))
     ordinal: Mapped[int] = mapped_column(Integer)
     source_fragment_id: Mapped[str | None] = mapped_column(ForeignKey("source_fragment.id"))
@@ -136,8 +149,10 @@ class BlockInstance(Base):
 class FieldValue(Base):
     __tablename__ = "field_value"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    block_instance_id: Mapped[str] = mapped_column(ForeignKey("block_instance.id"))
-    field_name: Mapped[str] = mapped_column(String(160))
+    block_instance_id: Mapped[str] = mapped_column(
+        ForeignKey("block_instance.id"), index=True
+    )
+    field_name: Mapped[str] = mapped_column(String(160), index=True)
     literal_value: Mapped[str | None] = mapped_column(Text)
     observed_type: Mapped[str] = mapped_column(String(80))
     logical_state: Mapped[str] = mapped_column(String(80))
@@ -146,8 +161,12 @@ class FieldValue(Base):
 class ValueProvenance(Base):
     __tablename__ = "value_provenance"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    field_value_id: Mapped[str] = mapped_column(ForeignKey("field_value.id"))
-    source_fragment_id: Mapped[str] = mapped_column(ForeignKey("source_fragment.id"))
+    field_value_id: Mapped[str] = mapped_column(
+        ForeignKey("field_value.id"), index=True
+    )
+    source_fragment_id: Mapped[str] = mapped_column(
+        ForeignKey("source_fragment.id"), index=True
+    )
     provenance_role: Mapped[str] = mapped_column(String(80))
 
 
@@ -296,6 +315,13 @@ class ValidationDecisionRecord(Base):
     __table_args__ = (
         UniqueConstraint(
             "field_value_id", "sequence", name="uq_validation_decision_sequence"
+        ),
+        # La decisión vigente es la de mayor `sequence` para un campo: el índice
+        # compuesto la resuelve sin recorrer el historial completo.
+        Index(
+            "ix_validation_decision_field_value_sequence",
+            "field_value_id",
+            "sequence",
         ),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)

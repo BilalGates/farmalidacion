@@ -89,6 +89,38 @@ backend nunca carga datos de demostración por defecto.
 La herramienta offline del conjunto oro consume únicamente entradas explícitas
 y escribe en un directorio nuevo:
 
+## Ingesta de los maestros Excel
+
+Los importadores de Fase 3 se aplican sobre una base ya migrada con:
+
+```text
+python scripts/ingest_masters.py
+```
+
+Sin argumentos usa la URL configurada (`APP_DATABASE_URL`) e importa los cuatro
+maestros. El orden lo fija el propio módulo y no es opcional: medicamentos
+resuelve la composición contra principios activos ya presentes, y especialidades
+contra medicamentos.
+
+| Opción | Efecto |
+|---|---|
+| `--database-url` | URL SQLAlchemy destino; por defecto, la configurada |
+| `--raw-directory` | Directorio de los `.xlsx`; por defecto `data/reference/raw` |
+| `--only` | Importa sólo ese maestro (repetible); el orden se respeta igual |
+| `--source-version` | Etiqueta de versión registrada en el lote |
+| `--json` | Informe en JSON en lugar de texto |
+
+Claves de `--only`: `catalog`, `active_ingredients`, `medications`,
+`specialties`.
+
+La reejecución es segura: cada importador reutiliza su lote cuando el contenido
+del fichero no ha cambiado, de modo que una segunda pasada no duplica datos. El
+código de salida es 0 si todo importó, 1 si algún maestro falló y 2 si falta un
+fichero o se pide un maestro desconocido.
+
+Los ficheros maestros son entradas locales y no están en el repositorio: deben
+existir en `data/reference/raw` antes de ejecutar.
+
 ```text
 python scripts/generate_gold_annotations.py --selection gold-selection.json --annotations annotations-input.jsonl --sections immutable-sections.json --output-dir gold-run
 ```
