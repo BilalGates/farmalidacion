@@ -350,3 +350,75 @@ input:focus-visible, select:focus-visible, button:focus-visible {
   .field-row__main { grid-template-columns: 1fr; }
   .field-row__states { justify-content: flex-start; }
 }
+
+/* ---------- Vertical de datos reales ---------- */
+
+/*
+ * Métricas del panel de inicio. La cifra domina y la etiqueta la explica: en
+ * una herramienta de control, el número es el contenido.
+ */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: .75rem;
+  margin-bottom: .9rem;
+}
+.metric {
+  padding: .8rem .9rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.metric__value { margin: 0; font-size: 1.5rem; font-weight: 680; color: var(--ink); font-variant-numeric: tabular-nums; }
+.metric__label { margin: .2rem 0 0; color: var(--ink-soft); font-size: .8rem; }
+
+/* Estados de carga, error y vacío. El vacío explica su causa. */
+.state { padding: 1rem 1.1rem; border-radius: var(--radius); font-size: .9rem; }
+.state--loading { color: var(--ink-soft); background: var(--line-soft); }
+.state--error { color: var(--danger); background: var(--danger-soft); border: 1px solid var(--danger-soft); }
+.state--empty { background: var(--surface); border: 1px dashed var(--line); }
+.state__title { margin: 0 0 .3rem; font-weight: 640; color: var(--ink); }
+.state__detail { margin: 0; color: var(--ink-soft); font-size: .87rem; }
+
+/* Separación explícita entre datos reales y de demostración. */
+.origin-switch { display: flex; gap: .35rem; margin-bottom: .6rem; }
+.origin-notice {
+  margin: 0 0 1rem;
+  padding: .55rem .8rem;
+  border-radius: var(--radius);
+  font-size: .84rem;
+}
+.origin-notice--real { background: var(--accent-soft); color: var(--accent); }
+.origin-notice--demo { background: var(--warn-soft); color: var(--warn); }
+.badge--origin-real { background: var(--accent-soft); color: var(--accent); }
+.badge--origin-demo { background: var(--warn-soft); color: var(--warn); }
+
+/* Estados de fuentes, etapas e importaciones. */
+.badge--disponible, .badge--completed { background: var(--accent-soft); color: var(--accent); }
+.badge--pendiente, .badge--pending, .badge--parcial { background: var(--info-soft); color: var(--info); }
+.badge--no_disponible, .badge--sin_datos { background: var(--line-soft); color: var(--ink-soft); }
+.badge--con_errores, .badge--failed, .badge--error { background: var(--danger-soft); color: var(--danger); }
+.badge--warning { background: var(--warn-soft); color: var(--warn); }
+
+/* Procedencia: disponible siempre, desplegada sólo a petición. */
+.disclosure { margin-top: 1rem; }
+.disclosure summary { cursor: pointer; color: var(--accent); font-size: .85rem; font-weight: 600; }
+.disclosure--inline { margin-top: 0; }
+.provenance { list-style: none; margin: .5rem 0 0; padding: 0; display: grid; gap: .5rem; }
+.provenance > li { padding: .55rem .7rem; background: var(--line-soft); border-radius: var(--radius); }
+
+.definition { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .6rem; margin: 0 0 1rem; }
+.definition--compact { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .4rem; margin: 0; }
+.definition dt { color: var(--ink-faint); font-size: .74rem; font-weight: 620; }
+.definition dd { margin: .1rem 0 0; color: var(--ink); font-size: .85rem; word-break: break-word; }
+
+.pagination { display: flex; gap: .5rem; margin-top: .9rem; }
+.panel__head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.table caption { text-align: left; padding: .5rem 0; color: var(--ink-soft); font-size: .82rem; font-weight: 620; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}

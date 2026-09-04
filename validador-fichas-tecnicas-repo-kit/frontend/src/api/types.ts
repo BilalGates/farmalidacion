@@ -116,3 +116,163 @@ export interface DecisionWrite {
   reviewed_sources?: string[]
   field_required?: boolean
 }
+
+/* --------------------------------------------------------------------------
+ * Consulta de datos reales (vertical de visibilidad).
+ *
+ * `origin` separa explícitamente lo importado de lo cargado como demostración.
+ * No existe un valor «ambos»: mezclarlos es precisamente lo que se evita.
+ * ------------------------------------------------------------------------ */
+
+export type DataOrigin = 'real' | 'demo'
+
+export interface Metric {
+  key: string
+  label: string
+  value: number
+}
+
+export interface PipelineStage {
+  key: string
+  label: string
+  status: string
+  detail: string
+}
+
+export interface Dashboard {
+  metrics: Metric[]
+  pipeline: PipelineStage[]
+  last_import_at: string | null
+  empty: boolean
+}
+
+export interface SourceSummary {
+  key: string
+  name: string
+  source_type: string
+  status: string
+  versions: number
+  latest_version: string | null
+  latest_content_hash: string | null
+  last_updated_at: string | null
+  batches: number
+  records: number
+  diagnostics: number
+  quarantined_rows: number
+}
+
+export interface SourceSheet {
+  sheet_name: string
+  sheet_ordinal: number
+  data_row_count: number
+  material_value_count: number
+}
+
+export interface SourceDetail extends SourceSummary {
+  sheets: SourceSheet[]
+  batch_ids: string[]
+}
+
+export interface SourceList {
+  items: SourceSummary[]
+  total: number
+}
+
+export interface ImportSummary {
+  id: string
+  source_system: string
+  source_locator: string
+  source_version: string | null
+  content_hash: string
+  importer_name: string
+  importer_version: string
+  status: string
+  created_at: string
+  completed_at: string | null
+  processed_rows: number | null
+  retained_records: number
+  quarantined_rows: number
+  diagnostics: number
+  errors: number
+}
+
+export interface Incident {
+  severity: string
+  code: string
+  message: string
+  source_locator: string | null
+  occurrence_count: number
+}
+
+export interface ImportDetail extends ImportSummary {
+  sheets: SourceSheet[]
+  incidents: Incident[]
+}
+
+export interface ImportList {
+  items: ImportSummary[]
+  total: number
+}
+
+export interface RealRecordRow {
+  id: string
+  entity_type: string
+  origin: DataOrigin
+  display_name: string | null
+  identifier: string | null
+  source_system: string | null
+  block_count: number
+  field_count: number
+}
+
+export interface RealRecordPage {
+  items: RealRecordRow[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface ValueProvenance {
+  source_system: string | null
+  document_name: string | null
+  source_locator: string | null
+  source_version: string | null
+  content_hash: string | null
+  locator: string
+  locator_type: string
+  provenance_role: string
+  import_batch_id: string | null
+}
+
+export interface RealRecordValue {
+  id: string
+  field_name: string
+  literal_value: string | null
+  observed_type: string
+  logical_state: string
+  provenance: ValueProvenance[]
+}
+
+export interface RealRecordBlock {
+  id: string
+  block_type: string
+  ordinal: number
+  values: RealRecordValue[]
+}
+
+export interface RecordSourceAvailability {
+  key: string
+  label: string
+  status: string
+  detail: string
+}
+
+export interface RealRecordDetail {
+  id: string
+  entity_type: string
+  origin: DataOrigin
+  display_name: string | null
+  identifier: string | null
+  blocks: RealRecordBlock[]
+  sources: RecordSourceAvailability[]
+}

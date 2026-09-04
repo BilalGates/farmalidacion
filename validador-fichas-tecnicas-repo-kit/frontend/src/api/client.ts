@@ -1,5 +1,18 @@
 import { appConfig } from '../config'
-import type { DecisionWrite, RecordList, Reviewer, TargetRecord } from './types'
+import type {
+  Dashboard,
+  DataOrigin,
+  DecisionWrite,
+  ImportDetail,
+  ImportList,
+  RealRecordDetail,
+  RealRecordPage,
+  RecordList,
+  Reviewer,
+  SourceDetail,
+  SourceList,
+  TargetRecord,
+} from './types'
 
 /**
  * Error de aplicación devuelto por el backend.
@@ -62,4 +75,45 @@ export function saveDecision(fieldValueId: string, payload: DecisionWrite): Prom
     method: 'POST',
     body: JSON.stringify(payload),
   })
+}
+
+/* --------------------------------------------------------------------------
+ * Consulta de datos reales.
+ * ------------------------------------------------------------------------ */
+
+export function fetchDashboard(): Promise<Dashboard> {
+  return request<Dashboard>('/insights/dashboard')
+}
+
+export function fetchSources(): Promise<SourceList> {
+  return request<SourceList>('/insights/sources')
+}
+
+export function fetchSource(id: string): Promise<SourceDetail> {
+  return request<SourceDetail>(`/insights/sources/${encodeURIComponent(id)}`)
+}
+
+export function fetchImports(): Promise<ImportList> {
+  return request<ImportList>('/insights/imports')
+}
+
+export function fetchImport(id: string): Promise<ImportDetail> {
+  return request<ImportDetail>(`/insights/imports/${encodeURIComponent(id)}`)
+}
+
+export function fetchRealRecords(params: {
+  origin: DataOrigin
+  q?: string
+  limit?: number
+  offset?: number
+}): Promise<RealRecordPage> {
+  const search = new URLSearchParams({ origin: params.origin })
+  if (params.q) search.set('q', params.q)
+  if (params.limit !== undefined) search.set('limit', String(params.limit))
+  if (params.offset !== undefined) search.set('offset', String(params.offset))
+  return request<RealRecordPage>(`/insights/records?${search.toString()}`)
+}
+
+export function fetchRealRecord(id: string): Promise<RealRecordDetail> {
+  return request<RealRecordDetail>(`/insights/records/${encodeURIComponent(id)}`)
 }

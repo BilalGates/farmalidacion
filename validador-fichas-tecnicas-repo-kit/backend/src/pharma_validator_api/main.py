@@ -9,6 +9,7 @@ from pharma_validator_api.config import Settings, get_settings
 from pharma_validator_api.database import create_database_engine, create_session_factory
 from pharma_validator_api.errors import register_error_handlers
 from pharma_validator_api.fixtures import load_demo_fixture, load_showcase_fixture
+from pharma_validator_api.insights import router as insights_router
 from pharma_validator_api.logging import configure_logging
 from pharma_validator_api.records import router as records_router
 
@@ -54,6 +55,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
     register_error_handlers(application)
     application.include_router(records_router)
+    application.include_router(insights_router)
 
     @application.get("/health", response_model=HealthResponse, tags=["sistema"])
     async def health() -> HealthResponse:
