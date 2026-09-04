@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, func, inspect, select
+from sqlalchemy import Engine, create_engine, func, inspect, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -110,3 +110,60 @@ def test_external_reference_is_versioned_and_unique(tmp_path: Path) -> None:
         )
         with pytest.raises(IntegrityError):
             session.commit()
+
+
+#: Recorridos que hace el listado de registros. Sin índice, cada uno degenera en
+#: un SCAN de la tabla completa: con los maestros reales importados eso convirtió
+#: `GET /records` en una petición de horas.
+INDEXED_COLUMNS = {
+    "block_instance": {"target_record_id"},
+    "field_value": {"block_instance_id", "field_name"},
+    "value_provenance": {"field_value_id", "source_fragment_id"},
+    "external_identifier": {"target_record_id"},
+    "validation_decision_record": {"field_value_id"},
+}
+
+
+def indexed_first_columns(engine: Engine, table: str) -> set[str]:
+    """Primera columna de cada índice de la tabla.
+
+    Se mira la primera y no todas: un índice compuesto sólo sirve para filtrar
+    por su columna inicial, que es lo que aquí se afirma.
+    """
+    inspector = inspect(engine)
+    return {
+        index["column_names"][0]
+        for index in inspector.get_indexes(table)
+        if index["column_names"] and index["column_names"][0] is not None
+    }
+
+
+def test_traversal_columns_are_indexed_after_upgrade(tmp_path: Path) -> None:
+    """Las claves por las que se recorre el modelo están indexadas.
+
+    Ninguna lo estaba: el defecto sólo se manifiesta con datos reales, porque
+    con cinco registros de demostración un SCAN completo es instantáneo.
+    """
+    database_path = tmp_path / "indexes.db"
+    command.upgrade(alembic_config(database_path), "head")
+    engine = create_engine(f"sqlite:///{database_path.as_posix()}")
+    try:
+        for table, expected in INDEXED_COLUMNS.items():
+            missing = expected - indexed_first_columns(engine, table)
+            assert missing == set(), f"{table} sin índice en {sorted(missing)}"
+    finally:
+        engine.dispose()
+
+
+def test_index_migration_is_reversible(tmp_path: Path) -> None:
+    """El gate del proyecto revierte hasta `base`; los índices deben caer."""
+    database_path = tmp_path / "indexes-down.db"
+    config = alembic_config(database_path)
+    command.upgrade(config, "head")
+    command.downgrade(config, "d51f7a2c9e04")
+    engine = create_engine(f"sqlite:///{database_path.as_posix()}")
+    try:
+        assert "target_record_id" not in indexed_first_columns(engine, "block_instance")
+    finally:
+        engine.dispose()
+    command.downgrade(config, "base")
