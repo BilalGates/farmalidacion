@@ -60,3 +60,44 @@ como documento porque no crea `SourceDocument`. Los cuatro lotes muestran
 fichero, hash, fecha, estado, recuentos, cuarentena e incidencias. CIMA y fichas
 técnicas existen como corpus reproducible local, pero no están enlazados a los
 registros de `real.db`; la interfaz los declara pendientes y no inventa vínculo.
+
+## Reverificación independiente — 7 de septiembre de 2026
+
+HEAD `69fa28fe820e07a06190d5e386140cbce71d6935` reverificado contra la base y
+los endpoints en ejecución, sin apoyarse en las cifras ya documentadas.
+
+Cifras confirmadas por consulta directa a `real.db`: 43.381 `target_record`,
+2.169.251 `field_value`, 2.169.251 `value_provenance` (relación 1:1), cuatro
+lotes `completed`, 275 filas en cuarentena, `external_identifier` con cero
+filas y Alembic en `4d7a6b2c1e90`.
+
+`scripts/smoke_real_mode.py` devuelve **PASS**: `omeprazol` sigue dando 576
+coincidencias y `CODIGO_NACIONAL = 707703` conserva fichero, hoja `General`,
+fila 15991, lote y hash. `/database-info` responde `mode=real`,
+`records_real=43381`, `records_demo=0` y `consistent=true`.
+
+`scripts/analyze_master_cima_links.py` se reejecutó y reprodujo la auditoría sin
+desviaciones: 706 CN con match exacto único, 0 CN con varios candidatos, 186
+`nregistro` con varios CN y 0 incidencias estructurales.
+
+### Configuración de lectura de SQLite
+
+Se detectó que el motor sólo fijaba `foreign_keys=ON`, dejando la caché por
+defecto (~2 MB) para una base de 1,7 GB. Con caché fría el recuento de
+`value_provenance` costaba 11,3 s y 10 ms con las páginas ya residentes. Se
+reservan ahora 256 MB de caché y 2 GB de `mmap`, con prueba de regresión en
+`backend/tests/test_database_engine.py`. No se tocaron esquema, índices ni
+datos.
+
+Medición sobre el backend en modo REAL tras el cambio (cinco rondas):
+
+| Consulta | Ronda fría | Rondas calientes | Objetivo piloto |
+|---|---:|---:|---:|
+| dashboard | 600 ms | 236–333 ms | <500 ms |
+| primera página | 845 ms | 384–434 ms | <800 ms |
+| búsqueda `omeprazol` | 1.607 ms | 313–397 ms | <800 ms |
+| segunda página | 466 ms | 242–498 ms | <800 ms |
+| detalle | 293 ms | 77–93 ms | <800 ms |
+
+Todas las consultas calientes cumplen el objetivo. Las rondas frías dependen del
+almacenamiento del host y no de la estructura de la base.
