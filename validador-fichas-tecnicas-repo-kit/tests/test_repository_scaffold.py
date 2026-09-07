@@ -1,7 +1,6 @@
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -37,7 +36,8 @@ class RepositoryScaffoldTests(unittest.TestCase):
         self.assertIn('APP_DEMO_FIXTURE_PATH: /app/fixtures/omeprazole-demo.json', compose)
         self.assertIn('APP_SHOWCASE_FIXTURE_PATH: /app/fixtures/showcase-demo.json', compose)
         self.assertIn('APP_CORS_ALLOW_ORIGINS:', compose)
-        self.assertIn('app-data:/app/data', compose)
+        self.assertIn('demo-data:/app/data', compose)
+        self.assertIn('./data/local:/app/data', compose)
         self.assertNotIn('/app/data/examples/', compose)
 
 if __name__ == '__main__':

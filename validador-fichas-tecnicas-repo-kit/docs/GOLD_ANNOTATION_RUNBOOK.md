@@ -5,6 +5,23 @@
 - Contrato normativo: `docs/GOLD_SET_ANNOTATION_CONTRACT.md`
 - Estado: listo para ejecutarse en cuanto se identifiquen los dos anotadores
 
+> Revisión 7-09-2026: la selección y 552 secciones citables siguen íntegras;
+> hay 20 fichas y cero anotaciones. Antes de iniciar deben cerrarse GOLD-002 y
+> GOLD-004 (alcance exacto). También debe aprobarse la protección descrita en
+> `docs/HUMAN_DATA_PROTECTION.md`.
+
+Comando operativo desde la raíz:
+
+```powershell
+./scripts/check-gold.ps1 -ExpectedUnitsPerDocument <alcance-aprobado> `
+  -Reviewers 'revisor.a:Nombre A','revisor.b:Nombre B'
+```
+
+Descubre los dos JSONL de anotación sin inventarlos y devuelve fichas, unidades,
+pendientes, evidencia ausente, errores, desacuerdos, progreso y `GOLD LISTO` o
+`GOLD NO LISTO`. Mientras GOLD-004 no esté cerrado puede ejecutarse sin el
+parámetro para diagnóstico, pero `expected_units=0` prueba que no está listo.
+
 Este runbook es operativo. Cuando las dos personas estén designadas, pueden empezar sin desarrollo adicional. Ante cualquier discrepancia entre este documento y el contrato, **manda el contrato**.
 
 ## 0. Qué se está haciendo y por qué importa

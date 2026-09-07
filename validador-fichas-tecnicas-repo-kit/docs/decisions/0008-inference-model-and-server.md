@@ -144,6 +144,49 @@ Coste de cambio **bajo por diseño**: el modelo se declara en `BackendConfig`; n
 - ¿Se asume la confusión tamaño/cuantización en 24 GB, o se amplía a 48 GB antes de medir?
 - ¿Se ejecuta C como control, o se descarta?
 
+## Revisión final para decisión — 7 de septiembre de 2026
+
+La propuesta se actualiza, sin aceptarla, porque Qwen3 sustituye razonablemente
+a Qwen2.5 para una comparación nueva. Recomendación A: comparar
+`Qwen/Qwen3-8B` BF16 y `Qwen/Qwen3-14B-AWQ` 4-bit sobre la misma versión fijada
+de vLLM. Alternativa B: conservar Qwen2.5-7B/14B si el centro ya tiene esos
+pesos validados y prioriza continuidad sobre capacidad más reciente. Se
+descarta Ministral-8B como candidato principal por su licencia de investigación,
+que exige revisión/licencia adicional para uso interno no estrictamente de
+investigación.
+
+| Criterio | Recomendación A | Alternativa B |
+|---|---|---|
+| Modelos | Qwen3 8B / 14B | Qwen2.5 7B / 14B |
+| Cuantización | 8B BF16; 14B AWQ 4-bit | igual patrón |
+| Runtime | vLLM, versión e imagen fijadas | vLLM fijado |
+| VRAM estimada | ~17 GB / ~10–12 GB más KV cache | ~15 GB / ~10 GB |
+| RAM operativa | 32 GB recomendados | 16–32 GB |
+| Contexto | 32.768 nativo; no activar YaRN salvo necesidad medida | 32K |
+| Structured output | JSON Schema mediante Chat Completions de vLLM | igual |
+| Español | familia multilingüe; español incluido | multilingüe anterior |
+| Biomédico | hipótesis sin validar; decide DEV-408 | hipótesis sin validar |
+| Offline/licencia | pesos locales, Apache-2.0 | pesos locales, Apache-2.0 |
+| Reproducibilidad | revisión de pesos, contenedor, prompt, esquema y parámetros fijados | igual |
+| Throughput/latencia | suficiente para piloto; se mide, no se presupone | suficiente |
+| Riesgo principal | modo de razonamiento y cuantización pueden alterar salida literal | menor novedad, menor techo esperado |
+
+Parámetros a congelar antes del benchmark: `temperature=0`, `top_p=1`, semilla
+0, `max_tokens=1024`, modo no pensante explícito para Qwen3, revisión exacta de
+pesos, cuantización, versión de vLLM, prompt y esquema. No se comparará un 8B en
+modo no pensante con un 14B en modo pensante.
+
+Fuentes primarias consultadas: [Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B),
+[Qwen3-14B-AWQ](https://huggingface.co/Qwen/Qwen3-14B-AWQ),
+[Qwen3 multilingüe](https://qwenlm.github.io/blog/qwen3/),
+[structured outputs de vLLM](https://docs.vllm.ai/en/latest/features/structured_outputs/)
+y [servidor OpenAI-compatible](https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html).
+Las cifras de VRAM son estimaciones de ingeniería y deben confirmarse en el
+servidor de D-013; no son especificaciones publicadas por el fabricante.
+
+Decisión humana reducida a: aceptar Recomendación A, o escoger Alternativa B por
+continuidad operativa. D-014 permanece **pendiente**.
+
 ## Anexo — Estado de la integración (4 de septiembre de 2026)
 
 Revisión de qué queda por hacer el día que se acepte una opción.
@@ -164,15 +207,13 @@ servidor caído se convierte en incidencia y no bloquea la revisión manual; una
 respuesta malformada no se repara; la petición exige salida guiada estricta con
 `temperature` 0.
 
-Lo único que falta es **el envío HTTP real**, que se inyecta como función
-(`sender`). Se ha dejado inyectable a propósito por dos razones: permite probar
-todo lo anterior sin levantar un servidor, y su implementación concreta depende
-del runtime que se acepte aquí.
+El envío HTTP OpenAI-compatible ya existe en `http_inference_sender` y está
+probado offline con transporte simulado. Clasifica timeout/transporte/408/429/5xx
+como transitorios y no reintenta un 4xx de contrato. Falta desplegarlo contra el
+runtime y pesos que acepte D-014, y registrar una ejecución real.
 
-Coste estimado de cerrar DEV-402 una vez aceptada una opción: una función que
-haga `POST {base_url}/chat/completions` con `httpx` (ya es dependencia) y
-traduzca los errores de transporte a `InferenceBackendError`. El resto no
-cambia.
+Coste restante de cerrar DEV-402 una vez aceptada una opción: configuración y
+smoke contra el servidor real, más captura del manifiesto de hardware/modelo.
 
 Si se aceptase la opción C (llama.cpp), habría además que traducir el esquema
 JSON a GBNF; con las opciones A y B ese trabajo no existe, porque vLLM consume

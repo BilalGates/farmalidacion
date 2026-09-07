@@ -1,7 +1,6 @@
 import { useState } from 'react'
 
 import { fetchRealRecords } from '../api/client'
-import type { DataOrigin } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
 import { OriginBadge } from '../components/OriginBadge'
@@ -11,9 +10,9 @@ import { navigate } from '../navigation'
 /**
  * Listado de registros reales importados desde los maestros.
  *
- * El selector de origen es explícito y siempre visible. No existe una vista que
- * combine ambos conjuntos: un registro de demostración y uno importado no deben
- * poder aparecer juntos en la misma tabla sin distinguirse.
+ * Esta ruta es exclusivamente REAL. Los registros ficticios viven en la ruta
+ * separada «Revisión (DEMO)» y nunca se ofrecen como alternativa dentro del
+ * listado de fichas técnicas.
  */
 
 const PAGE_SIZE = 50
@@ -25,26 +24,20 @@ const ENTITY_LABELS: Record<string, string> = {
 }
 
 export function RealRecordListScreen() {
-  const [origin, setOrigin] = useState<DataOrigin>('real')
   const [term, setTerm] = useState('')
   const [query, setQuery] = useState('')
   const [offset, setOffset] = useState(0)
   const [retryKey, setRetryKey] = useState(0)
 
   const { data, error, loading } = useQuery(
-    () => fetchRealRecords({ origin, q: query || undefined, limit: PAGE_SIZE, offset }),
-    [origin, query, offset, retryKey],
+    () => fetchRealRecords({ origin: 'real', q: query || undefined, limit: PAGE_SIZE, offset }),
+    [query, offset, retryKey],
   )
 
   function search(event: React.FormEvent) {
     event.preventDefault()
     setOffset(0)
     setQuery(term.trim())
-  }
-
-  function changeOrigin(next: DataOrigin) {
-    setOrigin(next)
-    setOffset(0)
   }
 
   const page = data ? Math.floor(data.offset / data.limit) + 1 : 1
@@ -63,29 +56,8 @@ export function RealRecordListScreen() {
         </div>
       </div>
 
-      <div className='origin-switch' role='group' aria-label='Origen de los datos'>
-        <button
-          type='button'
-          className={`chip${origin === 'real' ? ' chip--active' : ''}`}
-          aria-pressed={origin === 'real'}
-          onClick={() => changeOrigin('real')}
-        >
-          Datos reales
-        </button>
-        <button
-          type='button'
-          className={`chip${origin === 'demo' ? ' chip--active' : ''}`}
-          aria-pressed={origin === 'demo'}
-          onClick={() => changeOrigin('demo')}
-        >
-          Datos DEMO
-        </button>
-      </div>
-
-      <p className={`origin-notice origin-notice--${origin}`}>
-        {origin === 'real'
-          ? 'Datos reales importados de los maestros Excel, con su procedencia registrada.'
-          : 'Datos de demostración. No proceden de los maestros y no deben usarse como evidencia clínica.'}
+      <p className='origin-notice origin-notice--real'>
+        Datos reales importados de los maestros Excel, con su procedencia registrada.
       </p>
 
       <form className='toolbar' onSubmit={search} role='search'>
@@ -110,10 +82,8 @@ export function RealRecordListScreen() {
         emptyTitle={query ? 'La búsqueda no devuelve resultados' : 'No hay registros de este origen'}
         emptyDetail={
           query
-            ? `Ningún registro ${origin === 'real' ? 'real' : 'DEMO'} contiene «${query}» en su descripción o identificador.`
-            : origin === 'real'
-              ? 'No hay registros importados. Ejecute scripts/ingest_master_files.py para cargar los maestros Excel.'
-              : 'El conjunto de demostración no está cargado en esta base de datos.'
+            ? `Ningún registro real contiene «${query}» en su descripción o identificador.`
+            : 'No hay registros importados. Ejecute scripts/ingest_master_files.py para cargar los maestros Excel.'
         }
         onRetry={() => setRetryKey((k) => k + 1)}
       >
@@ -153,7 +123,7 @@ export function RealRecordListScreen() {
                       <button
                         type='button'
                         className='button'
-                        onClick={() => navigate(`/registros/${encodeURIComponent(item.id)}`)}
+                        onClick={() => navigate(`/fichas/${encodeURIComponent(item.id)}`)}
                       >
                         Abrir ficha
                       </button>

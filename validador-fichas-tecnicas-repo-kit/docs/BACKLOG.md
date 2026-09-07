@@ -1,5 +1,25 @@
 # Backlog inicial
 
+## Actualización de camino crítico — 7 de septiembre de 2026
+
+- **REAL-001 completada:** `#/fichas` exclusivamente REAL, detalle correcto,
+  paginación/búsqueda server-side, estados asíncronos y rendimiento dentro de
+  objetivo en caliente. Migración `4d7a6b2c1e90`; evidencia en
+  `docs/REAL_MODE_VERIFICATION.md`.
+- **DATA-309 completada como análisis:** auditoría exacta CN maestro ↔ CIMA con
+  herramienta reproducible; no persiste asociaciones. Próximo paso: decisión
+  de vigencia/cobertura antes de importar vínculos.
+- **D-027 pendiente:** mapeo de `*_IDEXTERNO` a `external_identifier` por entidad
+  y versión. No bloquea GOLD ni se implementa sin ADR.
+- **GOLD-004 pendiente y bloqueante:** responsable funcional congela el alcance
+  exacto de unidades/campos por ficha. Junto con GOLD-002, es requisito para que
+  dos farmacéuticos empiecen sin huecos invisibles.
+- **DEV-402 parcialmente completada:** sender HTTP OpenAI-compatible agnóstico
+  implementado y probado offline. Falta D-014, despliegue/smoke real y manifiesto
+  de ejecución; no falta ya código de transporte.
+- **Próximo issue tras acciones humanas:** cerrar DEV-402 contra el runtime
+  aceptado y lanzar DEV-408 cuando GOLD esté conciliado.
+
 Prioridades: `P0` bloquea fases; `P1` necesaria para la puerta; `P2` mejora o endurecimiento. Los identificadores se mantienen aunque las issues se creen después en GitHub.
 
 ## EPIC E0 — Gobierno y descubrimiento
@@ -315,7 +335,7 @@ Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Fase 3 cerrada; D-013 está res
 
 **Estado:** parte agnóstica al modelo implementada el 4 de septiembre de 2026; 11 pruebas, Ruff y mypy limpios. **`BackendConfig` exige `model` explícito y falla sin él**, de modo que ningún camino de código elige modelo mientras D-014 esté pendiente.
 
-**Actualización:** `pharma_validator_api.llm_extractor.LocalServerExtractor` implementa `ExtractorLLM` uniendo esquema guiado, transporte y verificación literal; 9 pruebas sin red ni GPU confirman que una cita inventada se rechaza aunque la emita el adaptador, que un servidor caído es incidencia y que una respuesta malformada no se repara. Falta **sólo el envío HTTP real**, inyectado como función porque depende del runtime de D-014. No cierra DEV-402.
+**Actualización (7 de septiembre):** `pharma_validator_api.llm_extractor.LocalServerExtractor` implementa `ExtractorLLM` uniendo esquema guiado, transporte y verificación literal. `http_inference_sender.OpenAIChatSender` aporta ya el envío HTTP OpenAI-compatible sin elegir modelo, y el contrato mide la duración total incluidos reintentos. Falta fijar D-014, verificar un servidor real y capturar el manifiesto de runtime/hardware; no cierra DEV-402.
 
 ### DEV-403 — Esquema de salida guiada (`P0`)
 

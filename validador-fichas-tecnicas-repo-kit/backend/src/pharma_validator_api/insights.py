@@ -248,33 +248,22 @@ def read_dashboard(session: SessionDependency) -> DashboardRead:
     Todas proceden de un `count` sobre el modelo físico. Ninguna se estima ni se
     fija: si una tabla está vacía la cifra es 0 y el panel lo dice.
     """
-    real_records = _count(
-        session, apply_origin_filter(select(TargetRecord.id), DataOrigin.REAL)
-    )
+    real_ids = apply_origin_filter(select(TargetRecord.id), DataOrigin.REAL).subquery()
+    real_by_entity = {
+        entity_type: int(count)
+        for entity_type, count in session.execute(
+            select(TargetRecord.entity_type, func.count())
+            .join(real_ids, TargetRecord.id == real_ids.c.id)
+            .group_by(TargetRecord.entity_type)
+        ).all()
+    }
+    real_records = sum(real_by_entity.values())
     demo_records = _count(
         session, apply_origin_filter(select(TargetRecord.id), DataOrigin.DEMO)
     )
-    medications = _count(
-        session,
-        apply_origin_filter(
-            select(TargetRecord.id).where(TargetRecord.entity_type == "medication"),
-            DataOrigin.REAL,
-        ),
-    )
-    active_ingredients = _count(
-        session,
-        apply_origin_filter(
-            select(TargetRecord.id).where(TargetRecord.entity_type == "active_ingredient"),
-            DataOrigin.REAL,
-        ),
-    )
-    specialties = _count(
-        session,
-        apply_origin_filter(
-            select(TargetRecord.id).where(TargetRecord.entity_type == "specialty"),
-            DataOrigin.REAL,
-        ),
-    )
+    medications = real_by_entity.get('medication', 0)
+    active_ingredients = real_by_entity.get('active_ingredient', 0)
+    specialties = real_by_entity.get('specialty', 0)
     documents = _scalar_count(session, SourceDocument)
     document_versions = _scalar_count(session, SourceDocumentVersion)
     batches = _scalar_count(session, ImportBatch)
@@ -689,14 +678,25 @@ def list_records(
             select(BlockInstance.target_record_id)
             .join(FieldValue, FieldValue.block_instance_id == BlockInstance.id)
             .where(FieldValue.field_name.in_(DISPLAY_NAME_FIELDS + IDENTIFIER_FIELDS))
-            .where(FieldValue.literal_value.ilike(needle))
+            # SQLite implementa LIKE sin distinguir mayúsculas ASCII. Evitar
+            # ILIKE es importante aquí: SQLAlchemy lo traduce a lower(columna),
+            # lo que impide aprovechar el índice cubriente del listado.
+            .where(FieldValue.literal_value.like(needle))
         )
         statement = statement.where(TargetRecord.id.in_(matching))
 
-    total = _count(session, statement)
-    page_ids = list(
-        session.scalars(statement.order_by(TargetRecord.id).limit(limit).offset(offset)).all()
-    )
+    # El total y la página se obtienen en un solo recorrido. En búsquedas sobre
+    # los maestros, ejecutar primero COUNT y después la página duplicaba el
+    # escaneo de los valores candidatos. La ventana conserva el contrato exacto
+    # sin trasladar filtros ni registros al frontend.
+    page_rows = session.execute(
+        statement.add_columns(func.count().over().label('total_count'))
+        .order_by(TargetRecord.id)
+        .limit(limit)
+        .offset(offset)
+    ).all()
+    total = int(page_rows[0][1]) if page_rows else (_count(session, statement) if offset else 0)
+    page_ids = [row[0] for row in page_rows]
     if not page_ids:
         return RecordPageRead(items=[], total=total, limit=limit, offset=offset)
 

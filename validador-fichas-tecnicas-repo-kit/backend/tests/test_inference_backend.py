@@ -128,6 +128,19 @@ def test_retries_are_bounded_and_the_last_failure_surfaces() -> None:
     assert error.value.kind == "server_error"
 
 
+def test_total_duration_is_recorded() -> None:
+    clock_values = iter((10.0, 12.5))
+
+    response = call_with_retries(
+        config(),
+        REQUEST,
+        lambda _payload, _timeout: chat_response('{}'),
+        clock=lambda: next(clock_values),
+    )
+
+    assert response.duration_seconds == 2.5
+
+
 def test_a_schema_violation_is_not_retried() -> None:
     """Con temperatura 0 y semilla fija, repetir da exactamente el mismo error."""
     calls: list[int] = []

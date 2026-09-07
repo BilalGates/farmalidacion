@@ -1,5 +1,10 @@
 # Contrato de `GET /records` (listado paginado)
 
+> **Nota de vigencia (7 de septiembre de 2026):** este contrato corresponde a
+> la vertical DEMO/revisión. La pantalla `#/fichas`, reservada a REAL, usa el
+> contrato paginado server-side `GET /insights/records?origin=real&limit=50&offset=0`.
+> Sus resultados y rendimiento actuales están en `docs/REAL_MODE_VERIFICATION.md`.
+
 Destinado a la sesión que trabaja el frontend. **Ningún archivo de frontend se
 ha modificado desde el backend**; este documento describe el cambio para que se
 implemente sin conflictos de merge.

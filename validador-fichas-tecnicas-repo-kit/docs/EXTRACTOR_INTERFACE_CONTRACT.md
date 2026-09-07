@@ -93,5 +93,8 @@ Garantías del transporte:
 Módulo puro: el envío HTTP se inyecta como función, de modo que el contrato se
 prueba sin levantar un servidor. 11 pruebas.
 
-**No cierra DEV-402.** El cliente HTTP real y la traducción del esquema a GBNF
-—si el runtime elegido lo requiere— dependen de qué se acepte en D-014.
+**No cierra DEV-402.** Desde el 7 de septiembre existe el cliente HTTP real
+`http_inference_sender.OpenAIChatSender`, probado sin red con `MockTransport`.
+Falta configurarlo y ejecutar el smoke contra el runtime/modelo aceptado en
+D-014, además de capturar el manifiesto real. La traducción a GBNF sólo sería
+necesaria si se rechazase vLLM por un runtime basado en gramática.

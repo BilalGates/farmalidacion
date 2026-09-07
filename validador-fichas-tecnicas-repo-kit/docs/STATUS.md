@@ -6,9 +6,37 @@
 
 ## Fase actual
 
+### Reconciliación operativa — 7 de septiembre de 2026
+
+HEAD `4205155611beb4dab709f24b49b45a404a8d2951` fue contrastado con código,
+`real.db` y endpoints en ejecución. **IMPORTADORES FASE 3 VERIFICADOS no
+equivale a CARGA OPERATIVA REAL.** La carga servida sí está verificada ahora:
+43.381 registros, 2.169.251 valores con procedencia, cuatro lotes completados y
+275 filas en cuarentena.
+
+El bloqueo de `#/fichas` se reprodujo como búsqueda de 21,9 s y una regresión
+de navegación al detalle DEMO. Quedó corregido con paginación/filtrado backend,
+una consulta total+página, índice cubriente y ruta REAL exclusiva. Benchmarks
+calientes: dashboard 352–356 ms; listado 146–185 ms; `omeprazol` 144–173 ms;
+segunda página 125–219 ms; detalle 38–71 ms. Evidencia completa en
+`docs/REAL_MODE_VERIFICATION.md`.
+
+La auditoría exacta del corpus CIMA de 500 documentos contra el maestro obtuvo
+706 CN con match único, cero CN con varios `nregistro`, 186 `nregistro` con
+varios CN y cobertura del 78,2705 % de los CN de la muestra. No se persistió
+ningún vínculo. `external_identifier` sigue vacío en REAL y queda gobernado por
+D-027. Ver `docs/MASTER_CIMA_EXACT_LINK_AUDIT.md` y
+`docs/EXTERNAL_IDENTIFIER_AUDIT.md`.
+
+Fase 4 sigue **BLOCKED**. GOLD contiene 20 fichas y cero anotaciones; además de
+GOLD-002 falta congelar el alcance GOLD-004. D-014 está preparado para decisión
+con Qwen3-8B/14B sobre vLLM, pero no aceptado. DEV-402 ya incluye sender HTTP
+agnóstico probado offline; sólo faltan configuración y smoke contra el servidor
+aceptado, junto con manifiesto real de ejecución. D-015 continúa sin umbrales.
+
 Fase 3 cerrada. Gate 3 es PASS según docs/PHASE_3_GATE_REVIEW.md.
 
-**Fase 4 preparada y bloqueada por decisiones humanas. Gate 4 es BLOCKED** según `docs/PHASE_4_GATE_REVIEW.md`. Todo el trabajo técnicamente ejecutable de Fase 4 está terminado: selección oro materializada, herramienta de anotación, comprobador de completitud, orquestador del pipeline, motor de evaluación y transporte de inferencia agnóstico al modelo. **No se ha anotado ninguna ficha y no se ha ejecutado ninguna extracción real**, porque ambas cosas dependen de decisiones que corresponden a personas: GOLD-002 (los dos farmacéuticos) y D-014 (el modelo).
+**Fase 4 preparada y bloqueada por decisiones humanas. Gate 4 es BLOCKED** según `docs/PHASE_4_GATE_REVIEW.md`. La selección oro, herramienta, comprobador, orquestador, evaluación y transporte HTTP agnóstico están preparados. **No se ha anotado ninguna ficha ni se ha ejecutado una extracción real**: faltan GOLD-002, GOLD-004, la aprobación de protección operativa de datos humanos y D-014; después deberán ejecutarse campaña, conciliación y benchmark.
 
 ## Fase 0A — Cerrada
 
@@ -659,7 +687,7 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
 
 - **GOLD-002**: dos farmacéuticos anotadores identificados. Bloquea la anotación, y con ella toda medición. El alta técnica está resuelta: basta declararlos en `APP_REVIEWERS` con formato `id:Nombre`.
 - **Campaña de anotación** de las 20 fichas por ambos, y su conciliación.
-- **D-014**: modelo y servidor de inferencia. La integración está construida y probada; lo único pendiente al aceptar es el envío HTTP real (una función con `httpx`). Bloquea DEV-402 y DEV-408.
+- **D-014**: modelo y servidor de inferencia. La integración y el sender HTTP agnóstico están construidos y probados, incluida la duración total. Quedan la decisión humana, el smoke con el runtime real y el manifiesto reproducible de runtime/hardware. Bloquea el cierre de DEV-402 y DEV-408.
 - **D-015**: umbrales. Depende de las métricas, que dependen de lo anterior.
 
 **Fase 4 no está cerrada y Fase 5 no se abre.** Cero fichas anotadas de 20 requeridas; cero extracciones reales ejecutadas.

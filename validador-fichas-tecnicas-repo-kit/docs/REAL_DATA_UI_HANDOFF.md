@@ -1,5 +1,12 @@
 # Vertical de visibilidad de datos reales
 
+> **Estado reconciliado el 7 de septiembre de 2026:** este documento conserva
+> el contexto histórico de la rama. El estado operativo vigente está en
+> `docs/REAL_MODE_VERIFICATION.md`. Ya existe `real.db`, `#/fichas` es sólo REAL,
+> la ruta de detalle está corregida y las migraciones `f19a4c7b6d82` y
+> `4d7a6b2c1e90` aportan los índices medidos. Las afirmaciones posteriores de que
+> faltan índices o de que la demo vive en `#/fichas` quedan sustituidas.
+
 Rama `feat/real-data-visibility`. Documento de traspaso para el merge posterior.
 No modifica `STATUS.md`, `BACKLOG.md`, `TRACEABILITY_MATRIX.md`,
 `DEVELOPMENT_PLAN.md` ni `DECISION_REGISTER.md`, para no colisionar con el

@@ -25,6 +25,7 @@ Módulo puro: no abre sockets. El envío real se inyecta como función.
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal
@@ -228,6 +229,7 @@ def call_with_retries(
     send: Callable[[Mapping[str, Any], float], Mapping[str, Any]],
     *,
     sleep: Callable[[float], None] | None = None,
+    clock: Callable[[], float] = time.perf_counter,
 ) -> InferenceResponse:
     """Ejecuta la llamada aplicando la política de reintentos del contrato.
 
@@ -239,6 +241,7 @@ def call_with_retries(
     fija, repetir produce exactamente el mismo error.
     """
     sleeper = sleep or (lambda _seconds: None)
+    started_at = clock()
     payload = build_chat_payload(config, request)
     last: InferenceBackendError | None = None
 
@@ -259,6 +262,7 @@ def call_with_retries(
             payload=parsed,
             model=str(raw.get("model") or config.model),
             attempts=attempt,
+            duration_seconds=clock() - started_at,
             finish_reason=choice.get("finish_reason"),
             prompt_tokens=usage.get("prompt_tokens"),
             completion_tokens=usage.get("completion_tokens"),

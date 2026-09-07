@@ -274,18 +274,12 @@ describe('separación entre datos reales y DEMO', () => {
     expect(within(row).getByText('Real')).toBeInTheDocument()
   })
 
-  it('cambia al conjunto DEMO sólo cuando se pide explícitamente', async () => {
+  it('no ofrece datos DEMO dentro de Fichas técnicas', async () => {
     window.location.hash = '#/fichas'
     render(<App />)
     await screen.findByText('Omeprazol 20 mg cápsula')
-
-    fireEvent.click(screen.getByRole('button', { name: 'Datos DEMO' }))
-
-    expect(await screen.findByText('DEMO Omeprazol')).toBeInTheDocument()
-    expect(calls.some((url) => url.includes('origin=demo'))).toBe(true)
-    // El conjunto real desaparece: nunca se muestran mezclados.
-    expect(screen.queryByText('Omeprazol 20 mg cápsula')).not.toBeInTheDocument()
-    expect(screen.getByText(/no deben usarse como evidencia clínica/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Datos DEMO' })).not.toBeInTheDocument()
+    expect(calls.some((url) => url.includes('origin=demo'))).toBe(false)
   })
 
   it('explica una búsqueda sin resultados en lugar de dejar la tabla vacía', async () => {
@@ -319,6 +313,21 @@ describe('separación entre datos reales y DEMO', () => {
 })
 
 describe('ficha de un registro real', () => {
+  it('abre el detalle REAL desde el listado y conserva la ruta de fichas', async () => {
+    window.location.hash = '#/fichas'
+    render(<App />)
+    await screen.findByText('Omeprazol 20 mg cápsula')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir ficha' }))
+
+    await waitFor(() => expect(window.location.hash).toBe('#/fichas/rec-real'))
+    expect(await screen.findByText('707703')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Fichas técnicas/ })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+  })
+
   it('muestra el valor y su procedencia bajo demanda', async () => {
     window.location.hash = '#/fichas/rec-real'
     render(<App />)

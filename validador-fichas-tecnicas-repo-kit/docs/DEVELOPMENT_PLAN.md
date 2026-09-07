@@ -195,11 +195,13 @@ Integrar un extractor local sustituible, medirlo sobre el conjunto oro y decidir
 - Los fallos del extractor no bloquean la revisión manual con evidencia.
 - El corpus se procesa de forma reanudable.
 
-> **Estado al 4 de septiembre de 2026: Gate 4 BLOCKED.** Revisión criterio por
-> criterio en `docs/PHASE_4_GATE_REVIEW.md`. Todo el trabajo técnicamente
-> ejecutable está terminado; los bloqueos restantes son decisiones humanas:
-> GOLD-002 (los dos farmacéuticos anotadores) y D-014 (modelo de inferencia),
-> más la campaña de anotación que depende de la primera.
+> **Estado reconciliado al 7 de septiembre de 2026: Gate 4 BLOCKED.** Revisión
+> criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`. La infraestructura
+> agnóstica y los materiales están preparados, pero faltan decisiones humanas:
+> GOLD-002 (dos farmacéuticos reales e independientes), GOLD-004 (alcance exacto
+> de unidades/campos), aprobación operativa de protección de los datos humanos y
+> D-014 (modelo/servidor). Después siguen la campaña, conciliación y benchmark;
+> por ello todavía no existen métricas que permitan resolver D-015.
 
 ## 9. Fase 5 — Pantalla de revisión y piloto de ahorro
 

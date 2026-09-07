@@ -7,6 +7,27 @@
 
 Este documento no cierra la Fase 4. Registra, criterio por criterio, qué está verificado y qué falta, para que el bloqueo restante quede reducido a acciones humanas concretas.
 
+## Revisión de vigencia — 7 de septiembre de 2026
+
+El veredicto continúa **BLOCKED**. La selección mantiene 20 fichas y no existe
+ninguna anotación clínica real. `check_gold.py` informa 20 esperadas, 0 con
+anotaciones, 0 unidades esperadas configuradas y `is_ready=false`.
+
+Bloqueos humanos exactos: GOLD-002 (dos farmacéuticos reales e independientes),
+GOLD-004 (congelar alcance de campos/unidades antes de anotar), campaña doble,
+conciliación y D-014 (aceptar configuración modelo/runtime). El perímetro de
+backup previo está en `docs/HUMAN_DATA_PROTECTION.md`.
+
+D-014 está preparado para una elección A/B, pero no aceptado: Qwen3-8B BF16
+frente a Qwen3-14B-AWQ sobre vLLM es la recomendación actual; Qwen2.5 equivalente
+es la alternativa de continuidad. DEV-402 avanzó: el sender HTTP real y
+agnóstico existe y está probado offline. Sigue BLOCKED hasta el smoke con el
+runtime elegido y el manifiesto real de modelo/hardware.
+
+D-015 continúa **BLOCKED**: las métricas, normalizaciones, tratamiento de
+vacíos/repetibles, evidencia y errores están congelados en los contratos, pero
+no hay resultados reales que permitan fijar thresholds. No se abre Fase 5.
+
 ## 1. Estado de los prerrequisitos de entrada
 
 El plan fija tres prerrequisitos antes de los trabajos de Fase 4.
@@ -81,7 +102,7 @@ Falta la confirmación sobre una ejecución real, que depende de D-014.
 | Trabajo | Issue | Estado | Evidencia |
 |---|---|---|---|
 | Interfaz `ExtractorLLM` desacoplada | DEV-401 | **PASS** | 12 pruebas; `docs/EXTRACTOR_INTERFACE_CONTRACT.md` |
-| Servidor local compatible con OpenAI chat | DEV-402 | **BLOCKED** | Transporte agnóstico (`inference_backend`, 11 pruebas) y adaptador `llm_extractor` tras `ExtractorLLM` (9 pruebas). Falta sólo el envío HTTP real, que depende del runtime de D-014 |
+| Servidor local compatible con OpenAI chat | DEV-402 | **BLOCKED** | Transporte agnóstico (`inference_backend`, 12 pruebas), sender HTTP real y adaptador `llm_extractor` tras `ExtractorLLM` (9 pruebas). Faltan D-014, smoke contra el runtime elegido y manifiesto de runtime/hardware |
 | Salida guiada por esquema | DEV-403 | **PASS** | 22 pruebas; `docs/GUIDED_SCHEMA_CONTRACT.md`. La traducción a GBNF depende del runtime de D-014 |
 | Llamadas agrupadas por sección | DEV-404 | **PASS** | 17 pruebas; validado sobre catálogo real (353 definiciones, 129 campos extraíbles, 14 llamadas) |
 | Verificación literal antes de persistir | DEV-405 | **PASS** | 19 pruebas; `docs/EVIDENCE_VERIFICATION_CONTRACT.md` |

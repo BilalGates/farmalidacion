@@ -295,6 +295,8 @@ def test_records_demo_view_is_explicit_and_separate(client: TestClient) -> None:
 
 
 def test_record_search_matches_stored_literals(client: TestClient) -> None:
+    uppercase = client.get('/insights/records', params={'q': 'OMEPRAZOL'}).json()
+    assert uppercase['total'] == 1
     found = client.get("/insights/records", params={"q": "omeprazol"}).json()
     assert found["total"] == 1
     missing = client.get("/insights/records", params={"q": "inexistente"}).json()

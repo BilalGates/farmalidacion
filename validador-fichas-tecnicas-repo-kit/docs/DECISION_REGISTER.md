@@ -17,7 +17,7 @@ Estados: `cerrada`, `propuesta`, `pendiente`, `bloqueada`, `descartada`. Una dec
 | D-011 | Contrato exacto de exportación | pendiente | Fase 6 | Obtener ejemplo aceptado y prueba en entorno proveedor | Por crear |
 | D-012 | Separador decimal | pendiente | Fase 6 | Punto provisional y configurable | Especificación v2 |
 | D-013 | Hardware GPU | cerrada | Fase 4 | Servidor interno con GPU de al menos 24 GB de VRAM; modelo/servidor exactos quedan en D-014 | Aprobación humana 2026-09-02; `docs/GPU_SIZING_ANALYSIS.md` |
-| D-014 | Modelo/servidor de inferencia | pendiente | Fase 4 | Comparar Qwen2.5-7B BF16 frente a Qwen2.5-14B AWQ 4-bit sobre vLLM; Llama-3.1-8B como control opcional | ADR-0008 propuesto 2026-09-04; `docs/GPU_SIZING_ANALYSIS.md`. Requiere aceptación humana |
+| D-014 | Modelo/servidor de inferencia | pendiente | Fase 4 | Comparar Qwen3-8B BF16 frente a Qwen3-14B AWQ 4-bit sobre vLLM; conservar Qwen2.5 como alternativa de continuidad | ADR-0008 revisado 2026-09-07 con fuentes oficiales. Decisión preparada; requiere aceptación humana |
 | D-015 | Umbrales para `proponer_valor` y degradación | pendiente | Fase 4 | Bandas A/B/C por campo; método de cálculo definido, valores pendientes de métricas reales | ADR-0009 propuesto 2026-09-04 (esqueleto); barrera de evidencia en `docs/EVIDENCE_VERIFICATION_CONTRACT.md` |
 | D-016 | Selección aleatoria o estratificada | cerrada | Fase 2 | Muestra aleatoria, semilla 203, sobre instantánea reproducible | Elección humana al continuar el 28-08-2026; informe real `bb80992258d07a5e49f1beef46e983f3f56a57e7d48ad20d5aef19e3bffa5fe7` |
 | D-017 | Reglas ATC adicionales a `L04` | pendiente | Fase 6 | Decisión exclusiva de farmacia | Especificación v2 |
@@ -30,9 +30,11 @@ Estados: `cerrada`, `propuesta`, `pendiente`, `bloqueada`, `descartada`. Una dec
 | D-024 | Evidencia de propuestas de FT | cerrada | Fase 4 | Coincidencia literal obligatoria | Especificación v2 |
 | D-025 | Idioma de interfaz | cerrada | Fase 5 | Español | Especificación v2 |
 | D-026 | Límites canónicos internos ambiguos | cerrada | Fase 1 | Composición/DESCRIPCION 100; Links/DESCRIPCION 255; nunca truncar | Aprobación humana 2026-08-25; no equivale a contrato proveedor |
+| D-027 | Materialización de identificadores externos del maestro | pendiente | Antes de poblar `external_identifier` en REAL | Mapear por entidad y ámbito; conservar FieldValue; nunca equiparar `*_IDEXTERNO`, CN y `nregistro` | `docs/EXTERNAL_IDENTIFIER_AUDIT.md`; ADR de mapeo por crear |
 | GOLD-001 | Semilla del conjunto oro | cerrada | Fase 4 | Semilla reproducible `407` | Aprobación humana 2026-09-02; `docs/GOLD_SET_ANNOTATION_CONTRACT.md` |
 | GOLD-002 | Anotadores farmacéuticos del conjunto oro | pendiente | Fase 4 | Dos anotadores independientes identificados | `docs/GOLD_SET_ANNOTATION_CONTRACT.md`; runbook operativo listo en `docs/GOLD_ANNOTATION_RUNBOOK.md`. Único bloqueo de la anotación |
 | GOLD-003 | Cobertura por estrato ATC del conjunto oro | cerrada | Fase 4 | No estratificar por ATC el conjunto oro inicial: el inventario DEV-208 no contiene ATC; reevaluar solo con nueva evidencia | Aprobación humana 2026-09-02; `docs/GOLD_SET_ANNOTATION_CONTRACT.md` |
+| GOLD-004 | Alcance exacto de unidades/campos por ficha oro | pendiente | Antes de anotar | Congelar los campos extraíbles y ocurrencias esperadas; no derivar una cifra ficticia | El checker acepta `--expected-units-per-document`; hoy informa 0 sin esta decisión |
 
 ## Flujo de una decisión
 

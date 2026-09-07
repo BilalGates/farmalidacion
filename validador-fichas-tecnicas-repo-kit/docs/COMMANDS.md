@@ -128,3 +128,25 @@ python scripts/generate_gold_annotations.py --selection gold-selection.json --an
 `--close` exige que no exista ninguna unidad `pending`. La herramienta no
 inventa anotadores ni anotaciones, no descarga datos y nunca sobrescribe una
 ejecución existente.
+
+El estado del conjunto GOLD actual se comprueba, sin inventar revisores, con:
+
+```text
+./scripts/check-gold.ps1
+```
+
+Antes de iniciar la campaña deben indicarse explícitamente los revisores y las
+unidades esperadas; el comando devuelve `GOLD NO LISTO` mientras falte cualquiera
+de ellos.
+
+Con una API REAL ya arrancada, el recorrido crítico de solo lectura se valida con:
+
+```text
+python scripts/smoke_real_mode.py --base-url http://127.0.0.1:8000
+```
+
+La auditoría exacta y no persistente Maestro ↔ CIMA se reproduce con:
+
+```text
+python scripts/analyze_master_cima_links.py --database data/local/real.db --corpus data/local/cima-corpus-500
+```
