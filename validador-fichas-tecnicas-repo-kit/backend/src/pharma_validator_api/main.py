@@ -13,6 +13,8 @@ from pharma_validator_api.config import Settings, get_settings
 from pharma_validator_api.data_origin import DataOrigin, apply_origin_filter
 from pharma_validator_api.database import create_database_engine, create_session_factory
 from pharma_validator_api.errors import register_error_handlers
+from pharma_validator_api.export_api import audit_router, risk_router
+from pharma_validator_api.export_api import router as export_router
 from pharma_validator_api.fixtures import load_demo_fixture, load_showcase_fixture
 from pharma_validator_api.insights import router as insights_router
 from pharma_validator_api.logging import configure_logging
@@ -113,6 +115,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(maturity_router)
     application.include_router(timing_router)
     application.include_router(second_review_router)
+    application.include_router(export_router)
+    application.include_router(audit_router)
+    application.include_router(risk_router)
 
     @application.get("/health", response_model=HealthResponse, tags=["sistema"])
     async def health() -> HealthResponse:

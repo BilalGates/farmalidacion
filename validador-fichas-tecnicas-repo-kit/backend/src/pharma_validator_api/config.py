@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     enable_llm_prefill: bool = False
     enable_second_review: bool = False
     enable_export: bool = False
+    # Directorio de artefactos de exportación. El fichero va a disco y la base
+    # guarda sólo su metadato: un export de decenas de miles de fichas no cabe
+    # razonablemente en una fila.
+    export_artifact_dir: Path = Path('data/local/exports')
     enable_cima_link: bool = False
     enable_auto_revalidation: bool = False
     # La cola es infraestructura de trabajo, no criterio clínico: puede usarse
