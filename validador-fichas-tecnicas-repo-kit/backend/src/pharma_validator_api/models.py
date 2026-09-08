@@ -470,3 +470,177 @@ def _reject_block_edit_mutation(*_: object) -> None:
     raise ImmutableHistoryError(
         "El historial de edición de bloques es append-only: registre otra operación."
     )
+
+
+class AuditEvent(Base):
+    """Registro append-only de operaciones relevantes (DEV-609).
+
+    Es un **único** diario transversal, no un segundo sistema paralelo a los
+    historiales que ya existen. `validation_decision_record` y
+    `block_edit_record` siguen siendo la verdad de sus propios dominios; esta
+    tabla los referencia y añade lo que ninguno cubre: segunda revisión,
+    conciliación, exportación y exclusión, con el mismo actor y el mismo orden.
+
+    `before_state` y `after_state` guardan el estado serializado a ambos lados
+    de la operación. Sin el anterior, un cambio de estado no se puede auditar
+    salvo reconstruyéndolo, y reconstruirlo supone confiar en que nada más lo
+    tocó.
+    """
+
+    __tablename__ = "audit_event"
+    __table_args__ = (
+        Index("ix_audit_event_entity", "entity_type", "entity_id"),
+        Index("ix_audit_event_recorded", "recorded_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    #: Qué se tocó: target_record, field_value, block_instance, export_run...
+    entity_type: Mapped[str] = mapped_column(String(60))
+    entity_id: Mapped[str] = mapped_column(String(80))
+    action: Mapped[str] = mapped_column(String(60))
+    actor_id: Mapped[str] = mapped_column(String(80))
+    #: La firma identifica a quien dijo ser, no a quien era (D-018).
+    actor_assurance: Mapped[str] = mapped_column(String(20))
+    before_state: Mapped[str | None] = mapped_column(Text)
+    after_state: Mapped[str | None] = mapped_column(Text)
+    reason: Mapped[str | None] = mapped_column(Text)
+    #: Contexto mínimo en JSON. Nunca datos de paciente.
+    context: Mapped[str | None] = mapped_column(Text)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+@event.listens_for(AuditEvent, "before_update")
+@event.listens_for(AuditEvent, "before_delete")
+def _reject_audit_mutation(*_: object) -> None:
+    raise ImmutableHistoryError("La auditoría es append-only: registre otro evento.")
+
+
+class SecondReviewAssignment(Base):
+    """Segunda revisión de un campo ya decidido (DEV-607).
+
+    La ceguera de la segunda revisión no se consigue ocultando en pantalla: se
+    consigue no sirviendo el dato. Esta fila declara qué campo está pendiente de
+    segunda revisión y quién la tiene asignada; el endpoint que la atiende
+    decide, a partir de `revealed`, si puede devolver la primera decisión.
+
+    `first_decision_sequence` ancla la comparación a la decisión concreta que se
+    revisó. Sin ella, una tercera decisión posterior haría que el acuerdo o
+    desacuerdo se calculase contra algo que el segundo revisor nunca vio.
+    """
+
+    __tablename__ = "second_review_assignment"
+    __table_args__ = (
+        UniqueConstraint("field_value_id", name="uq_second_review_field"),
+        Index("ix_second_review_state", "state"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    field_value_id: Mapped[str] = mapped_column(ForeignKey("field_value.id"), index=True)
+    target_record_id: Mapped[str] = mapped_column(
+        ForeignKey("target_record.id"), index=True
+    )
+    #: pendiente | en_revision | acuerdo | desacuerdo | conciliado
+    state: Mapped[str] = mapped_column(String(40))
+    first_reviewer_id: Mapped[str] = mapped_column(String(80))
+    first_decision_sequence: Mapped[int] = mapped_column(Integer)
+    second_reviewer_id: Mapped[str | None] = mapped_column(String(80))
+    second_decision_sequence: Mapped[int | None] = mapped_column(Integer)
+    #: La primera decisión deja de estar oculta sólo tras emitir la segunda.
+    revealed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class ReconciliationRecord(Base):
+    """Resolución de una discrepancia entre dos revisores (DEV-608).
+
+    Append-only y **nunca sobrescribe** las decisiones originales: la decisión
+    conciliada se persiste como una decisión más en
+    `validation_decision_record`, y esta fila explica por qué se tomó y quién la
+    tomó. Pisar las dos decisiones enfrentadas destruiría la evidencia de que
+    hubo desacuerdo.
+    """
+
+    __tablename__ = "reconciliation_record"
+    __table_args__ = (
+        UniqueConstraint("assignment_id", name="uq_reconciliation_assignment"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    assignment_id: Mapped[str] = mapped_column(
+        ForeignKey("second_review_assignment.id"), index=True
+    )
+    field_value_id: Mapped[str] = mapped_column(ForeignKey("field_value.id"), index=True)
+    reconciler_id: Mapped[str] = mapped_column(String(80))
+    reconciler_assurance: Mapped[str] = mapped_column(String(20))
+    #: Secuencia de la decisión conciliada en el historial del campo.
+    resulting_sequence: Mapped[int] = mapped_column(Integer)
+    #: Conciliar exige justificación: es una decisión clínica, no un desempate.
+    justification: Mapped[str] = mapped_column(Text)
+    reconciled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+@event.listens_for(ReconciliationRecord, "before_update")
+@event.listens_for(ReconciliationRecord, "before_delete")
+def _reject_reconciliation_mutation(*_: object) -> None:
+    raise ImmutableHistoryError(
+        "Una conciliación no se reescribe: registre otra decisión."
+    )
+
+
+class ExportRun(Base):
+    """Ejecución archivada de una exportación (DEV-604/605).
+
+    Guarda el metadato, no el fichero: un export de decenas de miles de fichas
+    no cabe razonablemente en una fila. `content_hash` permite comprobar que el
+    artefacto en disco es el que se declaró.
+
+    La separación entre `content_hash` y `created_at` es lo que hace verificable
+    la reproducibilidad: el contenido lógico no depende del reloj, así que dos
+    ejecuciones de los mismos datos con el mismo perfil comparten hash aunque
+    difieran en fecha.
+    """
+
+    __tablename__ = "export_run"
+    __table_args__ = (Index("ix_export_run_created", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    profile_name: Mapped[str] = mapped_column(String(120))
+    profile_version: Mapped[str] = mapped_column(String(40))
+    export_format: Mapped[str] = mapped_column(String(10))
+    #: completado | fallido | bloqueado_por_contrato
+    status: Mapped[str] = mapped_column(String(40))
+    actor_id: Mapped[str] = mapped_column(String(80))
+    row_count: Mapped[int] = mapped_column(Integer)
+    excluded_count: Mapped[int] = mapped_column(Integer)
+    content_hash: Mapped[str | None] = mapped_column(String(64))
+    byte_size: Mapped[int | None] = mapped_column(Integer)
+    #: Ruta del artefacto en disco, si se escribió.
+    artifact_path: Mapped[str | None] = mapped_column(Text)
+    #: Configuración usada, serializada, para poder repetir la ejecución.
+    profile_snapshot: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class ExportExclusion(Base):
+    """Ficha o campo que no pudo exportarse, con su motivo (DEV-604).
+
+    Existe para que un registro problemático no desaparezca en silencio. Un
+    export que entrega menos filas de las esperadas sin decir cuáles ni por qué
+    es indistinguible de uno correcto.
+    """
+
+    __tablename__ = "export_exclusion"
+    __table_args__ = (Index("ix_export_exclusion_run", "export_run_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    export_run_id: Mapped[str] = mapped_column(ForeignKey("export_run.id"), index=True)
+    target_record_id: Mapped[str] = mapped_column(String(36))
+    field_name: Mapped[str | None] = mapped_column(String(160))
+    #: bloqueante | advertencia | no_aplicable
+    severity: Mapped[str] = mapped_column(String(20))
+    rule: Mapped[str] = mapped_column(String(120))
+    detail: Mapped[str] = mapped_column(Text)
+    #: Estado del campo en el momento de excluirlo.
+    observed_state: Mapped[str | None] = mapped_column(String(40))
