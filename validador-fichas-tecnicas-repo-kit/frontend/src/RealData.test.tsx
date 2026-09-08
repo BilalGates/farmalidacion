@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { clearRecordCache } from './api/recordCache'
+
 import { App } from './App'
 
 /**
@@ -300,6 +302,9 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  // La caché es estado de módulo: sin limpiarla, una prueba serviría
+  // la ficha que dejó la anterior.
+  clearRecordCache()
   vi.unstubAllGlobals()
 })
 

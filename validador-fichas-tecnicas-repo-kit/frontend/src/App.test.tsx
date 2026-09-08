@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { clearRecordCache } from './api/recordCache'
+
 import { App } from './App'
 import type { RecordList, Reviewer, TargetRecord } from './api/types'
 
@@ -183,6 +185,15 @@ function mockFetch() {
       })
     }
 
+    // La medición de tiempos también escribe: contarla como decisión haría que
+    // estas pruebas dejasen de comprobar lo que dicen comprobar.
+    if (url.includes('/timing/')) {
+      return new Response(JSON.stringify({ id: 'sesion-1' }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
     if (init?.method === 'POST') {
       postCount += 1
       const body = JSON.parse(String(init.body)) as { state: string; comment: string | null }
@@ -284,6 +295,9 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  // La caché es estado de módulo: sin limpiarla, una prueba serviría
+  // la ficha que dejó la anterior.
+  clearRecordCache()
   vi.unstubAllGlobals()
 })
 

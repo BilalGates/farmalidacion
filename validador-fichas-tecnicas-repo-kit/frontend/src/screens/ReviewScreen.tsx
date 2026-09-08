@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { ApiError, fetchBlockOccurrences, fetchRecord, saveDecision } from '../api/client'
+import {
+  ApiError,
+  fetchBlockOccurrences,
+  openTimingSession,
+  reportFocusSpan,
+  saveDecision,
+} from '../api/client'
+import { invalidateRecord, loadRecord } from '../api/recordCache'
 import type {
   BlockInstance,
   BlockOccurrence,
@@ -12,6 +19,7 @@ import type {
 import { ProvenanceList } from '../components/ProvenanceList'
 import { RoadmapNote } from '../components/RoadmapNote'
 import { ROADMAP_NOTES, conflictLabel, sourceLabel } from '../domain/vocabulary'
+import { FocusTracker } from '../domain/focusTracker'
 import { SHORTCUTS, isTypingTarget, resolveShortcut } from '../domain/shortcuts'
 import { navigate } from '../navigation'
 import { BlockEditor } from './BlockEditor'
@@ -89,9 +97,54 @@ export function ReviewScreen({
   // respuesta tardía sobrescribiría la ficha que el revisor ya está viendo.
   const generation = useRef(0)
 
+  // Medición de tiempos (DEV-508). La sesión se abre una vez por ficha y
+  // revisor; los tramos se declaran cerrados, de modo que si el navegador se
+  // cierra a mitad el tramo abierto no llega en lugar de contar indefinidamente.
+  const timingSession = useRef<string | null>(null)
+  const tracker = useRef<FocusTracker | null>(null)
+  if (tracker.current === null) {
+    tracker.current = new FocusTracker((span) => {
+      const id = timingSession.current
+      if (id !== null) void reportFocusSpan(id, span)
+    })
+  }
+
+  useEffect(() => {
+    if (reviewer === null) return
+    let cancelled = false
+    openTimingSession(recordId, reviewer.identifier)
+      .then((opened) => {
+        if (!cancelled) timingSession.current = opened.id
+      })
+      // Sin medición se sigue revisando: es secundaria respecto al trabajo.
+      .catch(() => undefined)
+    const capture = tracker.current
+    return () => {
+      cancelled = true
+      // Cerrar el tramo al abandonar la ficha: si no, el trabajo del último
+      // campo se perdería entero.
+      capture?.leave()
+      timingSession.current = null
+    }
+  }, [recordId, reviewer])
+
+  useEffect(() => {
+    const capture = tracker.current
+    // Una pestaña oculta es señal observable de que se dejó de trabajar.
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') capture?.leave()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('pagehide', onVisibility)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', onVisibility)
+    }
+  }, [])
+
   const load = useCallback(() => {
     const current = ++generation.current
-    fetchRecord(recordId)
+    loadRecord(recordId)
       .then((result) => {
         if (current !== generation.current) return
         setRecord(result)
@@ -137,6 +190,7 @@ export function ReviewScreen({
       })
       setError(null)
       setNotice('Decisión guardada.')
+      invalidateRecord(recordId)
       load()
     } catch (cause: unknown) {
       // El mensaje viene de las barreras del backend y se muestra literal.
@@ -338,6 +392,7 @@ export function ReviewScreen({
                   reviewer={reviewer}
                   onChange={(next) => {
                     setOccurrences(next)
+                    invalidateRecord(record.id)
                     // Editar la estructura cambia qué campos existen: la ficha
                     // se recarga para no mostrar un modelo que ya no es el real.
                     load()
@@ -352,7 +407,10 @@ export function ReviewScreen({
                       key={value.id}
                       data-review-field={value.id}
                       tabIndex={0}
-                      onFocus={() => setActiveId(value.id)}
+                      onFocus={() => {
+                        setActiveId(value.id)
+                        tracker.current?.enter(value.field_name)
+                      }}
                       className={activeField?.id === value.id ? 'review-field--active' : ''}
                     >
                       <FieldRow

@@ -63,6 +63,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
     throw new ApiError(detail, response.status)
   }
+  // 204 no trae cuerpo: pedir el JSON lanzaría y convertiría un éxito en error.
+  if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }
 
@@ -193,4 +195,52 @@ export function fetchBlockHistory(recordId: string): Promise<BlockEditRecord[]> 
   return request<BlockEditRecord[]>(
     `/records/${encodeURIComponent(recordId)}/block-history`,
   )
+}
+
+/* --------------------------------------------------------------------------
+ * Medición de tiempos (DEV-508/509).
+ * ------------------------------------------------------------------------ */
+
+export interface TimingSession {
+  id: string
+  target_record_id: string
+  reviewer_id: string
+  started_at: string
+  ended_at: string | null
+  is_synthetic: boolean
+}
+
+export function openTimingSession(
+  recordId: string,
+  reviewerId: string,
+): Promise<TimingSession> {
+  return request<TimingSession>('/timing/sessions', {
+    method: 'POST',
+    body: JSON.stringify({ target_record_id: recordId, reviewer_id: reviewerId }),
+  })
+}
+
+/**
+ * Declara un tramo de foco ya cerrado.
+ *
+ * No devuelve nada útil y su fallo no puede interrumpir la revisión: perder una
+ * medición es tolerable, impedir que alguien valide un medicamento no lo es.
+ */
+export async function reportFocusSpan(
+  sessionId: string,
+  span: { fieldName: string; startedAt: number; endedAt: number },
+): Promise<void> {
+  try {
+    await request<void>(`/timing/sessions/${encodeURIComponent(sessionId)}/focus`, {
+      method: 'POST',
+      body: JSON.stringify({
+        field_name: span.fieldName,
+        started_at: span.startedAt,
+        ended_at: span.endedAt,
+      }),
+    })
+  } catch {
+    // Ver arriba: la medición es secundaria respecto al trabajo de revisión.
+    // El tramo se pierde y la revisión continúa.
+  }
 }

@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 
+import { clearRecordCache } from '../api/recordCache'
+
 import type { TargetRecord } from '../api/types'
 import { ReviewScreen } from './ReviewScreen'
 
@@ -95,7 +97,44 @@ function stubFetch(...responses: unknown[]) {
   return mock
 }
 
+
+/**
+ * Enruta la respuesta por URL en lugar de por orden de llamada.
+ *
+ * La pantalla pide la ficha y abre una sesión de medición; encadenar respuestas
+ * por orden haría que añadir una petición rompiera pruebas que no la miran.
+ */
+function routeFetch(options: {
+  record?: unknown
+  decision?: { ok: boolean; status: number; body: unknown }
+  afterDecision?: unknown
+}) {
+  let decided = false
+  const mock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input)
+    if (url.includes('/timing/')) {
+      return { ok: true, status: 201, json: async () => ({ id: 'sesion-1' }) } as Response
+    }
+    if (init?.method === 'POST' && url.includes('/decisions')) {
+      decided = true
+      const outcome = options.decision ?? { ok: true, status: 201, body: {} }
+      return {
+        ok: outcome.ok,
+        status: outcome.status,
+        json: async () => outcome.body,
+      } as Response
+    }
+    const body = decided && options.afterDecision ? options.afterDecision : options.record
+    return { ok: true, status: 200, json: async () => body ?? record() } as Response
+  })
+  vi.stubGlobal('fetch', mock)
+  return mock
+}
+
 afterEach(() => {
+  // La caché es estado de módulo: sin limpiarla, una prueba serviría
+  // la ficha que dejó la anterior.
+  clearRecordCache()
   vi.unstubAllGlobals()
   window.localStorage.clear()
 })
@@ -128,7 +167,9 @@ it('Alt+flechas mueve el foco entre campos sin guardar nada', async () => {
   await waitFor(() => expect(document.activeElement).toBe(rows[0]))
 
   // Navegar no escribe: sólo se ha pedido la ficha.
-  expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(0)
+  expect(fetchMock.mock.calls.filter(
+      ([url, init]) => init?.method === 'POST' && String(url).includes('/decisions'),
+    )).toHaveLength(0)
 })
 
 it('la evidencia sigue al campo que recibe el foco', async () => {
@@ -175,7 +216,9 @@ it('Ctrl+Enter no guarda una decisión incompleta', async () => {
     key: 'Enter',
     ctrlKey: true,
   })
-  expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(0)
+  expect(fetchMock.mock.calls.filter(
+      ([url, init]) => init?.method === 'POST' && String(url).includes('/decisions'),
+    )).toHaveLength(0)
 })
 
 it('Ctrl+Enter guarda cuando la decisión ya es admisible', async () => {
@@ -192,7 +235,9 @@ it('Ctrl+Enter guarda cuando la decisión ya es admisible', async () => {
   fireEvent.keyDown(screen.getByLabelText('Valor final'), { key: 'Enter', ctrlKey: true })
 
   await waitFor(() => {
-    const posts = fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST')
+    const posts = fetchMock.mock.calls.filter(
+      ([url, init]) => init?.method === 'POST' && String(url).includes('/decisions'),
+    )
     expect(posts).toHaveLength(1)
     expect(JSON.parse(posts[0][1].body)).toMatchObject({
       state: 'confirmado',
@@ -215,7 +260,9 @@ it('Esc cierra la edición sin guardar', async () => {
   await waitFor(() =>
     expect(screen.queryByLabelText('Decisión de revisión')).not.toBeInTheDocument(),
   )
-  expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(0)
+  expect(fetchMock.mock.calls.filter(
+      ([url, init]) => init?.method === 'POST' && String(url).includes('/decisions'),
+    )).toHaveLength(0)
 })
 
 it('documenta los atajos en la propia pantalla', async () => {
@@ -229,14 +276,13 @@ it('documenta los atajos en la propia pantalla', async () => {
 })
 
 it('muestra el mensaje del backend cuando la decisión se rechaza', async () => {
-  const mock = vi.fn()
-  mock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => record() } as Response)
-  mock.mockResolvedValueOnce({
-    ok: false,
-    status: 409,
-    json: async () => ({ detail: 'La asignación no está vigente para este revisor.' }),
-  } as Response)
-  vi.stubGlobal('fetch', mock)
+  routeFetch({
+    decision: {
+      ok: false,
+      status: 409,
+      body: { detail: 'La asignación no está vigente para este revisor.' },
+    },
+  })
 
   render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} />)
   await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
@@ -277,14 +323,9 @@ it('recupera lo escrito sin guardar tras recargar la pantalla', async () => {
 })
 
 it('conserva el borrador cuando el backend rechaza el guardado', async () => {
-  const mock = vi.fn()
-  mock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => record() } as Response)
-  mock.mockResolvedValueOnce({
-    ok: false,
-    status: 409,
-    json: async () => ({ detail: 'La asignación no está vigente.' }),
-  } as Response)
-  vi.stubGlobal('fetch', mock)
+  routeFetch({
+    decision: { ok: false, status: 409, body: { detail: 'La asignación no está vigente.' } },
+  })
 
   render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} />)
   await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
@@ -319,11 +360,7 @@ it('retira el borrador cuando la decisión queda firmada', async () => {
       },
     ],
   }
-  const mock = vi.fn()
-  mock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => record() } as Response)
-  mock.mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({}) } as Response)
-  mock.mockResolvedValue({ ok: true, status: 200, json: async () => saved } as Response)
-  vi.stubGlobal('fetch', mock)
+  routeFetch({ afterDecision: saved })
 
   render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} />)
   await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
