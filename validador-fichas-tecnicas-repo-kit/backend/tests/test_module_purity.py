@@ -17,13 +17,17 @@ import pytest
 
 PURE_MODULES = (
     "block_editing",
+    "double_review",
     "evidence_verification",
+    "export_engine",
+    "export_manifest",
     "extraction_batches",
     "extractor",
     "gold_annotations",
     "gold_selection",
     "guided_schema",
     "prefill_policy",
+    "review_queue",
     "reviewer_identity",
     "section_grouping",
     "time_measurement",

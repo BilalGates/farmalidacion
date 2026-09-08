@@ -2,7 +2,9 @@ from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -298,6 +300,78 @@ class SamplingItem(Base):
     nregistro: Mapped[str] = mapped_column(Text)
     atc_stratum: Mapped[str | None] = mapped_column(String(20))
     source_response_hash: Mapped[str] = mapped_column(String(64))
+
+
+class ReviewQueueEntry(Base):
+    """Trabajo de revisión de un registro (DEV-502).
+
+    A diferencia de `ValidationDecisionRecord`, esta tabla sí se actualiza: es
+    estado de trabajo, no historial de decisiones. La integridad frente a dos
+    revisores simultáneos la da `version`, que se compara al escribir; el rastro
+    de quién hizo qué vive en el historial de decisiones y en la auditoría.
+    """
+
+    __tablename__ = "review_queue_entry"
+    __table_args__ = (
+        UniqueConstraint("target_record_id", name="uq_review_queue_target_record"),
+        Index("ix_review_queue_state_priority", "state", "priority"),
+        Index("ix_review_queue_assignee", "assignee_id"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    target_record_id: Mapped[str] = mapped_column(ForeignKey("target_record.id"))
+    state: Mapped[str] = mapped_column(String(40))
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    assignee_id: Mapped[str | None] = mapped_column(String(80))
+    assigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    priority: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class ReviewSession(Base):
+    """Sesión de revisión de un registro por un revisor (DEV-508/DEV-509).
+
+    Existe para medir el ahorro de tiempo del sistema, que es el objetivo del
+    piloto. **No es un instrumento de control de personas**: agrega tiempo por
+    ficha y campo, no productividad individual comparada.
+    """
+
+    __tablename__ = "review_session"
+    __table_args__ = (
+        Index("ix_review_session_record", "target_record_id"),
+        Index("ix_review_session_reviewer", "reviewer_id"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    target_record_id: Mapped[str] = mapped_column(ForeignKey("target_record.id"))
+    reviewer_id: Mapped[str] = mapped_column(String(80))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Agregados calculados por `time_measurement`, nunca por la interfaz: el
+    # descuento de inactividad debe aplicarse en un único sitio.
+    counted_seconds: Mapped[int] = mapped_column(Integer, default=0)
+    discarded_seconds: Mapped[int] = mapped_column(Integer, default=0)
+    measured_field_count: Mapped[int] = mapped_column(Integer, default=0)
+    capped_field_count: Mapped[int] = mapped_column(Integer, default=0)
+    # Marca de origen: una medición sintética nunca debe presentarse como
+    # evidencia de ahorro farmacéutico real.
+    is_synthetic: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class FieldFocusInterval(Base):
+    """Tramo de foco observado en un campo (DEV-508).
+
+    Se guarda el dato crudo además del agregado: si el umbral de inactividad
+    cambiara, recalcular exige los intervalos originales. Un agregado no puede
+    deshacerse.
+    """
+
+    __tablename__ = "field_focus_interval"
+    __table_args__ = (Index("ix_field_focus_session", "review_session_id"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    review_session_id: Mapped[str] = mapped_column(ForeignKey("review_session.id"))
+    field_name: Mapped[str] = mapped_column(String(160))
+    started_at: Mapped[float] = mapped_column(Float)
+    ended_at: Mapped[float] = mapped_column(Float)
 
 
 class ValidationDecisionRecord(Base):

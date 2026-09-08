@@ -41,6 +41,34 @@ class Settings(BaseSettings):
     # Sin entradas no se puede firmar ninguna validación.
     reviewers: tuple[str, ...] = ()
 
+    # --- Banderas de funcionalidad -------------------------------------------
+    # Separan lo que está IMPLEMENTADO de lo que está VALIDADO CLÍNICAMENTE.
+    # Los valores por defecto son conservadores: una función que dependa de
+    # criterio farmacéutico no se enciende sola por haberse programado.
+    #
+    # `enable_llm_prefill` sigue apagada hasta que D-015 fije umbrales sobre
+    # resultados reales; encenderla sin ellos presentaría como propuesta algo
+    # cuya tasa de acierto nadie ha medido.
+    enable_llm_prefill: bool = False
+    enable_second_review: bool = False
+    enable_export: bool = False
+    enable_cima_link: bool = False
+    enable_auto_revalidation: bool = False
+    # La cola es infraestructura de trabajo, no criterio clínico: puede usarse
+    # en desarrollo sin comprometer ninguna decisión farmacéutica.
+    enable_review_queue: bool = True
+
+    @property
+    def clinically_validated(self) -> bool:
+        """Ninguna función de este despliegue está validada clínicamente.
+
+        Se expone como propiedad y no como ajuste para que no pueda encenderse
+        por configuración: la validación clínica es un hecho externo al código,
+        y afirmarla desde un fichero de entorno sería exactamente la
+        falsificación que el proyecto no permite.
+        """
+        return False
+
 
 @lru_cache
 def get_settings() -> Settings:

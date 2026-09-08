@@ -6,6 +6,60 @@
 
 ## Fase actual
 
+### Ingeniería por delante de la puerta — 7 de septiembre de 2026
+
+No se dispone de farmacéuticos. Se adelanta desarrollo técnico bajo la regla
+recogida en `docs/TECHNICAL_AHEAD_OF_GATE.md`:
+
+> Fase 5+ implementation may proceed as preparatory engineering.
+> Formal phase acceptance remains gated by clinical validation.
+
+**Gate 4 sigue BLOCKED y la Fase 5 no se declara PASS.** Ninguna capacidad está
+`clinicamente_validada`; una suite lo comprueba en lugar de confiarlo a la prosa.
+
+Añadido en esta sesión, todo `tecnicamente_verificado` y ninguno validado
+clínicamente:
+
+- **Cola de revisión (DEV-502)**: seis estados, asignación, caducidad de
+  asignación a 30 minutos y orden técnico (prioridad + antigüedad, nunca
+  urgencia clínica). Módulo puro `review_queue` + persistencia
+  `review_queue_store` + API `/queue`.
+- **Prevención de colisiones**: bloqueo optimista comprobado dentro del `UPDATE`
+  y `expected_version` declarada por el cliente. Ambos conflictos responden 409.
+  Verificado con dos sesiones concurrentes y en vivo sobre `real.db`.
+- **Modelo de madurez y banderas**: `maturity.py` distingue implementada /
+  técnicamente verificada / clínicamente validada / lista para producción.
+  `Settings.clinically_validated` es propiedad fija a `False`, no un ajuste.
+  Endpoint `/maturity` publica capacidades y bloqueos clínicos.
+- Migración `a1b2c3d4e5f6`, reversible (upgrade → downgrade → upgrade) y aplicada
+  a `real.db` sin pérdida: 43.381 registros intactos.
+
+- **Medición de tiempos (DEV-508/509)**: `review_session` + `field_focus_interval`
+  persisten agregados y tramos crudos; el descuento de inactividad lo aplica el
+  módulo puro y `is_synthetic` impide que una medición de ingeniería se sume al
+  ahorro real. Migración `b2c3d4e5f6a7`, reversible.
+- **Doble validación (DEV-510)**: `double_review` compara dos revisiones
+  independientes y **nunca resuelve una discrepancia automáticamente**; conciliar
+  exige justificación y no puede aplicarse sobre un acuerdo.
+- **Piloto técnico sintético** (`scripts/technical_pilot.py`) sobre 50 registros
+  reales: 50/50 colisiones rechazadas, `real_seconds_per_field = null` frente a
+  7,0 sintéticos, 1 discrepancia sin conciliar. Declarado
+  `synthetic / engineering only`; datos borrados tras la ejecución.
+
+- **Motor de exportación (DEV-601/602/603/605)**: perfiles configurables
+  separados del formato del proveedor (D-011 sigue pendiente y ningún perfil se
+  declara aceptado). No trunca en silencio, no aplana `no_consta`/`no_aplica` y
+  es reproducible byte a byte; XLSX escrito sin dependencias para no incrustar
+  marcas de tiempo. `export_manifest` verifica hash y tamaño.
+  Comprobado sobre `real.db`: 200 registros, 0 incidencias, checksum estable.
+
+Suites: 520 pruebas backend en verde (eran 418), Ruff y mypy limpios.
+
+**Límite del entorno:** esta máquina no tiene GPU ni vLLM, así que el smoke real
+del extractor contra un runtime queda pendiente del servidor de D-013. Es
+limitación de hardware, no bloqueo clínico.
+
+
 ### Reconciliación operativa — 7 de septiembre de 2026
 
 HEAD `4205155611beb4dab709f24b49b45a404a8d2951` fue contrastado con código,

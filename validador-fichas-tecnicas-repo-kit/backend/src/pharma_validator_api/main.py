@@ -16,6 +16,8 @@ from pharma_validator_api.fixtures import load_demo_fixture, load_showcase_fixtu
 from pharma_validator_api.insights import router as insights_router
 from pharma_validator_api.logging import configure_logging
 from pharma_validator_api.models import ImportBatch, TargetRecord
+from pharma_validator_api.queue_api import maturity_router
+from pharma_validator_api.queue_api import router as queue_router
 from pharma_validator_api.records import router as records_router
 
 
@@ -101,6 +103,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_error_handlers(application)
     application.include_router(records_router)
     application.include_router(insights_router)
+    application.include_router(queue_router)
+    application.include_router(maturity_router)
 
     @application.get("/health", response_model=HealthResponse, tags=["sistema"])
     async def health() -> HealthResponse:

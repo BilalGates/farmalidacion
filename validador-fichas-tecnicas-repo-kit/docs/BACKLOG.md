@@ -17,6 +17,16 @@
 - **DEV-402 parcialmente completada:** sender HTTP OpenAI-compatible agnóstico
   implementado y probado offline. Falta D-014, despliegue/smoke real y manifiesto
   de ejecución; no falta ya código de transporte.
+- **DEV-502 completada técnicamente (7-09-2026):** cola de revisión con seis
+  estados, asignación, caducidad de 30 minutos, orden técnico y prevención de
+  colisiones por bloqueo optimista (409 en conflicto). `review_queue` (puro),
+  `review_queue_store`, API `/queue`, migración `a1b2c3d4e5f6` reversible.
+  21 pruebas de dominio/persistencia y 8 de API. `tecnicamente_verificada`, no
+  validada clínicamente.
+- **Madurez y banderas (7-09-2026):** `maturity.py` separa implementada /
+  técnicamente verificada / clínicamente validada / lista para producción, con
+  banderas conservadoras por defecto y endpoint `/maturity`. Ver
+  `docs/TECHNICAL_AHEAD_OF_GATE.md`.
 - **Próximo issue tras acciones humanas:** cerrar DEV-402 contra el runtime
   aceptado y lanzar DEV-408 cuando GOLD esté conciliado.
 
