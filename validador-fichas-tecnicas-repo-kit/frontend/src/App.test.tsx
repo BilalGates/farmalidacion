@@ -307,8 +307,13 @@ describe('Recorrido de la vertical de revisión', () => {
 
     expect(await screen.findByText(/Datos de demostración/)).toBeVisible()
     expect(screen.getByRole('button', { name: /Revisión \(DEMO\)/ })).toBeVisible()
-    // Un módulo no desarrollado se anuncia, no se oculta.
-    expect(screen.getByRole('button', { name: /Validaciones\s*Pronto/ })).toBeVisible()
+    // Validaciones ya está desarrollada (DEV-607/608) y por tanto sin «Pronto».
+    expect(screen.getByRole('button', { name: 'Validaciones' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Exportaciones' })).toBeVisible()
+    // Un módulo que sigue sin desarrollar se anuncia, no se oculta.
+    expect(
+      screen.getByRole('button', { name: /Historial \/ Auditoría\s*Pronto/ }),
+    ).toBeVisible()
   })
 
   it('lista las fichas, filtra por búsqueda y abre el detalle', async () => {

@@ -350,3 +350,13 @@ export interface BlockEditRecord {
   reviewer_assurance: string
   edited_at: string
 }
+
+/* Fase 6: los contratos concretos viven junto a sus funciones en `client.ts`;
+   aquí se reexportan para que las pantallas importen de un solo sitio. */
+export type {
+  BlindField,
+  ExportExclusionRow,
+  ExportRunSummary,
+  HistoryEntry,
+  SecondReviewItem,
+} from './client'

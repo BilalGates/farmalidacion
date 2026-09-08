@@ -244,3 +244,108 @@ export async function reportFocusSpan(
     // El tramo se pierde y la revisión continúa.
   }
 }
+
+/* --------------------------------------------------------------------------
+ * Fase 6: segunda validación, exportación y auditoría.
+ * ------------------------------------------------------------------------ */
+
+export interface SecondReviewItem {
+  id: string
+  field_value_id: string
+  target_record_id: string
+  state: string
+  version: number
+  second_reviewer_id: string | null
+}
+
+/**
+ * Vista ciega de un campo en segunda revisión.
+ *
+ * No contiene la decisión del primer revisor porque el backend no la sirve:
+ * la ceguera vive en el dato, no en esta pantalla. Si algún día apareciese
+ * aquí, sería un fallo del backend y no de la presentación.
+ */
+export interface BlindField {
+  assignment_id: string
+  field_value_id: string
+  field_name: string
+  literal_value: string | null
+  observed_type: string
+  logical_state: string
+  state: string
+  instruction: string
+  version: number
+}
+
+export function fetchSecondReviews(reviewerId: string): Promise<SecondReviewItem[]> {
+  return request<SecondReviewItem[]>(
+    `/second-reviews?reviewer_id=${encodeURIComponent(reviewerId)}`,
+  )
+}
+
+export function fetchBlindField(
+  assignmentId: string,
+  reviewerId: string,
+): Promise<BlindField> {
+  return request<BlindField>(
+    `/second-reviews/${encodeURIComponent(assignmentId)}/blind?reviewer_id=${encodeURIComponent(reviewerId)}`,
+  )
+}
+
+export function mutateSecondReview(
+  assignmentId: string,
+  operation: 'claim' | 'decisions' | 'reconcile',
+  payload: Record<string, unknown>,
+): Promise<SecondReviewItem> {
+  return request<SecondReviewItem>(
+    `/second-reviews/${encodeURIComponent(assignmentId)}/${operation}`,
+    { method: 'POST', body: JSON.stringify(payload) },
+  )
+}
+
+export interface ExportRunSummary {
+  run_id: string
+  profile_name: string
+  profile_version: string
+  format: string
+  status: string
+  actor_id: string
+  row_count: number
+  excluded_count: number
+  content_hash: string | null
+  byte_size: number | null
+  created_at: string
+}
+
+export interface ExportExclusionRow {
+  target_record_id: string
+  field_name: string | null
+  severity: string
+  rule: string
+  detail: string
+  observed_state: string | null
+}
+
+export function fetchExports(): Promise<ExportRunSummary[]> {
+  return request<ExportRunSummary[]>('/exports')
+}
+
+export function fetchExportExclusions(runId: string): Promise<ExportExclusionRow[]> {
+  return request<ExportExclusionRow[]>(
+    `/exports/${encodeURIComponent(runId)}/exclusions`,
+  )
+}
+
+export interface HistoryEntry {
+  occurred_at: string
+  source: string
+  action: string
+  actor_id: string
+  entity_id: string
+  detail: string | null
+  sequence: number | null
+}
+
+export function fetchRecordHistory(recordId: string): Promise<HistoryEntry[]> {
+  return request<HistoryEntry[]>(`/audit/records/${encodeURIComponent(recordId)}`)
+}

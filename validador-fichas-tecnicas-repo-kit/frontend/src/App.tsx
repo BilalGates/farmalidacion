@@ -13,7 +13,9 @@ import { RealRecordListScreen } from './screens/RealRecordListScreen'
 import { RecordListScreen } from './screens/RecordListScreen'
 import { ReviewScreen } from './screens/ReviewScreen'
 import { SourcesScreen } from './screens/SourcesScreen'
+import { ExportsScreen } from './screens/ExportsScreen'
 import { QueueScreen } from './screens/QueueScreen'
+import { SecondReviewScreen } from './screens/SecondReviewScreen'
 
 interface NavItem {
   readonly id: string
@@ -30,7 +32,8 @@ const NAV: readonly NavItem[] = [
   { id: 'fuentes', label: 'Fuentes', available: true },
   { id: 'importaciones', label: 'Importaciones', available: true },
   { id: 'registros', label: 'Revisión (DEMO)', available: true },
-  { id: 'validaciones', label: 'Validaciones', available: false, note: 'dobleValidacion' },
+  { id: 'validaciones', label: 'Validaciones', available: true },
+  { id: 'exportaciones', label: 'Exportaciones', available: true },
   { id: 'auditoria', label: 'Historial / Auditoría', available: false, note: 'auditoria' },
   { id: 'configuracion', label: 'Configuración', available: false, note: 'exportacion' },
 ]
@@ -167,7 +170,12 @@ export function App() {
             />
           )}
           {route.name === 'seccion' && route.id === 'cola' && <QueueScreen reviewer={reviewer} />}
-          {route.name === 'seccion' && route.id !== 'cola' && (
+          {route.name === 'seccion' && route.id === 'validaciones' && (
+            <SecondReviewScreen reviewer={reviewer} />
+          )}
+          {route.name === 'seccion' && route.id === 'exportaciones' && <ExportsScreen />}
+          {route.name === 'seccion' &&
+            !['cola', 'validaciones', 'exportaciones'].includes(route.id) && (
             <PlaceholderScreen
               item={NAV.find((item) => item.id === route.id) ?? NAV[0]}
             />
