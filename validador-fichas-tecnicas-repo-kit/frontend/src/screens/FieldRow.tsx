@@ -1,7 +1,9 @@
 import { useState } from 'react'
 
+
 import type { FieldValue, Reviewer, ValidationState } from '../api/types'
 import { ValidationBadge } from '../components/StateBadge'
+import { isTypingTarget, resolveShortcut } from '../domain/shortcuts'
 import {
   ASSIGNABLE_STATES,
   VALIDATION_STATE_LABELS,
@@ -41,8 +43,40 @@ export function FieldRow({
   const canSubmit =
     state !== '' && reviewer !== null && !saving && !missingValue && !missingComment
 
+  /**
+   * Atiende los atajos que dependen del estado del formulario del campo.
+   *
+   * `guardar` no fuerza nada: si la decisión todavía no es admisible, el atajo
+   * no puede saltarse la misma comprobación que bloquea el botón. Un atajo que
+   * guardase una decisión incompleta firmaría por el revisor.
+   */
+  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    const action = resolveShortcut(event, isTypingTarget(event.target))
+    if (action === 'editar') {
+      event.preventDefault()
+      setOpen((current) => !current)
+      return
+    }
+    if (action === 'cancelar' && open) {
+      event.preventDefault()
+      setOpen(false)
+      return
+    }
+    if (action === 'guardar' && open && canSubmit) {
+      event.preventDefault()
+      onSave(
+        state as ValidationState,
+        needsValue ? finalValue : null,
+        comment.trim() === '' ? null : comment,
+      )
+    }
+  }
+
   return (
-    <div className={`field-row${value.has_conflict ? ' field-row--conflict' : ''}`}>
+    <div
+      className={`field-row${value.has_conflict ? ' field-row--conflict' : ''}`}
+      onKeyDown={handleKeyDown}
+    >
       <div className='field-row__main'>
         <div className='field-row__identity'>
           <span className='field-row__name'>{value.field_name}</span>

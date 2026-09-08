@@ -11,6 +11,7 @@ import type {
 import { ProvenanceList } from '../components/ProvenanceList'
 import { RoadmapNote } from '../components/RoadmapNote'
 import { ROADMAP_NOTES, conflictLabel, sourceLabel } from '../domain/vocabulary'
+import { SHORTCUTS, isTypingTarget, resolveShortcut } from '../domain/shortcuts'
 import { navigate } from '../navigation'
 import { FieldRow } from './FieldRow'
 import '../review-workspace.css'
@@ -75,6 +76,8 @@ export function ReviewScreen({
   const [savingId, setSavingId] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
   const fieldsRef = useRef<HTMLDivElement>(null)
+  const evidenceRef = useRef<HTMLElement>(null)
+  const [helpOpen, setHelpOpen] = useState(false)
   // Descarta respuestas de cargas anteriores: al cambiar de ficha deprisa, una
   // respuesta tardía sobrescribiría la ficha que el revisor ya está viendo.
   const generation = useRef(0)
@@ -134,6 +137,58 @@ export function ReviewScreen({
       setSavingId(null)
     }
   }
+
+  /** Mueve el foco al campo contiguo, sin guardar ni decidir nada. */
+  const moveField = useCallback((direction: 1 | -1) => {
+    const rows = Array.from(
+      fieldsRef.current?.querySelectorAll<HTMLElement>('[data-review-field]') ?? [],
+    )
+    if (rows.length === 0) return
+    const index = rows.findIndex((row) => row === document.activeElement?.closest('[data-review-field]'))
+    // Si el foco no está en ningún campo, se entra por el primero.
+    const next = index === -1 ? rows[0] : rows[index + direction]
+    next?.focus()
+  }, [])
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      const action = resolveShortcut(event, isTypingTarget(event.target))
+      if (action === null) return
+      // Sólo se consume la pulsación que realmente se atiende: lo demás sigue
+      // su camino hasta el control o el navegador.
+      switch (action) {
+        case 'campo_siguiente':
+          event.preventDefault()
+          moveField(1)
+          return
+        case 'campo_anterior':
+          event.preventDefault()
+          moveField(-1)
+          return
+        case 'ir_a_evidencia':
+          event.preventDefault()
+          evidenceRef.current?.focus()
+          return
+        case 'volver_al_campo': {
+          event.preventDefault()
+          const row = fieldsRef.current?.querySelector<HTMLElement>(
+            `[data-review-field="${activeField?.id ?? ''}"]`,
+          )
+          row?.focus()
+          return
+        }
+        case 'ayuda':
+          event.preventDefault()
+          setHelpOpen((open) => !open)
+          return
+        default:
+          // `editar`, `guardar` y `cancelar` los atiende `FieldRow`, que es
+          // quien conoce el estado del formulario del campo.
+          return
+      }
+    },
+    [activeField?.id, moveField],
+  )
 
   if (error !== null && record === null) {
     return (
@@ -236,22 +291,9 @@ export function ReviewScreen({
         {resolved} de {fields.length} campos revisados
       </p>
 
-      <div className='review-workspace'>
+      <div className='review-workspace' onKeyDown={handleKeyDown}>
         {/* Zona B — campo de trabajo. */}
-        <div
-          ref={fieldsRef}
-          aria-label='Campos del registro'
-          onKeyDown={(event) => {
-            if (!event.altKey || !['ArrowDown', 'ArrowUp'].includes(event.key)) return
-            event.preventDefault()
-            const rows = Array.from(
-              fieldsRef.current?.querySelectorAll<HTMLElement>('[data-review-field]') ?? [],
-            )
-            const index = rows.findIndex((row) => row.dataset.reviewField === activeField?.id)
-            const next = rows[index + (event.key === 'ArrowDown' ? 1 : -1)]
-            next?.focus()
-          }}
-        >
+        <div ref={fieldsRef} aria-label='Campos del registro'>
           {groupBlocks(record.blocks).map(([blockType, blocks]) => (
             <section className='panel' key={blockType}>
               <h2>{blockType}</h2>
@@ -283,7 +325,12 @@ export function ReviewScreen({
         </div>
 
         {/* Zona C — evidencia y procedencia del campo activo. */}
-        <aside className='panel review-evidence' aria-label='Evidencia del campo activo'>
+        <aside
+          ref={evidenceRef}
+          tabIndex={-1}
+          className='panel review-evidence'
+          aria-label='Evidencia del campo activo'
+        >
           <h2>Evidencia · {activeField?.field_name ?? 'Sin campos'}</h2>
           {activeField ? (
             <ProvenanceList provenance={activeField.provenance} />
@@ -293,7 +340,26 @@ export function ReviewScreen({
         </aside>
 
         <footer className='panel review-shortcuts'>
-          Alt+↓ siguiente campo · Alt+↑ anterior · Tab recorrer controles · Enter activar
+          <button
+            type='button'
+            className='button button--ghost'
+            aria-expanded={helpOpen}
+            onClick={() => setHelpOpen((open) => !open)}
+          >
+            Atajos de teclado (Shift + ?)
+          </button>
+          {helpOpen && (
+            <dl className='shortcuts'>
+              {SHORTCUTS.map((shortcut) => (
+                <div key={shortcut.action}>
+                  <dt>
+                    <kbd>{shortcut.label}</kbd>
+                  </dt>
+                  <dd>{shortcut.description}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
         </footer>
       </div>
 
