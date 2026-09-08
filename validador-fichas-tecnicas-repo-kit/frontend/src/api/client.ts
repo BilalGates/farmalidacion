@@ -1,5 +1,8 @@
 import { appConfig } from '../config'
 import type {
+  BlockEditRecord,
+  BlockEditWrite,
+  BlockOccurrence,
   Dashboard,
   DatabaseInfo,
   DataOrigin,
@@ -160,4 +163,34 @@ export function fetchRealRecords(params: {
 
 export function fetchRealRecord(id: string): Promise<RealRecordDetail> {
   return request<RealRecordDetail>(`/insights/records/${encodeURIComponent(id)}`)
+}
+
+/* --------------------------------------------------------------------------
+ * Edición de bloques repetibles (DEV-507).
+ * ------------------------------------------------------------------------ */
+
+export function fetchBlockOccurrences(
+  recordId: string,
+  blockType: string,
+): Promise<BlockOccurrence[]> {
+  return request<BlockOccurrence[]>(
+    `/records/${encodeURIComponent(recordId)}/blocks/${encodeURIComponent(blockType)}`,
+  )
+}
+
+export function editBlock(
+  recordId: string,
+  blockType: string,
+  payload: BlockEditWrite,
+): Promise<BlockOccurrence[]> {
+  return request<BlockOccurrence[]>(
+    `/records/${encodeURIComponent(recordId)}/blocks/${encodeURIComponent(blockType)}`,
+    { method: 'POST', body: JSON.stringify(payload) },
+  )
+}
+
+export function fetchBlockHistory(recordId: string): Promise<BlockEditRecord[]> {
+  return request<BlockEditRecord[]>(
+    `/records/${encodeURIComponent(recordId)}/block-history`,
+  )
 }

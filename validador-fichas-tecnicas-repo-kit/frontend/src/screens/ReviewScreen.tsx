@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { ApiError, fetchRecord, saveDecision } from '../api/client'
+import { ApiError, fetchBlockOccurrences, fetchRecord, saveDecision } from '../api/client'
 import type {
   BlockInstance,
+  BlockOccurrence,
   FieldValue,
   Reviewer,
   TargetRecord,
@@ -13,6 +14,7 @@ import { RoadmapNote } from '../components/RoadmapNote'
 import { ROADMAP_NOTES, conflictLabel, sourceLabel } from '../domain/vocabulary'
 import { SHORTCUTS, isTypingTarget, resolveShortcut } from '../domain/shortcuts'
 import { navigate } from '../navigation'
+import { BlockEditor } from './BlockEditor'
 import { FieldRow } from './FieldRow'
 import '../review-workspace.css'
 
@@ -79,6 +81,10 @@ export function ReviewScreen({
   const fieldsRef = useRef<HTMLDivElement>(null)
   const evidenceRef = useRef<HTMLElement>(null)
   const [helpOpen, setHelpOpen] = useState(false)
+  // Ocurrencias del bloque cuyo editor está abierto. Se piden bajo demanda:
+  // la mayoría de las revisiones no editan la estructura del registro.
+  const [editing, setEditing] = useState<string | null>(null)
+  const [occurrences, setOccurrences] = useState<BlockOccurrence[]>([])
   // Descarta respuestas de cargas anteriores: al cambiar de ficha deprisa, una
   // respuesta tardía sobrescribiría la ficha que el revisor ya está viendo.
   const generation = useRef(0)
@@ -300,7 +306,44 @@ export function ReviewScreen({
         <div ref={fieldsRef} aria-label='Campos del registro'>
           {groupBlocks(record.blocks).map(([blockType, blocks]) => (
             <section className='panel' key={blockType}>
-              <h2>{blockType}</h2>
+              <div className='panel__head'>
+                <h2>{blockType}</h2>
+                <button
+                  type='button'
+                  className='button button--ghost'
+                  aria-expanded={editing === blockType}
+                  onClick={() => {
+                    if (editing === blockType) {
+                      setEditing(null)
+                      return
+                    }
+                    setEditing(blockType)
+                    void fetchBlockOccurrences(record.id, blockType)
+                      .then(setOccurrences)
+                      .catch((cause: unknown) =>
+                        setError(
+                          cause instanceof ApiError ? cause.message : 'Error inesperado.',
+                        ),
+                      )
+                  }}
+                >
+                  {editing === blockType ? 'Cerrar estructura' : 'Editar estructura'}
+                </button>
+              </div>
+              {editing === blockType && (
+                <BlockEditor
+                  recordId={record.id}
+                  blockType={blockType}
+                  occurrences={occurrences}
+                  reviewer={reviewer}
+                  onChange={(next) => {
+                    setOccurrences(next)
+                    // Editar la estructura cambia qué campos existen: la ficha
+                    // se recarga para no mostrar un modelo que ya no es el real.
+                    load()
+                  }}
+                />
+              )}
               {blocks.map((block) => (
                 <div className='occurrence' key={block.id}>
                   <p className='occurrence__label'>Ocurrencia {block.ordinal}</p>

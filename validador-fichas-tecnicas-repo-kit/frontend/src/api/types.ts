@@ -297,3 +297,44 @@ export interface RealRecordDetail {
   blocks: RealRecordBlock[]
   sources: RecordSourceAvailability[]
 }
+
+/** Ocurrencia de un bloque repetible (DEV-507). */
+export interface BlockOccurrence {
+  occurrence_id: string
+  ordinal: number
+  values: [string, string | null][]
+  /** Procede de una fuente importada. Una creada por el revisor no. */
+  from_source: boolean
+  not_applicable: boolean
+  comment: string | null
+}
+
+export type BlockOperation =
+  | 'crear'
+  | 'eliminar'
+  | 'reordenar'
+  | 'fusionar'
+  | 'marcar_no_aplicable'
+  | 'revertir_no_aplicable'
+
+export interface BlockEditWrite {
+  operation: BlockOperation
+  reviewer_id: string
+  occurrence_id?: string
+  ordered_ids?: string[]
+  source_id?: string
+  target_id?: string
+  values?: [string, string | null][]
+  comment?: string
+}
+
+export interface BlockEditRecord {
+  sequence: number
+  block_type: string
+  operation: BlockOperation
+  affected_ids: string[]
+  comment: string | null
+  reviewer_id: string
+  reviewer_assurance: string
+  edited_at: string
+}
