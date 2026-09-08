@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.engine import make_url
 
+from pharma_validator_api.block_api import router as block_router
 from pharma_validator_api.config import Settings, get_settings
 from pharma_validator_api.data_origin import DataOrigin, apply_origin_filter
 from pharma_validator_api.database import create_database_engine, create_session_factory
@@ -101,6 +102,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             allow_headers=['Content-Type'],
         )
     register_error_handlers(application)
+    # Las rutas de bloque se registran antes que `records_router`: éste declara
+    # `/records/{record_id}`, que de otro modo capturaría `/records/{id}/blocks`.
+    application.include_router(block_router)
     application.include_router(records_router)
     application.include_router(insights_router)
     application.include_router(queue_router)

@@ -146,6 +146,12 @@ class BlockInstance(Base):
     block_type: Mapped[str] = mapped_column(String(120))
     ordinal: Mapped[int] = mapped_column(Integer)
     source_fragment_id: Mapped[str | None] = mapped_column(ForeignKey("source_fragment.id"))
+    # DEV-011: una ocurrencia puede quedar fuera de alcance sin borrarla. Los
+    # valores se conservan intactos; marcar es reversible y borrar no lo es.
+    not_applicable: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    # Motivo de la última operación de bloque que afectó a esta ocurrencia.
+    # El historial completo vive en `block_edit_record`; esto es su resumen.
+    edit_comment: Mapped[str | None] = mapped_column(Text)
 
 
 class FieldValue(Base):
@@ -418,4 +424,49 @@ class ValidationDecisionRecord(Base):
 def _reject_decision_mutation(*_: object) -> None:
     raise ImmutableHistoryError(
         "Las decisiones de validación son append-only: registre otra decisión."
+    )
+
+
+class BlockEditRecord(Base):
+    """Operación de edición de un bloque repetible, append-only (DEV-507).
+
+    Las reglas de qué operación es admisible NO viven aquí: las aplica
+    `pharma_validator_api.block_editing`, que es puro, antes de persistir. Esta
+    tabla guarda lo que ese módulo ya describió: la operación, las ocurrencias
+    afectadas y el motivo declarado por el revisor.
+
+    Es append-only por la misma razón que las decisiones de validación: una
+    ocurrencia eliminada o fusionada deja de existir en el modelo canónico, y
+    sin este rastro no habría forma de saber qué había antes ni quién lo
+    cambió. `before_state` conserva la ocurrencia serializada tal como estaba,
+    de modo que fusionar o eliminar no destruya el dato de origen.
+    """
+
+    __tablename__ = "block_edit_record"
+    __table_args__ = (
+        UniqueConstraint("target_record_id", "sequence", name="uq_block_edit_sequence"),
+        Index("ix_block_edit_record_sequence", "target_record_id", "sequence"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    target_record_id: Mapped[str] = mapped_column(ForeignKey("target_record.id"), index=True)
+    sequence: Mapped[int] = mapped_column(Integer)
+    block_type: Mapped[str] = mapped_column(String(120))
+    operation: Mapped[str] = mapped_column(String(40))
+    #: Ocurrencias afectadas, en JSON. Una fusión afecta a dos.
+    affected_ids: Mapped[str] = mapped_column(Text)
+    #: Estado previo de las ocurrencias afectadas, serializado en JSON.
+    #: Sin él, eliminar o fusionar perdería el dato de origen sin rastro.
+    before_state: Mapped[str] = mapped_column(Text)
+    comment: Mapped[str | None] = mapped_column(Text)
+    reviewer_id: Mapped[str] = mapped_column(String(80))
+    reviewer_assurance: Mapped[str] = mapped_column(String(20))
+    edited_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+@event.listens_for(BlockEditRecord, "before_update")
+@event.listens_for(BlockEditRecord, "before_delete")
+def _reject_block_edit_mutation(*_: object) -> None:
+    raise ImmutableHistoryError(
+        "El historial de edición de bloques es append-only: registre otra operación."
     )
