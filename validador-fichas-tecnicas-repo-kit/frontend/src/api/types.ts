@@ -57,6 +57,18 @@ export interface FieldValue {
   conflict_status: string
   has_conflict: boolean
   history: Decision[]
+  /**
+   * Política de pre-relleno del campo (especificación 9, DEV-512).
+   *
+   * La decide el backend y la pantalla la obedece: reimplementarla aquí
+   * crearía un segundo sitio donde relajarla. `proposed_value` llega a `null`
+   * en toda política protegida, por construcción del backend.
+   */
+  prefill_policy: 'proponer_valor' | 'proponer_opciones' | 'solo_evidencia' | 'oculto'
+  prefill_presentation: 'valor_precargado' | 'opciones_sin_marcar' | 'casilla_vacia' | 'no_visible'
+  proposed_value: string | null
+  prefill_options: string[]
+  prefill_warning: string | null
 }
 
 export interface BlockInstance {

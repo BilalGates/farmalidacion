@@ -105,3 +105,13 @@
   padding-top: 0.5rem;
   border-top: 1px solid var(--border, #ccd3dc);
 }
+
+/* Aviso de la política de pre-relleno (DEV-512). Acompaña al campo cuando la
+   decisión es criterio clínico y no un dato que la fuente declare. */
+.field__warning {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  border-left: 3px solid #b8860b;
+  padding-left: 0.5rem;
+  color: #6b5200;
+}

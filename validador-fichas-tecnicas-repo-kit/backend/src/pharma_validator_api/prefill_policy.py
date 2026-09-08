@@ -165,3 +165,28 @@ def assert_bulk_confirmation_allowed(
                 f"El campo {plan.field_name} con política {plan.policy} "
                 "no admite confirmación en bloque."
             )
+
+
+#: Política aplicada cuando ninguna decisión farmacéutica la ha fijado.
+#:
+#: `solo_evidencia` muestra la fuente y no sugiere ningún valor. Es la única
+#: opción defendible mientras D-015 no fije umbrales sobre resultados medidos:
+#: proponer un valor cuya tasa de acierto nadie ha comprobado presentaría como
+#: sugerencia algo que el revisor tendería a aceptar (especificación 9).
+DEFAULT_POLICY: PrefillPolicy = "solo_evidencia"
+
+
+def field_prefill_policy(session: object, field_name: str) -> PrefillPolicy:
+    """Política de pre-relleno de un campo.
+
+    Hoy devuelve siempre la política conservadora. El punto de extensión está
+    declarado —y su firma ya recibe la sesión— para que asignar políticas por
+    campo sea un cambio localizado cuando exista la decisión farmacéutica que
+    lo gobierne (D-015). No se adivina ninguna: un campo sin política decidida
+    es un campo que no propone nada.
+
+    DECISIÓN FARMACÉUTICA PENDIENTE: qué campos pasan a `proponer_valor` o
+    `proponer_opciones`, y con qué umbral de confianza. Hasta entonces esta
+    función no debe devolver otra cosa.
+    """
+    return DEFAULT_POLICY

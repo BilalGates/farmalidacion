@@ -17,9 +17,13 @@ import {
  *
  * Regla que este componente no puede romper: no se preselecciona ningún valor
  * para el revisor. El desplegable de estado arranca vacío y el valor final se
- * escribe, aunque exista un valor de fuente. La política de pre-relleno de la
- * especificación 9 vive en `prefill_policy` en el backend y esta vertical no la
- * consume todavía; hasta entonces, no precargar es el comportamiento seguro.
+ * escribe, aunque exista un valor de fuente.
+ *
+ * La política de pre-relleno la decide `prefill_policy` en el backend
+ * (especificación 9, DEV-512) y aquí se obedece, no se reinterpreta. Bajo la
+ * política conservadora vigente ningún campo llega con `proposed_value`, así
+ * que precargarlo es imposible por construcción y no por disciplina de quien
+ * escriba esta pantalla. El aviso que acompaña al campo se muestra literal.
  */
 export function FieldRow({
   value,
@@ -43,7 +47,9 @@ export function FieldRow({
   const [state, setState] = useState<ValidationState | ''>(
     (restored?.state ?? '') as ValidationState | '',
   )
-  const [finalValue, setFinalValue] = useState(restored?.finalValue ?? '')
+  const [finalValue, setFinalValue] = useState(
+    restored?.finalValue ?? value.proposed_value ?? '',
+  )
   const [comment, setComment] = useState(restored?.comment ?? '')
   const [recovered, setRecovered] = useState(restored !== null)
 
@@ -161,6 +167,11 @@ export function FieldRow({
 
       {open && (
         <div className='review'>
+          {value.prefill_warning !== null && (
+            <p className='field__warning' role='note'>
+              {value.prefill_warning}
+            </p>
+          )}
           {recovered && (
             <p className='alert alert--info' role='status'>
               Se ha recuperado lo que había escrito sin guardar. Revíselo antes de firmar.

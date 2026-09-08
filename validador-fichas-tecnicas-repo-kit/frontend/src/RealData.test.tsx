@@ -215,6 +215,12 @@ const REVIEW_DETAIL = {
           conflict_status: 'single_source',
           has_conflict: false,
           history: [],
+          prefill_policy: 'solo_evidencia' as const,
+          prefill_presentation: 'casilla_vacia' as const,
+          proposed_value: null,
+          prefill_options: [],
+          prefill_warning:
+            'La ficha técnica no declara este dato. Este valor es criterio farmacéutico.',
           provenance: [
             {
               source_fragment_id: 'frag-1',
@@ -236,6 +242,12 @@ const REVIEW_DETAIL = {
           conflict_status: 'single_source',
           has_conflict: false,
           history: [],
+          prefill_policy: 'solo_evidencia' as const,
+          prefill_presentation: 'casilla_vacia' as const,
+          proposed_value: null,
+          prefill_options: [],
+          prefill_warning:
+            'La ficha técnica no declara este dato. Este valor es criterio farmacéutico.',
           provenance: [
             {
               source_fragment_id: 'frag-2',

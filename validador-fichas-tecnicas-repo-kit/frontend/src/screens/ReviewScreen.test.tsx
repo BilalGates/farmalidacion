@@ -35,6 +35,12 @@ function record(): TargetRecord {
             conflict_status: 'single_source',
             has_conflict: false,
             history: [],
+            prefill_policy: 'solo_evidencia' as const,
+            prefill_presentation: 'casilla_vacia' as const,
+            proposed_value: null,
+            prefill_options: [],
+            prefill_warning:
+              'La ficha técnica no declara este dato. Este valor es criterio farmacéutico.',
             provenance: [
               {
                 source_fragment_id: 'frag-1',
@@ -56,6 +62,12 @@ function record(): TargetRecord {
             conflict_status: 'single_source',
             has_conflict: false,
             history: [],
+            prefill_policy: 'solo_evidencia' as const,
+            prefill_presentation: 'casilla_vacia' as const,
+            proposed_value: null,
+            prefill_options: [],
+            prefill_warning:
+              'La ficha técnica no declara este dato. Este valor es criterio farmacéutico.',
             provenance: [
               {
                 source_fragment_id: 'frag-2',
@@ -328,4 +340,32 @@ it('retira el borrador cuando la decisión queda firmada', async () => {
   await waitFor(() =>
     expect(window.localStorage.getItem('farmalidacion.draft.rec-1.value-1')).toBeNull(),
   )
+})
+
+it('no precarga ningún valor bajo la política conservadora (DEV-512)', async () => {
+  stubFetch(record())
+  render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} />)
+  await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
+
+  fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
+
+  // El desplegable arranca sin decisión y el valor final vacío, aunque la
+  // fuente declare un valor: proponerlo sería decidir por el revisor.
+  expect(screen.getByLabelText('Decisión de revisión')).toHaveValue('')
+  fireEvent.change(screen.getByLabelText('Decisión de revisión'), {
+    target: { value: 'confirmado' },
+  })
+  expect(screen.getByLabelText('Valor final')).toHaveValue('')
+})
+
+it('muestra el aviso de criterio clínico que declara el backend', async () => {
+  stubFetch(record())
+  render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} />)
+  await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
+
+  fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
+  // Se muestra literal: reformularlo perdería la razón por la que está.
+  expect(
+    screen.getByText(/La ficha técnica no declara este dato/),
+  ).toBeInTheDocument()
 })

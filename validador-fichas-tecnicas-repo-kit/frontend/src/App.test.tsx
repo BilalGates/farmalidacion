@@ -80,6 +80,12 @@ const DETAIL: TargetRecord = {
           conflict_status: 'consistent_pending_priority',
           has_conflict: false,
           history: [],
+          prefill_policy: 'solo_evidencia' as const,
+          prefill_presentation: 'casilla_vacia' as const,
+          proposed_value: null,
+          prefill_options: [],
+          prefill_warning:
+            'La ficha técnica no declara este dato. Este valor es criterio farmacéutico.',
         },
       ],
     },
@@ -108,6 +114,12 @@ const DETAIL: TargetRecord = {
           conflict_status: 'unresolved_pending_priority',
           has_conflict: true,
           history: [],
+          prefill_policy: 'solo_evidencia' as const,
+          prefill_presentation: 'casilla_vacia' as const,
+          proposed_value: null,
+          prefill_options: [],
+          prefill_warning:
+            'La ficha técnica no declara este dato. Este valor es criterio farmacéutico.',
         },
         {
           id: 'value-2',
@@ -129,6 +141,12 @@ const DETAIL: TargetRecord = {
           conflict_status: 'unresolved_pending_priority',
           has_conflict: true,
           history: [],
+          prefill_policy: 'solo_evidencia' as const,
+          prefill_presentation: 'casilla_vacia' as const,
+          proposed_value: null,
+          prefill_options: [],
+          prefill_warning:
+            'La ficha técnica no declara este dato. Este valor es criterio farmacéutico.',
         },
       ],
     },

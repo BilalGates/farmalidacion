@@ -18,6 +18,7 @@ from pharma_validator_api.models import (
     TargetRecord,
     ValueProvenance,
 )
+from pharma_validator_api.prefill_policy import field_prefill_policy, plan_field_presentation
 from pharma_validator_api.review import (
     current_decision,
     decision_history,
@@ -74,6 +75,18 @@ class FieldValueRead(BaseModel):
     conflict_status: str
     has_conflict: bool
     history: list[DecisionRead]
+    #: Política de pre-relleno aplicada al campo (especificación 9, DEV-512).
+    #: Mientras `enable_llm_prefill` siga apagada por D-015, todos los campos
+    #: se sirven como `solo_evidencia`: se muestra la fuente y no se sugiere
+    #: ningún valor. Es el comportamiento conservador, no una limitación
+    #: temporal que la pantalla pueda saltarse.
+    prefill_policy: str
+    prefill_presentation: str
+    #: Valor propuesto. `None` en toda política protegida, por construcción.
+    proposed_value: str | None
+    prefill_options: list[str]
+    #: Aviso que acompaña al campo cuando la decisión es criterio clínico.
+    prefill_warning: str | None
 
 
 class BlockInstanceRead(BaseModel):
@@ -470,6 +483,10 @@ def _read_field_value(
     evaluation = evaluate_field_conflict(
         session, siblings, 1, record.entity_type, block.block_type, value.field_name
     )
+    plan = plan_field_presentation(
+        value.field_name,
+        field_prefill_policy(session, value.field_name),
+    )
     return FieldValueRead(
         id=value.id,
         field_name=value.field_name,
@@ -480,6 +497,11 @@ def _read_field_value(
         validation_state=effective_state(session, value.id),
         conflict_status=evaluation.status,
         has_conflict=evaluation.has_conflict,
+        prefill_policy=plan.policy,
+        prefill_presentation=plan.presentation,
+        proposed_value=plan.prefilled_value,
+        prefill_options=list(plan.options),
+        prefill_warning=plan.warning,
         history=[
             DecisionRead(
                 sequence=item.sequence,
