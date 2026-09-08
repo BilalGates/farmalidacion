@@ -1,5 +1,57 @@
 # Estado del proyecto
 
+## Fase 5 — convergencia de la experiencia de revisión (8 de septiembre de 2026)
+
+`/fichas` es ahora la pantalla canónica de revisión y se sirve desde
+`/records/*`. Antes servía una ficha de sólo lectura desde `/insights` mientras
+la experiencia de revisión vivía en `/registros`: el corpus real no era
+revisable pese a que el backend ya lo admitía, porque
+`/records/values/{id}/decisions` nunca filtró por origen y opera sobre las
+mismas tablas canónicas que la carga real. `/insights/*` se queda como
+superficie de consulta.
+
+Cerrado técnicamente en esta campaña, todo `tecnicamente_verificado` y nada
+validado clínicamente:
+
+- **DEV-503**: pantalla de tres zonas (contexto, campo de trabajo, evidencia)
+  sobre datos reales. `ProvenanceList` recoge la única representación de la
+  procedencia; antes había dos.
+- **DEV-504**: mapa de atajos declarado como dato en `domain/shortcuts`, con
+  ayuda en pantalla. Ningún atajo de una sola tecla actúa mientras se escribe,
+  no se reservan combinaciones del navegador y Ctrl+Enter no guarda una
+  decisión incompleta.
+- **DEV-505**: autoguardado **local** del borrador no firmado, recuperación
+  tras recargar y cuatro estados distinguibles de guardado. El autoguardado no
+  llega al backend: una decisión clínica se persiste cuando el revisor la
+  firma, no cuando deja de teclear. Un 409 conserva el borrador.
+- **DEV-507**: edición de bloques completa. Migración `c3d4e5f6a7b8` (aditiva,
+  reversible), `block_editing_store`, `block_api` y editor en pantalla.
+  `block_edit_record` es append-only y conserva `before_state`, de modo que
+  eliminar y fusionar dejen de ser irreversibles de hecho.
+- **DEV-512**: la pantalla consume `prefill_policy`. Todo campo se sirve como
+  `solo_evidencia` y ningún campo llega con `proposed_value`: precargar es
+  imposible por construcción, no por disciplina de quien escriba la pantalla.
+- **DEV-508/509**: `timing_api` y `FocusTracker` capturan el foco extremo a
+  extremo; `recordCache` precarga e invalida en cada escritura.
+
+Comprobado sobre copia del corpus real (40 registros, 1.850 valores con
+procedencia): ficha de 57 campos servida en 90 ms, ninguno precargado,
+decisión persistida y recuperada, eliminación de ocurrencia importada
+rechazada por falta de motivo, y 8 h de pestaña abandonada contabilizadas
+como 60 s.
+
+**El corpus real no se ha abierto en escritura en ningún momento.** Todas las
+pruebas y comprobaciones usan bases desechables construidas con el esquema
+real (`backend/tests/conftest.py`).
+
+Pendiente farmacéutico, no técnico: D-015 debe fijar qué campos pasan a
+`proponer_valor`/`proponer_opciones` y con qué umbral. Hasta entonces la
+política conservadora es la única servida y está marcada en el código.
+
+Pendiente técnico de Fase 5: `/registros` sigue existiendo y ahora renderiza la
+misma pantalla; su retirada o conversión en redirección queda para la próxima
+campaña. Falta también el recorrido E2E de navegador.
+
 ## Secuencia vigente — 8 de septiembre de 2026
 
 Cola: permite iniciar una revisión asignada y devolverla a pendientes desde

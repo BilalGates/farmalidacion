@@ -446,16 +446,33 @@ por entidad, bloque, conjunto y doble validación.
 
 ### DEV-503 — Pantalla de tres zonas (`P0`)
 
+**Estado: cerrada técnicamente (8-09-2026).** `ReviewScreen` sobre `/records/*`
+con contexto, campo de trabajo y evidencia del campo activo. `/fichas` es la
+ruta canónica y opera sobre el corpus real. `ProvenanceList` unifica la
+representación de la procedencia, que antes estaba duplicada. Verificado sobre
+copia real: ficha de 57 campos, 2 bloques, procedencia completa.
+
 **Estado:** no cerrada. La vertical demostrable incluye una ficha por bloques con valor, fuente, procedencia y estado, pero no la disposición de tres zonas con evidencia contextual que exige la especificación.
 
 ### DEV-504 — Navegación completa por teclado (`P0`)
 
-**Estado:** parcial. Alt+flechas recorre campos y actualiza la evidencia sin guardar.
-Tab conserva acceso a los controles; pendientes los atajos completos de la especificación.
+**Estado: cerrada técnicamente (8-09-2026).** Mapa declarado como dato en
+`domain/shortcuts` y documentado en la propia pantalla: campo y ficha
+anterior/siguiente, editar, guardar, cancelar, ir a evidencia y volver.
+Comprobado que ningún atajo de una sola tecla actúa mientras se escribe, que no
+se reservan combinaciones del navegador (Ctrl+T/W/L, F5), que un modificador de
+más no dispara dos acciones y que Ctrl+Enter no guarda una decisión incompleta.
+El mapa no contiene ninguna acción destructiva inmediata. 10 pruebas.
 
 ### DEV-505 — Guardado incremental (`P0`)
 
-**Estado:** parcialmente adelantado por la vertical demostrable. Existe guardado por campo, persistido y verificado tras reinicio (`test_decision_survives_a_restart`). **Siguen pendientes** la precarga del siguiente campo, el objetivo de cambio de campo inferior a 100 ms (DEV-509) y la garantía de que recargar la pestaña a mitad de edición no pierda trabajo no confirmado.
+**Estado: cerrada técnicamente (8-09-2026).** `domain/drafts` conserva el
+borrador no firmado en el navegador y lo recupera tras recargar, anunciándolo.
+El autoguardado es **local a propósito**: enviarlo al backend convertiría un
+texto a medio escribir en una decisión firmada. Cuatro estados de guardado
+distinguibles. Un 409 conserva el borrador y no afirma que se guardó; el
+borrador se retira sólo cuando la decisión llega firmada al historial.
+La precarga y el objetivo de latencia se cubren en DEV-509. 11 pruebas.
 
 ### DEV-506 — Estados de validación (`P0`)
 
@@ -477,7 +494,16 @@ La vertical demostrable del 3 de septiembre de 2026 añadió persistencia append
 
 **Aceptación:** una ocurrencia creada por un revisor no declara procedencia de origen; eliminar una importada exige comentario; reordenar debe cubrir exactamente las existentes; fusionar exige comentario y falla ante valores en conflicto, admitiendo solo complementarios; marcar no aplicable conserva los valores y es reversible con justificación.
 
-**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-507 ni abre Fase 5. Evidencia: 22 pruebas, Ruff y mypy limpios. La interfaz de edición no existe todavía.
+**Estado: cerrada técnicamente (8-09-2026).** Al núcleo puro se le añaden
+persistencia (`block_editing_store`), API (`block_api`), auditoría
+(`block_edit_record`, append-only, con `before_state`) y editor en pantalla.
+Migración `c3d4e5f6a7b8`, aditiva y reversible: upgrade → downgrade → upgrade
+sobre copia del esquema real con 290 valores intactos en cada paso.
+Comprobado que crear no fabrica procedencia, que eliminar una ocurrencia
+importada exige motivo, que reordenar no puede dejar caer una ocurrencia, que
+fusionar valores en conflicto se rechaza, que marcar «no aplica» conserva los
+valores y es reversible, y que una operación rechazada no deja rastro a medias.
+45 pruebas (22 del núcleo, 13 de persistencia, 10 de API).
 
 ### DEV-508 — Medición de tiempo (`P1`)
 
@@ -487,9 +513,22 @@ La vertical demostrable del 3 de septiembre de 2026 añadió persistencia append
 
 **Aceptación:** cada tramo de foco cuenta hasta 60 segundos y el exceso se descarta e informa; el umbral exacto no se recorta; los solapamientos son error explícito; un campo sin foco cuenta cero y sigue siendo campo medido; la media de sesión no depende del orden de registro.
 
-**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-508 ni abre Fase 5. Evidencia: 15 pruebas, Ruff y mypy limpios. La captura de foco en la interfaz no existe todavía.
+**Estado: cerrada técnicamente (8-09-2026).** `timing_api` expone abrir sesión,
+declarar tramos y cerrar; `FocusTracker` captura el foco en el navegador. El
+cliente no puede declarar `is_synthetic`. El descuento de inactividad se aplica
+sólo en `time_measurement`: 8 h de pestaña abandonada cuentan 60 s y declaran
+el resto como descartado. 13 pruebas nuevas (8 de API, 5 de captura).
 
 ### DEV-509 — Rendimiento y precarga (`P1`)
+
+**Estado: cerrada técnicamente (8-09-2026).** `api/recordCache` comparte la
+petición en vuelo, caduca a los 30 s y **se invalida en cada escritura**:
+servir la versión anterior tras guardar mostraría como pendiente un campo ya
+validado, que es el único modo en que una caché puede mentir sobre el estado
+clínico. Medido sobre copia del corpus real: listado 246 ms, ficha de 57
+campos 90 ms. Una ficha ya precargada no cuesta petición nueva. El objetivo de
+<100 ms se cumple sobre datos ya precargados; una petición de red contra el
+corpus real no lo alcanza y no se afirma que lo haga. 7 pruebas.
 
 ### DEV-510 — Tests de sesgo de automatización (`P0`)
 
@@ -499,9 +538,19 @@ La vertical demostrable del 3 de septiembre de 2026 añadió persistencia append
 
 **Aceptación:** las cuatro políticas producen la presentación correcta; un valor pasado a un campo protegido se descarta en lugar de mostrarse; una pantalla completa se comprueba de una vez y detecta un plan manipulado; la confirmación en bloque exige `proponer_valor` y evidencia visible.
 
-**Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-510 ni abre Fase 5. Evidencia: 13 pruebas, Ruff y mypy limpios. La pantalla que consumirá estas decisiones (DEV-503/504/505) no existe todavía.
+**Estado:** núcleo verificado el 2 de septiembre de 2026. La pantalla que
+consume estas decisiones existe desde el 8 de septiembre de 2026 (DEV-512) y
+sirve la política conservadora para todo campo. Lo que sigue abierto de DEV-510
+es la doble revisión ciega integrada, no el pre-relleno.
 
 ### DEV-512 — Consumo de `prefill_policy` en la pantalla (`P0`)
+
+**Estado: cerrada técnicamente (8-09-2026).** `/records/{id}` sirve la política
+de cada campo y la pantalla la obedece. Bajo la política vigente ningún campo
+llega con `proposed_value`: precargar es imposible por construcción.
+`field_prefill_policy` devuelve `solo_evidencia` y deja declarado el punto de
+extensión. **Decisión farmacéutica pendiente (D-015):** qué campos pasan a
+`proponer_valor`/`proponer_opciones` y con qué umbral. 7 pruebas.
 
 **Objetivo:** que la pantalla de revisión presente cada campo según su política (`proponer_valor`, `proponer_opciones`, `solo_evidencia`, `oculto`) consumiendo `pharma_validator_api.prefill_policy` en lugar de no precargar nada.
 
