@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ApiError, assignQueue, enqueueRecord, fetchQueue } from '../api/client'
+import { ApiError, assignQueue, enqueueRecord, fetchQueue, transitionQueue } from '../api/client'
 import type { QueueItem } from '../api/client'
 import type { Reviewer } from '../api/types'
 import { navigate } from '../navigation'
@@ -67,10 +67,20 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
       <ul>
         {items.filter((item) => !filter || item.state === filter).map((item) => <li key={item.target_record_id}>
           <p>{item.target_record_id} · {labels[item.state] ?? item.state} · {item.assignee_id ?? 'Sin asignar'}</p>
-          <button className='button' disabled={busy || !reviewer}
+          <button className='button' disabled={busy || loading || !reviewer || ['completado', 'bloqueado'].includes(item.state)}
             onClick={() => void act(() => assignQueue(item.target_record_id, reviewer!.identifier))}>
             Asignarme
           </button>
+          {item.assignee_id === reviewer?.identifier && ['asignado', 'en_revision'].includes(item.state) && <>
+            {item.state === 'asignado' && <button className='button' disabled={busy || loading}
+              onClick={() => void act(() => transitionQueue(item, reviewer.identifier, 'en_revision'))}>
+              Iniciar revisión
+            </button>}
+            <button className='button' disabled={busy || loading}
+              onClick={() => void act(() => transitionQueue(item, reviewer.identifier, 'pendiente'))}>
+              Devolver a pendientes
+            </button>
+          </>}
           <button className='button' onClick={() => navigate(`/registros/${encodeURIComponent(item.target_record_id)}`)}>
             Abrir registro
           </button>

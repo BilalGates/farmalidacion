@@ -99,6 +99,13 @@ export function enqueueRecord(id: string): Promise<QueueItem> {
   })
 }
 
+export function transitionQueue(item: QueueItem, reviewerId: string, state: 'en_revision' | 'pendiente'): Promise<QueueItem> {
+  return request<QueueItem>(`/queue/${encodeURIComponent(item.target_record_id)}/transition`, {
+    method: 'POST',
+    body: JSON.stringify({ reviewer_id: reviewerId, state, expected_version: item.version }),
+  })
+}
+
 export function fetchReviewers(): Promise<Reviewer[]> {
   return request<Reviewer[]>('/records/reviewers')
 }

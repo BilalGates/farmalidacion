@@ -2,6 +2,9 @@
 
 ## Integración del 8-09-2026
 
+- DEV-502: inicio y devolución a pendientes desde QueueScreen con expected_version;
+  pruebas de payload versionado y ausencia de acciones sobre asignaciones ajenas.
+
 - D-028 / ADR-0010: aceptación farmacéutica al final del desarrollo.
 - DEV-502: QueueScreen y cliente HTTP; pruebas de asignación y conflicto.
 - DEV-505: records.save_decision comprueba asignación vigente mediante UPDATE

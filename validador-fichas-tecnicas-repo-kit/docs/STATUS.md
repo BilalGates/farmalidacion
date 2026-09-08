@@ -2,6 +2,10 @@
 
 ## Secuencia vigente — 8 de septiembre de 2026
 
+Cola: permite iniciar una revisión asignada y devolverla a pendientes desde
+la interfaz. Ambas acciones envían la versión observada y muestran conflictos
+sin sustituir silenciosamente el estado. Solo se ofrecen al revisor asignado.
+
 ADR-0010 / D-028: completar desarrollo técnico antes de comprobaciones
 farmacéuticas. Las referencias históricas a Gate 4 BLOCKED no bloquean ahora
 la implementación de fases 5–7. La aceptación farmacéutica se realiza al final.
