@@ -9,10 +9,9 @@ import { ROADMAP_NOTES } from './domain/vocabulary'
 import { navigate, useRoute } from './navigation'
 import { DashboardScreen } from './screens/DashboardScreen'
 import { ImportsScreen } from './screens/ImportsScreen'
-import { RealRecordDetailScreen } from './screens/RealRecordDetailScreen'
 import { RealRecordListScreen } from './screens/RealRecordListScreen'
-import { RecordDetailScreen } from './screens/RecordDetailScreen'
 import { RecordListScreen } from './screens/RecordListScreen'
+import { ReviewScreen } from './screens/ReviewScreen'
 import { SourcesScreen } from './screens/SourcesScreen'
 import { QueueScreen } from './screens/QueueScreen'
 
@@ -153,12 +152,19 @@ export function App() {
           <ModeBanner info={database} />
           {route.name === 'inicio' && <DashboardScreen />}
           {route.name === 'fichas' && <RealRecordListScreen />}
-          {route.name === 'ficha' && <RealRecordDetailScreen recordId={route.id} />}
+          {route.name === 'ficha' && (
+            <ReviewScreen key={route.id} recordId={route.id} reviewer={reviewer} />
+          )}
           {route.name === 'fuentes' && <SourcesScreen />}
           {route.name === 'importaciones' && <ImportsScreen />}
           {route.name === 'registros' && <RecordListScreen />}
           {route.name === 'registro' && (
-            <RecordDetailScreen key={route.id} recordId={route.id} reviewer={reviewer} />
+            <ReviewScreen
+              key={route.id}
+              recordId={route.id}
+              reviewer={reviewer}
+              backTo='/registros'
+            />
           )}
           {route.name === 'seccion' && route.id === 'cola' && <QueueScreen reviewer={reviewer} />}
           {route.name === 'seccion' && route.id !== 'cola' && (

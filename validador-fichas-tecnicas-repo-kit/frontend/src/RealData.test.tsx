@@ -182,6 +182,76 @@ const REAL_DATABASE = {
 
 let databaseInfo: unknown = REAL_DATABASE
 
+/**
+ * Ficha real servida por `/records/*` tras la convergencia de DEV-503.
+ *
+ * La revisión —lectura y escritura— pasa por `/records`, que es donde viven las
+ * barreras de estados y de identidad del revisor. `/insights` se queda como
+ * superficie de consulta y ya no sirve la pantalla de revisión.
+ */
+const REVIEW_DETAIL = {
+  id: 'rec-real',
+  entity_type: 'specialty',
+  external_identifiers: [
+    {
+      source_system: 'master_excel',
+      source_identifier: '317291008',
+      source_version: '2026-06-19',
+    },
+  ],
+  blocks: [
+    {
+      id: 'block-1',
+      block_type: 'specialty_general',
+      ordinal: 1,
+      values: [
+        {
+          id: 'value-1',
+          field_name: 'ME_DESCRIPCION',
+          literal_value: 'Omeprazol 20 mg cápsula',
+          observed_type: 'text',
+          logical_state: 'valued',
+          validation_state: 'pendiente' as const,
+          conflict_status: 'single_source',
+          has_conflict: false,
+          history: [],
+          provenance: [
+            {
+              source_fragment_id: 'frag-1',
+              document_version_id: 'ver-1',
+              locator_type: 'excel_row',
+              locator: '{"row":15991,"sheet":"General"}',
+              literal_text: 'Omeprazol 20 mg cápsula dura EFG',
+              provenance_role: 'master_baseline',
+            },
+          ],
+        },
+        {
+          id: 'value-2',
+          field_name: 'CODIGO_NACIONAL',
+          literal_value: '707703',
+          observed_type: 'text',
+          logical_state: 'valued',
+          validation_state: 'pendiente' as const,
+          conflict_status: 'single_source',
+          has_conflict: false,
+          history: [],
+          provenance: [
+            {
+              source_fragment_id: 'frag-2',
+              document_version_id: 'ver-1',
+              locator_type: 'excel_row',
+              locator: '{"row":15991,"sheet":"General"}',
+              literal_text: null,
+              provenance_role: 'master_baseline',
+            },
+          ],
+        },
+      ],
+    },
+  ],
+}
+
 /** Devuelve la respuesta simulada según la ruta pedida. */
 function route(url: string): unknown {
   if (url.includes('/database-info')) return databaseInfo
@@ -193,6 +263,7 @@ function route(url: string): unknown {
     return url.includes('origin=demo') ? DEMO_PAGE : RECORD_PAGE
   }
   if (url.includes('/records/reviewers')) return []
+  if (/\/records\/[^/]+$/.test(url)) return REVIEW_DETAIL
   throw new Error(`Ruta no simulada: ${url}`)
 }
 
@@ -328,30 +399,43 @@ describe('ficha de un registro real', () => {
     )
   })
 
-  it('muestra el valor y su procedencia bajo demanda', async () => {
+  it('sirve la revisión de una ficha real desde /records, no desde /insights', async () => {
     window.location.hash = '#/fichas/rec-real'
     render(<App />)
 
-    expect(await screen.findByRole('heading', { name: 'Omeprazol 20 mg cápsula' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Omeprazol 20 mg cápsula' }),
+    ).toBeInTheDocument()
     expect(screen.getByText('707703')).toBeInTheDocument()
 
-    // La procedencia existe pero está plegada: se pide para verla.
-    fireEvent.click(screen.getByText('Ver procedencia'))
-    await waitFor(() => {
-      expect(screen.getByText('Hoja General, fila 15991')).toBeInTheDocument()
-    })
-    expect(screen.getByText('Maestro Excel')).toBeInTheDocument()
-    expect(screen.getByText('2026-06-19')).toBeInTheDocument()
+    // La convergencia de DEV-503: la pantalla de revisión pide la ficha al
+    // árbol que aplica las barreras clínicas, no a la superficie de consulta.
+    expect(calls.some((url) => /\/records\/rec-real$/.test(url))).toBe(true)
+    expect(calls.some((url) => url.includes('/insights/records/rec-real'))).toBe(false)
   })
 
-  it('declara la vinculación con CIMA como pendiente, sin inventarla', async () => {
+  it('muestra la evidencia del campo activo con su procedencia', async () => {
     window.location.hash = '#/fichas/rec-real'
     render(<App />)
     await screen.findByRole('heading', { name: 'Omeprazol 20 mg cápsula' })
 
-    const row = screen.getByRole('row', { name: /CIMA/ })
-    expect(within(row).getByText('Pendiente')).toBeInTheDocument()
-    expect(within(row).getByText(/Vinculación con CIMA pendiente/)).toBeInTheDocument()
+    const evidence = screen.getByRole('complementary', { name: 'Evidencia del campo activo' })
+    // El primer campo es el activo por defecto y su fuente se muestra literal.
+    expect(within(evidence).getByText('Maestro')).toBeInTheDocument()
+    expect(within(evidence).getByText('Hoja General, fila 15991')).toBeInTheDocument()
+    expect(
+      within(evidence).getByText('Omeprazol 20 mg cápsula dura EFG'),
+    ).toBeInTheDocument()
+  })
+
+  it('no ofrece decidir sin revisor seleccionado', async () => {
+    window.location.hash = '#/fichas/rec-real'
+    render(<App />)
+    await screen.findByRole('heading', { name: 'Omeprazol 20 mg cápsula' })
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
+    expect(screen.getByRole('button', { name: 'Guardar decisión' })).toBeDisabled()
+    expect(screen.getByText(/Seleccione un revisor/)).toBeInTheDocument()
   })
 })
 
