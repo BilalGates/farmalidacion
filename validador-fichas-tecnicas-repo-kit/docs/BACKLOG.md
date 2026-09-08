@@ -566,23 +566,78 @@ extensión. **Decisión farmacéutica pendiente (D-015):** qué campos pasan a
 
 ### DEV-601 — Cerrar contrato de exportación (`P0`)
 
+**Estado: infraestructura cerrada técnicamente (8-09-2026); contrato pendiente
+de D-011.** `export_service` lee el modelo canónico y produce filas mediante una
+capa de transformación explícita. El perfil es un dato configurable, no una
+constante: cuando exista un ejemplo aceptado se añadirá un perfil, no se
+reescribirá el motor. Ningún perfil se declara `provider_accepted`.
+
 ### DEV-602 — Exportadores CSV/TXT/XLSX (`P0`)
+
+**Estado: cerrada técnicamente (8-09-2026).** Los tres formatos derivan del
+mismo modelo normalizado. Comprobado leyendo los ficheros generados: CSV con su
+dialecto declarado, escapado del delimitador, encoding respetado y XLSX abierto
+como zip con sus partes (`[Content_Types].xml`, `xl/workbook.xml`, hoja).
 
 ### DEV-603 — Validador de tipos y longitudes (`P0`)
 
+**Estado: cerrada técnicamente (8-09-2026).** `validate_row` comprueba sin
+modificar: obligatoriedad, longitud declarada y estados serializables. Nada se
+trunca ni se rellena; un valor fuera de contrato excluye la fila y lo declara.
+
 ### DEV-604 — Informe de exportación (`P1`)
+
+**Estado: cerrada técnicamente (8-09-2026).** `export_exclusion` guarda ficha,
+campo, severidad (`bloqueante` / `advertencia` / `no_aplicable`), regla, motivo
+y estado observado. Servido en `/exports/{id}/exclusions` y visible en la
+pantalla de Exportaciones junto al recuento de entregadas.
 
 ### DEV-605 — Exportación reproducible (`P1`)
 
+**Estado: cerrada técnicamente (8-09-2026).** La fecha vive en `ExportRun` y en
+el manifiesto, nunca en el contenido, y el orden de filas y ocurrencias es
+explícito. Dos ejecuciones de los mismos datos comparten bytes y hash aunque
+difieran en hora. La versión del perfil se deriva de su configuración para que
+cambiar una columna no deje dos exports incomparables con la misma versión.
+
 ### DEV-606 — Reglas ATC por prefijo (`P0`)
+
+**Estado: mecanismo cerrado técnicamente (8-09-2026); lista pendiente de
+D-017.** Coincidencia por prefijo según la especificación 11.1, con reglas
+configurables sin desplegar código. Semilla `L04`, la única acordada. Un
+registro sin ATC queda **indeterminado**, no de bajo riesgo. Contrastado en
+sólo lectura sobre el corpus real: 6.342 códigos → 255 exigen doble validación,
+6.057 no y 30 indeterminados.
 
 ### DEV-607 — Segunda validación ciega (`P0`)
 
+**Estado: cerrada técnicamente (8-09-2026).** La ceguera se garantiza en el
+dato: `blind_view` no consulta la primera decisión. `first_decision_sequence`
+ancla la comparación a la lectura revisada. `record_independent_reading` evita
+que la regla de transición filtre la primera decisión por la puerta de atrás.
+El primer firmante no puede realizar la segunda.
+
 ### DEV-608 — Conciliación (`P0`)
+
+**Estado: cerrada técnicamente (8-09-2026).** La decisión conciliada se añade al
+historial del campo; las dos lecturas enfrentadas permanecen íntegras. Exige
+justificación, no puede aplicarse sobre un acuerdo y dos conciliaciones
+concurrentes no cierran la misma discrepancia.
 
 ### DEV-609 — Auditoría append-only (`P0`)
 
+**Estado: cerrada técnicamente (8-09-2026).** `audit_event` con actor, acción,
+entidad, estado anterior y posterior, motivo, contexto y fecha. UPDATE y DELETE
+rechazados. Un rollback no deja rastro de lo que no ocurrió.
+`/audit/records/{id}` reconstruye el historial uniendo decisiones, bloques y
+diario en orden cronológico.
+
 ### DEV-610 — Prueba de carga con proveedor (`P0`)
+
+**Estado: PENDIENTE EXTERNO.** No se ha realizado y no puede simularse. Listo
+para ejecutarla: generador, validador de contrato, manifiesto verificable,
+perfiles configurables, artefactos en disco e informe de exclusiones. Falta el
+ejemplo aceptado por el proveedor (D-011) y la ejecución en su entorno.
 
 ## EPIC E7 — Mantenimiento
 

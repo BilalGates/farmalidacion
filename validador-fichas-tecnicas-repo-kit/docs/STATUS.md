@@ -1,5 +1,71 @@
 # Estado del proyecto
 
+## Fase 6 — exportación, doble validación y auditoría (8 de septiembre de 2026)
+
+Los tres módulos puros que existían desde Fase 5 —`export_engine`,
+`export_manifest` y `double_review`— ya decidían correctamente, pero ninguno
+tenía persistencia, API ni forma de alcanzarse. Esta campaña añade esa capa.
+
+Cerrado técnicamente, todo `tecnicamente_verificado` y nada validado
+clínicamente:
+
+- **DEV-609 auditoría**: `audit_event`, append-only, y `record_history`, que une
+  decisiones, ediciones de bloque y diario en una sola lectura ordenada. Es un
+  único diario transversal: los historiales de dominio siguen siendo la verdad
+  de lo suyo y no se duplican.
+- **DEV-607 segunda validación ciega**: la ceguera vive en el dato. `blind_view`
+  no carga la primera decisión para recortarla después: no la consulta. Ocultarla
+  sólo en pantalla la dejaría a un `curl` de distancia.
+- **DEV-608 conciliación**: cierra una discrepancia registrando una decisión
+  nueva. Las dos lecturas enfrentadas permanecen íntegras; conciliar exige
+  justificación y no puede aplicarse sobre un acuerdo.
+- **DEV-601/602/603/605 exportación**: `export_service` lee el modelo canónico y
+  produce filas; ninguna estructura del ORM se serializa directamente. CSV, TXT
+  y XLSX desde el mismo modelo normalizado.
+- **DEV-604 exclusiones**: `export_exclusion` guarda ficha, campo, severidad,
+  regla y motivo. Un registro problemático no desaparece.
+- **DEV-606 reglas de riesgo ATC**: coincidencia por prefijo según la
+  especificación 11.1, con `L04` como única semilla acordada.
+- **Interfaz**: pantallas de Validaciones y Exportaciones integradas en la
+  navegación existente.
+
+Reglas que sostienen la entrega y que las pruebas comprueban:
+
+- Sólo se exporta lo validado; un campo sin decisión se excluye.
+- `no_consta` y `no_aplica` no se aplanan a vacío. Si el perfil no declara cómo
+  escribirlos, el registro se excluye en lugar de colapsar estados que el modelo
+  distingue (D-010).
+- Nada se trunca: un valor que excede su límite excluye la fila y lo dice.
+- La fecha nunca entra en el contenido, así que dos ejecuciones de los mismos
+  datos comparten bytes y hash aunque difieran en hora.
+
+Comprobado sobre copia del corpus real (40 registros, 1.850 valores): vista
+ciega que no contiene la primera lectura, primer firmante rechazado en la
+segunda, comparación cerrada hasta emitir, desacuerdo conciliado y segunda
+conciliación rechazada, historial de 9 entradas en orden con sus tres fuentes,
+exportación con hash idéntico entre ejecuciones y 67 exclusiones con su motivo.
+
+**El corpus real no se ha abierto en escritura en ningún momento.** Sigue en
+`b2c3d4e5f6a7` con 43.381 registros y 2.169.251 valores.
+
+Migración `d4e5f6a7b8c9`, aditiva: crea cinco tablas y no modifica ninguna
+existente. Probada upgrade → downgrade → upgrade sobre copia real con 1.850
+valores intactos, y en instalación limpia desde cero.
+
+**Pendiente externo (DEV-610):** la prueba de carga con el proveedor no se ha
+realizado y no puede simularse. El generador, el validador, el manifiesto, la
+configuración y los artefactos están listos; falta el fichero de ejemplo
+aceptado y la ejecución en el entorno del proveedor.
+
+**Pendiente farmacéutico:** D-011 (contrato exacto de exportación) y D-017
+(ampliar los prefijos ATC de riesgo). Ningún perfil se declara aceptado por el
+proveedor y `SEED_RULES` contiene sólo `L04`.
+
+**Pendiente técnico:** conectar las reglas de riesgo con la apertura automática
+de segunda validación, mantenimiento de reglas desde la interfaz, y descarga del
+artefacto desde la pantalla de exportaciones.
+
+
 ## Fase 5 — convergencia de la experiencia de revisión (8 de septiembre de 2026)
 
 `/fichas` es ahora la pantalla canónica de revisión y se sirve desde
