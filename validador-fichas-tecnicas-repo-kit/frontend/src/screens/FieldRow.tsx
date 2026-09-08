@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 
 import type { FieldValue, Reviewer, ValidationState } from '../api/types'
 import { ValidationBadge } from '../components/StateBadge'
+import { clearDraft, isEmptyDraft, readDraft, saveDraft } from '../domain/drafts'
 import { isTypingTarget, resolveShortcut } from '../domain/shortcuts'
 import {
   ASSIGNABLE_STATES,
@@ -22,19 +23,39 @@ import {
  */
 export function FieldRow({
   value,
+  recordId,
   reviewer,
   saving,
+  saveError,
   onSave,
 }: {
   value: FieldValue
+  recordId: string
   reviewer: Reviewer | null
   saving: boolean
+  saveError: boolean
   onSave: (state: ValidationState, finalValue: string | null, comment: string | null) => void
 }) {
-  const [open, setOpen] = useState(false)
-  const [state, setState] = useState<ValidationState | ''>('')
-  const [finalValue, setFinalValue] = useState('')
-  const [comment, setComment] = useState('')
+  // El borrador se recupera al montar: recargar a mitad de una edición no
+  // puede hacer que el revisor repita lo que ya había escrito.
+  const restored = useRef(readDraft(recordId, value.id)).current
+  const [open, setOpen] = useState(restored !== null)
+  const [state, setState] = useState<ValidationState | ''>(
+    (restored?.state ?? '') as ValidationState | '',
+  )
+  const [finalValue, setFinalValue] = useState(restored?.finalValue ?? '')
+  const [comment, setComment] = useState(restored?.comment ?? '')
+  const [recovered, setRecovered] = useState(restored !== null)
+
+  const draft = { state, finalValue, comment }
+  const dirty = !isEmptyDraft(draft)
+
+  // Autoguardado local del borrador. No se envía nada al backend: una decisión
+  // clínica se firma cuando el revisor la guarda, no cuando deja de teclear.
+  useEffect(() => {
+    saveDraft(recordId, value.id, draft)
+    // `draft` se recrea en cada render; sus campos son las dependencias reales.
+  }, [recordId, value.id, state, finalValue, comment])
 
   const needsValue = state === 'confirmado' || state === 'corregido'
   const needsComment = state === 'no_aplica'
@@ -42,6 +63,21 @@ export function FieldRow({
   const missingComment = needsComment && comment.trim() === ''
   const canSubmit =
     state !== '' && reviewer !== null && !saving && !missingValue && !missingComment
+
+  const historyLength = value.history.length
+  const previousHistory = useRef(historyLength)
+  useEffect(() => {
+    if (historyLength > previousHistory.current) {
+      // La decisión está firmada en el backend: el borrador ya no protege nada.
+      clearDraft(recordId, value.id)
+      setState('')
+      setFinalValue('')
+      setComment('')
+      setRecovered(false)
+      setOpen(false)
+    }
+    previousHistory.current = historyLength
+  }, [historyLength, recordId, value.id])
 
   /**
    * Atiende los atajos que dependen del estado del formulario del campo.
@@ -125,6 +161,11 @@ export function FieldRow({
 
       {open && (
         <div className='review'>
+          {recovered && (
+            <p className='alert alert--info' role='status'>
+              Se ha recuperado lo que había escrito sin guardar. Revíselo antes de firmar.
+            </p>
+          )}
           <div className='review__grid'>
             <label className='field'>
               <span className='field__label'>Decisión</span>
@@ -172,6 +213,15 @@ export function FieldRow({
           </div>
 
           <div className='review__actions'>
+            <p className='review__status' role='status'>
+              {saving
+                ? 'Guardando…'
+                : saveError
+                  ? 'No se ha guardado.'
+                  : dirty
+                    ? 'Cambios sin guardar.'
+                    : 'Sin cambios pendientes.'}
+            </p>
             <button
               type='button'
               className='button button--primary'

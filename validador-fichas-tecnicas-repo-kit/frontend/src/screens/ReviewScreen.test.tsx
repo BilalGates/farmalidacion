@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 
+import type { TargetRecord } from '../api/types'
 import { ReviewScreen } from './ReviewScreen'
 
 /**
@@ -13,7 +14,7 @@ import { ReviewScreen } from './ReviewScreen'
 
 const REVIEWER = { identifier: 'ana', display_name: 'Ana', assurance: 'declarada' as const }
 
-function record() {
+function record(): TargetRecord {
   return {
     id: 'rec-1',
     entity_type: 'specialty',
@@ -82,7 +83,10 @@ function stubFetch(...responses: unknown[]) {
   return mock
 }
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  window.localStorage.clear()
+})
 
 it('presenta las tres zonas con la evidencia del campo activo', async () => {
   stubFetch(record())
@@ -236,4 +240,92 @@ it('muestra el mensaje del backend cuando la decisión se rechaza', async () => 
   expect(
     await screen.findByText('La asignación no está vigente para este revisor.'),
   ).toBeInTheDocument()
+})
+
+it('recupera lo escrito sin guardar tras recargar la pantalla', async () => {
+  stubFetch(record())
+  const first = render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} />)
+  await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
+
+  fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
+  fireEvent.change(screen.getByLabelText('Decisión de revisión'), {
+    target: { value: 'corregido' },
+  })
+  fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: '20 mg exactos' } })
+  await waitFor(() => expect(screen.getByText('Cambios sin guardar.')).toBeInTheDocument())
+
+  // Se simula la recarga: se desmonta y se vuelve a montar la pantalla.
+  first.unmount()
+  stubFetch(record())
+  render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} />)
+  await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
+
+  expect(await screen.findByText(/Se ha recuperado lo que había escrito/)).toBeInTheDocument()
+  expect(screen.getByLabelText('Valor final')).toHaveValue('20 mg exactos')
+})
+
+it('conserva el borrador cuando el backend rechaza el guardado', async () => {
+  const mock = vi.fn()
+  mock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => record() } as Response)
+  mock.mockResolvedValueOnce({
+    ok: false,
+    status: 409,
+    json: async () => ({ detail: 'La asignación no está vigente.' }),
+  } as Response)
+  vi.stubGlobal('fetch', mock)
+
+  render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} />)
+  await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
+
+  fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
+  fireEvent.change(screen.getByLabelText('Decisión de revisión'), {
+    target: { value: 'confirmado' },
+  })
+  fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: 'valor propuesto' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar decisión' }))
+
+  await screen.findByText('La asignación no está vigente.')
+  // Un rechazo no puede perder el trabajo ni afirmar que se guardó.
+  expect(screen.getByText('No se ha guardado.')).toBeInTheDocument()
+  expect(screen.getByLabelText('Valor final')).toHaveValue('valor propuesto')
+})
+
+it('retira el borrador cuando la decisión queda firmada', async () => {
+  const saved = record()
+  saved.blocks[0].values[0] = {
+    ...saved.blocks[0].values[0],
+    validation_state: 'confirmado' as const,
+    history: [
+      {
+        sequence: 1,
+        state: 'confirmado' as const,
+        final_value: 'Omeprazol 20 mg',
+        comment: null,
+        reviewer_id: 'ana',
+        reviewer_assurance: 'declarada',
+        decided_at: '2026-09-08T10:00:00+00:00',
+      },
+    ],
+  }
+  const mock = vi.fn()
+  mock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => record() } as Response)
+  mock.mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({}) } as Response)
+  mock.mockResolvedValue({ ok: true, status: 200, json: async () => saved } as Response)
+  vi.stubGlobal('fetch', mock)
+
+  render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} />)
+  await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
+
+  fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
+  fireEvent.change(screen.getByLabelText('Decisión de revisión'), {
+    target: { value: 'confirmado' },
+  })
+  fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: 'Omeprazol 20 mg' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar decisión' }))
+
+  await screen.findByText('Decisión guardada.')
+  // El borrador desaparece: ya no hay trabajo sin firmar que proteger.
+  await waitFor(() =>
+    expect(window.localStorage.getItem('farmalidacion.draft.rec-1.value-1')).toBeNull(),
+  )
 })

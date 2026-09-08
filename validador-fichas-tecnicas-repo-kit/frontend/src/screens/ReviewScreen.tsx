@@ -74,6 +74,7 @@ export function ReviewScreen({
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [savingId, setSavingId] = useState<string | null>(null)
+  const [errorFieldId, setErrorFieldId] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
   const fieldsRef = useRef<HTMLDivElement>(null)
   const evidenceRef = useRef<HTMLElement>(null)
@@ -118,6 +119,7 @@ export function ReviewScreen({
   ) {
     if (reviewer === null) return
     setSavingId(fieldValueId)
+    setErrorFieldId(null)
     setNotice(null)
     try {
       await saveDecision(fieldValueId, {
@@ -133,6 +135,8 @@ export function ReviewScreen({
     } catch (cause: unknown) {
       // El mensaje viene de las barreras del backend y se muestra literal.
       setError(cause instanceof ApiError ? cause.message : 'Error inesperado.')
+      // El borrador se conserva: un guardado rechazado no puede perder trabajo.
+      setErrorFieldId(fieldValueId)
     } finally {
       setSavingId(null)
     }
@@ -310,8 +314,10 @@ export function ReviewScreen({
                     >
                       <FieldRow
                         value={value}
+                        recordId={record.id}
                         reviewer={reviewer}
                         saving={savingId === value.id}
+                        saveError={errorFieldId === value.id}
                         onSave={(state, finalValue, comment) =>
                           void handleSave(value.id, state, finalValue, comment)
                         }
