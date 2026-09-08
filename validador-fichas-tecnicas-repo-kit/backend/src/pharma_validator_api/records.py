@@ -1,9 +1,10 @@
 from collections.abc import Iterator, Sequence
+from datetime import UTC, datetime
 from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import ColumnElement, func, or_, select
+from sqlalchemy import ColumnElement, func, or_, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from pharma_validator_api.config import Settings, get_settings
@@ -12,6 +13,7 @@ from pharma_validator_api.models import (
     BlockInstance,
     ExternalIdentifier,
     FieldValue,
+    ReviewQueueEntry,
     SourceFragment,
     TargetRecord,
     ValueProvenance,
@@ -23,6 +25,7 @@ from pharma_validator_api.review import (
     evaluate_field_conflict,
     record_decision,
 )
+from pharma_validator_api.review_queue import DEFAULT_LEASE
 from pharma_validator_api.reviewer_identity import ReviewerDirectory, ReviewerIdentityError
 from pharma_validator_api.validation_states import (
     ValidationDecision,
@@ -30,7 +33,7 @@ from pharma_validator_api.validation_states import (
     ValidationStateError,
 )
 
-router = APIRouter(prefix='/records', tags=['registros'])
+router = APIRouter(prefix="/records", tags=["registros"])
 
 
 class ExternalIdentifierRead(BaseModel):
@@ -120,7 +123,7 @@ class DecisionWrite(BaseModel):
 
     state: ValidationState
     reviewer_id: str
-    reviewer_role: str = 'farmaceutico'
+    reviewer_role: str = "farmaceutico"
     final_value: str | None = None
     comment: str | None = None
     seconds_spent: int | None = None
@@ -140,7 +143,7 @@ SessionDependency = Annotated[Session, Depends(get_session)]
 
 
 def get_reviewer_directory(request: Request) -> ReviewerDirectory:
-    settings = cast(Settings, getattr(request.app.state, 'settings', None) or get_settings())
+    settings = cast(Settings, getattr(request.app.state, "settings", None) or get_settings())
     return ReviewerDirectory.from_configuration(settings.reviewers)
 
 
@@ -148,8 +151,8 @@ DirectoryDependency = Annotated[ReviewerDirectory, Depends(get_reviewer_director
 
 #: Nombres de campo que identifican un registro en el listado. Provienen del
 #: catálogo real; no se inventa semántica ni se deduce de otros campos.
-DISPLAY_NAME_FIELDS = ('ME_DESCRIPCION', 'DESCRIPCION', 'NOMBRE')
-ACTIVE_INGREDIENT_FIELDS = ('PA_DESCRIPCION', 'PRINCIPIO_ACTIVO')
+DISPLAY_NAME_FIELDS = ("ME_DESCRIPCION", "DESCRIPCION", "NOMBRE")
+ACTIVE_INGREDIENT_FIELDS = ("PA_DESCRIPCION", "PRINCIPIO_ACTIVO")
 
 
 def _provenance(session: Session, field_value_id: str) -> list[ProvenanceRead]:
@@ -162,7 +165,7 @@ def _provenance(session: Session, field_value_id: str) -> list[ProvenanceRead]:
     for row in rows:
         fragment = session.get(SourceFragment, row.source_fragment_id)
         if fragment is None:
-            raise RuntimeError(f'Procedencia sin fragmento: {row.id}')
+            raise RuntimeError(f"Procedencia sin fragmento: {row.id}")
         result.append(
             ProvenanceRead(
                 source_fragment_id=fragment.id,
@@ -226,7 +229,7 @@ def _summarize(session: Session, record: TargetRecord) -> RecordSummaryRead:
     last_reviewed = None
     for value in values:
         decision = current_decision(session, value.id)
-        if decision is None or decision.state in ('pendiente', 'revision_pendiente'):
+        if decision is None or decision.state in ("pendiente", "revision_pendiente"):
             pending += 1
         else:
             resolved += 1
@@ -236,7 +239,7 @@ def _summarize(session: Session, record: TargetRecord) -> RecordSummaryRead:
     # dos fuentes que discrepan producen dos filas y el conflicto vive entre ellas.
     for (block_id, field_name), group in _group_by_field(session, values).items():
         block = session.get(BlockInstance, block_id)
-        block_type = block.block_type if block is not None else 'desconocido'
+        block_type = block.block_type if block is not None else "desconocido"
         evaluation = evaluate_field_conflict(
             session, group, 1, record.entity_type, block_type, field_name
         )
@@ -249,13 +252,13 @@ def _summarize(session: Session, record: TargetRecord) -> RecordSummaryRead:
         .limit(1)
     ).first()
     if conflicts:
-        review_state = 'requiere_revision'
+        review_state = "requiere_revision"
     elif pending and resolved:
-        review_state = 'en_revision'
+        review_state = "en_revision"
     elif pending:
-        review_state = 'pendiente'
+        review_state = "pendiente"
     else:
-        review_state = 'validado'
+        review_state = "validado"
     return RecordSummaryRead(
         id=record.id,
         entity_type=record.entity_type,
@@ -293,7 +296,7 @@ def _search_predicate(needle: str) -> ColumnElement[bool]:
     descarta lo que con certeza no coincide. Los acentos no se normalizan, aquí
     ni allí: `magnesico` no encuentra `magnésico`, igual que antes.
     """
-    pattern = f'%{needle.lower()}%'
+    pattern = f"%{needle.lower()}%"
     named_fields = DISPLAY_NAME_FIELDS + ACTIVE_INGREDIENT_FIELDS
     return or_(
         func.lower(TargetRecord.id).like(pattern),
@@ -315,14 +318,14 @@ def _matches(item: RecordSummaryRead, needle: str) -> bool:
     """Coincidencia literal, sin normalizar acentos (misma regla que antes)."""
     folded = needle.casefold()
     return (
-        folded in (item.display_name or '').casefold()
-        or folded in (item.active_ingredient or '').casefold()
-        or folded in (item.primary_identifier or '').casefold()
+        folded in (item.display_name or "").casefold()
+        or folded in (item.active_ingredient or "").casefold()
+        or folded in (item.primary_identifier or "").casefold()
         or folded in item.id.casefold()
     )
 
 
-@router.get('', response_model=RecordListRead)
+@router.get("", response_model=RecordListRead)
 def list_records(
     session: SessionDependency,
     q: str | None = None,
@@ -385,7 +388,7 @@ def list_records(
     return RecordListRead(items=matched[offset : offset + limit], total=len(matched))
 
 
-@router.get('/reviewers', response_model=list[ReviewerRead])
+@router.get("/reviewers", response_model=list[ReviewerRead])
 def list_reviewers(directory: DirectoryDependency) -> list[ReviewerRead]:
     """Lista configurable de revisores (10.1). Vacía si no se ha configurado."""
     return [
@@ -398,11 +401,11 @@ def list_reviewers(directory: DirectoryDependency) -> list[ReviewerRead]:
     ]
 
 
-@router.get('/{record_id}', response_model=TargetRecordRead)
+@router.get("/{record_id}", response_model=TargetRecordRead)
 def read_record(record_id: str, session: SessionDependency) -> TargetRecordRead:
     record = session.get(TargetRecord, record_id)
     if record is None:
-        raise ApplicationError('Registro no encontrado.', status_code=404)
+        raise ApplicationError("Registro no encontrado.", status_code=404)
     identifiers = session.scalars(
         select(ExternalIdentifier)
         .where(ExternalIdentifier.target_record_id == record_id)
@@ -492,8 +495,9 @@ def _read_field_value(
     )
 
 
-@router.post('/values/{field_value_id}/decisions', response_model=DecisionRead, status_code=201)
+@router.post("/values/{field_value_id}/decisions", response_model=DecisionRead, status_code=201)
 def save_decision(
+    request: Request,
     field_value_id: str,
     payload: DecisionWrite,
     session: SessionDependency,
@@ -508,9 +512,40 @@ def save_decision(
     """
     value = session.get(FieldValue, field_value_id)
     if value is None:
-        raise ApplicationError('Campo no encontrado.', status_code=404)
-    if payload.reviewer_role not in ('farmaceutico', 'otro'):
-        raise ApplicationError('Rol de revisor no reconocido.', status_code=400)
+        raise ApplicationError("Campo no encontrado.", status_code=404)
+    block = session.get(BlockInstance, value.block_instance_id)
+    assert block is not None
+    queued = session.scalar(
+        select(ReviewQueueEntry).where(ReviewQueueEntry.target_record_id == block.target_record_id)
+    )
+    settings = cast(Settings, getattr(request.app.state, "settings", None) or get_settings())
+    if queued is not None and settings.enable_review_queue:
+        # El UPDATE mantiene el bloqueo hasta el commit de la decisión, evitando
+        # que otra asignación se interponga entre comprobación y escritura.
+        acquired = session.execute(
+            update(ReviewQueueEntry)
+            .where(
+                ReviewQueueEntry.id == queued.id,
+                ReviewQueueEntry.version == queued.version,
+                ReviewQueueEntry.assignee_id == payload.reviewer_id,
+                ReviewQueueEntry.state.in_(["asignado", "en_revision"]),
+                ReviewQueueEntry.assigned_at > datetime.now(UTC) - DEFAULT_LEASE,
+            )
+            .values(
+                version=ReviewQueueEntry.version + 1,
+                assigned_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+            .returning(ReviewQueueEntry.id)
+            .execution_options(synchronize_session=False)
+        ).scalar_one_or_none()
+        if acquired is None:
+            raise ApplicationError(
+                "La asignación no está vigente para este revisor. Recargue la cola.",
+                status_code=409,
+            )
+    if payload.reviewer_role not in ("farmaceutico", "otro"):
+        raise ApplicationError("Rol de revisor no reconocido.", status_code=400)
     try:
         decision = ValidationDecision(
             field_name=value.field_name,

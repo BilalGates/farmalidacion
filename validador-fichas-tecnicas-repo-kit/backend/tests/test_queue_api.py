@@ -1,15 +1,22 @@
 """API de la cola: la capa HTTP no puede saltarse las barreras del dominio."""
 
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, update
 from sqlalchemy.orm import sessionmaker
 
 from pharma_validator_api.config import Settings
 from pharma_validator_api.main import create_app
-from pharma_validator_api.models import Base, TargetRecord
+from pharma_validator_api.models import (
+    Base,
+    BlockInstance,
+    FieldValue,
+    ReviewQueueEntry,
+    TargetRecord,
+)
 
 
 @pytest.fixture
@@ -21,8 +28,77 @@ def client(tmp_path: Path) -> TestClient:
         for index in range(2):
             session.add(TargetRecord(id=f"rec-{index}", entity_type="medicamento"))
         session.commit()
+        session.add(
+            BlockInstance(id="block", target_record_id="rec-0", block_type="general", ordinal=1)
+        )
+        session.flush()
+        session.add(
+            FieldValue(
+                id="value",
+                block_instance_id="block",
+                field_name="NAME",
+                literal_value="Original",
+                observed_type="str",
+                logical_state="valued",
+            )
+        )
+        session.commit()
     engine.dispose()
     return TestClient(create_app(Settings(database_url=url, reviewers=("ana:Ana Ruiz",))))
+
+
+def test_assignment_guards_decision_writes(client: TestClient) -> None:
+    client.post("/queue", json={"target_record_id": "rec-0"})
+    client.post("/queue/rec-0/assign", json={"reviewer_id": "ana"})
+    payload = {
+        "state": "confirmado",
+        "reviewer_id": "other",
+        "reviewer_role": "farmaceutico",
+        "final_value": "Original",
+    }
+    assert client.post("/records/values/value/decisions", json=payload).status_code == 409
+    payload["reviewer_id"] = "ana"
+    assert client.post("/records/values/value/decisions", json=payload).status_code == 201
+
+
+def test_disabled_queue_does_not_block_existing_records(client: TestClient) -> None:
+    client.post("/queue", json={"target_record_id": "rec-0"})
+    client.app.state.settings.enable_review_queue = False
+    result = client.post(
+        "/records/values/value/decisions",
+        json={
+            "state": "confirmado",
+            "reviewer_id": "ana",
+            "final_value": "Original",
+            "reviewer_role": "farmaceutico",
+        },
+    )
+    assert result.status_code == 201
+
+
+def test_expired_assignment_rejects_writes(client: TestClient) -> None:
+    client.post("/queue", json={"target_record_id": "rec-0"})
+    client.post("/queue/rec-0/assign", json={"reviewer_id": "ana"})
+    engine = create_engine(client.app.state.settings.database_url)
+    with engine.begin() as connection:
+        connection.execute(
+            update(ReviewQueueEntry).values(assigned_at=datetime.now(UTC) - timedelta(hours=1))
+        )
+    engine.dispose()
+    result = client.post(
+        "/records/values/value/decisions",
+        json={
+            "state": "confirmado",
+            "reviewer_id": "ana",
+            "final_value": "Original",
+            "reviewer_role": "farmaceutico",
+        },
+    )
+    assert result.status_code == 409
+
+
+def test_cannot_enqueue_missing_record(client: TestClient) -> None:
+    assert client.post("/queue", json={"target_record_id": "missing"}).status_code == 404
 
 
 def test_enqueue_and_read_back(client: TestClient) -> None:
@@ -44,9 +120,7 @@ def test_assigning_twice_reports_conflict_not_server_error(client: TestClient) -
 def test_a_stale_screen_cannot_complete_someone_elses_progress(client: TestClient) -> None:
     client.post("/queue", json={"target_record_id": "rec-0"})
     assigned = client.post("/queue/rec-0/assign", json={"reviewer_id": "ana"}).json()
-    client.post(
-        "/queue/rec-0/transition", json={"reviewer_id": "ana", "state": "en_revision"}
-    )
+    client.post("/queue/rec-0/transition", json={"reviewer_id": "ana", "state": "en_revision"})
     stale = client.post(
         "/queue/rec-0/transition",
         json={

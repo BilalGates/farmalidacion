@@ -1,5 +1,13 @@
 # Backlog inicial
 
+## Orden vigente — D-028 / ADR-0010
+
+Completar desarrollo técnico de fases 4–7; después realizar todas las
+comprobaciones farmacéuticas. GOLD y umbrales no bloquean implementación.
+Integración actual: cola visible, guardado condicionado a asignación vigente,
+campo activo, evidencia lateral y navegación Alt+flechas. DEV-503/504 siguen
+parciales hasta completar contexto de párrafo y todos los atajos especificados.
+
 ## Actualización de camino crítico — 7 de septiembre de 2026
 
 - **REAL-001 completada:** `#/fichas` exclusivamente REAL, detalle correcto,
@@ -431,7 +439,10 @@ La vertical demostrable del 3 de septiembre de 2026 añadió el selector de revi
 
 ### DEV-502 — Cola y asignación de lotes (`P0`)
 
-**Estado:** no iniciada. La vertical demostrable ofrece un listado con búsqueda y filtro, que no es una cola de trabajo: no hay lotes, asignación ni prevención de colisiones.
+**Estado:** integración parcial verificada el 8-09-2026. Dominio, persistencia y API
+de cola implementados; pantalla con filtro de estado, alta, asignación y apertura
+de registro. Guardado protegido por asignación vigente. Pendientes lotes y filtros
+por entidad, bloque, conjunto y doble validación.
 
 ### DEV-503 — Pantalla de tres zonas (`P0`)
 
@@ -439,7 +450,8 @@ La vertical demostrable del 3 de septiembre de 2026 añadió el selector de revi
 
 ### DEV-504 — Navegación completa por teclado (`P0`)
 
-**Estado:** no iniciada. La vertical usa navegación estándar del navegador; los atajos de revisión sin ratón no existen.
+**Estado:** parcial. Alt+flechas recorre campos y actualiza la evidencia sin guardar.
+Tab conserva acceso a los controles; pendientes los atajos completos de la especificación.
 
 ### DEV-505 — Guardado incremental (`P0`)
 

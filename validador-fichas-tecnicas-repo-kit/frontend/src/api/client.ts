@@ -75,6 +75,30 @@ export function fetchRecord(id: string): Promise<TargetRecord> {
   return request<TargetRecord>(`/records/${encodeURIComponent(id)}`)
 }
 
+export interface QueueItem {
+  target_record_id: string
+  state: string
+  version: number
+  assignee_id: string | null
+  priority: number
+}
+
+export function fetchQueue(): Promise<QueueItem[]> {
+  return request<QueueItem[]>('/queue')
+}
+
+export function assignQueue(id: string, reviewerId: string): Promise<QueueItem> {
+  return request<QueueItem>(`/queue/${encodeURIComponent(id)}/assign`, {
+    method: 'POST', body: JSON.stringify({ reviewer_id: reviewerId }),
+  })
+}
+
+export function enqueueRecord(id: string): Promise<QueueItem> {
+  return request<QueueItem>('/queue', {
+    method: 'POST', body: JSON.stringify({ target_record_id: id }),
+  })
+}
+
 export function fetchReviewers(): Promise<Reviewer[]> {
   return request<Reviewer[]>('/records/reviewers')
 }

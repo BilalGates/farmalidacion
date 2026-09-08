@@ -1,5 +1,15 @@
 # Matriz inicial de trazabilidad
 
+## Integración del 8-09-2026
+
+- D-028 / ADR-0010: aceptación farmacéutica al final del desarrollo.
+- DEV-502: QueueScreen y cliente HTTP; pruebas de asignación y conflicto.
+- DEV-505: records.save_decision comprueba asignación vigente mediante UPDATE
+  transaccional; prueba de rechazo a otro revisor y aceptación del propietario.
+- DEV-503/504: campo activo, evidencia lateral y Alt+flechas; prueba de foco sin
+  emitir decisiones. Contexto de párrafo y atajos completos pendientes.
+- DEV-508: cierre de medición idempotente y rechazo de foco posterior al cierre.
+
 | Requisito | Fuente | Fase | Evidencia de implementación | Prueba mínima |
 |---|---|---|---|---|
 | Listado REAL paginado, buscable y recuperable | Camino crítico REAL; REAL-001 | 3/operación | `insights.list_records`; `RealRecordListScreen`; migración `4d7a6b2c1e90`; `docs/REAL_MODE_VERIFICATION.md` | 50 por página; 576 resultados actuales para omeprazol; error+retry; detalle CN 707703 con procedencia |

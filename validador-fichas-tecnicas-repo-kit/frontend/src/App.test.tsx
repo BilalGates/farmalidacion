@@ -377,6 +377,18 @@ describe('Recorrido de la vertical de revisión', () => {
     expect(postCount).toBe(1)
   })
 
+  it('navega entre campos por teclado sin emitir decisiones', async () => {
+    render(<App />)
+    await goTo('/registros/rec-1')
+    await screen.findByRole('heading', { level: 1, name: 'Metotrexato 2,5 mg comprimidos' })
+    const rows = document.querySelectorAll<HTMLElement>('[data-review-field]')
+    act(() => rows[0].focus())
+    fireEvent.keyDown(rows[0], { key: 'ArrowDown', altKey: true })
+    expect(rows[1]).toHaveFocus()
+    expect(screen.getByRole('complementary', { name: 'Evidencia del campo activo' })).toHaveTextContent('CANTIDAD')
+    expect(postCount).toBe(0)
+  })
+
   it('recuerda el revisor declarado entre montajes', async () => {
     const first = render(<App />)
     await selectReviewer('ana')

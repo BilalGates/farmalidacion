@@ -1,0 +1,6 @@
+.review-workspace { display: grid; grid-template-columns: minmax(0, 3fr) minmax(18rem, 2fr); gap: 1rem; align-items: start; }
+.review-evidence { position: sticky; top: 1rem; max-height: 75vh; overflow: auto; overflow-wrap: anywhere; }
+.review-shortcuts { grid-column: 1 / -1; position: sticky; bottom: 0; }
+.review-field--active { outline: 2px solid #2563eb; outline-offset: 2px; }
+[data-review-field]:focus-visible { outline: 3px solid #1d4ed8; }
+@media (max-width: 1100px) { .review-workspace { grid-template-columns: minmax(0, 1fr); } .review-evidence { position: static; } }

@@ -14,6 +14,7 @@ import { RealRecordListScreen } from './screens/RealRecordListScreen'
 import { RecordDetailScreen } from './screens/RecordDetailScreen'
 import { RecordListScreen } from './screens/RecordListScreen'
 import { SourcesScreen } from './screens/SourcesScreen'
+import { QueueScreen } from './screens/QueueScreen'
 
 interface NavItem {
   readonly id: string
@@ -24,6 +25,7 @@ interface NavItem {
 }
 
 const NAV: readonly NavItem[] = [
+  { id: 'cola', label: 'Cola de revisión', available: true },
   { id: 'inicio', label: 'Inicio', available: true },
   { id: 'fichas', label: 'Fichas técnicas', available: true },
   { id: 'fuentes', label: 'Fuentes', available: true },
@@ -156,9 +158,10 @@ export function App() {
           {route.name === 'importaciones' && <ImportsScreen />}
           {route.name === 'registros' && <RecordListScreen />}
           {route.name === 'registro' && (
-            <RecordDetailScreen recordId={route.id} reviewer={reviewer} />
+            <RecordDetailScreen key={route.id} recordId={route.id} reviewer={reviewer} />
           )}
-          {route.name === 'seccion' && (
+          {route.name === 'seccion' && route.id === 'cola' && <QueueScreen reviewer={reviewer} />}
+          {route.name === 'seccion' && route.id !== 'cola' && (
             <PlaceholderScreen
               item={NAV.find((item) => item.id === route.id) ?? NAV[0]}
             />

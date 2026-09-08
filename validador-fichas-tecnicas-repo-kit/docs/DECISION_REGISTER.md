@@ -36,6 +36,11 @@ Estados: `cerrada`, `propuesta`, `pendiente`, `bloqueada`, `descartada`. Una dec
 | GOLD-003 | Cobertura por estrato ATC del conjunto oro | cerrada | Fase 4 | No estratificar por ATC el conjunto oro inicial: el inventario DEV-208 no contiene ATC; reevaluar solo con nueva evidencia | Aprobación humana 2026-09-02; `docs/GOLD_SET_ANNOTATION_CONTRACT.md` |
 | GOLD-004 | Alcance exacto de unidades/campos por ficha oro | pendiente | Antes de anotar | Congelar los campos extraíbles y ocurrencias esperadas; no derivar una cifra ficticia | El checker acepta `--expected-units-per-document`; hoy informa 0 sin esta decisión |
 
+## D-028 — Desarrollo completo antes de aceptación farmacéutica
+
+Cerrada por instrucción del responsable el 8-09-2026. ADR-0010. GOLD-002,
+GOLD-004 y aceptación basada en métricas D-015 pasan al final del desarrollo.
+
 ## Flujo de una decisión
 
 1. El agente detecta una decisión que cambia comportamiento, datos o arquitectura.

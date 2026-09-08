@@ -1,5 +1,9 @@
 # Desarrollo técnico por delante de la puerta clínica
 
+Actualización 8-09-2026: ADR-0010 autoriza completar todo el desarrollo antes de
+comprobaciones farmacéuticas. Los bloqueos clínicos descritos debajo corresponden
+a aceptación final; no bloquean la ingeniería de fases 4–7.
+
 - Fecha de apertura: 7 de septiembre de 2026
 - Motivo: no se dispone todavía de farmacéuticos anotadores
 

@@ -59,6 +59,10 @@ def record_focus(session: Session, review_session_id: str, field_name: str,
         raise TimingStoreError("Un tramo de foco exige campo.")
     if session.get(ReviewSession, review_session_id) is None:
         raise TimingStoreError(f"La sesión {review_session_id} no existe.")
+    measurement_session = session.get(ReviewSession, review_session_id)
+    assert measurement_session is not None
+    if measurement_session.ended_at is not None:
+        raise TimingStoreError('La sesión de medición ya está cerrada.')
     row = FieldFocusInterval(
         review_session_id=review_session_id,
         field_name=field_name,
@@ -101,6 +105,8 @@ def close_session(session: Session, review_session_id: str,
     row = session.get(ReviewSession, review_session_id)
     if row is None:
         raise TimingStoreError(f"La sesión {review_session_id} no existe.")
+    if row.ended_at is not None:
+        return row
     measurement = measure(session, review_session_id)
     row.ended_at = ended_at or datetime.now(UTC)
     row.counted_seconds = measurement.counted_seconds

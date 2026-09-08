@@ -137,6 +137,18 @@ def test_the_headline_metric_averages_over_measured_fields(
         assert seconds_per_field(session) == 10.0
 
 
+def test_closed_measurement_cannot_receive_more_focus(factory: sessionmaker[Session]) -> None:
+    with factory() as session:
+        opened = open_session(session)
+        record_focus(session, opened.id, 'CN', 0, 10)
+        closed = close_session(session, opened.id, ended_at=NOW)
+        with pytest.raises(TimingStoreError, match='cerrada'):
+            record_focus(session, opened.id, 'CN', 10, 20)
+        again = close_session(session, opened.id)
+        assert again.ended_at == closed.ended_at
+        assert again.counted_seconds == 10
+
+
 def test_no_measurement_yields_no_invented_average(factory: sessionmaker[Session]) -> None:
     with factory() as session:
         assert seconds_per_field(session) is None

@@ -1,5 +1,23 @@
 # Estado del proyecto
 
+## Secuencia vigente — 8 de septiembre de 2026
+
+ADR-0010 / D-028: completar desarrollo técnico antes de comprobaciones
+farmacéuticas. Las referencias históricas a Gate 4 BLOCKED no bloquean ahora
+la implementación de fases 5–7. La aceptación farmacéutica se realiza al final.
+
+Avances de integración: pantalla de cola con filtro de estado, alta y asignación;
+guardado de campos de registros en cola protegido por propietario y caducidad
+de asignación dentro de la transacción; revisión con campo activo, evidencia
+lateral, progreso y Alt+flechas; respuestas antiguas de carga descartadas.
+Las sesiones de medición cerradas rechazan nuevos intervalos.
+
+Pendiente para completar el programa: filtros/lotes completos, atajos restantes,
+contexto de párrafo y políticas por campo, editor de bloques, API/captura de
+tiempos por ocurrencia, doble revisión ciega y conciliación integradas,
+exportación desde registros con auditoría, mantenimiento y despliegue del runtime.
+No se declara acabado el programa ni se solicitan comprobaciones farmacéuticas.
+
 ## Estado global
 
 `FASE 0A CERRADA — FASE 0B CERRADA CON DEPENDENCIAS EXTERNAS — FASE 1 CERRADA — FASE 2 CERRADA — FASE 3 CERRADA`

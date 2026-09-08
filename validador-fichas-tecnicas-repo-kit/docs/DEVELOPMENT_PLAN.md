@@ -4,7 +4,14 @@
 
 El desarrollo se organiza por reducción de riesgo, no por capas técnicas aisladas. Cada fase debe dejar un resultado demostrable, probado y reversible. El orden evita construir una interfaz o un extractor sobre un modelo que no pueda representar los maestros reales.
 
-La regla de avance es simple:
+## Secuencia vigente desde el 8 de septiembre de 2026
+
+Se completa el desarrollo técnico de fases 4–7 antes de las comprobaciones
+farmacéuticas. GOLD, benchmark, umbrales, usabilidad y piloto pasan al final.
+ADR-0010 acepta esta excepción por instrucción del responsable. La ausencia de
+farmacéuticos no bloquea ingeniería. Las puertas clínicas son aceptación final.
+
+La regla original, modificada por ADR-0010, era:
 
 > No se entra en una fase si la puerta de salida de la anterior no está superada o si existe una excepción aprobada mediante ADR.
 

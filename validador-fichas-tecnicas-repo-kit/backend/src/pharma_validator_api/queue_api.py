@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from pharma_validator_api.config import Settings, get_settings
 from pharma_validator_api.maturity import CAPABILITIES, clinical_blockers
+from pharma_validator_api.models import TargetRecord
 from pharma_validator_api.records import SessionDependency
 from pharma_validator_api.review_queue import (
     QueueConflictError,
@@ -101,6 +102,8 @@ def post_enqueue(
     payload: EnqueueRequest, session: SessionDependency, settings: SettingsDependency
 ) -> QueueItemRead:
     _require_enabled(settings)
+    if session.get(TargetRecord, payload.target_record_id) is None:
+        raise HTTPException(status_code=404, detail='Registro no encontrado.')
     return _read(enqueue(session, payload.target_record_id, priority=payload.priority))
 
 
