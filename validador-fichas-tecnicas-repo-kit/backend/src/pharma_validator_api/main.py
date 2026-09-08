@@ -20,6 +20,7 @@ from pharma_validator_api.models import ImportBatch, TargetRecord
 from pharma_validator_api.queue_api import maturity_router
 from pharma_validator_api.queue_api import router as queue_router
 from pharma_validator_api.records import router as records_router
+from pharma_validator_api.second_review_api import router as second_review_router
 from pharma_validator_api.timing_api import router as timing_router
 
 
@@ -111,6 +112,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(queue_router)
     application.include_router(maturity_router)
     application.include_router(timing_router)
+    application.include_router(second_review_router)
 
     @application.get("/health", response_model=HealthResponse, tags=["sistema"])
     async def health() -> HealthResponse:

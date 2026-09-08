@@ -108,24 +108,21 @@ def effective_state(session: Session, field_value_id: str) -> ValidationState:
     return decision.state if decision is not None else "pendiente"
 
 
-def record_decision(
+def _append_decision(
     session: Session,
     *,
     field_value_id: str,
     decision: ValidationDecision,
     directory: ReviewerDirectory,
-    decided_at: datetime | None = None,
+    decided_at: datetime | None,
+    check_transition: bool,
 ) -> ValidationDecisionRecord:
-    """Registra una decisión tras pasar por todas las barreras existentes.
-
-    El orden importa: primero se resuelve la identidad, porque una decisión sin
-    firma no debe llegar siquiera a evaluarse; después la legitimidad de la
-    decisión; y por último la transición desde el estado vigente.
-    """
+    """Escribe el evento. No decide si la transición es legítima: eso lo fijan
+    sus dos envoltorios, que son los que documentan por qué."""
     reviewer = directory.resolve(decision.reviewer_id)
     validate_decision(decision)
     previous = current_decision(session, field_value_id)
-    if previous is not None:
+    if previous is not None and check_transition:
         assert_transition_allowed(previous.state, decision.state, decision.comment)
     record = ValidationDecisionRecord(
         field_value_id=field_value_id,
@@ -141,8 +138,93 @@ def record_decision(
         decided_at=decided_at or datetime.now(UTC),
     )
     session.add(record)
+    return record
+
+
+def record_decision(
+    session: Session,
+    *,
+    field_value_id: str,
+    decision: ValidationDecision,
+    directory: ReviewerDirectory,
+    decided_at: datetime | None = None,
+) -> ValidationDecisionRecord:
+    """Registra una decisión tras pasar por todas las barreras existentes.
+
+    El orden importa: primero se resuelve la identidad, porque una decisión sin
+    firma no debe llegar siquiera a evaluarse; después la legitimidad de la
+    decisión; y por último la transición desde el estado vigente.
+    """
+    record = _append_decision(
+        session,
+        field_value_id=field_value_id,
+        decision=decision,
+        directory=directory,
+        decided_at=decided_at,
+        check_transition=True,
+    )
     session.commit()
     return record
+
+
+def record_independent_reading(
+    session: Session,
+    *,
+    field_value_id: str,
+    decision: ValidationDecision,
+    directory: ReviewerDirectory,
+    decided_at: datetime | None = None,
+) -> ValidationDecisionRecord:
+    """Registra una lectura independiente del mismo campo (DEV-607).
+
+    Existe **sólo** para la segunda revisión ciega, y por una razón concreta:
+    `assert_transition_allowed` presupone que las decisiones de un campo forman
+    una secuencia en el tiempo, donde cada una parte de la anterior. Una segunda
+    lectura ciega no parte de la anterior: parte del valor de origen, y su autor
+    no sabe —ni debe saber— qué decidió el primero.
+
+    Aplicar ahí la regla de transición filtraría la primera decisión por la
+    puerta de atrás: al segundo revisor se le rechazarían justo las decisiones
+    incompatibles con una lectura que no ha visto, y de la negativa deduciría su
+    contenido.
+
+    Las demás barreras siguen aplicándose enteras: identidad del revisor y
+    `validate_decision`. Lo único que se omite es la comparación con el estado
+    vigente. No confirma: el llamante decide cuándo, para que la lectura y el
+    resultado de la comparación se escriban en la misma transacción.
+    """
+    return _append_decision(
+        session,
+        field_value_id=field_value_id,
+        decision=decision,
+        directory=directory,
+        decided_at=decided_at,
+        check_transition=False,
+    )
+
+
+def record_decision_in_transaction(
+    session: Session,
+    *,
+    field_value_id: str,
+    decision: ValidationDecision,
+    directory: ReviewerDirectory,
+    decided_at: datetime | None = None,
+) -> ValidationDecisionRecord:
+    """Como `record_decision` pero sin confirmar, con todas sus barreras.
+
+    Lo usa la conciliación, que necesita escribir la decisión y su justificación
+    en una sola transacción: una decisión conciliada sin su registro de
+    conciliación sería una decisión sin explicación.
+    """
+    return _append_decision(
+        session,
+        field_value_id=field_value_id,
+        decision=decision,
+        directory=directory,
+        decided_at=decided_at,
+        check_transition=True,
+    )
 
 
 def decision_history(
