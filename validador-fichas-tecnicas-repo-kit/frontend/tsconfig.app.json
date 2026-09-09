@@ -6,6 +6,7 @@
     "strict": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "types": ["node"],
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx"
