@@ -947,7 +947,10 @@ def read_record(record_id: str, session: SessionDependency) -> RecordDetailRead:
             detail=(
                 "Documento CIMA enlazado mediante correspondencia CN exacta."
                 if has_cima_ft
-                else "Vinculación pendiente: este registro no tiene una correspondencia CN exacta en el corpus CIMA cargado."
+                else (
+                    "Vinculación pendiente: este registro no tiene una correspondencia "
+                    "CN exacta en el corpus CIMA cargado."
+                )
             ),
         ),
         RecordSourceAvailabilityRead(
