@@ -3,68 +3,52 @@ import { useEffect, useState } from 'react'
 import { fetchDatabaseInfo, fetchReviewers } from './api/client'
 import type { DatabaseInfo, Reviewer } from './api/types'
 import { ModeBanner } from './components/ModeBanner'
-import { RoadmapNote } from './components/RoadmapNote'
-import { SoonBadge } from './components/StateBadge'
-import { ROADMAP_NOTES } from './domain/vocabulary'
+import { ReviewerSelect } from './components/ReviewerSelect'
 import { navigate, useRoute } from './navigation'
 import { DashboardScreen } from './screens/DashboardScreen'
 import { ImportsScreen } from './screens/ImportsScreen'
 import { RealRecordListScreen } from './screens/RealRecordListScreen'
-import { RecordListScreen } from './screens/RecordListScreen'
 import { ReviewScreen } from './screens/ReviewScreen'
 import { SourcesScreen } from './screens/SourcesScreen'
 import { ExportsScreen } from './screens/ExportsScreen'
 import { QueueScreen } from './screens/QueueScreen'
 import { SecondReviewScreen } from './screens/SecondReviewScreen'
+import { MaintenanceScreen } from './screens/MaintenanceScreen'
 
 interface NavItem {
   readonly id: string
   readonly label: string
+  readonly icon: string
   /** Un módulo no disponible se anuncia, no se oculta: forma parte de la visión. */
   readonly available: boolean
-  readonly note?: keyof typeof ROADMAP_NOTES
 }
 
+/**
+ * Menú de la aplicación.
+ *
+ * «Fichas técnicas» y «Revisión (DEMO)» eran dos entradas hacia la misma
+ * pantalla de detalle, así que se fusionan en «Registros». Las secciones aún no
+ * construidas no figuran aquí: un menú que anuncia lo que no existe obliga a
+ * descubrir a base de clics qué es real, y el trabajo diario ocurre en una sola
+ * pantalla.
+ */
 const NAV: readonly NavItem[] = [
-  { id: 'cola', label: 'Cola de revisión', available: true },
-  { id: 'inicio', label: 'Inicio', available: true },
-  { id: 'fichas', label: 'Fichas técnicas', available: true },
-  { id: 'fuentes', label: 'Fuentes', available: true },
-  { id: 'importaciones', label: 'Importaciones', available: true },
-  { id: 'registros', label: 'Revisión (DEMO)', available: true },
-  { id: 'validaciones', label: 'Validaciones', available: true },
-  { id: 'exportaciones', label: 'Exportaciones', available: true },
-  { id: 'auditoria', label: 'Historial / Auditoría', available: false, note: 'auditoria' },
-  { id: 'configuracion', label: 'Configuración', available: false, note: 'exportacion' },
+  { id: 'inicio', label: 'Inicio', icon: '⌂', available: true },
+  { id: 'fichas', label: 'Registros', icon: '▤', available: true },
+  { id: 'cola', label: 'Cola de revisión', icon: '☷', available: true },
+  { id: 'validaciones', label: 'Validaciones', icon: '✓', available: true },
+  { id: 'importaciones', label: 'Importaciones', icon: '↓', available: true },
+  { id: 'exportaciones', label: 'Exportaciones', icon: '↑', available: true },
+  { id: 'fuentes', label: 'Fuentes', icon: '◉', available: true },
+  { id: 'novedades', label: 'Novedades CIMA', icon: '◌', available: true },
 ]
 
 function activeNavId(routeName: string, routeId: string | null): string {
   if (routeName === 'ficha' || routeName === 'fichas') return 'fichas'
-  if (routeName === 'registro' || routeName === 'registros') return 'registros'
   if (routeName === 'fuentes') return 'fuentes'
   if (routeName === 'importaciones') return 'importaciones'
   if (routeName === 'seccion' && routeId) return routeId
   return 'inicio'
-}
-
-function PlaceholderScreen({ item }: { item: NavItem }) {
-  return (
-    <div className='screen'>
-      <div className='screen__head'>
-        <div>
-          <p className='eyebrow'>Módulo previsto</p>
-          <h1>
-            {item.label} <SoonBadge />
-          </h1>
-          <p className='lede'>
-            Este módulo forma parte de la visión del producto y todavía no está desarrollado. Su
-            lugar en la interfaz ya está reservado.
-          </p>
-        </div>
-      </div>
-      {item.note && <RoadmapNote title={item.label} note={ROADMAP_NOTES[item.note]} />}
-    </div>
-  )
 }
 
 export function App() {
@@ -92,13 +76,19 @@ export function App() {
 
   return (
     <div className='layout'>
-      <aside className='sidebar'>
+      {/* Una sola barra para todo: marca, navegación, modo y revisor.
+          La sidebar repartía la orientación en dos ejes para nueve destinos y
+          se llevaba una columna entera de ancho; el trabajo diario ocurre en la
+          pantalla, no en el menú. */}
+      <header className='topbar'>
         <div className='brand'>
           <span className='brand__mark' aria-hidden='true'>
-            F
+            <span />
+            <span />
           </span>
           <span className='brand__name'>Farmalidación</span>
         </div>
+
         <nav aria-label='Navegación principal'>
           <ul>
             {NAV.map((item) => (
@@ -109,48 +99,35 @@ export function App() {
                   aria-current={active === item.id ? 'page' : undefined}
                   onClick={() => navigate(item.id === 'inicio' ? '/' : `/${item.id}`)}
                 >
+                  <span className='nav__icon' aria-hidden='true'>{item.icon}</span>
                   <span>{item.label}</span>
-                  {!item.available && <SoonBadge label='Pronto' />}
                 </button>
               </li>
             ))}
           </ul>
         </nav>
-        <p className='sidebar__foot'>Piloto interno · sin datos de pacientes</p>
-      </aside>
+
+        <div className='topbar__actions'>
+          {/* El modo se queda: distinguir un valor de demostración de uno
+              importado es lo que esta vertical no se puede permitir fallar. */}
+          {database && (
+            <span className={`mode-chip mode-chip--${database.mode}`}>
+              {database.mode === 'real' ? 'REAL' : 'DEMO'}
+            </span>
+          )}
+          <ReviewerSelect
+            reviewers={reviewers}
+            value={reviewerId}
+            onChange={(identifier) => {
+              setReviewerId(identifier)
+              if (identifier) localStorage.setItem('farmalidacion.reviewer', identifier)
+              else localStorage.removeItem('farmalidacion.reviewer')
+            }}
+          />
+        </div>
+      </header>
 
       <div className='main'>
-        <header className='topbar'>
-          <p className='topbar__context'>
-            Validador de fichas técnicas
-            {database && (
-              <span className={`mode-chip mode-chip--${database.mode}`}>
-                {database.mode === 'real' ? 'REAL' : 'DEMO'}
-              </span>
-            )}
-          </p>
-          <label className='field field--inline'>
-            <span className='field__label'>Revisor</span>
-            <select
-              aria-label='Revisor que firma las decisiones'
-              value={reviewerId}
-              onChange={(event) => {
-                const identifier = event.target.value
-                setReviewerId(identifier)
-                if (identifier) localStorage.setItem('farmalidacion.reviewer', identifier)
-                else localStorage.removeItem('farmalidacion.reviewer')
-              }}
-            >
-              <option value=''>Sin revisor seleccionado</option>
-              {reviewers.map((item) => (
-                <option key={item.identifier} value={item.identifier}>
-                  {item.display_name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </header>
-
         <main className='content'>
           <ModeBanner info={database} />
           {route.name === 'inicio' && <DashboardScreen />}
@@ -160,26 +137,12 @@ export function App() {
           )}
           {route.name === 'fuentes' && <SourcesScreen />}
           {route.name === 'importaciones' && <ImportsScreen />}
-          {route.name === 'registros' && <RecordListScreen />}
-          {route.name === 'registro' && (
-            <ReviewScreen
-              key={route.id}
-              recordId={route.id}
-              reviewer={reviewer}
-              backTo='/registros'
-            />
-          )}
           {route.name === 'seccion' && route.id === 'cola' && <QueueScreen reviewer={reviewer} />}
           {route.name === 'seccion' && route.id === 'validaciones' && (
             <SecondReviewScreen reviewer={reviewer} />
           )}
           {route.name === 'seccion' && route.id === 'exportaciones' && <ExportsScreen />}
-          {route.name === 'seccion' &&
-            !['cola', 'validaciones', 'exportaciones'].includes(route.id) && (
-            <PlaceholderScreen
-              item={NAV.find((item) => item.id === route.id) ?? NAV[0]}
-            />
-          )}
+          {route.name === 'seccion' && route.id === 'novedades' && <MaintenanceScreen />}
         </main>
       </div>
     </div>

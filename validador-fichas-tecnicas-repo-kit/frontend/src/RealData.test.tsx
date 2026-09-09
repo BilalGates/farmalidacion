@@ -362,7 +362,7 @@ describe('separación entre datos reales y DEMO', () => {
     expect(within(row).getByText('Real')).toBeInTheDocument()
   })
 
-  it('no ofrece datos DEMO dentro de Fichas técnicas', async () => {
+  it('no ofrece datos DEMO dentro del listado de registros', async () => {
     window.location.hash = '#/fichas'
     render(<App />)
     await screen.findByText('Omeprazol 20 mg cápsula')
@@ -406,11 +406,11 @@ describe('ficha de un registro real', () => {
     render(<App />)
     await screen.findByText('Omeprazol 20 mg cápsula')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Abrir ficha' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Revisar' }))
 
     await waitFor(() => expect(window.location.hash).toBe('#/fichas/rec-real'))
     expect(await screen.findByText('707703')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Fichas técnicas/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /Registros/ })).toHaveAttribute(
       'aria-current',
       'page',
     )
@@ -477,15 +477,18 @@ describe('fuentes e importaciones', () => {
 })
 
 describe('distintivo del conjunto de datos', () => {
-  it('declara datos reales y no habla de demostración cuando el modo es REAL', async () => {
+  it('declara el modo REAL en el distintivo, sin franja de texto', async () => {
+    // La franja permanente («datos reales, N registros, N lotes») se retiró por
+    // ruidosa, pero el modo sigue siendo inconfundible: es lo que impide tomar
+    // un valor de demostración por uno importado.
     render(<App />)
 
-    const banner = await screen.findByText(/Datos reales/)
-    expect(banner.parentElement?.textContent).toContain('43.381')
-    expect(screen.queryByText(/Datos de demostración/)).not.toBeInTheDocument()
+    expect(await screen.findByText('REAL')).toBeVisible()
+    expect(screen.queryByText('DEMO')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Datos reales · maestros importados/)).not.toBeInTheDocument()
   })
 
-  it('declara datos de demostración cuando el modo es DEMO', async () => {
+  it('declara el modo DEMO en el distintivo', async () => {
     databaseInfo = {
       mode: 'demo',
       backend: 'sqlite',
@@ -498,8 +501,8 @@ describe('distintivo del conjunto de datos', () => {
     }
     render(<App />)
 
-    expect(await screen.findByText(/Datos de demostración/)).toBeInTheDocument()
-    expect(screen.queryByText(/Datos reales/)).not.toBeInTheDocument()
+    expect(await screen.findByText('DEMO')).toBeVisible()
+    expect(screen.queryByText('REAL')).not.toBeInTheDocument()
   })
 
   it('avisa cuando el modo REAL no encuentra ningún registro importado', async () => {
@@ -535,25 +538,34 @@ describe('distintivo del conjunto de datos', () => {
   })
 })
 
-describe('navegación REAL/DEMO', () => {
-  it('marca "Fichas técnicas" como activo en /#/fichas', async () => {
+describe('navegación', () => {
+  it('marca "Registros" como activo en /#/fichas', async () => {
     window.location.hash = '#/fichas'
     render(<App />)
     await screen.findByText('Omeprazol 20 mg cápsula')
-    const fichasButton = screen.getByRole('button', { name: /Fichas técnicas/ })
-    expect(fichasButton).toHaveAttribute('aria-current', 'page')
-    const revisionButton = screen.getByRole('button', { name: /Revisión \(DEMO\)/ })
-    expect(revisionButton).not.toHaveAttribute('aria-current')
+    expect(screen.getByRole('button', { name: /Registros/ })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
   })
 
-  it('marca "Revisión (DEMO)" como activo en /#/registros', async () => {
+  it('resuelve la antigua ruta /#/registros sobre el listado único', async () => {
+    // El segundo listado se fusionó con éste; los enlaces ya repartidos deben
+    // seguir llevando a algún sitio, no a «sección desconocida».
     window.location.hash = '#/registros'
     render(<App />)
-    await waitFor(() => expect(screen.queryByText(/Cargando/)).toBeNull())
-    const revisionButton = screen.getByRole('button', { name: /Revisión \(DEMO\)/ })
-    expect(revisionButton).toHaveAttribute('aria-current', 'page')
-    const fichasButton = screen.getByRole('button', { name: /Fichas técnicas/ })
-    expect(fichasButton).not.toHaveAttribute('aria-current')
+    await screen.findByText('Omeprazol 20 mg cápsula')
+    expect(screen.getByRole('button', { name: /Registros/ })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+  })
+
+  it('no anuncia en el menú módulos que aún no existen', () => {
+    window.location.hash = '#/fichas'
+    render(<App />)
+    expect(screen.queryByRole('button', { name: /Historial \/ Auditoría/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Configuración/ })).toBeNull()
   })
 })
 

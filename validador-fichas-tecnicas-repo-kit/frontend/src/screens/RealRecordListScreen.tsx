@@ -1,21 +1,31 @@
 import { useState } from 'react'
 
 import { fetchRealRecords } from '../api/client'
+import type { ReviewState } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
 import { OriginBadge } from '../components/OriginBadge'
+import { ReviewBadge } from '../components/StateBadge'
 import { orDash } from '../domain/format'
+import { REVIEW_STATE_LABELS } from '../domain/vocabulary'
 import { navigate } from '../navigation'
 
 /**
- * Listado de registros reales importados desde los maestros.
+ * Listado único de registros, con su origen y su estado de revisión.
  *
- * Esta ruta es exclusivamente REAL. Los registros ficticios viven en la ruta
- * separada «Revisión (DEMO)» y nunca se ofrecen como alternativa dentro del
- * listado de fichas técnicas.
+ * Antes había dos listados: éste y «Revisión (DEMO)», que consultaban endpoints
+ * distintos y llevaban a la misma pantalla de detalle. Dos puertas a lo mismo
+ * obligan a saber cuál abrir, así que se fusionan aquí y el estado de revisión
+ * pasa a ser una columna y un filtro más.
+ *
+ * El origen sigue siendo explícito: REAL y DEMO nunca se mezclan en la misma
+ * tabla, que es lo que esta vertical debe impedir.
  */
 
 const PAGE_SIZE = 50
+
+/** Filtros de estado, en el orden en que avanza una revisión. */
+const ESTADOS: readonly ReviewState[] = ['pendiente', 'en_revision', 'validado']
 
 const ENTITY_LABELS: Record<string, string> = {
   medication: 'Medicamento',
@@ -27,11 +37,19 @@ export function RealRecordListScreen() {
   const [term, setTerm] = useState('')
   const [query, setQuery] = useState('')
   const [offset, setOffset] = useState(0)
+  const [estado, setEstado] = useState<ReviewState | null>(null)
   const [retryKey, setRetryKey] = useState(0)
 
   const { data, error, loading } = useQuery(
-    () => fetchRealRecords({ origin: 'real', q: query || undefined, limit: PAGE_SIZE, offset }),
-    [query, offset, retryKey],
+    () =>
+      fetchRealRecords({
+        origin: 'real',
+        q: query || undefined,
+        estado: estado ?? undefined,
+        limit: PAGE_SIZE,
+        offset,
+      }),
+    [query, estado, offset, retryKey],
   )
 
   function search(event: React.FormEvent) {
@@ -47,11 +65,11 @@ export function RealRecordListScreen() {
     <div className='screen'>
       <div className='screen__head'>
         <div>
-          <p className='eyebrow'>Fichas técnicas</p>
+          <p className='eyebrow'>Revisión</p>
           <h1>Registros</h1>
           <p className='lede'>
-            Consulte los registros importados desde los maestros. El origen de los datos se elige
-            de forma explícita y nunca se mezclan en una misma tabla.
+            Consulte y revise los registros importados desde los maestros. El origen de los datos
+            se elige de forma explícita y nunca se mezclan en una misma tabla.
           </p>
         </div>
       </div>
@@ -73,6 +91,33 @@ export function RealRecordListScreen() {
         <button type='submit' className='button button--primary'>
           Buscar
         </button>
+        <div className='filters' role='group' aria-label='Estado de revisión'>
+          <button
+            type='button'
+            className={`chip${estado === null ? ' chip--active' : ''}`}
+            aria-pressed={estado === null}
+            onClick={() => {
+              setOffset(0)
+              setEstado(null)
+            }}
+          >
+            Todos
+          </button>
+          {ESTADOS.map((name) => (
+            <button
+              key={name}
+              type='button'
+              className={`chip${estado === name ? ' chip--active' : ''}`}
+              aria-pressed={estado === name}
+              onClick={() => {
+                setOffset(0)
+                setEstado(name)
+              }}
+            >
+              {REVIEW_STATE_LABELS[name] ?? name}
+            </button>
+          ))}
+        </div>
       </form>
 
       <AsyncBoundary
@@ -90,7 +135,18 @@ export function RealRecordListScreen() {
         {data && (
           <>
             <p className='muted'>
-              {data.total.toLocaleString('es-ES')} registros · página {page} de {pages}
+              {estado === null ? (
+                <>
+                  {data.total.toLocaleString('es-ES')} registros · página {page} de {pages}
+                </>
+              ) : (
+                /* Con filtro de estado el total no se recalcula: contarlo exigiría
+                   recorrer el maestro entero. Se dice cuántos trae esta página en
+                   lugar de presentar como total lo que no lo es. */
+                <>
+                  {data.items.length} en esta página · página {page} de {pages}
+                </>
+              )}
             </p>
             <table className='table'>
               <thead>
@@ -99,6 +155,7 @@ export function RealRecordListScreen() {
                   <th scope='col'>Identificador</th>
                   <th scope='col'>Tipo</th>
                   <th scope='col'>Origen</th>
+                  <th scope='col'>Estado</th>
                   <th scope='col'>Bloques</th>
                   <th scope='col'>Campos</th>
                   <th scope='col'>
@@ -117,6 +174,9 @@ export function RealRecordListScreen() {
                     <td>
                       <OriginBadge origin={item.origin} />
                     </td>
+                    <td>
+                      <ReviewBadge state={item.review_state} />
+                    </td>
                     <td>{item.block_count}</td>
                     <td>{item.field_count}</td>
                     <td>
@@ -125,7 +185,7 @@ export function RealRecordListScreen() {
                         className='button'
                         onClick={() => navigate(`/fichas/${encodeURIComponent(item.id)}`)}
                       >
-                        Abrir ficha
+                        Revisar
                       </button>
                     </td>
                   </tr>

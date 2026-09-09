@@ -11,6 +11,7 @@ import type {
   ImportList,
   RealRecordDetail,
   RealRecordPage,
+  ReviewState,
   RecordList,
   Reviewer,
   SourceDetail,
@@ -86,10 +87,25 @@ export interface QueueItem {
   version: number
   assignee_id: string | null
   priority: number
+  review_set: 'oro' | 'medida' | 'corpus'
+  requires_second_review: boolean
 }
 
-export function fetchQueue(): Promise<QueueItem[]> {
-  return request<QueueItem[]>('/queue')
+export interface QueueFilters {
+  state?: string
+  entity_type?: string
+  block_type?: string
+  review_set?: string
+  requires_second_review?: boolean
+}
+
+export function fetchQueue(filters: QueueFilters = {}): Promise<QueueItem[]> {
+  const search = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') search.set(key, String(value))
+  })
+  const query = search.toString()
+  return request<QueueItem[]>(`/queue${query ? `?${query}` : ''}`)
 }
 
 export function assignQueue(id: string, reviewerId: string): Promise<QueueItem> {
@@ -98,9 +114,31 @@ export function assignQueue(id: string, reviewerId: string): Promise<QueueItem> 
   })
 }
 
-export function enqueueRecord(id: string): Promise<QueueItem> {
+export function enqueueRecord(
+  id: string,
+  reviewSet: QueueItem['review_set'] = 'corpus',
+  requiresSecondReview = false,
+): Promise<QueueItem> {
   return request<QueueItem>('/queue', {
-    method: 'POST', body: JSON.stringify({ target_record_id: id }),
+    method: 'POST',
+    body: JSON.stringify({
+      target_record_id: id,
+      review_set: reviewSet,
+      requires_second_review: requiresSecondReview,
+    }),
+  })
+}
+
+export function assignQueueBatch(items: QueueItem[], reviewerId: string): Promise<QueueItem[]> {
+  return request<QueueItem[]>('/queue/assign-batch', {
+    method: 'POST',
+    body: JSON.stringify({
+      reviewer_id: reviewerId,
+      items: items.map((item) => ({
+        target_record_id: item.target_record_id,
+        expected_version: item.version,
+      })),
+    }),
   })
 }
 
@@ -153,11 +191,13 @@ export function fetchImport(id: string): Promise<ImportDetail> {
 export function fetchRealRecords(params: {
   origin: DataOrigin
   q?: string
+  estado?: ReviewState
   limit?: number
   offset?: number
 }): Promise<RealRecordPage> {
   const search = new URLSearchParams({ origin: params.origin })
   if (params.q) search.set('q', params.q)
+  if (params.estado) search.set('estado', params.estado)
   if (params.limit !== undefined) search.set('limit', String(params.limit))
   if (params.offset !== undefined) search.set('offset', String(params.offset))
   return request<RealRecordPage>(`/insights/records?${search.toString()}`)
@@ -348,4 +388,75 @@ export interface HistoryEntry {
 
 export function fetchRecordHistory(recordId: string): Promise<HistoryEntry[]> {
   return request<HistoryEntry[]>(`/audit/records/${encodeURIComponent(recordId)}`)
+}
+
+export interface MaintenanceChangeSummary {
+  id: string
+  nregistro: string
+  occurred_at_epoch: number
+  change_type: number
+  areas: string[]
+  old_version_id: string | null
+  new_version_id: string | null
+  affected_field_count: number
+  has_diff: boolean
+  recorded_at: string
+}
+
+export interface MaintenanceArtifactChange {
+  role: string
+  ordinal: number
+  change_type: string
+  old_locator: string | null
+  new_locator: string | null
+  diff_kind: string
+  text_diff: string | null
+}
+
+export interface MaintenanceChangeDetail extends MaintenanceChangeSummary {
+  source_sha256: string
+  fetched_at: string
+  diff: { changes: MaintenanceArtifactChange[] } | null
+}
+
+export function fetchMaintenanceChanges(): Promise<MaintenanceChangeSummary[]> {
+  return request<MaintenanceChangeSummary[]>('/maintenance/changes')
+}
+
+export function fetchMaintenanceChange(id: string): Promise<MaintenanceChangeDetail> {
+  return request<MaintenanceChangeDetail>(`/maintenance/changes/${encodeURIComponent(id)}`)
+}
+
+export interface MaintenanceRunSummary {
+  id: string
+  requested_date: string
+  attempt: number
+  status: string
+  event_count: number
+  error_detail: string | null
+  started_at: string
+  finished_at: string | null
+}
+
+export function fetchMaintenanceRuns(): Promise<MaintenanceRunSummary[]> {
+  return request<MaintenanceRunSummary[]>('/maintenance/runs')
+}
+
+export interface ChatCitation {
+  document_version_id: string
+  section: string
+  literal_text: string
+}
+
+export interface ContextualChatResult {
+  status: 'answered' | 'not_found' | 'not_available'
+  message: string
+  citations: ChatCitation[]
+}
+
+export function askDocument(recordId: string, question: string): Promise<ContextualChatResult> {
+  return request<ContextualChatResult>(`/records/${encodeURIComponent(recordId)}/chat`, {
+    method: 'POST',
+    body: JSON.stringify({ question }),
+  })
 }

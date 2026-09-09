@@ -13,8 +13,6 @@ export type Route =
   | { readonly name: 'inicio' }
   | { readonly name: 'fichas' }
   | { readonly name: 'ficha'; readonly id: string }
-  | { readonly name: 'registros' }
-  | { readonly name: 'registro'; readonly id: string }
   | { readonly name: 'fuentes' }
   | { readonly name: 'importaciones' }
   | { readonly name: 'seccion'; readonly id: string }
@@ -23,11 +21,14 @@ export function parseRoute(hash: string): Route {
   const path = hash.replace(/^#\/?/, '')
   if (path === '' || path === 'inicio') return { name: 'inicio' }
   if (path === 'fichas') return { name: 'fichas' }
-  if (path === 'registros') return { name: 'registros' }
+  // `/registros` era el segundo listado, fusionado en `/fichas`. Los enlaces ya
+  // repartidos deben seguir abriendo lo que abrían: se resuelven a la ruta que
+  // queda en lugar de caer en «sección desconocida».
+  if (path === 'registros') return { name: 'fichas' }
   if (path === 'fuentes') return { name: 'fuentes' }
   if (path === 'importaciones') return { name: 'importaciones' }
   const record = /^registros\/(.+)$/.exec(path)
-  if (record) return { name: 'registro', id: decodeURIComponent(record[1]) }
+  if (record) return { name: 'ficha', id: decodeURIComponent(record[1]) }
   const detail = /^fichas\/(.+)$/.exec(path)
   if (detail) return { name: 'ficha', id: decodeURIComponent(detail[1]) }
   return { name: 'seccion', id: path }

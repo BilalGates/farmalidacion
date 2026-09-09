@@ -17,6 +17,7 @@ import type {
   ValidationState,
 } from '../api/types'
 import { ProvenanceList } from '../components/ProvenanceList'
+import { ContextualChat } from '../components/ContextualChat'
 import { RoadmapNote } from '../components/RoadmapNote'
 import { ROADMAP_NOTES, conflictLabel, sourceLabel } from '../domain/vocabulary'
 import { FocusTracker } from '../domain/focusTracker'
@@ -281,7 +282,7 @@ export function ReviewScreen({
   ).length
 
   return (
-    <div className='screen'>
+    <div className='screen review-screen'>
       <button type='button' className='button button--ghost back' onClick={() => navigate(backTo)}>
         ← Volver al listado
       </button>
@@ -351,9 +352,11 @@ export function ReviewScreen({
         </p>
       )}
 
-      <p role='status'>
-        {resolved} de {fields.length} campos revisados
-      </p>
+      <div className='review-progress' role='status'>
+        <span className='review-progress__label'>{resolved} de {fields.length} campos revisados</span>
+        <div className='review-progress__track' aria-hidden='true'><span style={{ width: `${fields.length ? (resolved / fields.length) * 100 : 0}%` }} /></div>
+        <strong>{fields.length ? Math.round((resolved / fields.length) * 100) : 0}%</strong>
+      </div>
 
       <div className='review-workspace' onKeyDown={handleKeyDown}>
         {/* Zona B — campo de trabajo. */}
@@ -438,12 +441,13 @@ export function ReviewScreen({
           className='panel review-evidence'
           aria-label='Evidencia del campo activo'
         >
-          <h2>Evidencia · {activeField?.field_name ?? 'Sin campos'}</h2>
+          <div className='evidence-head'><span className='evidence-head__icon' aria-hidden='true'>⌕</span><div><p className='eyebrow'>Fuente activa</p><h2>Evidencia · {activeField?.field_name ?? 'Sin campos'}</h2></div></div>
           {activeField ? (
-            <ProvenanceList provenance={activeField.provenance} />
+            <ProvenanceList provenance={activeField.provenance} highlightField={activeField.field_name} />
           ) : (
             <p className='muted'>Este registro no tiene campos almacenados.</p>
           )}
+          <ContextualChat recordId={recordId} />
         </aside>
 
         <footer className='panel review-shortcuts'>

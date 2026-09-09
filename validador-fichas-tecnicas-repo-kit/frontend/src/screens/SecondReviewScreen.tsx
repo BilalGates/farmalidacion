@@ -134,10 +134,17 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
         </p>
       )}
 
-      <section className='panel'>
+      <div className='validation-overview' aria-label='Resumen de validaciones'>
+        <div><span className='validation-overview__icon'>◷</span><strong>{open.length}</strong><small>Pendientes</small></div>
+        <div><span className='validation-overview__icon validation-overview__icon--danger'>!</span><strong>{conflicts.length}</strong><small>Discrepancias</small></div>
+        <div><span className='validation-overview__icon validation-overview__icon--success'>✓</span><strong>{closed.length}</strong><small>Cerradas</small></div>
+      </div>
+
+      <div className='validation-grid'>
+      <section className='panel validation-panel'>
         <h2>Pendientes de segunda lectura ({open.length})</h2>
         {open.length === 0 ? (
-          <p className='muted'>No hay campos esperando una segunda lectura suya.</p>
+          <div className='empty-state empty-state--compact'><span className='empty-state__icon'>◷</span><p>No hay campos esperando una segunda lectura suya.</p></div>
         ) : (
           <ul className='conflicts'>
             {open.map((item) => (
@@ -158,7 +165,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
       </section>
 
       {active !== null && (
-        <section className='panel'>
+        <section className='panel validation-editor'>
           <h2>Lectura ciega · {active.field_name}</h2>
           <p className='note'>{active.instruction}</p>
           <dl className='pairs'>
@@ -229,10 +236,10 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
         </section>
       )}
 
-      <section className='panel'>
+      <section className='panel validation-panel'>
         <h2>Discrepancias por conciliar ({conflicts.length})</h2>
         {conflicts.length === 0 ? (
-          <p className='muted'>No hay discrepancias abiertas.</p>
+          <div className='empty-state empty-state--compact'><span className='empty-state__icon'>✓</span><p>No hay discrepancias abiertas.</p></div>
         ) : (
           <ul className='conflicts'>
             {conflicts.map((item) => (
@@ -256,10 +263,10 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
         </p>
       </section>
 
-      <section className='panel'>
+      <section className='panel validation-panel'>
         <h2>Cerradas ({closed.length})</h2>
         {closed.length === 0 ? (
-          <p className='muted'>Todavía no hay segundas lecturas cerradas.</p>
+          <div className='empty-state empty-state--compact'><span className='empty-state__icon'>◇</span><p>Todavía no hay segundas lecturas cerradas.</p></div>
         ) : (
           <ul className='conflicts'>
             {closed.map((item) => (
@@ -271,6 +278,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
           </ul>
         )}
       </section>
+      </div>
     </div>
   )
 }

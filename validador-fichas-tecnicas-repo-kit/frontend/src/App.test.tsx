@@ -214,14 +214,29 @@ function mockFetch() {
     const detail = /\/records\/(rec-\d)$/.exec(url)
     if (detail) return ok(DETAIL)
 
-    const query = new URL(url, 'http://localhost').searchParams.get('q')
+    // El listado único se sirve desde /insights/records, que pagina y devuelve
+    // el origen y el estado de cada registro.
+    const params = new URL(url, 'http://localhost').searchParams
+    const query = params.get('q')
+    const estado = params.get('estado')
+    let items = listPayload.items.map((item) => ({
+      id: item.id,
+      entity_type: item.entity_type,
+      origin: 'demo',
+      display_name: item.display_name,
+      identifier: item.primary_identifier,
+      source_system: 'demo',
+      block_count: item.block_count,
+      field_count: item.field_count,
+      review_state: item.review_state,
+    }))
     if (query) {
-      const filtered = listPayload.items.filter((item) =>
+      items = items.filter((item) =>
         (item.display_name ?? '').toLowerCase().includes(query.toLowerCase()),
       )
-      return ok({ items: filtered, total: filtered.length })
     }
-    return ok(listPayload)
+    if (estado) items = items.filter((item) => item.review_state === estado)
+    return ok({ items, total: items.length, limit: 50, offset: 0 })
   })
 }
 
@@ -258,12 +273,9 @@ async function selectReviewer(identifier: string) {
   const select = await screen.findByRole('combobox', {
     name: 'Revisor que firma las decisiones',
   })
-  await waitFor(() =>
-    expect(within(select).getByRole('option', { name: 'Ana Ruiz' })).toBeDefined(),
-  )
-  await act(async () => {
-    fireEvent.change(select, { target: { value: identifier } })
-  })
+  await click(select)
+  const reviewerName = identifier === 'ana' ? /Ana Ruiz/ : /Sin revisor/
+  await click(await screen.findByRole('option', { name: reviewerName }))
 }
 
 async function click(element: HTMLElement) {
@@ -305,29 +317,34 @@ describe('Recorrido de la vertical de revisión', () => {
   it('muestra el aviso de datos DEMO y los módulos previstos en la navegación', async () => {
     render(<App />)
 
-    expect(await screen.findByText(/Datos de demostración/)).toBeVisible()
-    expect(screen.getByRole('button', { name: /Revisión \(DEMO\)/ })).toBeVisible()
-    // Validaciones ya está desarrollada (DEV-607/608) y por tanto sin «Pronto».
+    // El modo se declara en el distintivo de la barra, no en una franja de texto.
+    // Se busca el distintivo por su clase: «DEMO» aparece también como origen
+    // de cada fila del listado, y ésos no son el modo de la aplicación.
+    const chip = await screen.findByText('DEMO', { selector: '.mode-chip' })
+    expect(chip).toBeVisible()
+    expect(screen.getByRole('button', { name: /Registros/ })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Validaciones' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Exportaciones' })).toBeVisible()
-    // Un módulo que sigue sin desarrollar se anuncia, no se oculta.
-    expect(
-      screen.getByRole('button', { name: /Historial \/ Auditoría\s*Pronto/ }),
-    ).toBeVisible()
+    // Los módulos sin construir ya no se anuncian: un menú que promete lo que no
+    // existe obliga a descubrir a base de clics qué es real.
+    expect(screen.queryByRole('button', { name: /Historial \/ Auditoría/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Revisión \(DEMO\)/ })).toBeNull()
   })
 
   it('lista las fichas, filtra por búsqueda y abre el detalle', async () => {
     render(<App />)
+    await goTo('/fichas')
 
     expect(await screen.findByText('Metotrexato 2,5 mg comprimidos')).toBeVisible()
     expect(screen.getByText('Omeprazol 20 mg cápsulas duras')).toBeVisible()
 
     await typeInto(screen.getByRole('searchbox', { name: /Buscar/ }), 'metotrexato')
+    await click(screen.getByRole('button', { name: 'Buscar' }))
     await waitFor(() =>
       expect(screen.queryByText('Omeprazol 20 mg cápsulas duras')).not.toBeInTheDocument(),
     )
 
-    await click(screen.getAllByRole('button', { name: 'Abrir ficha' })[0])
+    await click(screen.getAllByRole('button', { name: 'Revisar' })[0])
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Metotrexato 2,5 mg comprimidos' }),
     ).toBeVisible()
@@ -391,7 +408,6 @@ describe('Recorrido de la vertical de revisión', () => {
     const row = (await screen.findByText('Metotrexato 2,5 mg comprimidos')).closest('tr')
     expect(row).not.toBeNull()
     expect(within(row as HTMLElement).getByText('En revisión')).toBeVisible()
-    expect(within(row as HTMLElement).getByText('1/3')).toBeVisible()
   })
 
   it('valida los requisitos de la decisión antes de enviarla', async () => {
@@ -436,9 +452,6 @@ describe('Recorrido de la vertical de revisión', () => {
     const select = await screen.findByRole('combobox', {
       name: 'Revisor que firma las decisiones',
     })
-    await waitFor(() =>
-      expect(within(select).getByRole('option', { name: 'Ana Ruiz' })).toBeDefined(),
-    )
-    expect(select).toHaveValue('ana')
+    await waitFor(() => expect(select).toHaveTextContent('Ana Ruiz'))
   })
 })

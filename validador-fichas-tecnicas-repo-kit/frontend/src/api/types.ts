@@ -256,6 +256,8 @@ export interface RealRecordRow {
   source_system: string | null
   block_count: number
   field_count: number
+  /** Vocabulario cerrado: el listado no muestra estados que no existan. */
+  review_state: ReviewState
 }
 
 export interface RealRecordPage {

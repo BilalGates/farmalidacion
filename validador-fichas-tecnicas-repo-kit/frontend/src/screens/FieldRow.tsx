@@ -3,13 +3,13 @@ import { useEffect, useRef, useState } from 'react'
 
 import type { FieldValue, Reviewer, ValidationState } from '../api/types'
 import { ValidationBadge } from '../components/StateBadge'
+import { ProvenanceList } from '../components/ProvenanceList'
 import { clearDraft, isEmptyDraft, readDraft, saveDraft } from '../domain/drafts'
 import { isTypingTarget, resolveShortcut } from '../domain/shortcuts'
 import {
   ASSIGNABLE_STATES,
   VALIDATION_STATE_LABELS,
   conflictLabel,
-  sourceLabel,
 } from '../domain/vocabulary'
 
 /**
@@ -149,21 +149,9 @@ export function FieldRow({
         </button>
       </div>
 
-      <ul className='sources'>
-        {value.provenance.map((item) => (
-          <li key={item.source_fragment_id}>
-            <span className='sources__role'>{sourceLabel(item.provenance_role)}</span>
-            <span className='sources__locator'>{item.locator}</span>
-            <span className='sources__version'>Versión {item.document_version_id}</span>
-            {item.literal_text && (
-              <blockquote className='sources__evidence'>{item.literal_text}</blockquote>
-            )}
-          </li>
-        ))}
-        {value.provenance.length === 0 && (
-          <li className='muted'>Sin procedencia declarada.</li>
-        )}
-      </ul>
+      <div className='field-row__provenance'>
+        <ProvenanceList provenance={value.provenance} showEvidence={false} />
+      </div>
 
       {open && (
         <div className='review'>

@@ -24,12 +24,18 @@ export function DashboardScreen() {
     <div className='screen'>
       <div className='screen__head'>
         <div>
-          <p className='eyebrow'>Farmalidación</p>
-          <h1>Estado del sistema</h1>
+          <p className='eyebrow'>Resumen operativo</p>
+          <h1>Estado de la validación</h1>
           <p className='lede'>
-            Cifras obtenidas de la base de datos en el momento de la consulta. Reflejan lo que
-            está realmente almacenado, no una previsión.
+            Una vista rápida del trabajo almacenado y de la disponibilidad de cada etapa.
           </p>
+        </div>
+        <div className='dashboard-freshness'>
+          <span className='dashboard-freshness__dot' aria-hidden='true' />
+          <span>
+            <strong>Datos actualizados</strong>
+            <small>{data?.last_import_at ? formatDateTime(data.last_import_at) : 'Sin importaciones'}</small>
+          </span>
         </div>
       </div>
 
@@ -45,24 +51,30 @@ export function DashboardScreen() {
       >
         {data && (
           <>
-            <section aria-label='Métricas del sistema'>
+            <section aria-label='Métricas del sistema' className='dashboard-metrics'>
               <div className='metrics'>
-                {data.metrics.map((metric) => (
+                {data.metrics.map((metric, index) => (
                   <article key={metric.key} className='metric'>
+                    <span className='metric__icon' aria-hidden='true'>
+                      {['✓', '▤', '◉', '↺'][index % 4]}
+                    </span>
                     <p className='metric__value'>{metric.value.toLocaleString('es-ES')}</p>
                     <p className='metric__label'>{metric.label}</p>
                   </article>
                 ))}
               </div>
-              <p className='muted'>
-                Última importación registrada:{' '}
-                {data.last_import_at ? formatDateTime(data.last_import_at) : 'ninguna'}
-              </p>
             </section>
 
-            <section aria-label='Estado de fuentes y proceso'>
-              <h2>Fuentes y proceso</h2>
-              <table className='table'>
+            <section aria-label='Estado de fuentes y proceso' className='panel dashboard-pipeline'>
+              <div className='panel__head'>
+                <div>
+                  <p className='eyebrow'>Disponibilidad</p>
+                  <h2>Fuentes y proceso</h2>
+                </div>
+                <span className='badge badge--disponible'>Estado actual</span>
+              </div>
+              <div className='table-wrap table-wrap--flat'>
+                <table className='table'>
                 <thead>
                   <tr>
                     <th scope='col'>Etapa</th>
@@ -83,14 +95,15 @@ export function DashboardScreen() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+                </table>
+              </div>
             </section>
           </>
         )}
       </AsyncBoundary>
 
-      <details className='disclosure'>
-        <summary>Qué funciona hoy y qué llegará después</summary>
+      <details className='disclosure dashboard-scope'>
+        <summary>Alcance actual y próximos módulos</summary>
         <div className='cards'>
           <article className='card card--plain'>
             <h3>Qué funciona hoy</h3>
