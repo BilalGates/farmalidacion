@@ -88,12 +88,8 @@ class MaintenanceChangeEvent(Base):
     areas_json: Mapped[str] = mapped_column(Text)
     source_sha256: Mapped[str] = mapped_column(String(64))
     fetched_at: Mapped[str] = mapped_column(Text)
-    old_version_id: Mapped[str | None] = mapped_column(
-        ForeignKey("source_document_version.id")
-    )
-    new_version_id: Mapped[str | None] = mapped_column(
-        ForeignKey("source_document_version.id")
-    )
+    old_version_id: Mapped[str | None] = mapped_column(ForeignKey("source_document_version.id"))
+    new_version_id: Mapped[str | None] = mapped_column(ForeignKey("source_document_version.id"))
     diff_json: Mapped[str | None] = mapped_column(Text)
     affected_field_count: Mapped[int] = mapped_column(Integer, default=0)
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -149,9 +145,7 @@ class ExternalIdentifier(Base):
         ),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    target_record_id: Mapped[str] = mapped_column(
-        ForeignKey("target_record.id"), index=True
-    )
+    target_record_id: Mapped[str] = mapped_column(ForeignKey("target_record.id"), index=True)
     source_system: Mapped[str] = mapped_column(String(100))
     source_identifier: Mapped[str] = mapped_column(Text)
     source_version: Mapped[str] = mapped_column(Text)
@@ -161,21 +155,15 @@ class DocumentRecordLink(Base):
     __tablename__ = "document_record_link"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     document_version_id: Mapped[str] = mapped_column(ForeignKey("source_document_version.id"))
-    target_record_id: Mapped[str] = mapped_column(
-        ForeignKey("target_record.id"), index=True
-    )
+    target_record_id: Mapped[str] = mapped_column(ForeignKey("target_record.id"), index=True)
     link_type: Mapped[str] = mapped_column(String(80))
 
 
 class TargetRecordLink(Base):
     __tablename__ = "target_record_link"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    source_record_id: Mapped[str] = mapped_column(
-        ForeignKey("target_record.id"), index=True
-    )
-    target_record_id: Mapped[str] = mapped_column(
-        ForeignKey("target_record.id"), index=True
-    )
+    source_record_id: Mapped[str] = mapped_column(ForeignKey("target_record.id"), index=True)
+    target_record_id: Mapped[str] = mapped_column(ForeignKey("target_record.id"), index=True)
     link_type: Mapped[str] = mapped_column(String(80))
     source_fragment_id: Mapped[str | None] = mapped_column(ForeignKey("source_fragment.id"))
 
@@ -183,9 +171,7 @@ class TargetRecordLink(Base):
 class BlockInstance(Base):
     __tablename__ = "block_instance"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    target_record_id: Mapped[str] = mapped_column(
-        ForeignKey("target_record.id"), index=True
-    )
+    target_record_id: Mapped[str] = mapped_column(ForeignKey("target_record.id"), index=True)
     block_type: Mapped[str] = mapped_column(String(120))
     ordinal: Mapped[int] = mapped_column(Integer)
     source_fragment_id: Mapped[str | None] = mapped_column(ForeignKey("source_fragment.id"))
@@ -200,9 +186,7 @@ class BlockInstance(Base):
 class FieldValue(Base):
     __tablename__ = "field_value"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    block_instance_id: Mapped[str] = mapped_column(
-        ForeignKey("block_instance.id"), index=True
-    )
+    block_instance_id: Mapped[str] = mapped_column(ForeignKey("block_instance.id"), index=True)
     field_name: Mapped[str] = mapped_column(String(160), index=True)
     literal_value: Mapped[str | None] = mapped_column(Text)
     observed_type: Mapped[str] = mapped_column(String(80))
@@ -212,12 +196,8 @@ class FieldValue(Base):
 class ValueProvenance(Base):
     __tablename__ = "value_provenance"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    field_value_id: Mapped[str] = mapped_column(
-        ForeignKey("field_value.id"), index=True
-    )
-    source_fragment_id: Mapped[str] = mapped_column(
-        ForeignKey("source_fragment.id"), index=True
-    )
+    field_value_id: Mapped[str] = mapped_column(ForeignKey("field_value.id"), index=True)
+    source_fragment_id: Mapped[str] = mapped_column(ForeignKey("source_fragment.id"), index=True)
     provenance_role: Mapped[str] = mapped_column(String(80))
 
 
@@ -351,6 +331,34 @@ class SamplingItem(Base):
     source_response_hash: Mapped[str] = mapped_column(String(64))
 
 
+class ReviewerRecord(Base):
+    """Revisor que puede firmar validaciones (10.1, D-018).
+
+    Los revisores vivían en `APP_REVIEWERS`, una variable de entorno: dar de
+    alta a alguien exigía editar el despliegue y reiniciar. Aquí son datos, de
+    modo que la lista se gestiona desde la aplicación.
+
+    `active` no se borra nunca: una firma histórica debe seguir diciendo quién
+    la puso, y eliminar la fila dejaría decisiones apuntando a un revisor
+    inexistente. Desactivar retira del selector sin tocar el pasado.
+
+    `role` decide qué puede firmar cada uno, no es una etiqueta: sólo el
+    farmacéutico declara `no_consta` y `no_aplica` (ver `validation_states`).
+    """
+
+    __tablename__ = "reviewer"
+    __table_args__ = (
+        UniqueConstraint("identifier", name="uq_reviewer_identifier"),
+        Index("ix_reviewer_active", "active"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    identifier: Mapped[str] = mapped_column(String(80))
+    display_name: Mapped[str] = mapped_column(String(160))
+    role: Mapped[str] = mapped_column(String(40))
+    active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class ReviewQueueEntry(Base):
     """Trabajo de revisión de un registro (DEV-502).
 
@@ -374,9 +382,7 @@ class ReviewQueueEntry(Base):
     assigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     priority: Mapped[int] = mapped_column(Integer, default=0)
     review_set: Mapped[str] = mapped_column(String(20), default="corpus", server_default="corpus")
-    requires_second_review: Mapped[bool] = mapped_column(
-        Boolean, default=False, server_default="0"
-    )
+    requires_second_review: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
@@ -440,9 +446,7 @@ class ValidationDecisionRecord(Base):
 
     __tablename__ = "validation_decision_record"
     __table_args__ = (
-        UniqueConstraint(
-            "field_value_id", "sequence", name="uq_validation_decision_sequence"
-        ),
+        UniqueConstraint("field_value_id", "sequence", name="uq_validation_decision_sequence"),
         # La decisión vigente es la de mayor `sequence` para un campo: el índice
         # compuesto la resuelve sin recorrer el historial completo.
         Index(
@@ -583,9 +587,7 @@ class SecondReviewAssignment(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     field_value_id: Mapped[str] = mapped_column(ForeignKey("field_value.id"), index=True)
-    target_record_id: Mapped[str] = mapped_column(
-        ForeignKey("target_record.id"), index=True
-    )
+    target_record_id: Mapped[str] = mapped_column(ForeignKey("target_record.id"), index=True)
     #: pendiente | en_revision | acuerdo | desacuerdo | conciliado
     state: Mapped[str] = mapped_column(String(40))
     first_reviewer_id: Mapped[str] = mapped_column(String(80))
@@ -610,9 +612,7 @@ class ReconciliationRecord(Base):
     """
 
     __tablename__ = "reconciliation_record"
-    __table_args__ = (
-        UniqueConstraint("assignment_id", name="uq_reconciliation_assignment"),
-    )
+    __table_args__ = (UniqueConstraint("assignment_id", name="uq_reconciliation_assignment"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     assignment_id: Mapped[str] = mapped_column(
@@ -631,9 +631,7 @@ class ReconciliationRecord(Base):
 @event.listens_for(ReconciliationRecord, "before_update")
 @event.listens_for(ReconciliationRecord, "before_delete")
 def _reject_reconciliation_mutation(*_: object) -> None:
-    raise ImmutableHistoryError(
-        "Una conciliación no se reescribe: registre otra decisión."
-    )
+    raise ImmutableHistoryError("Una conciliación no se reescribe: registre otra decisión.")
 
 
 class ExportRun(Base):

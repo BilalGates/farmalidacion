@@ -32,7 +32,12 @@ from pharma_validator_api.review import (
     record_decision,
 )
 from pharma_validator_api.review_queue import DEFAULT_LEASE
-from pharma_validator_api.reviewer_identity import ReviewerDirectory, ReviewerIdentityError
+from pharma_validator_api.reviewer_identity import (
+    ROLE_LABELS,
+    ReviewerDirectory,
+    ReviewerIdentityError,
+)
+from pharma_validator_api.reviewer_store import directory_from_database
 from pharma_validator_api.validation_states import (
     ValidationDecision,
     ValidationState,
@@ -134,6 +139,11 @@ class ReviewerRead(BaseModel):
     identifier: str
     display_name: str
     assurance: str
+    role: str
+    role_label: str
+    #: Si puede declarar `no_consta` y `no_aplica`. Se envía calculado para que
+    #: la pantalla no reimplemente la regla y pueda discrepar de ella.
+    may_sign_pharmacist_states: bool
 
 
 class DecisionWrite(BaseModel):
@@ -141,7 +151,9 @@ class DecisionWrite(BaseModel):
 
     state: ValidationState
     reviewer_id: str
-    reviewer_role: str = "farmaceutico"
+    # El rol NO se acepta del cliente: sale del directorio al resolver al
+    # revisor. Aceptarlo permitía a cualquiera declararse farmacéutico y firmar
+    # `no_consta` o `no_aplica`, que es justo lo que la regla debía impedir.
     final_value: str | None = None
     comment: str | None = None
     seconds_spent: int | None = None
@@ -160,7 +172,16 @@ def get_session(request: Request) -> Iterator[Session]:
 SessionDependency = Annotated[Session, Depends(get_session)]
 
 
-def get_reviewer_directory(request: Request) -> ReviewerDirectory:
+def get_reviewer_directory(request: Request, session: SessionDependency) -> ReviewerDirectory:
+    """Directorio de revisores, de la base de datos.
+
+    La configuración `APP_REVIEWERS` queda como respaldo para una base todavía
+    sin revisores: un despliegue existente no puede quedarse sin poder firmar
+    porque la tabla esté vacía. En cuanto hay uno dado de alta, manda la base.
+    """
+    from_database = directory_from_database(session)
+    if from_database.reviewers:
+        return from_database
     settings = cast(Settings, getattr(request.app.state, "settings", None) or get_settings())
     return ReviewerDirectory.from_configuration(settings.reviewers)
 
@@ -516,6 +537,9 @@ def list_reviewers(directory: DirectoryDependency) -> list[ReviewerRead]:
             identifier=item.identifier,
             display_name=item.display_name,
             assurance=item.assurance,
+            role=item.role,
+            role_label=ROLE_LABELS[item.role],
+            may_sign_pharmacist_states=item.may_sign_pharmacist_states,
         )
         for item in directory.reviewers
     ]
@@ -673,15 +697,19 @@ def save_decision(
                 "La asignación no está vigente para este revisor. Recargue la cola.",
                 status_code=409,
             )
-    if payload.reviewer_role not in ("farmaceutico", "otro"):
-        raise ApplicationError("Rol de revisor no reconocido.", status_code=400)
+    # El rol es el que consta en la lista de revisores, no el que diga quien
+    # llama: `resolve` falla si el identificador no pertenece a la lista.
+    try:
+        signer = directory.resolve(payload.reviewer_id)
+    except ReviewerIdentityError as error:
+        raise ApplicationError(str(error), status_code=400) from error
     try:
         decision = ValidationDecision(
             field_name=value.field_name,
             state=payload.state,
             final_value=payload.final_value,
             reviewer_id=payload.reviewer_id,
-            reviewer_role=payload.reviewer_role,  # type: ignore[arg-type]
+            reviewer_role=signer.role,
             applicable_sources=tuple(payload.applicable_sources),
             required_sources=tuple(payload.required_sources),
             reviewed_sources=tuple(payload.reviewed_sources),

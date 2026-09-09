@@ -25,7 +25,9 @@ from pharma_validator_api.models import (
 
 ROOT = Path(__file__).resolve().parents[2]
 SHOWCASE = ROOT / 'data' / 'examples' / 'showcase-demo.json'
-REVIEWERS = ('ana:Ana Ruiz', 'luis:Luis Marín')
+# `dani` es técnico: sirve para comprobar que los estados reservados al
+# farmacéutico se rechazan por quién firma, no por lo que el cliente declare.
+REVIEWERS = ('ana:Ana Ruiz', 'luis:Luis Marín', 'dani:Dani Sanz:tecnico')
 
 
 def create_database(path: Path) -> str:
@@ -348,14 +350,37 @@ def test_no_aplica_requires_a_pharmacist_comment(client: TestClient) -> None:
 
 
 def test_no_aplica_cannot_be_decided_by_a_non_pharmacist(client: TestClient) -> None:
+    """El rol lo pone la lista de revisores, no quien llama.
+
+    Antes el rol viajaba en el cuerpo de la petición con `farmaceutico` por
+    defecto: bastaba con omitirlo para firmar un estado reservado. Ahora se
+    resuelve desde el directorio, así que un técnico es un técnico aunque su
+    cliente diga otra cosa.
+    """
     with client:
         value_id = field_id(client, 'DEMO-0001', 'RECOMENPRESCRIP')
         response = client.post(
             f'/records/values/{value_id}/decisions',
             json={
                 'state': 'no_aplica',
-                'reviewer_id': 'ana',
-                'reviewer_role': 'otro',
+                'reviewer_id': 'dani',
+                'comment': 'Intento indebido.',
+            },
+        )
+        assert response.status_code == 400
+        assert 'solo puede decidirlo un farmacéutico' in response.json()['detail']
+
+
+def test_declared_role_in_the_request_cannot_grant_privileges(client: TestClient) -> None:
+    """Declararse farmacéutico en la petición no convierte a nadie en uno."""
+    with client:
+        value_id = field_id(client, 'DEMO-0001', 'RECOMENPRESCRIP')
+        response = client.post(
+            f'/records/values/{value_id}/decisions',
+            json={
+                'state': 'no_aplica',
+                'reviewer_id': 'dani',
+                'reviewer_role': 'farmaceutico',
                 'comment': 'Intento indebido.',
             },
         )
@@ -429,8 +454,16 @@ def test_reverting_no_aplica_requires_a_comment(client: TestClient) -> None:
 def test_reviewers_endpoint_reflects_the_configured_list(client: TestClient) -> None:
     with client:
         reviewers = client.get('/records/reviewers').json()
-        assert [item['identifier'] for item in reviewers] == ['ana', 'luis']
+        assert [item['identifier'] for item in reviewers] == ['ana', 'luis', 'dani']
         assert all(item['assurance'] == 'declarada' for item in reviewers)
+        # El rol viaja al cliente junto a lo que permite, para que la pantalla
+        # no tenga que reimplementar la regla ni pueda discrepar de ella.
+        por_id = {item['identifier']: item for item in reviewers}
+        assert por_id['ana']['role'] == 'farmaceutico'
+        assert por_id['ana']['may_sign_pharmacist_states'] is True
+        assert por_id['dani']['role'] == 'tecnico'
+        assert por_id['dani']['role_label'] == 'Técnico'
+        assert por_id['dani']['may_sign_pharmacist_states'] is False
 
 
 def test_decision_on_unknown_field_is_not_found(client: TestClient) -> None:

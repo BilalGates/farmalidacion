@@ -12,6 +12,9 @@ import type {
   RealRecordDetail,
   RealRecordPage,
   ReviewState,
+  ReviewerAdmin,
+  ReviewerRole,
+  ReviewerRoleOption,
   RecordList,
   Reviewer,
   SourceDetail,
@@ -201,6 +204,41 @@ export function fetchRealRecords(params: {
   if (params.limit !== undefined) search.set('limit', String(params.limit))
   if (params.offset !== undefined) search.set('offset', String(params.offset))
   return request<RealRecordPage>(`/insights/records?${search.toString()}`)
+}
+
+/** Revisores de la pantalla de gestión: activos e inactivos. */
+export function fetchReviewerAdmin(): Promise<ReviewerAdmin[]> {
+  return request<ReviewerAdmin[]>('/reviewers')
+}
+
+/** Roles disponibles. Se piden en lugar de llevarlos escritos en la pantalla. */
+export function fetchReviewerRoles(): Promise<ReviewerRoleOption[]> {
+  return request<ReviewerRoleOption[]>('/reviewers/roles')
+}
+
+export function createReviewer(payload: {
+  identifier: string
+  display_name: string
+  role: ReviewerRole
+}): Promise<ReviewerAdmin> {
+  return request<ReviewerAdmin>('/reviewers', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function setReviewerRole(identifier: string, role: ReviewerRole): Promise<ReviewerAdmin> {
+  return request<ReviewerAdmin>(`/reviewers/${encodeURIComponent(identifier)}/role`, {
+    method: 'PUT',
+    body: JSON.stringify({ role }),
+  })
+}
+
+export function setReviewerActive(identifier: string, active: boolean): Promise<ReviewerAdmin> {
+  return request<ReviewerAdmin>(`/reviewers/${encodeURIComponent(identifier)}/active`, {
+    method: 'PUT',
+    body: JSON.stringify({ active }),
+  })
 }
 
 export function fetchRealRecord(id: string): Promise<RealRecordDetail> {

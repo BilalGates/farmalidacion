@@ -17,9 +17,20 @@ regla se implementa aquí para que no dependa de que cada endpoint la recuerde.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, cast
+
+from pharma_validator_api.validation_states import ReviewerRole
 
 AssuranceLevel = Literal["declarada"]
+
+#: Etiqueta visible de cada rol. Vive aquí y no en la interfaz para que backend
+#: y pantalla no puedan discrepar sobre lo que significa un rol.
+ROLE_LABELS: dict[str, str] = {
+    "farmaceutico": "Farmacéutico",
+    "tecnico": "Técnico",
+    "cientifico_datos": "Científico de datos",
+    "otro": "Otro",
+}
 
 
 class ReviewerIdentityError(RuntimeError):
@@ -37,6 +48,7 @@ class Reviewer:
 
     identifier: str
     display_name: str
+    role: ReviewerRole = "farmaceutico"
     assurance: AssuranceLevel = "declarada"
 
     def __post_init__(self) -> None:
@@ -44,6 +56,18 @@ class Reviewer:
             raise ValueError("El revisor requiere identificador.")
         if not self.display_name.strip():
             raise ValueError("El revisor requiere nombre visible.")
+        if self.role not in ROLE_LABELS:
+            raise ValueError(f"Rol de revisor no reconocido: {self.role!r}")
+
+    @property
+    def may_sign_pharmacist_states(self) -> bool:
+        """Si puede declarar `no_consta` y `no_aplica`.
+
+        La regla la fija `validation_states`; esto sólo la consulta, para que la
+        pantalla pueda anticiparla en lugar de ofrecer una opción que el backend
+        rechazará después.
+        """
+        return self.role == "farmaceutico"
 
 
 @dataclass(frozen=True)
@@ -67,12 +91,22 @@ class ReviewerDirectory:
         """Construye la lista desde configuración, con formato `id:Nombre`."""
         reviewers = []
         for entry in entries:
-            identifier, separator, display_name = entry.partition(":")
+            identifier, separator, rest = entry.partition(":")
             if not separator:
                 raise ValueError(
-                    f"La entrada {entry!r} debe tener el formato 'identificador:Nombre'."
+                    f"La entrada {entry!r} debe tener el formato 'identificador:Nombre[:rol]'."
                 )
-            reviewers.append(Reviewer(identifier.strip(), display_name.strip()))
+            display_name, _, role = rest.partition(":")
+            # El rol es opcional: las configuraciones escritas antes de que
+            # existiera no declaran ninguno, y asumir `farmaceutico` conserva el
+            # comportamiento que ya tenían en lugar de romperlas.
+            reviewers.append(
+                Reviewer(
+                    identifier.strip(),
+                    display_name.strip(),
+                    cast(ReviewerRole, role.strip() or "farmaceutico"),
+                )
+            )
         return cls(tuple(reviewers))
 
     def resolve(self, identifier: str | None) -> Reviewer:
@@ -102,7 +136,5 @@ class ReviewerDirectory:
         """
         one, two = self.resolve(first), self.resolve(second)
         if one.identifier == two.identifier:
-            raise ReviewerIdentityError(
-                "La doble validación exige dos revisores distintos."
-            )
+            raise ReviewerIdentityError("La doble validación exige dos revisores distintos.")
         return one, two

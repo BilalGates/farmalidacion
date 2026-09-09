@@ -14,7 +14,14 @@ import { ReviewScreen } from './ReviewScreen'
  * decisión incompleta y que la evidencia mostrada sea la del campo activo.
  */
 
-const REVIEWER = { identifier: 'ana', display_name: 'Ana', assurance: 'declarada' as const }
+const REVIEWER = {
+  identifier: 'ana',
+  display_name: 'Ana',
+  assurance: 'declarada' as const,
+  role: 'farmaceutico' as const,
+  role_label: 'Farmacéutico',
+  may_sign_pharmacist_states: true,
+}
 
 function record(): TargetRecord {
   return {

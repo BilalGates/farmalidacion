@@ -111,10 +111,30 @@ export interface RecordList {
   total: number
 }
 
+export type ReviewerRole = 'farmaceutico' | 'tecnico' | 'cientifico_datos' | 'otro'
+
 export interface Reviewer {
   identifier: string
   display_name: string
   assurance: string
+  role: ReviewerRole
+  role_label: string
+  /** Si puede declarar «no consta» y «no aplica». Lo calcula el backend. */
+  may_sign_pharmacist_states: boolean
+}
+
+/** Revisor tal y como lo ve la pantalla de gestión, activos e inactivos. */
+export interface ReviewerAdmin {
+  identifier: string
+  display_name: string
+  role: ReviewerRole
+  role_label: string
+  active: boolean
+}
+
+export interface ReviewerRoleOption {
+  value: ReviewerRole
+  label: string
 }
 
 export interface DecisionWrite {

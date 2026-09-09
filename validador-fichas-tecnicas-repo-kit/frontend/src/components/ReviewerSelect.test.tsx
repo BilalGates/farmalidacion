@@ -3,7 +3,16 @@ import { expect, it, vi } from 'vitest'
 
 import { ReviewerSelect } from './ReviewerSelect'
 
-const reviewers = [{ identifier: 'mt', display_name: 'M. Torres', assurance: 'declarada' }]
+const reviewers = [
+  {
+    identifier: 'mt',
+    display_name: 'M. Torres',
+    assurance: 'declarada',
+    role: 'tecnico' as const,
+    role_label: 'Técnico',
+    may_sign_pharmacist_states: false,
+  },
+]
 
 it('abre un menú integrado y comunica la selección', () => {
   const onChange = vi.fn()

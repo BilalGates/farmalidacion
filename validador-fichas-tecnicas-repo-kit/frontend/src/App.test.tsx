@@ -20,7 +20,14 @@ import type { RecordList, Reviewer, TargetRecord } from './api/types'
  */
 
 const REVIEWERS: Reviewer[] = [
-  { identifier: 'ana', display_name: 'Ana Ruiz', assurance: 'declarada' },
+  {
+    identifier: 'ana',
+    display_name: 'Ana Ruiz',
+    assurance: 'declarada',
+    role: 'farmaceutico',
+    role_label: 'Farmacéutico',
+    may_sign_pharmacist_states: true,
+  },
 ]
 
 function summary(overrides: Partial<RecordList['items'][number]> = {}) {

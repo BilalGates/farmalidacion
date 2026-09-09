@@ -8,6 +8,7 @@ import { navigate, useRoute } from './navigation'
 import { DashboardScreen } from './screens/DashboardScreen'
 import { ImportsScreen } from './screens/ImportsScreen'
 import { RealRecordListScreen } from './screens/RealRecordListScreen'
+import { ReviewersScreen } from './screens/ReviewersScreen'
 import { ReviewScreen } from './screens/ReviewScreen'
 import { SourcesScreen } from './screens/SourcesScreen'
 import { ExportsScreen } from './screens/ExportsScreen'
@@ -41,6 +42,7 @@ const NAV: readonly NavItem[] = [
   { id: 'exportaciones', label: 'Exportaciones', icon: '↑', available: true },
   { id: 'fuentes', label: 'Fuentes', icon: '◉', available: true },
   { id: 'novedades', label: 'Novedades CIMA', icon: '◌', available: true },
+  { id: 'revisores', label: 'Revisores', icon: '☺', available: true },
 ]
 
 function activeNavId(routeName: string, routeId: string | null): string {
@@ -143,6 +145,7 @@ export function App() {
           )}
           {route.name === 'seccion' && route.id === 'exportaciones' && <ExportsScreen />}
           {route.name === 'seccion' && route.id === 'novedades' && <MaintenanceScreen />}
+          {route.name === 'seccion' && route.id === 'revisores' && <ReviewersScreen />}
         </main>
       </div>
     </div>

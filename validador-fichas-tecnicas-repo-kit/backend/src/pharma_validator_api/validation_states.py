@@ -14,7 +14,19 @@ ValidationState = Literal[
     "descartado",
     "revision_pendiente",
 ]
-ReviewerRole = Literal["farmaceutico", "otro"]
+#: Roles de revisor. `otro` se conserva porque hay decisiones ya firmadas con
+#: él y el historial no se reescribe; los procesos automáticos lo siguen usando.
+#: Los tres roles nombrados distinguen quién revisa qué, y no son etiquetas:
+#: `PHARMACIST_ONLY_STATES` depende de esta distinción.
+ReviewerRole = Literal["farmaceutico", "tecnico", "cientifico_datos", "otro"]
+
+#: Estados que sólo un farmacéutico puede declarar.
+#:
+#: Afirmar que un dato «no consta» o «no aplica» es un juicio clínico sobre la
+#: ficha, no una comprobación técnica: quien revisa la estructura o la calidad
+#: del dato puede confirmar y corregir, pero no cerrar un campo declarando que
+#: la información no existe o no procede.
+PHARMACIST_ONLY_STATES: frozenset[str] = frozenset({"no_consta", "no_aplica"})
 RESOLVED_STATES: frozenset[str] = frozenset({"confirmado", "corregido", "no_consta", "no_aplica"})
 
 
@@ -79,7 +91,7 @@ def validate_decision(decision: ValidationDecision) -> None:
     if decision.state == "pendiente" and decision.comment is not None:
         raise ValidationStateError("El estado pendiente no registra comentario.")
 
-    if decision.state in ("no_consta", "no_aplica") and decision.reviewer_role != "farmaceutico":
+    if decision.state in PHARMACIST_ONLY_STATES and decision.reviewer_role != "farmaceutico":
         raise ValidationStateError(
             f"El estado {decision.state} solo puede decidirlo un farmacéutico."
         )

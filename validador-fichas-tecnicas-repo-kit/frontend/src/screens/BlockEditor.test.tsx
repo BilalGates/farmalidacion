@@ -12,7 +12,14 @@ import { BlockEditor } from './BlockEditor'
  * una operación, en lugar de reinterpretarlo.
  */
 
-const REVIEWER = { identifier: 'ana', display_name: 'Ana', assurance: 'declarada' as const }
+const REVIEWER = {
+  identifier: 'ana',
+  display_name: 'Ana',
+  assurance: 'declarada' as const,
+  role: 'farmaceutico' as const,
+  role_label: 'Farmacéutico',
+  may_sign_pharmacist_states: true,
+}
 
 function occurrences(): BlockOccurrence[] {
   return [

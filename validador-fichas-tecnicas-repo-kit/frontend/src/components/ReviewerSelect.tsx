@@ -74,7 +74,7 @@ export function ReviewerSelect({
               onClick={() => choose(item.identifier)}
             >
               <span className='reviewer-select__option-avatar' aria-hidden='true'>{item.display_name.slice(0, 1).toUpperCase()}</span>
-              <span><strong>{item.display_name}</strong><small>Firma {item.assurance}</small></span>
+              <span><strong>{item.display_name}</strong><small>{item.role_label}</small></span>
               {value === item.identifier && <span aria-hidden='true'>✓</span>}
             </button>
           ))}

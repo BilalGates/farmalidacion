@@ -11,7 +11,14 @@ import { SecondReviewScreen } from './SecondReviewScreen'
  * no invente una forma de pedirla.
  */
 
-const REVIEWER = { identifier: 'luis', display_name: 'Luis', assurance: 'declarada' as const }
+const REVIEWER = {
+  identifier: 'luis',
+  display_name: 'Luis',
+  assurance: 'declarada' as const,
+  role: 'farmaceutico' as const,
+  role_label: 'Farmacéutico',
+  may_sign_pharmacist_states: true,
+}
 
 const PENDING = {
   id: 'asg-1',

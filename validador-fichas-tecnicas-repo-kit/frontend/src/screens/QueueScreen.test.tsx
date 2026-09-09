@@ -2,6 +2,15 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { QueueScreen } from './QueueScreen'
 
+const REVIEWER = {
+  identifier: 'ana',
+  display_name: 'Ana',
+  assurance: 'declarada',
+  role: 'farmaceutico' as const,
+  role_label: 'Farmacéutico',
+  may_sign_pharmacist_states: true,
+}
+
 afterEach(() => vi.unstubAllGlobals())
 
 it('envía la versión observada al iniciar revisión y refleja el resultado', async () => {
@@ -12,7 +21,7 @@ it('envía la versión observada al iniciar revisión y refleja el resultado', a
     .mockResolvedValueOnce(new Response(JSON.stringify(updated)))
     .mockResolvedValueOnce(new Response(JSON.stringify([updated])))
   vi.stubGlobal('fetch', fetchMock)
-  render(<QueueScreen reviewer={{ identifier: 'ana', display_name: 'Ana', assurance: 'declarada' }} />)
+  render(<QueueScreen reviewer={REVIEWER} />)
   fireEvent.click(await screen.findByRole('button', { name: 'Iniciar revisión' }))
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Iniciar revisión' })).not.toBeInTheDocument())
   expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({
@@ -25,7 +34,7 @@ it('no ofrece transiciones sobre la asignación de otra persona', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify([
     { target_record_id: 'rec-1', state: 'asignado', version: 1, assignee_id: 'luis', priority: 0 },
   ]))))
-  render(<QueueScreen reviewer={{ identifier: 'ana', display_name: 'Ana', assurance: 'declarada' }} />)
+  render(<QueueScreen reviewer={REVIEWER} />)
   await screen.findByRole('button', { name: 'Asignarme' })
   expect(screen.queryByRole('button', { name: 'Iniciar revisión' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Devolver a pendientes' })).not.toBeInTheDocument()
@@ -36,7 +45,7 @@ it('permite asignarse y muestra conflictos del servidor', async () => {
     { target_record_id: 'rec-1', state: 'pendiente', version: 1, assignee_id: null, priority: 0 },
   ]))).mockResolvedValueOnce(new Response(JSON.stringify({ detail: 'Ya está asignado.' }), { status: 409 }))
   vi.stubGlobal('fetch', fetchMock)
-  render(<QueueScreen reviewer={{ identifier: 'ana', display_name: 'Ana', assurance: 'declarada' }} />)
+  render(<QueueScreen reviewer={REVIEWER} />)
   fireEvent.click(await screen.findByRole('button', { name: 'Asignarme' }))
   expect(await screen.findByRole('alert')).toHaveTextContent('Ya está asignado.')
   expect(fetchMock.mock.calls[1][0]).toContain('/queue/rec-1/assign')
@@ -77,7 +86,7 @@ it('asigna una selección como lote versionado', async () => {
     .mockResolvedValueOnce(new Response(JSON.stringify([{ ...item, assignee_id: 'ana' }])))
     .mockResolvedValueOnce(new Response(JSON.stringify([{ ...item, assignee_id: 'ana' }])))
   vi.stubGlobal('fetch', fetchMock)
-  render(<QueueScreen reviewer={{ identifier: 'ana', display_name: 'Ana', assurance: 'declarada' }} />)
+  render(<QueueScreen reviewer={REVIEWER} />)
   fireEvent.click(await screen.findByRole('checkbox', { name: 'Seleccionar rec-1' }))
   fireEvent.click(screen.getByRole('button', { name: 'Asignarme lote' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
