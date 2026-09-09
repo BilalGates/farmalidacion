@@ -193,9 +193,19 @@ def test_history_joins_decisions_blocks_and_journal_in_order(session: Session) -
     # Las tres fuentes aparecen unidas: quien audite no tiene que saber que
     # existen tres tablas con tres formatos.
     assert {item.source for item in history} == {"decision", "bloque", "field_value"}
-    assert [item.actor_id for item in history] == ["ana", "ana", "luis"]
-    # Y en orden cronológico real.
+    assert {item.actor_id for item in history} == {"ana", "luis"}
+
+    # Y en orden cronológico real. No se afirma un orden concreto de actores:
+    # la edición de bloque se sella con el reloj del sistema y su posición
+    # depende del día en que se ejecute la prueba. Afirmarla haría que la
+    # prueba pasara o fallara según la fecha, que es justo lo contrario de
+    # comprobar la invariante.
     assert history == sorted(history, key=lambda item: item.occurred_at)
+    assert [item.source for item in history][0] == "decision"
+
+    # La decisión sellada a las 10:00 precede al evento sellado a las 12:00.
+    stamped = [item for item in history if item.source in ("decision", "field_value")]
+    assert [item.actor_id for item in stamped] == ["ana", "luis"]
 
 
 def test_history_ignores_other_records(session: Session) -> None:
