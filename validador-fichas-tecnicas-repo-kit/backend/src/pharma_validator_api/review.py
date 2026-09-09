@@ -18,6 +18,7 @@ aquí. La doble validación (11.1) tampoco: se registra una sola firma por event
 
 from __future__ import annotations
 
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import cast, get_args
@@ -46,6 +47,19 @@ from pharma_validator_api.validation_states import (
     assert_transition_allowed,
     validate_decision,
 )
+
+#: Tamaño de lote de los `IN (...)` de las cargas en bloque. SQLite admite por
+#: defecto 999 parámetros por consulta, así que los identificadores se trocean:
+#: una página de los maestros reales recorre miles de campos y sin trocear la
+#: consulta fallaría en cuanto el listado creciese.
+BULK_CHUNK = 500
+
+
+def chunked(items: Sequence[str], size: int) -> Iterator[Sequence[str]]:
+    """Trocea una secuencia en lotes de como mucho `size` elementos."""
+    for start in range(0, len(items), size):
+        yield items[start : start + size]
+
 
 #: Vocabulario cerrado de estados lógicos de ADR-0007.
 LOGICAL_STATES = frozenset(get_args(LogicalState))
@@ -227,9 +241,7 @@ def record_decision_in_transaction(
     )
 
 
-def decision_history(
-    session: Session, field_value_id: str
-) -> tuple[ValidationDecisionRecord, ...]:
+def decision_history(session: Session, field_value_id: str) -> tuple[ValidationDecisionRecord, ...]:
     """Historial completo en orden de registro; nada se sustituye ni se borra."""
     return tuple(
         session.scalars(
@@ -312,4 +324,114 @@ def record_block_count(session: Session, target_record_id: str) -> int:
         session.scalars(
             select(BlockInstance).where(BlockInstance.target_record_id == target_record_id)
         ).all()
+    )
+
+
+def current_decisions_for(
+    session: Session, field_value_ids: Sequence[str]
+) -> dict[str, CurrentDecision]:
+    """Decisión vigente de cada campo, en una consulta por lote.
+
+    Equivale a llamar a `current_decision` campo a campo, pero sin pagar una
+    consulta por valor: resumir una página de los maestros reales recorre miles
+    de campos, y ese N+1 hacía que el listado no llegase a responder.
+
+    Sólo aparecen los campos que tienen algún evento. La ausencia se sigue
+    distinguiendo de `pendiente` explícito, igual que en `current_decision`:
+    quien no está en el diccionario es que nunca se decidió.
+    """
+    vigentes: dict[str, CurrentDecision] = {}
+    for chunk in chunked(tuple(dict.fromkeys(field_value_ids)), BULK_CHUNK):
+        rows = session.scalars(
+            select(ValidationDecisionRecord)
+            .where(ValidationDecisionRecord.field_value_id.in_(chunk))
+            .order_by(
+                ValidationDecisionRecord.field_value_id,
+                ValidationDecisionRecord.sequence,
+            )
+        ).all()
+        # Ordenado por `sequence` ascendente, el último visto de cada campo es
+        # el vigente: la misma regla que el `order_by(...desc()).limit(1)` de
+        # `current_decision`, aplicada de una sola pasada.
+        for row in rows:
+            state: ValidationState = row.state  # type: ignore[assignment]
+            vigentes[row.field_value_id] = CurrentDecision(
+                state=state,
+                final_value=row.final_value,
+                comment=row.comment,
+                reviewer_id=row.reviewer_id,
+                reviewer_assurance=row.reviewer_assurance,
+                sequence=row.sequence,
+                decided_at=row.decided_at,
+            )
+    return vigentes
+
+
+def provenance_for(
+    session: Session, field_value_ids: Sequence[str]
+) -> dict[str, tuple[tuple[ValueProvenance, SourceFragment], ...]]:
+    """Procedencias de cada campo con su fragmento, en una consulta por lote.
+
+    Reúne lo que `evaluate_field_conflict` pedía por separado y por fila: las
+    procedencias del valor y, dentro del bucle, un `session.get` por fragmento.
+
+    Un fragmento ausente es un error explícito aquí igual que allí: una
+    procedencia sin fragmento significa que la base miente sobre el origen de un
+    dato, y silenciarlo dejaría el conflicto sin evaluar.
+    """
+    porvalor: dict[str, list[tuple[ValueProvenance, SourceFragment]]] = {}
+    for chunk in chunked(tuple(dict.fromkeys(field_value_ids)), BULK_CHUNK):
+        filas = session.scalars(
+            select(ValueProvenance)
+            .where(ValueProvenance.field_value_id.in_(chunk))
+            .order_by(ValueProvenance.id)
+        ).all()
+        fragment_ids = {fila.source_fragment_id for fila in filas}
+        fragmentos: dict[str, SourceFragment] = {}
+        for trozo in chunked(tuple(fragment_ids), BULK_CHUNK):
+            for fragmento in session.scalars(
+                select(SourceFragment).where(SourceFragment.id.in_(trozo))
+            ).all():
+                fragmentos[fragmento.id] = fragmento
+        for fila in filas:
+            hallado = fragmentos.get(fila.source_fragment_id)
+            if hallado is None:
+                raise RuntimeError(f"Procedencia sin fragmento: {fila.id}")
+            porvalor.setdefault(fila.field_value_id, []).append((fila, hallado))
+    return {clave: tuple(items) for clave, items in porvalor.items()}
+
+
+def evaluate_field_conflict_from(
+    provenance: dict[str, tuple[tuple[ValueProvenance, SourceFragment], ...]],
+    field_values: tuple[FieldValue, ...],
+    catalog_ordinal: int,
+    entity: str,
+    block: str,
+    field_name: str,
+) -> ConflictEvaluation:
+    """`evaluate_field_conflict` sobre procedencias ya cargadas.
+
+    Misma regla, sin tocar la base: la evaluación es idéntica, sólo cambia de
+    dónde salen las filas. Ver `evaluate_field_conflict` para el porqué de
+    evaluar por campo dentro de la ocurrencia y de pasar `rule=None`.
+    """
+    assertions: list[SourceAssertion] = []
+    for field_value in field_values:
+        for row, fragment in provenance.get(field_value.id, ()):
+            source_role = PROVENANCE_ROLE_TO_SOURCE_ROLE.get(row.provenance_role)
+            if source_role is None:
+                continue
+            assertions.append(
+                SourceAssertion(
+                    assertion_id=row.id,
+                    literal_value=field_value.literal_value,
+                    logical_state=_logical_state(field_value.logical_state),
+                    source_role=source_role,  # type: ignore[arg-type]
+                    source_version_id=fragment.document_version_id,
+                    source_locator=fragment.locator,
+                )
+            )
+    return evaluate_conflict(
+        FieldIdentity(catalog_ordinal, entity, block, field_name),
+        tuple(assertions),
     )

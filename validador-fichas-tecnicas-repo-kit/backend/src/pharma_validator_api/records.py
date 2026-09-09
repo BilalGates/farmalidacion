@@ -20,10 +20,15 @@ from pharma_validator_api.models import (
 )
 from pharma_validator_api.prefill_policy import field_prefill_policy, plan_field_presentation
 from pharma_validator_api.review import (
-    current_decision,
+    BULK_CHUNK,
+    CurrentDecision,
+    chunked,
+    current_decisions_for,
     decision_history,
     effective_state,
     evaluate_field_conflict,
+    evaluate_field_conflict_from,
+    provenance_for,
     record_decision,
 )
 from pharma_validator_api.review_queue import DEFAULT_LEASE
@@ -228,20 +233,109 @@ def _group_by_field(
     return {key: tuple(items) for key, items in grouped.items()}
 
 
-def _summarize(session: Session, record: TargetRecord) -> RecordSummaryRead:
-    blocks = session.scalars(
-        select(BlockInstance).where(BlockInstance.target_record_id == record.id)
-    ).all()
-    values = session.scalars(
-        select(FieldValue)
-        .join(BlockInstance, FieldValue.block_instance_id == BlockInstance.id)
-        .where(BlockInstance.target_record_id == record.id)
-        .order_by(FieldValue.id)
-    ).all()
+def _summarize_many(session: Session, records: Sequence[TargetRecord]) -> list[RecordSummaryRead]:
+    """Resume una página entera de registros con un número fijo de consultas.
+
+    Resumir de uno en uno costaba una consulta por campo para la decisión
+    vigente y otras tantas por procedencia y fragmento. Con los maestros reales
+    una página de 50 registros ronda los 2.500 campos, así que pintarla exigía
+    del orden de miles de consultas y el listado no llegaba a responder.
+
+    Aquí todo lo que depende de la página se carga en bloque y el resumen se
+    calcula en memoria. Las reglas no cambian: son las mismas de `review`, sólo
+    que alimentadas desde diccionarios ya cargados.
+    """
+    if not records:
+        return []
+    record_ids = [record.id for record in records]
+
+    blocks_by_record: dict[str, list[BlockInstance]] = {rid: [] for rid in record_ids}
+    blocks_by_id: dict[str, BlockInstance] = {}
+    for chunk in chunked(record_ids, BULK_CHUNK):
+        for block in session.scalars(
+            select(BlockInstance).where(BlockInstance.target_record_id.in_(chunk))
+        ).all():
+            blocks_by_record[block.target_record_id].append(block)
+            blocks_by_id[block.id] = block
+
+    values_by_record: dict[str, list[FieldValue]] = {rid: [] for rid in record_ids}
+    for chunk in chunked(record_ids, BULK_CHUNK):
+        rows = session.execute(
+            select(FieldValue, BlockInstance.target_record_id)
+            .join(BlockInstance, FieldValue.block_instance_id == BlockInstance.id)
+            .where(BlockInstance.target_record_id.in_(chunk))
+            .order_by(FieldValue.id)
+        ).all()
+        for value, target_record_id in rows:
+            values_by_record[target_record_id].append(value)
+
+    value_ids = [value.id for values in values_by_record.values() for value in values]
+    decisions = current_decisions_for(session, value_ids)
+    provenance = provenance_for(session, value_ids)
+    identifiers = _primary_identifiers(session, record_ids)
+
+    return [
+        _summarize_loaded(
+            record,
+            blocks_by_record[record.id],
+            values_by_record[record.id],
+            blocks_by_id,
+            decisions,
+            provenance,
+            identifiers.get(record.id),
+        )
+        for record in records
+    ]
+
+
+def _primary_identifiers(session: Session, record_ids: Sequence[str]) -> dict[str, str]:
+    """Identificador externo principal de cada registro, en bloque.
+
+    El principal es el primero por sistema y valor, igual que en el resumen de
+    uno en uno; ordenar aquí y quedarse con el primero visto da el mismo.
+    """
+    primeros: dict[str, str] = {}
+    for chunk in chunked(record_ids, BULK_CHUNK):
+        for row in session.scalars(
+            select(ExternalIdentifier)
+            .where(ExternalIdentifier.target_record_id.in_(chunk))
+            .order_by(
+                ExternalIdentifier.source_system,
+                ExternalIdentifier.source_identifier,
+            )
+        ).all():
+            primeros.setdefault(row.target_record_id, row.source_identifier)
+    return primeros
+
+
+def _first_loaded_value(values: Sequence[FieldValue], names: tuple[str, ...]) -> str | None:
+    """Primer valor literal de los campos indicados, sobre valores ya cargados.
+
+    Mismo criterio que `_first_value`: se respeta el orden declarado de `names`,
+    y sólo cuenta el que tiene literal. No se compone un nombre a partir de
+    otros campos.
+    """
+    for name in names:
+        for value in values:
+            if value.field_name == name and value.literal_value is not None:
+                return value.literal_value
+    return None
+
+
+def _summarize_loaded(
+    record: TargetRecord,
+    blocks: Sequence[BlockInstance],
+    values: Sequence[FieldValue],
+    blocks_by_id: dict[str, BlockInstance],
+    decisions: dict[str, CurrentDecision],
+    provenance: dict[str, tuple[tuple[ValueProvenance, SourceFragment], ...]],
+    primary_identifier: str | None,
+) -> RecordSummaryRead:
+    """Calcula el resumen de un registro sin tocar la base de datos."""
     pending = resolved = conflicts = 0
     last_reviewed = None
     for value in values:
-        decision = current_decision(session, value.id)
+        decision = decisions.get(value.id)
         if decision is None or decision.state in ("pendiente", "revision_pendiente"):
             pending += 1
         else:
@@ -250,20 +344,17 @@ def _summarize(session: Session, record: TargetRecord) -> RecordSummaryRead:
             last_reviewed = decision.decided_at
     # La discrepancia se cuenta por campo dentro de la ocurrencia, no por fila:
     # dos fuentes que discrepan producen dos filas y el conflicto vive entre ellas.
-    for (block_id, field_name), group in _group_by_field(session, values).items():
-        block = session.get(BlockInstance, block_id)
+    grouped: dict[tuple[str, str], list[FieldValue]] = {}
+    for value in values:
+        grouped.setdefault((value.block_instance_id, value.field_name), []).append(value)
+    for (block_id, field_name), group in grouped.items():
+        block = blocks_by_id.get(block_id)
         block_type = block.block_type if block is not None else "desconocido"
-        evaluation = evaluate_field_conflict(
-            session, group, 1, record.entity_type, block_type, field_name
+        evaluation = evaluate_field_conflict_from(
+            provenance, tuple(group), 1, record.entity_type, block_type, field_name
         )
         if evaluation.has_conflict:
             conflicts += 1
-    identifier = session.scalars(
-        select(ExternalIdentifier)
-        .where(ExternalIdentifier.target_record_id == record.id)
-        .order_by(ExternalIdentifier.source_system, ExternalIdentifier.source_identifier)
-        .limit(1)
-    ).first()
     if conflicts:
         review_state = "requiere_revision"
     elif pending and resolved:
@@ -272,12 +363,24 @@ def _summarize(session: Session, record: TargetRecord) -> RecordSummaryRead:
         review_state = "pendiente"
     else:
         review_state = "validado"
+    # `_first_loaded_value` recorre los valores del registro en el mismo orden
+    # que traía la consulta, que es `FieldValue.id`. `_first_value` ordenaba por
+    # `(BlockInstance.ordinal, FieldValue.id)`, así que se ordena igual aquí.
+    ordered = sorted(
+        values,
+        key=lambda value: (
+            blocks_by_id[value.block_instance_id].ordinal
+            if value.block_instance_id in blocks_by_id
+            else 0,
+            value.id,
+        ),
+    )
     return RecordSummaryRead(
         id=record.id,
         entity_type=record.entity_type,
-        display_name=_first_value(session, record.id, DISPLAY_NAME_FIELDS),
-        active_ingredient=_first_value(session, record.id, ACTIVE_INGREDIENT_FIELDS),
-        primary_identifier=identifier.source_identifier if identifier else None,
+        display_name=_first_loaded_value(ordered, DISPLAY_NAME_FIELDS),
+        active_ingredient=_first_loaded_value(ordered, ACTIVE_INGREDIENT_FIELDS),
+        primary_identifier=primary_identifier,
         block_count=len(blocks),
         field_count=len(values),
         pending_count=pending,
@@ -286,6 +389,11 @@ def _summarize(session: Session, record: TargetRecord) -> RecordSummaryRead:
         review_state=review_state,
         last_reviewed_at=last_reviewed.isoformat() if last_reviewed else None,
     )
+
+
+def _summarize(session: Session, record: TargetRecord) -> RecordSummaryRead:
+    """Resumen de un solo registro. Envoltorio de `_summarize_many`."""
+    return _summarize_many(session, [record])[0]
 
 
 # Tamaño del tramo al filtrar por `estado`. Ni tan pequeño que multiplique las
@@ -369,7 +477,7 @@ def list_records(
         # recorte ocurren en la base de datos y sólo se resume la página.
         total = session.scalar(select(func.count()).select_from(query.subquery())) or 0
         records = session.scalars(query.offset(offset).limit(limit)).all()
-        summaries = [_summarize(session, record) for record in records]
+        summaries = _summarize_many(session, records)
         if q is not None:
             # La preselección es deliberadamente amplia; `_matches` decide.
             summaries = [item for item in summaries if _matches(item, q)]
@@ -386,8 +494,7 @@ def list_records(
         if not batch:
             break
         scanned += len(batch)
-        for record in batch:
-            summary = _summarize(session, record)
+        for summary in _summarize_many(session, batch):
             if estado is not None and summary.review_state != estado:
                 continue
             if q is not None and not _matches(summary, q):

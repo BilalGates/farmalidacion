@@ -310,6 +310,32 @@ def test_record_pagination_reports_total_beyond_page(client: TestClient) -> None
     assert payload["items"] == []
 
 
+def test_records_report_review_state(client: TestClient) -> None:
+    """El listado unificado dice en qué punto de revisión está cada registro.
+
+    Antes el estado sólo existía en el segundo listado, que se fusionó con éste:
+    sin él, filtrar por trabajo pendiente obligaba a abrir los registros uno a
+    uno. Sin ninguna decisión registrada, todo está pendiente.
+    """
+    payload = client.get("/insights/records").json()
+    assert payload["items"][0]["review_state"] == "pendiente"
+
+
+def test_records_filter_by_review_state(client: TestClient) -> None:
+    """`estado` acota la página sin inventar un total que no se ha contado.
+
+    El estado se deriva de las decisiones y no es una columna, así que el filtro
+    se aplica sobre la página ya recortada. `total` sigue contando el origen sin
+    filtrar, y decirlo así evita presentar como total lo que no lo es.
+    """
+    pendientes = client.get("/insights/records", params={"estado": "pendiente"}).json()
+    assert [item["id"] for item in pendientes["items"]] == ["rec-real"]
+
+    validados = client.get("/insights/records", params={"estado": "validado"}).json()
+    assert validados["items"] == []
+    assert validados["total"] == 1
+
+
 def test_record_detail_exposes_provenance_of_each_value(client: TestClient) -> None:
     payload = client.get("/insights/records/rec-real").json()
     assert payload["origin"] == "real"

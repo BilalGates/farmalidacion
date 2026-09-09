@@ -176,6 +176,7 @@ class RecordRowRead(BaseModel):
     source_system: str | None
     block_count: int
     field_count: int
+    review_state: str
 
 
 class RecordPageRead(BaseModel):
@@ -258,12 +259,10 @@ def read_dashboard(session: SessionDependency) -> DashboardRead:
         ).all()
     }
     real_records = sum(real_by_entity.values())
-    demo_records = _count(
-        session, apply_origin_filter(select(TargetRecord.id), DataOrigin.DEMO)
-    )
-    medications = real_by_entity.get('medication', 0)
-    active_ingredients = real_by_entity.get('active_ingredient', 0)
-    specialties = real_by_entity.get('specialty', 0)
+    demo_records = _count(session, apply_origin_filter(select(TargetRecord.id), DataOrigin.DEMO))
+    medications = real_by_entity.get("medication", 0)
+    active_ingredients = real_by_entity.get("active_ingredient", 0)
+    specialties = real_by_entity.get("specialty", 0)
     documents = _scalar_count(session, SourceDocument)
     document_versions = _scalar_count(session, SourceDocumentVersion)
     batches = _scalar_count(session, ImportBatch)
@@ -273,18 +272,14 @@ def read_dashboard(session: SessionDependency) -> DashboardRead:
     diagnostics = _scalar_count(session, ImportDiagnostic)
     decisions = _scalar_count(session, ValidationDecisionRecord)
     reviewed_values = int(
-        session.scalar(
-            select(func.count(func.distinct(ValidationDecisionRecord.field_value_id)))
-        )
+        session.scalar(select(func.count(func.distinct(ValidationDecisionRecord.field_value_id))))
         or 0
     )
 
     metrics = [
         MetricRead(key="real_records", label="Registros reales", value=real_records),
         MetricRead(key="medications", label="Medicamentos", value=medications),
-        MetricRead(
-            key="active_ingredients", label="Principios activos", value=active_ingredients
-        ),
+        MetricRead(key="active_ingredients", label="Principios activos", value=active_ingredients),
         MetricRead(key="specialties", label="Especialidades", value=specialties),
         MetricRead(key="catalog_fields", label="Campos de catálogo", value=catalog_fields),
         MetricRead(key="field_values", label="Valores almacenados", value=field_values),
@@ -584,6 +579,69 @@ def read_import(batch_id: str, session: SessionDependency) -> ImportDetailRead:
     )
 
 
+def _review_state_by_record(session: Session, record_ids: list[str]) -> dict[str, str]:
+    """Estado de revisión de cada registro de la página, en dos consultas.
+
+    El estado no es una columna: se deriva de cuántos campos del registro tienen
+    ya una decisión vigente. `records._summarize_many` lo calcula con todo el
+    detalle (conflictos incluidos) porque la pantalla de revisión lo necesita;
+    aquí sólo hace falta distinguir pendiente / en revisión / validado para
+    poder filtrar el listado, y eso se resuelve contando en SQL.
+
+    Un campo cuenta como resuelto cuando su último evento no es `pendiente` ni
+    `revision_pendiente`. Nunca decidido y `pendiente` explícito se cuentan
+    igual aquí: para el listado ambos son trabajo por hacer.
+    """
+    if not record_ids:
+        return {}
+    totals: dict[str, int] = {
+        record_id: int(total)
+        for record_id, total in session.execute(
+            select(BlockInstance.target_record_id, func.count(FieldValue.id))
+            .join(FieldValue, FieldValue.block_instance_id == BlockInstance.id)
+            .where(BlockInstance.target_record_id.in_(record_ids))
+            .group_by(BlockInstance.target_record_id)
+        ).all()
+    }
+    # El evento vigente de cada campo es el de mayor `sequence`; se compara
+    # contra el máximo por campo en lugar de traer el historial entero.
+    vigente = (
+        select(
+            ValidationDecisionRecord.field_value_id.label("field_value_id"),
+            func.max(ValidationDecisionRecord.sequence).label("last_sequence"),
+        )
+        .group_by(ValidationDecisionRecord.field_value_id)
+        .subquery()
+    )
+    resolved: dict[str, int] = {
+        record_id: int(total)
+        for record_id, total in session.execute(
+            select(BlockInstance.target_record_id, func.count(FieldValue.id))
+            .join(FieldValue, FieldValue.block_instance_id == BlockInstance.id)
+            .join(vigente, vigente.c.field_value_id == FieldValue.id)
+            .join(
+                ValidationDecisionRecord,
+                (ValidationDecisionRecord.field_value_id == vigente.c.field_value_id)
+                & (ValidationDecisionRecord.sequence == vigente.c.last_sequence),
+            )
+            .where(BlockInstance.target_record_id.in_(record_ids))
+            .where(ValidationDecisionRecord.state.not_in(("pendiente", "revision_pendiente")))
+            .group_by(BlockInstance.target_record_id)
+        ).all()
+    }
+    estados: dict[str, str] = {}
+    for record_id in record_ids:
+        total = totals.get(record_id, 0)
+        hechos = resolved.get(record_id, 0)
+        if total == 0 or hechos == 0:
+            estados[record_id] = "pendiente"
+        elif hechos >= total:
+            estados[record_id] = "validado"
+        else:
+            estados[record_id] = "en_revision"
+    return estados
+
+
 def _identity_by_record(
     session: Session, record_ids: list[str]
 ) -> tuple[dict[str, str], dict[str, str], dict[str, int], dict[str, int]]:
@@ -659,6 +717,7 @@ def list_records(
     origin: DataOrigin = DataOrigin.REAL,
     q: str | None = None,
     entity_type: str | None = None,
+    estado: str | None = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> RecordPageRead:
@@ -667,6 +726,13 @@ def list_records(
     El origen es un parámetro obligatorio con valor por defecto REAL: no existe
     una consulta que mezcle ambos conjuntos, porque mezclarlos es precisamente
     lo que esta vertical debe impedir.
+
+    `estado` filtra la página ya recortada, no la consulta: el estado de
+    revisión se deriva de las decisiones y no es una columna por la que se pueda
+    paginar. La consecuencia, deliberada, es que `total` sigue contando los
+    registros del origen sin filtrar por estado, y una página puede devolver
+    menos elementos que `limit`. Afirmar un total exacto por estado exigiría
+    recorrer el maestro entero, que es justo lo que este listado evita.
     """
     statement = apply_origin_filter(select(TargetRecord.id), origin)
     if entity_type:
@@ -690,7 +756,7 @@ def list_records(
     # escaneo de los valores candidatos. La ventana conserva el contrato exacto
     # sin trasladar filtros ni registros al frontend.
     page_rows = session.execute(
-        statement.add_columns(func.count().over().label('total_count'))
+        statement.add_columns(func.count().over().label("total_count"))
         .order_by(TargetRecord.id)
         .limit(limit)
         .offset(offset)
@@ -707,6 +773,7 @@ def list_records(
         ).all()
     }
     names, identifiers, counts, value_counts = _identity_by_record(session, page_ids)
+    review_states = _review_state_by_record(session, page_ids)
     origins = origins_for_records(session, page_ids)
     systems: dict[str, str] = {
         record: system
@@ -732,9 +799,16 @@ def list_records(
             source_system=systems.get(record_id),
             block_count=int(counts.get(record_id, 0)),
             field_count=int(value_counts.get(record_id, 0)),
+            review_state=review_states.get(record_id, "pendiente"),
         )
         for record_id in page_ids
     ]
+    if estado is not None:
+        # El estado se deriva de las decisiones, no es una columna, así que no
+        # puede entrar en el `WHERE` de la página. Filtrar aquí acota lo que se
+        # muestra sin mentir sobre el total: `total` sigue contando la consulta
+        # sin filtrar, y así se dice en el contrato del endpoint.
+        items = [item for item in items if item.review_state == estado]
     return RecordPageRead(items=items, total=total, limit=limit, offset=offset)
 
 
