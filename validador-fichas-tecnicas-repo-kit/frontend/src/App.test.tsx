@@ -321,14 +321,11 @@ afterEach(() => {
 })
 
 describe('Recorrido de la vertical de revisión', () => {
-  it('muestra el aviso de datos DEMO y los módulos previstos en la navegación', async () => {
+  it('muestra la actualización de datos y los módulos previstos en la navegación', async () => {
     render(<App />)
 
-    // El modo se declara en el distintivo de la barra, no en una franja de texto.
-    // Se busca el distintivo por su clase: «DEMO» aparece también como origen
-    // de cada fila del listado, y ésos no son el modo de la aplicación.
-    const chip = await screen.findByText('DEMO', { selector: '.mode-chip' })
-    expect(chip).toBeVisible()
+    expect(await screen.findByText('Datos actualizados')).toBeVisible()
+    expect(document.querySelector('.mode-chip')).toBeNull()
     expect(screen.getByRole('button', { name: /Registros/ })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Validaciones' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Exportaciones' })).toBeVisible()

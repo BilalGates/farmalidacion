@@ -12,10 +12,12 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
-import { fetchDatabaseInfo, fetchReviewers } from './api/client'
+import { fetchDashboard, fetchDatabaseInfo, fetchReviewers } from './api/client'
 import type { DatabaseInfo, Reviewer } from './api/types'
+import { useQuery } from './api/useQuery'
 import { ModeBanner } from './components/ModeBanner'
 import { ReviewerSelect } from './components/ReviewerSelect'
+import { formatDateTime } from './domain/format'
 import { navigate, useRoute } from './navigation'
 import { DashboardScreen } from './screens/DashboardScreen'
 import { ImportsScreen } from './screens/ImportsScreen'
@@ -71,6 +73,7 @@ function activeNavId(routeName: string, routeId: string | null): string {
 
 export function App() {
   const route = useRoute()
+  const { data: dashboard } = useQuery(() => fetchDashboard(), [])
   const [reviewers, setReviewers] = useState<Reviewer[]>([])
   const [reviewerId, setReviewerId] = useState(() => localStorage.getItem('farmalidacion.reviewer') ?? '')
   const [database, setDatabase] = useState<DatabaseInfo | null>(null)
@@ -126,13 +129,17 @@ export function App() {
         </nav>
 
         <div className='topbar__actions'>
-          {/* El modo se queda: distinguir un valor de demostración de uno
-              importado es lo que esta vertical no se puede permitir fallar. */}
-          {database && (
-            <span className={`mode-chip mode-chip--${database.mode}`}>
-              {database.mode === 'real' ? 'REAL' : 'DEMO'}
+          <div className='dashboard-freshness dashboard-freshness--topbar'>
+            <span className='dashboard-freshness__dot' aria-hidden='true' />
+            <span>
+              <strong>Datos actualizados</strong>
+              <small>
+                {dashboard?.last_import_at
+                  ? formatDateTime(dashboard.last_import_at)
+                  : 'Sin importaciones'}
+              </small>
             </span>
-          )}
+          </div>
           <ReviewerSelect
             reviewers={reviewers}
             value={reviewerId}
@@ -159,7 +166,9 @@ export function App() {
           {route.name === 'seccion' && route.id === 'validaciones' && (
             <SecondReviewScreen reviewer={reviewer} />
           )}
-          {route.name === 'seccion' && route.id === 'exportaciones' && <ExportsScreen />}
+          {route.name === 'seccion' && route.id === 'exportaciones' && (
+            <ExportsScreen reviewer={reviewer} />
+          )}
           {route.name === 'seccion' && route.id === 'novedades' && <MaintenanceScreen />}
           {route.name === 'seccion' && route.id === 'revisores' && <ReviewersScreen />}
         </main>

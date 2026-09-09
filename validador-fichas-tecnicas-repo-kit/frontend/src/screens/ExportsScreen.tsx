@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
-import { exportArtifactUrl, fetchExportExclusions, fetchExports } from '../api/client'
-import type { ExportExclusionRow } from '../api/types'
+import { ApiError, createExport, exportArtifactUrl, fetchExportExclusions, fetchExports } from '../api/client'
+import type { ExportExclusionRow, Reviewer } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
 import { formatDateTime, formatNumber, shortHash } from '../domain/format'
@@ -71,9 +71,61 @@ function Exclusions({ runId }: { runId: string }) {
   )
 }
 
-export function ExportsScreen() {
+function parseColumns(value: string) {
+  return value.split('\n').map((line) => line.trim()).filter(Boolean).map((line) => {
+    const separator = line.indexOf('=')
+    if (separator < 1 || separator === line.length - 1) {
+      throw new Error(`La columna «${line}» debe usar el formato SALIDA=CAMPO_ORIGEN.`)
+    }
+    return {
+      name: line.slice(0, separator).trim(),
+      source_field: line.slice(separator + 1).trim(),
+    }
+  })
+}
+
+export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
   const [openRun, setOpenRun] = useState<string | null>(null)
-  const { data, error, loading } = useQuery(() => fetchExports(), [])
+  const [revision, setRevision] = useState(0)
+  const [profileName, setProfileName] = useState('perfil-tecnico')
+  const [format, setFormat] = useState<'csv' | 'txt' | 'xlsx'>('csv')
+  const [columns, setColumns] = useState('DESCRIPCION=DESCRIPCION')
+  const [recordIds, setRecordIds] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null)
+  const { data, error, loading } = useQuery(() => fetchExports(), [revision])
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSubmitError(null)
+    setSubmitMessage(null)
+    if (!reviewer) {
+      setSubmitError('Seleccione un revisor antes de firmar la exportación.')
+      return
+    }
+    try {
+      const parsedColumns = parseColumns(columns)
+      if (parsedColumns.length === 0) throw new Error('Declare al menos una columna.')
+      setSubmitting(true)
+      const outcome = await createExport({
+        actor_id: reviewer.identifier,
+        profile_name: profileName.trim(),
+        fmt: format,
+        columns: parsedColumns,
+        record_ids: recordIds.split(/[\n,]/).map((item) => item.trim()).filter(Boolean),
+      })
+      setSubmitMessage(
+        `Ejecución creada: ${outcome.delivered_rows} entregadas y ${outcome.excluded_count} excluidas.`,
+      )
+      setOpenRun(outcome.run_id)
+      setRevision((current) => current + 1)
+    } catch (cause) {
+      setSubmitError(cause instanceof ApiError || cause instanceof Error ? cause.message : 'No se ha podido crear la exportación.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <div className='screen'>
@@ -92,6 +144,41 @@ export function ExportsScreen() {
         Ningún perfil está aceptado por el proveedor: D-011 sigue pendiente. Que un
         fichero se genere correctamente no significa que el destinatario lo acepte.
       </p>
+
+      <section className='panel'>
+        <h2>Nueva exportación técnica</h2>
+        <p className='muted'>
+          Declare el perfil usado en esta ejecución. Las columnas no se consideran un
+          contrato aceptado y el backend excluirá cualquier ficha que no cumpla.
+        </p>
+        <form className='export-form' onSubmit={(event) => void submit(event)}>
+          <label className='field'>
+            <span className='field__label'>Nombre del perfil</span>
+            <input required type='text' value={profileName} onChange={(event) => setProfileName(event.target.value)} />
+          </label>
+          <label className='field'>
+            <span className='field__label'>Formato</span>
+            <select value={format} onChange={(event) => setFormat(event.target.value as typeof format)}>
+              <option value='csv'>CSV</option><option value='txt'>TXT</option><option value='xlsx'>XLSX</option>
+            </select>
+          </label>
+          <label className='field field--wide'>
+            <span className='field__label'>Columnas (una por línea)</span>
+            <textarea required rows={4} value={columns} onChange={(event) => setColumns(event.target.value)} aria-describedby='export-columns-hint' />
+            <span id='export-columns-hint' className='field__hint'>Formato: NOMBRE_SALIDA=CAMPO_ORIGEN. No transforma ni normaliza valores.</span>
+          </label>
+          <label className='field field--wide'>
+            <span className='field__label'>IDs de ficha (opcional)</span>
+            <textarea rows={2} value={recordIds} onChange={(event) => setRecordIds(event.target.value)} placeholder='Uno por línea o separados por comas' />
+          </label>
+          <button className='button button--primary' disabled={submitting || !reviewer || !profileName.trim()}>
+            {submitting ? 'Generando…' : 'Generar exportación'}
+          </button>
+          {!reviewer && <p className='alert alert--error'>Seleccione un revisor en la cabecera para firmar la ejecución.</p>}
+          {submitError && <p role='alert' className='alert alert--error'>{submitError}</p>}
+          {submitMessage && <p role='status' className='alert alert--ok'>{submitMessage}</p>}
+        </form>
+      </section>
 
       <AsyncBoundary
         loading={loading}

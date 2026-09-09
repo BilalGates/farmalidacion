@@ -10,6 +10,7 @@ import {
 import type { QueueItem } from '../api/client'
 import type { Reviewer } from '../api/types'
 import { navigate } from '../navigation'
+import { Check, Filter, Plus, RefreshCw, Search } from 'lucide-react'
 
 const labels: Record<string, string> = {
   pendiente: 'Pendiente', asignado: 'Asignado', en_revision: 'En revisión',
@@ -79,43 +80,43 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
     {error && <p role='alert' className='alert alert--error'>{error} Recargue para consultar el estado actual.</p>}
     <section className='panel queue-panel'>
       <div className='queue-toolbar'>
-      <form className='queue-add' onSubmit={(event) => {
-        event.preventDefault()
-        void act(async () => {
-          await enqueueRecord(recordId.trim(), reviewSet, requiresSecondReview)
-          setRecordId('')
-        })
-      }}>
-        <label className='field'><span className='field__label'>Añadir registro</span>
-          <span className='input-with-icon'><span aria-hidden='true'>⌕</span><input placeholder='Identificador del registro' aria-label='Identificador del registro' value={recordId} onChange={(event) => setRecordId(event.target.value)} required /></span>
-        </label>
-        <button className='button button--primary' disabled={busy || !recordId.trim()}>Añadir a la cola</button>
-        <label className='field'><span className='field__label'>Conjunto al añadir</span>
-          <select value={reviewSet} onChange={(event) => setReviewSet(event.target.value as QueueItem['review_set'])}>
-            <option value='corpus'>Corpus</option><option value='oro'>Oro</option><option value='medida'>Medida</option>
-          </select>
-        </label>
-        <label><input type='checkbox' checked={requiresSecondReview} onChange={(event) => setRequiresSecondReview(event.target.checked)} /> Requiere doble validación</label>
-      </form>
-      <label className='field queue-filter'><span className='field__label'>Filtrar por estado</span>
-        <select value={filter} onChange={(event) => setStateFilter(event.target.value)}>
-          <option value=''>Todos</option>
-          {Object.entries(labels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-        </select>
-      </label>
-      <label className='field'><span className='field__label'>Entidad</span><input value={entityFilter} onChange={(event) => setEntityFilter(event.target.value)} /></label>
-      <label className='field'><span className='field__label'>Bloque</span><input value={blockFilter} onChange={(event) => setBlockFilter(event.target.value)} /></label>
-      <label className='field'><span className='field__label'>Filtrar por conjunto</span><select value={setFilter} onChange={(event) => setReviewSetFilter(event.target.value)}><option value=''>Todos</option><option value='oro'>Oro</option><option value='medida'>Medida</option><option value='corpus'>Corpus</option></select></label>
-      <label className='field'><span className='field__label'>Filtrar doble validación</span><select value={secondFilter} onChange={(event) => setSecondFilter(event.target.value)}><option value=''>Todas</option><option value='true'>Sí</option><option value='false'>No</option></select></label>
-      <button className='button' aria-label='Aplicar filtros' disabled={busy || loading} onClick={() => void reload()}>Filtrar</button>
-      <button className='button button--icon' aria-label='Actualizar cola' disabled={busy || loading} onClick={() => void reload()}>↻</button>
+        <form className='queue-add' onSubmit={(event) => {
+          event.preventDefault()
+          void act(async () => {
+            await enqueueRecord(recordId.trim(), reviewSet, requiresSecondReview)
+            setRecordId('')
+          })
+        }}>
+          <div className='queue-toolbar__title'><Plus size={17} aria-hidden='true' /><span>Añadir a la cola</span></div>
+          <label className='field queue-add__record'><span className='field__label'>Registro</span>
+            <span className='input-with-icon'><Search size={16} aria-hidden='true' /><input placeholder='Identificador del registro' aria-label='Identificador del registro' value={recordId} onChange={(event) => setRecordId(event.target.value)} required /></span>
+          </label>
+          <label className='field'><span className='field__label'>Conjunto</span>
+            <select value={reviewSet} onChange={(event) => setReviewSet(event.target.value as QueueItem['review_set'])}>
+              <option value='corpus'>Corpus</option><option value='oro'>Oro</option><option value='medida'>Medida</option>
+            </select>
+          </label>
+          <label className='queue-check'><input type='checkbox' checked={requiresSecondReview} onChange={(event) => setRequiresSecondReview(event.target.checked)} /> Doble validación</label>
+          <button className='button button--primary' disabled={busy || !recordId.trim()}><Plus size={16} aria-hidden='true' />Añadir</button>
+        </form>
+        <div className='queue-filters'>
+          <div className='queue-toolbar__title'><Filter size={17} aria-hidden='true' /><span>Filtrar registros</span></div>
+          <div className='queue-filters__grid'>
+            <label className='field'><span className='field__label'>Estado</span><select value={filter} onChange={(event) => setStateFilter(event.target.value)}><option value=''>Todos</option>{Object.entries(labels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+            <label className='field'><span className='field__label'>Entidad</span><input placeholder='Todas' value={entityFilter} onChange={(event) => setEntityFilter(event.target.value)} /></label>
+            <label className='field'><span className='field__label'>Bloque</span><input placeholder='Todos' value={blockFilter} onChange={(event) => setBlockFilter(event.target.value)} /></label>
+            <label className='field'><span className='field__label'>Conjunto</span><select aria-label='Filtrar por conjunto' value={setFilter} onChange={(event) => setReviewSetFilter(event.target.value)}><option value=''>Todos</option><option value='oro'>Oro</option><option value='medida'>Medida</option><option value='corpus'>Corpus</option></select></label>
+            <label className='field'><span className='field__label'>Doble validación</span><select aria-label='Filtrar doble validación' value={secondFilter} onChange={(event) => setSecondFilter(event.target.value)}><option value=''>Todas</option><option value='true'>Sí</option><option value='false'>No</option></select></label>
+            <div className='queue-filters__actions'><button className='button button--primary' aria-label='Aplicar filtros' disabled={busy || loading} onClick={() => void reload()}>Filtrar</button><button className='button button--icon' aria-label='Actualizar cola' disabled={busy || loading} onClick={() => void reload()}><RefreshCw size={17} aria-hidden='true' /></button></div>
+          </div>
+        </div>
       </div>
       {selected.length > 0 && <div className='queue-batch'>
         <span>{selected.length} seleccionados</span>
         <button className='button button--primary' disabled={busy || !reviewer} onClick={() => void act(() => assignQueueBatch(items.filter((item) => selected.includes(item.target_record_id)), reviewer!.identifier))}>Asignarme lote</button>
       </div>}
       {loading && <div className='empty-state' role='status'><span className='empty-state__icon'>↻</span><h2>Cargando cola…</h2></div>}
-      {!loading && visibleItems.length === 0 && <div className='empty-state'><span className='empty-state__icon' aria-hidden='true'>✓</span><h2>{items.length === 0 ? 'La cola está al día' : 'No hay resultados'}</h2><p>{items.length === 0 ? 'Cuando se añadan registros aparecerán aquí, listos para asignar.' : 'Pruebe con otro filtro de estado.'}</p></div>}
+      {!loading && visibleItems.length === 0 && <div className='empty-state queue-empty'><span className='empty-state__icon' aria-hidden='true'><Check size={23} /></span><h2>{items.length === 0 ? 'La cola está al día' : 'No hay resultados'}</h2><p>{items.length === 0 ? 'Cuando se añadan registros aparecerán aquí, listos para asignar.' : 'Pruebe con otro filtro de estado.'}</p></div>}
       {!loading && visibleItems.length > 0 && <ul className='queue-list'>
         {visibleItems.map((item) => <li key={item.target_record_id}>
           <input type='checkbox' aria-label={`Seleccionar ${item.target_record_id}`} checked={selected.includes(item.target_record_id)} disabled={!['pendiente', 'asignado', 'en_revision'].includes(item.state)} onChange={(event) => setSelected((current) => event.target.checked ? [...current, item.target_record_id] : current.filter((id) => id !== item.target_record_id))} />

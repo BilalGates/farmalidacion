@@ -1,7 +1,6 @@
 import { fetchDashboard } from '../api/client'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
-import { formatDateTime } from '../domain/format'
 
 /**
  * Panel de inicio con cifras reales del sistema.
@@ -29,13 +28,6 @@ export function DashboardScreen() {
           <p className='lede'>
             Una vista rápida del trabajo almacenado y de la disponibilidad de cada etapa.
           </p>
-        </div>
-        <div className='dashboard-freshness'>
-          <span className='dashboard-freshness__dot' aria-hidden='true' />
-          <span>
-            <strong>Datos actualizados</strong>
-            <small>{data?.last_import_at ? formatDateTime(data.last_import_at) : 'Sin importaciones'}</small>
-          </span>
         </div>
       </div>
 

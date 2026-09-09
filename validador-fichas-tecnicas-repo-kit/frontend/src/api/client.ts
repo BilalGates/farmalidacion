@@ -404,6 +404,38 @@ export interface ExportExclusionRow {
   observed_state: string | null
 }
 
+export interface ExportColumnWrite {
+  name: string
+  source_field: string
+  required?: boolean
+  max_length?: number
+}
+
+export interface ExportWrite {
+  actor_id: string
+  profile_name: string
+  fmt: 'csv' | 'txt' | 'xlsx'
+  columns: ExportColumnWrite[]
+  record_ids?: string[]
+}
+
+export interface ExportOutcome {
+  run_id: string
+  status: string
+  delivered_rows: number
+  excluded_count: number
+  blocking_count: number
+  content_hash: string | null
+  provider_accepted: boolean
+}
+
+export function createExport(payload: ExportWrite): Promise<ExportOutcome> {
+  return request<ExportOutcome>('/exports', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 export function fetchExports(): Promise<ExportRunSummary[]> {
   return request<ExportRunSummary[]>('/exports')
 }

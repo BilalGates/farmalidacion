@@ -476,19 +476,16 @@ describe('fuentes e importaciones', () => {
   })
 })
 
-describe('distintivo del conjunto de datos', () => {
-  it('declara el modo REAL en el distintivo, sin franja de texto', async () => {
-    // La franja permanente («datos reales, N registros, N lotes») se retiró por
-    // ruidosa, pero el modo sigue siendo inconfundible: es lo que impide tomar
-    // un valor de demostración por uno importado.
+describe('estado del conjunto de datos', () => {
+  it('muestra la fecha de actualización sin distintivo de modo', async () => {
     render(<App />)
 
-    expect(await screen.findByText('REAL')).toBeVisible()
-    expect(screen.queryByText('DEMO')).not.toBeInTheDocument()
+    expect(await screen.findByText('Datos actualizados')).toBeVisible()
+    expect(document.querySelector('.mode-chip')).toBeNull()
     expect(screen.queryByText(/Datos reales · maestros importados/)).not.toBeInTheDocument()
   })
 
-  it('declara el modo DEMO en el distintivo', async () => {
+  it('tampoco muestra un distintivo en modo DEMO', async () => {
     databaseInfo = {
       mode: 'demo',
       backend: 'sqlite',
@@ -501,8 +498,8 @@ describe('distintivo del conjunto de datos', () => {
     }
     render(<App />)
 
-    expect(await screen.findByText('DEMO')).toBeVisible()
-    expect(screen.queryByText('REAL')).not.toBeInTheDocument()
+    await screen.findByText('Datos actualizados')
+    expect(document.querySelector('.mode-chip')).toBeNull()
   })
 
   it('avisa cuando el modo REAL no encuentra ningún registro importado', async () => {
@@ -513,11 +510,6 @@ describe('distintivo del conjunto de datos', () => {
 
     const banner = await screen.findByText(/Modo REAL sin datos importados/)
     expect(banner.parentElement?.textContent).toContain('ingest_real_data')
-  })
-
-  it('rotula el modo activo en la barra superior', async () => {
-    render(<App />)
-    expect(await screen.findByText('REAL')).toBeInTheDocument()
   })
 
   it('no anuncia ningún modo si el diagnóstico no responde', async () => {
