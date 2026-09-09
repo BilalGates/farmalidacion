@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.engine import make_url
 
 from pharma_validator_api.block_api import router as block_router
+from pharma_validator_api.chat_api import router as chat_router
 from pharma_validator_api.config import Settings, get_settings
 from pharma_validator_api.data_origin import DataOrigin, apply_origin_filter
 from pharma_validator_api.database import create_database_engine, create_session_factory
@@ -18,6 +19,7 @@ from pharma_validator_api.export_api import router as export_router
 from pharma_validator_api.fixtures import load_demo_fixture, load_showcase_fixture
 from pharma_validator_api.insights import router as insights_router
 from pharma_validator_api.logging import configure_logging
+from pharma_validator_api.maintenance_api import router as maintenance_router
 from pharma_validator_api.models import ImportBatch, TargetRecord
 from pharma_validator_api.queue_api import maturity_router
 from pharma_validator_api.queue_api import router as queue_router
@@ -109,6 +111,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Las rutas de bloque se registran antes que `records_router`: éste declara
     # `/records/{record_id}`, que de otro modo capturaría `/records/{id}/blocks`.
     application.include_router(block_router)
+    application.include_router(chat_router)
     application.include_router(records_router)
     application.include_router(insights_router)
     application.include_router(queue_router)
@@ -118,6 +121,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(export_router)
     application.include_router(audit_router)
     application.include_router(risk_router)
+    application.include_router(maintenance_router)
 
     @application.get("/health", response_model=HealthResponse, tags=["sistema"])
     async def health() -> HealthResponse:
