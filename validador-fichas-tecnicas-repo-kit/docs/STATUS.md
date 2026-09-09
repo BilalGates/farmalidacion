@@ -1,5 +1,25 @@
 # Estado del proyecto
 
+## Integración CIMA REAL operativa (9 de septiembre de 2026)
+
+- Se cargó en `real.db` el corpus piloto verificado: 500 documentos, 500
+  versiones CIMA y 1.000 artefactos inmutables (115.583.103 bytes).
+- ADR-0011 cierra el vínculo operativo mediante CN literal exacto y único. Se
+  materializaron 706 enlaces `exact_national_code_v1`, con cero ambigüedades;
+  la segunda ejecución creó cero enlaces.
+- 29.144 CN del maestro quedan sin enlace porque el corpus es la muestra piloto
+  de 500 fichas, no el inventario completo. 196 CN CIMA no aparecen en el
+  maestro. Ninguno se fuerza ni se normaliza.
+- `cima_linking` y `scripts/link_cima_records.py` permiten repetir la operación.
+  La carga corrigió además el orden FK versión→artefacto descubierto en la base
+  real. Copia previa: `data/local/real-before-cima-link-20260909.db`.
+- La API viva de cambios resultó paginada (`resultados`) y usa `cambio`; cliente
+  y parser se adaptaron sin aceptar páginas incompletas. La recuperación del
+  29/08 al 08/09 completó las once fechas, procesó 2.339 eventos del corpus
+  enlazado y elevó el total a 511 versiones. No quedó ninguna ejecución en
+  estado `running`; el primer fallo de contrato permanece visible como intento
+  fallido y el reintento de la misma fecha consta como completado.
+
 ## DEV-511 — informe preparado, medición humana pendiente (9 de septiembre de 2026)
 
 La instrumentación del informe de medida está cerrada. Agrega por entidad y
@@ -144,9 +164,17 @@ aceptado y la ejecución en el entorno del proveedor.
 (ampliar los prefijos ATC de riesgo). Ningún perfil se declara aceptado por el
 proveedor y `SEED_RULES` contiene sólo `L04`.
 
-**Pendiente técnico:** conectar las reglas de riesgo con la apertura automática
-de segunda validación, mantenimiento de reglas desde la interfaz, y descarga del
-artefacto desde la pantalla de exportaciones.
+La pantalla ya permite iniciar una exportación técnica con un perfil explícito
+y una firma de revisor, refrescar el historial y consultar exclusiones o
+descargar el artefacto verificado. La capacidad permanece desactivada por
+defecto y ningún perfil se presenta como aceptado mientras D-011 siga abierta.
+
+**Integración técnica completada:** una decisión sobre un registro cuyo ATC casa
+con `L04` abre automáticamente las segundas lecturas de todos sus campos ya
+decididos, aun cuando el ATC se valide al final. La pantalla de exportaciones
+permite descargar el artefacto y el backend comprueba ruta y SHA-256 antes de
+servirlo. La ampliación o edición de reglas permanece deliberadamente fuera de
+la interfaz mientras D-017 sea una decisión exclusiva de farmacia.
 
 
 ## Fase 5 — convergencia de la experiencia de revisión (8 de septiembre de 2026)
@@ -197,9 +225,10 @@ Pendiente farmacéutico, no técnico: D-015 debe fijar qué campos pasan a
 `proponer_valor`/`proponer_opciones` y con qué umbral. Hasta entonces la
 política conservadora es la única servida y está marcada en el código.
 
-Pendiente técnico de Fase 5: `/registros` sigue existiendo y ahora renderiza la
-misma pantalla; su retirada o conversión en redirección queda para la próxima
-campaña. Falta también el recorrido E2E de navegador.
+Compatibilidad conservada: los enlaces históricos `/registros` se resuelven a
+la pantalla canónica `/fichas`; no mantienen una implementación duplicada. La
+validación E2E del piloto con navegador y datos reales forma parte de la prueba
+humana final y no se sustituye por una simulación.
 
 ## Secuencia vigente — 8 de septiembre de 2026
 

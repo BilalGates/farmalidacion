@@ -435,7 +435,9 @@ Revisión formal en docs/PHASE_3_GATE_REVIEW.md. Fase 3 cerrada; D-013 está res
 
 **Estado:** núcleo preparatorio verificado el 2 de septiembre de 2026; no cierra formalmente DEV-501 ni abre Fase 5. Evidencia: 15 pruebas, Ruff y mypy limpios.
 
-La vertical demostrable del 3 de septiembre de 2026 añadió el selector de revisor en la cabecera y el endpoint `GET /records/reviewers`. **Sigue pendiente** la persistencia de la elección en el navegador entre sesiones.
+La vertical añadió el selector de revisor y el endpoint correspondiente. La
+elección se conserva en `localStorage` entre sesiones; DEV-501 queda cerrado
+técnicamente. La identidad sigue siendo declarada, no autenticada.
 
 ### DEV-502 — Cola y asignación de lotes (`P0`)
 
@@ -453,8 +455,6 @@ con contexto, campo de trabajo y evidencia del campo activo. `/fichas` es la
 ruta canónica y opera sobre el corpus real. `ProvenanceList` unifica la
 representación de la procedencia, que antes estaba duplicada. Verificado sobre
 copia real: ficha de 57 campos, 2 bloques, procedencia completa.
-
-**Estado:** no cerrada. La vertical demostrable incluye una ficha por bloques con valor, fuente, procedencia y estado, pero no la disposición de tres zonas con evidencia contextual que exige la especificación.
 
 ### DEV-504 — Navegación completa por teclado (`P0`)
 
@@ -540,10 +540,10 @@ corpus real no lo alcanza y no se afirma que lo haga. 7 pruebas.
 
 **Aceptación:** las cuatro políticas producen la presentación correcta; un valor pasado a un campo protegido se descarta en lugar de mostrarse; una pantalla completa se comprueba de una vez y detecta un plan manipulado; la confirmación en bloque exige `proponer_valor` y evidencia visible.
 
-**Estado:** núcleo verificado el 2 de septiembre de 2026. La pantalla que
+**Estado: cerrada técnicamente (9-09-2026).** La pantalla que
 consume estas decisiones existe desde el 8 de septiembre de 2026 (DEV-512) y
-sirve la política conservadora para todo campo. Lo que sigue abierto de DEV-510
-es la doble revisión ciega integrada, no el pre-relleno.
+sirve la política conservadora para todo campo. La doble revisión ciega está
+integrada y las pruebas impiden preseleccionar campos protegidos.
 
 ### DEV-512 — Consumo de `prefill_policy` en la pantalla (`P0`)
 
@@ -553,14 +553,6 @@ llega con `proposed_value`: precargar es imposible por construcción.
 `field_prefill_policy` devuelve `solo_evidencia` y deja declarado el punto de
 extensión. **Decisión farmacéutica pendiente (D-015):** qué campos pasan a
 `proponer_valor`/`proponer_opciones` y con qué umbral. 7 pruebas.
-
-**Objetivo:** que la pantalla de revisión presente cada campo según su política (`proponer_valor`, `proponer_opciones`, `solo_evidencia`, `oculto`) consumiendo `pharma_validator_api.prefill_policy` en lugar de no precargar nada.
-
-**Contexto:** la vertical demostrable del 3 de septiembre de 2026 no precarga ningún valor, lo cual es seguro por defecto pero no implementa la política. Requiere exponer la política por campo desde el catálogo importado, que hoy no llega a la API de registros.
-
-**Aceptación:** ningún campo protegido aparece preseleccionado; `solo_evidencia` muestra el aviso de criterio farmacéutico; la confirmación en bloque solo se ofrece para `proponer_valor` con evidencia visible.
-
-**Estado:** no iniciada. Depende de D-015 para los umbrales de degradación.
 
 ### DEV-511 — Ejecución del conjunto de medida (`P0`)
 
@@ -580,6 +572,9 @@ de D-011.** `export_service` lee el modelo canónico y produce filas mediante un
 capa de transformación explícita. El perfil es un dato configurable, no una
 constante: cuando exista un ejemplo aceptado se añadirá un perfil, no se
 reescribirá el motor. Ningún perfil se declara `provider_accepted`.
+La pantalla permite iniciar una ejecución técnica declarando nombre, formato,
+columnas y alcance, siempre con un revisor identificado; mantiene visible que
+el perfil no equivale al contrato pendiente del proveedor.
 
 ### DEV-602 — Exportadores CSV/TXT/XLSX (`P0`)
 
