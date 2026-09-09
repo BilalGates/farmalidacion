@@ -77,6 +77,47 @@ class SourceDocumentArtifact(Base):
     fetched_at: Mapped[str] = mapped_column(Text)
 
 
+class MaintenanceChangeEvent(Base):
+    """Novedad CIMA observada, inmutable e idempotente (DEV-703)."""
+
+    __tablename__ = "maintenance_change_event"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    nregistro: Mapped[str] = mapped_column(String(80), index=True)
+    occurred_at_epoch: Mapped[int] = mapped_column(Integer)
+    change_type: Mapped[int] = mapped_column(Integer)
+    areas_json: Mapped[str] = mapped_column(Text)
+    source_sha256: Mapped[str] = mapped_column(String(64))
+    fetched_at: Mapped[str] = mapped_column(Text)
+    old_version_id: Mapped[str | None] = mapped_column(
+        ForeignKey("source_document_version.id")
+    )
+    new_version_id: Mapped[str | None] = mapped_column(
+        ForeignKey("source_document_version.id")
+    )
+    diff_json: Mapped[str | None] = mapped_column(Text)
+    affected_field_count: Mapped[int] = mapped_column(Integer, default=0)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class MaintenanceRun(Base):
+    """Intento operativo diario; su estado permite recuperar fallos visibles."""
+
+    __tablename__ = "maintenance_run"
+    __table_args__ = (
+        UniqueConstraint("requested_date", "attempt", name="uq_maintenance_run_attempt"),
+        Index("ix_maintenance_run_started", "started_at"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    requested_date: Mapped[str] = mapped_column(String(10), index=True)
+    attempt: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(20))
+    event_count: Mapped[int] = mapped_column(Integer, default=0)
+    source_sha256: Mapped[str | None] = mapped_column(String(64))
+    error_detail: Mapped[str | None] = mapped_column(Text)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class ImmutableHistoryError(RuntimeError):
     pass
 
@@ -85,6 +126,8 @@ class ImmutableHistoryError(RuntimeError):
 @event.listens_for(SourceDocumentVersion, "before_delete")
 @event.listens_for(SourceDocumentArtifact, "before_update")
 @event.listens_for(SourceDocumentArtifact, "before_delete")
+@event.listens_for(MaintenanceChangeEvent, "before_update")
+@event.listens_for(MaintenanceChangeEvent, "before_delete")
 def _reject_historical_mutation(*_: object) -> None:
     raise ImmutableHistoryError("Las versiones y artefactos documentales son inmutables.")
 
