@@ -134,9 +134,7 @@ def create_export(
 
 
 @router.get("")
-def list_exports(
-    session: SessionDependency, settings: SettingsDependency
-) -> list[dict[str, Any]]:
+def list_exports(session: SessionDependency, settings: SettingsDependency) -> list[dict[str, Any]]:
     _enabled(settings)
     return [
         {
@@ -226,9 +224,7 @@ audit_router = APIRouter(prefix="/audit", tags=["auditoría"])
 
 
 @audit_router.get("/records/{record_id}")
-def read_record_history(
-    record_id: str, session: SessionDependency
-) -> list[dict[str, Any]]:
+def read_record_history(record_id: str, session: SessionDependency) -> list[dict[str, Any]]:
     """Historial completo de un registro: decisiones, bloques y diario."""
     if session.get(TargetRecord, record_id) is None:
         raise HTTPException(404, "Registro no encontrado.")

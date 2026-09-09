@@ -74,9 +74,7 @@ def test_export_is_off_by_default(scratch_db_url: str, tmp_path: Path) -> None:
     assert client.post("/exports", json=PROFILE).status_code == 404
 
 
-def test_a_run_produces_an_artifact_and_a_summary(
-    scratch_db_url: str, tmp_path: Path
-) -> None:
+def test_a_run_produces_an_artifact_and_a_summary(scratch_db_url: str, tmp_path: Path) -> None:
     client = build(scratch_db_url, tmp_path)
     response = client.post("/exports", json=PROFILE)
     assert response.status_code == 201, response.text
@@ -119,20 +117,49 @@ def test_l04_decision_opens_blind_second_review_automatically(
         block_id = session.scalar(
             select(BlockInstance.id).where(BlockInstance.target_record_id == "rec-1")
         )
-        session.add_all([
-            FieldValue(id="fv-atc", block_instance_id=block_id, field_name="ATC", literal_value="L04AB01", observed_type="text", logical_state="valued"),
-            FieldValue(id="fv-risk-value", block_instance_id=block_id, field_name="DOSIS", literal_value="10", observed_type="text", logical_state="valued"),
-        ])
+        session.add_all(
+            [
+                FieldValue(
+                    id="fv-atc",
+                    block_instance_id=block_id,
+                    field_name="ATC",
+                    literal_value="L04AB01",
+                    observed_type="text",
+                    logical_state="valued",
+                ),
+                FieldValue(
+                    id="fv-risk-value",
+                    block_instance_id=block_id,
+                    field_name="DOSIS",
+                    literal_value="10",
+                    observed_type="text",
+                    logical_state="valued",
+                ),
+            ]
+        )
         session.commit()
     engine.dispose()
-    client = TestClient(create_app(Settings(env="test", database_url=scratch_db_url, reviewers=("ana:Ana", "luis:Luis"), enable_second_review=True)))
+    client = TestClient(
+        create_app(
+            Settings(
+                env="test",
+                database_url=scratch_db_url,
+                reviewers=("ana:Ana", "luis:Luis"),
+                enable_second_review=True,
+            )
+        )
+    )
     response = client.post(
         "/records/values/fv-risk-value/decisions",
         json={"reviewer_id": "ana", "state": "confirmado", "final_value": "10"},
     )
     assert response.status_code == 201, response.text
     with Session(create_engine(scratch_db_url)) as session:
-        assignment = session.scalar(select(SecondReviewAssignment).where(SecondReviewAssignment.field_value_id == "fv-risk-value"))
+        assignment = session.scalar(
+            select(SecondReviewAssignment).where(
+                SecondReviewAssignment.field_value_id == "fv-risk-value"
+            )
+        )
         assert assignment is not None
         assert assignment.first_reviewer_id == "ana"
 
@@ -158,9 +185,7 @@ def test_a_malformed_profile_is_refused(scratch_db_url: str, tmp_path: Path) -> 
     assert "repite nombres de columna" in response.json()["detail"]
 
 
-def test_unknown_fields_in_the_request_are_refused(
-    scratch_db_url: str, tmp_path: Path
-) -> None:
+def test_unknown_fields_in_the_request_are_refused(scratch_db_url: str, tmp_path: Path) -> None:
     client = build(scratch_db_url, tmp_path)
     # Un campo desconocido suele ser una opción mal escrita; aceptarlo en
     # silencio produciría un export distinto del que se pidió.
@@ -180,9 +205,7 @@ def test_the_run_is_listed_with_its_counts(scratch_db_url: str, tmp_path: Path) 
     assert listing[0]["profile_version"]
 
 
-def test_the_archived_profile_can_be_read_back(
-    scratch_db_url: str, tmp_path: Path
-) -> None:
+def test_the_archived_profile_can_be_read_back(scratch_db_url: str, tmp_path: Path) -> None:
     client = build(scratch_db_url, tmp_path)
     run_id = client.post("/exports", json=PROFILE).json()["run_id"]
 
@@ -192,9 +215,7 @@ def test_the_archived_profile_can_be_read_back(
     assert [c["name"] for c in stored["profile"]["columns"]] == ["Descripcion", "Activo"]
 
 
-def test_exclusions_are_reported_with_their_reason(
-    scratch_db_url: str, tmp_path: Path
-) -> None:
+def test_exclusions_are_reported_with_their_reason(scratch_db_url: str, tmp_path: Path) -> None:
     engine = create_engine(scratch_db_url)
     with Session(engine) as session:
         seed_reviewable_record(session, record_id="rec-2")
@@ -212,9 +233,7 @@ def test_exclusions_are_reported_with_their_reason(
     assert excluded["detail"]
 
 
-def test_exclusions_of_an_unknown_run_are_not_found(
-    scratch_db_url: str, tmp_path: Path
-) -> None:
+def test_exclusions_of_an_unknown_run_are_not_found(scratch_db_url: str, tmp_path: Path) -> None:
     client = build(scratch_db_url, tmp_path)
     assert client.get("/exports/no-existe/exclusions").status_code == 404
 
@@ -232,9 +251,7 @@ def test_the_record_history_is_served(scratch_db_url: str, tmp_path: Path) -> No
     )
 
 
-def test_the_history_of_an_unknown_record_is_not_found(
-    scratch_db_url: str, tmp_path: Path
-) -> None:
+def test_the_history_of_an_unknown_record_is_not_found(scratch_db_url: str, tmp_path: Path) -> None:
     client = build(scratch_db_url, tmp_path)
     assert client.get("/audit/records/no-existe").status_code == 404
 
@@ -249,9 +266,7 @@ def test_the_export_leaves_an_audit_event(scratch_db_url: str, tmp_path: Path) -
     assert events[0]["actor_id"] == "ana"
 
 
-def test_risk_rules_declare_their_pending_decision(
-    scratch_db_url: str, tmp_path: Path
-) -> None:
+def test_risk_rules_declare_their_pending_decision(scratch_db_url: str, tmp_path: Path) -> None:
     client = build(scratch_db_url, tmp_path)
     body = client.get("/risk/rules").json()
 
