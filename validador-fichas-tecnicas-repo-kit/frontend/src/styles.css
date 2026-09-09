@@ -54,40 +54,12 @@ h2 { font-size: 1.02rem; font-weight: 660; letter-spacing: -0.005em; margin-bott
 
 /* ---------- Estructura ---------- */
 
-.layout { display: flex; flex-direction: column; min-height: 100vh; }
 
 
-.brand { display: flex; align-items: center; gap: .6rem; padding: 0 .4rem; }
-.brand__mark {
-  display: grid; place-items: center;
-  width: 30px; height: 30px;
-  background: var(--accent); color: #fff;
-  border-radius: 8px; font-weight: 700; font-size: .95rem;
-}
-.brand__name { font-weight: 680; letter-spacing: -0.015em; }
-
-nav ul { list-style: none; padding: 0; margin: 0; display: flex; gap: 2px; }
-
-.nav__item {
-  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
-  width: 100%; padding: .5rem .6rem;
-  background: none; border: 0; border-radius: 8px;
-  color: var(--ink-soft); font: inherit; font-size: .9rem; text-align: left;
-  cursor: pointer;
-}
-.nav__item:hover { background: var(--line-soft); color: var(--ink); }
-.nav__item--active { background: var(--accent-soft); color: var(--accent); font-weight: 640; }
 
 
-.main { display: flex; flex-direction: column; min-width: 0; }
 
-.topbar {
-  display: flex; align-items: center; gap: 1.25rem;
-  padding: .85rem 1.8rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-}
-.topbar__context { margin: 0; color: var(--ink-soft); font-size: .88rem; font-weight: 600; }
+
 
 /*
  * Distintivo del conjunto de datos activo.
@@ -526,41 +498,10 @@ h1 { font-size: clamp(1.7rem, 2.5vw, 2.25rem); font-weight: 750; line-height: 1.
 h2 { font-size: 1.05rem; font-weight: 740; color: var(--ink); }
 h3 { color: var(--ink); }
 
-/* Barra única: marca, navegación, modo y revisor en una sola fila. */
-.brand { gap: .6rem; min-height: 40px; padding: 0; flex: none; }
-.brand__mark { position: relative; width: 32px; height: 32px; flex: none; background: none; transform: rotate(-42deg); }
-.brand__mark span { position: absolute; left: 7px; width: 18px; height: 16px; background: #4da5ff; border-radius: 10px 10px 4px 4px; }
-.brand__mark span:first-child { top: 0; background: #3478ff; }
-.brand__mark span:last-child { bottom: 0; transform: rotate(180deg); }
-.brand__name { display: block; color: var(--ink); font-size: 1rem; font-weight: 760; letter-spacing: -0.015em; }
 
 /* La navegación se lleva el espacio sobrante y se desplaza si no cabe, en lugar
    de comprimir la marca o el selector de revisor. */
-.topbar nav { flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: thin; }
-.topbar nav::-webkit-scrollbar { height: 4px; }
-.topbar nav::-webkit-scrollbar-thumb { border-radius: 999px; background: rgb(145 168 203 / 38%); }
-.topbar nav ul { gap: .15rem; }
-.nav__item {
-  width: auto; min-height: 36px; padding: .42rem .78rem;
-  border-radius: 9px; color: var(--ink-soft);
-  font-size: .85rem; white-space: nowrap;
-}
-.nav__item:hover { background: var(--line-soft); color: var(--ink); }
-.nav__item--active { color: #fff; background: linear-gradient(135deg, #2875ff, #1760ed); font-weight: 640; box-shadow: 0 6px 16px rgb(0 72 219 / 26%); }
 
-.main { min-height: 100vh; }
-.topbar {
-  min-height: 76px;
-  padding: .75rem clamp(1rem, 3vw, 2.25rem);
-  border-bottom: 1px solid rgb(214 225 239 / 78%);
-  background: rgb(248 251 255 / 86%);
-  backdrop-filter: blur(16px);
-  position: sticky;
-  top: 0;
-  z-index: 8;
-}
-.topbar__actions { display: flex; align-items: center; gap: .75rem; flex: none; margin-left: auto; }
-.topbar__product { color: var(--ink); font-size: .9rem; font-weight: 720; }
 .reviewer-picker { display: flex; align-items: center; gap: .65rem; min-width: 215px; padding: .35rem .45rem; border: 1px solid var(--line); border-radius: 14px; background: #fff; box-shadow: 0 4px 14px rgb(35 66 111 / 5%); }
 .reviewer-picker__avatar { display: grid; place-items: center; width: 34px; height: 34px; flex: none; border-radius: 10px; color: #234679; background: linear-gradient(145deg, #dbe8ff, #eef2ff); font-weight: 760; }
 .reviewer-picker__content { display: grid; min-width: 0; flex: 1; }

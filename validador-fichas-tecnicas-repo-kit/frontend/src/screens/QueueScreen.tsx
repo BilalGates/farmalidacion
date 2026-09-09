@@ -90,12 +90,12 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
           <span className='input-with-icon'><span aria-hidden='true'>⌕</span><input placeholder='Identificador del registro' aria-label='Identificador del registro' value={recordId} onChange={(event) => setRecordId(event.target.value)} required /></span>
         </label>
         <button className='button button--primary' disabled={busy || !recordId.trim()}>Añadir a la cola</button>
-        <label className='field'><span className='field__label'>Conjunto</span>
+        <label className='field'><span className='field__label'>Conjunto al añadir</span>
           <select value={reviewSet} onChange={(event) => setReviewSet(event.target.value as QueueItem['review_set'])}>
             <option value='corpus'>Corpus</option><option value='oro'>Oro</option><option value='medida'>Medida</option>
           </select>
         </label>
-        <label><input type='checkbox' checked={requiresSecondReview} onChange={(event) => setRequiresSecondReview(event.target.checked)} /> Doble validación</label>
+        <label><input type='checkbox' checked={requiresSecondReview} onChange={(event) => setRequiresSecondReview(event.target.checked)} /> Requiere doble validación</label>
       </form>
       <label className='field queue-filter'><span className='field__label'>Filtrar por estado</span>
         <select value={filter} onChange={(event) => setStateFilter(event.target.value)}>
@@ -105,8 +105,8 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
       </label>
       <label className='field'><span className='field__label'>Entidad</span><input value={entityFilter} onChange={(event) => setEntityFilter(event.target.value)} /></label>
       <label className='field'><span className='field__label'>Bloque</span><input value={blockFilter} onChange={(event) => setBlockFilter(event.target.value)} /></label>
-      <label className='field'><span className='field__label'>Conjunto</span><select value={setFilter} onChange={(event) => setReviewSetFilter(event.target.value)}><option value=''>Todos</option><option value='oro'>Oro</option><option value='medida'>Medida</option><option value='corpus'>Corpus</option></select></label>
-      <label className='field'><span className='field__label'>Doble validación</span><select value={secondFilter} onChange={(event) => setSecondFilter(event.target.value)}><option value=''>Todas</option><option value='true'>Sí</option><option value='false'>No</option></select></label>
+      <label className='field'><span className='field__label'>Filtrar por conjunto</span><select value={setFilter} onChange={(event) => setReviewSetFilter(event.target.value)}><option value=''>Todos</option><option value='oro'>Oro</option><option value='medida'>Medida</option><option value='corpus'>Corpus</option></select></label>
+      <label className='field'><span className='field__label'>Filtrar doble validación</span><select value={secondFilter} onChange={(event) => setSecondFilter(event.target.value)}><option value=''>Todas</option><option value='true'>Sí</option><option value='false'>No</option></select></label>
       <button className='button' aria-label='Aplicar filtros' disabled={busy || loading} onClick={() => void reload()}>Filtrar</button>
       <button className='button button--icon' aria-label='Actualizar cola' disabled={busy || loading} onClick={() => void reload()}>↻</button>
       </div>

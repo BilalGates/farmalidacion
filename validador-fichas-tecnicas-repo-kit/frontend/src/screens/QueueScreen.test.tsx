@@ -50,3 +50,40 @@ it('no permite asignar sin revisor', async () => {
   render(<QueueScreen reviewer={null} />)
   await waitFor(() => expect(screen.getByRole('button', { name: 'Asignarme' })).toBeDisabled())
 })
+
+it('envía los filtros explícitos al servidor', async () => {
+  const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify([])))
+  vi.stubGlobal('fetch', fetchMock)
+  render(<QueueScreen reviewer={null} />)
+  await screen.findByText('La cola está al día')
+  fireEvent.change(screen.getByLabelText('Entidad'), { target: { value: 'medicamento' } })
+  fireEvent.change(screen.getByLabelText('Bloque'), { target: { value: 'general' } })
+  fireEvent.change(screen.getByLabelText('Filtrar por conjunto'), { target: { value: 'oro' } })
+  fireEvent.change(screen.getByLabelText('Filtrar doble validación'), { target: { value: 'true' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar filtros' }))
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+  expect(fetchMock.mock.calls[1][0]).toContain(
+    '/queue?entity_type=medicamento&block_type=general&review_set=oro&requires_second_review=true',
+  )
+})
+
+it('asigna una selección como lote versionado', async () => {
+  const item = {
+    target_record_id: 'rec-1', state: 'pendiente', version: 4, assignee_id: null,
+    priority: 0, review_set: 'corpus', requires_second_review: false,
+  }
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce(new Response(JSON.stringify([item])))
+    .mockResolvedValueOnce(new Response(JSON.stringify([{ ...item, assignee_id: 'ana' }])))
+    .mockResolvedValueOnce(new Response(JSON.stringify([{ ...item, assignee_id: 'ana' }])))
+  vi.stubGlobal('fetch', fetchMock)
+  render(<QueueScreen reviewer={{ identifier: 'ana', display_name: 'Ana', assurance: 'declarada' }} />)
+  fireEvent.click(await screen.findByRole('checkbox', { name: 'Seleccionar rec-1' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Asignarme lote' }))
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+  expect(fetchMock.mock.calls[1][0]).toContain('/queue/assign-batch')
+  expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({
+    reviewer_id: 'ana',
+    items: [{ target_record_id: 'rec-1', expected_version: 4 }],
+  })
+})
