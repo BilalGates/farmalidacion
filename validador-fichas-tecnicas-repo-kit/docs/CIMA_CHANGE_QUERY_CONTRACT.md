@@ -38,3 +38,11 @@ permitiendo identificar dos observaciones iguales sin inventar una versión.
 Las pruebas offline cubren los tres tipos, cambios de ficha técnica, códigos
 nuevos, duplicados, filtros repetibles, fecha inválida, JSON o formas
 incompatibles y dos consultas sucesivas que llegan realmente al transporte.
+
+## Forma viva observada el 9 de septiembre de 2026
+
+La API viva devuelve un envoltorio paginado con `totalFilas`, `pagina`,
+`tamanioPagina` y `resultados`, y usa `cambio` para las áreas. El cliente recorre
+todas las páginas y construye un cuerpo agregado con hash propio; el parser
+mantiene compatibilidad con la lista plana y `cambios` de fixtures anteriores.
+Una variación del total o de la página durante la lectura falla explícitamente.
