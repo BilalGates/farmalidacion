@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from pharma_validator_api.audit_store import events_for, record_history
@@ -190,6 +191,35 @@ def read_profile(
         "profile_version": run.profile_version,
         "profile": json.loads(run.profile_snapshot),
     }
+
+
+@router.get("/{run_id}/artifact", response_class=FileResponse)
+def download_artifact(
+    run_id: str, session: SessionDependency, settings: SettingsDependency
+) -> FileResponse:
+    """Descarga el artefacto archivado tras verificar ruta e integridad."""
+    from hashlib import sha256
+
+    _enabled(settings)
+    run = session.get(ExportRun, run_id)
+    if run is None or run.artifact_path is None:
+        raise HTTPException(404, "Artefacto de exportación no encontrado.")
+    configured = Path(settings.export_artifact_dir).resolve()
+    path = Path(run.artifact_path).resolve()
+    if path.parent != configured or not path.is_file():
+        raise HTTPException(404, "Artefacto de exportación no encontrado.")
+    if run.content_hash is None or sha256(path.read_bytes()).hexdigest() != run.content_hash:
+        raise HTTPException(409, "El artefacto archivado no supera la verificación de integridad.")
+    media_types = {
+        "csv": "text/csv",
+        "txt": "text/plain",
+        "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }
+    return FileResponse(
+        path,
+        media_type=media_types.get(run.export_format, "application/octet-stream"),
+        filename=f"{run.id}.{run.export_format}",
+    )
 
 
 audit_router = APIRouter(prefix="/audit", tags=["auditoría"])

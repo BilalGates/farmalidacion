@@ -699,7 +699,7 @@ literal. No genera recomendaciones ni escribe campos. Contrato en
 
 ### UX-001 — Sistema visual unificado (`P1`)
 
-**Estado: cerrado técnicamente (9-09-2026).** Armazón, navegación, dashboard y componentes compartidos renovados sobre las rutas existentes. No cambia contratos de datos, políticas de pre-relleno ni reglas de validación. Verificado con ESLint, build de producción y 99 pruebas frontend.
+**Estado: cerrado técnicamente (9-09-2026).** Armazón, navegación, dashboard y componentes compartidos renovados sobre las rutas existentes. Segunda revisión visual completada con base neutra, acento rosa–morado contenido, menor radio, iconografía lineal y movimiento accesible. No cambia contratos de datos, políticas de pre-relleno ni reglas de validación. Verificado con ESLint, build de producción y 117 pruebas frontend.
 
 ## Orden recomendado de las primeras issues
 

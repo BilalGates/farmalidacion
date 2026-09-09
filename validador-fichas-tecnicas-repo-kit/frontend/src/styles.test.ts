@@ -10,3 +10,16 @@ describe('tipografia global', () => {
     expect(styles).not.toMatch(/font-family:\s*(?:'Inter'|'Metamorphous'|ui-monospace|monospace)/)
   })
 })
+
+describe('sistema visual profesional', () => {
+  it('reserva el degradado rosa-morado para el acento principal', () => {
+    expect(styles).toContain('--accent-gradient: linear-gradient(118deg, #d83f86 0%, #7552df 100%)')
+    expect(styles).toContain('background: var(--accent-gradient)')
+  })
+
+  it('usa radios contenidos y respeta la reduccion de movimiento', () => {
+    expect(styles).toContain('--radius: 7px')
+    expect(styles).toContain('@media (prefers-reduced-motion: reduce)')
+    expect(styles).toContain('@keyframes screen-enter')
+  })
+})

@@ -414,6 +414,10 @@ export function fetchExportExclusions(runId: string): Promise<ExportExclusionRow
   )
 }
 
+export function exportArtifactUrl(runId: string): string {
+  return `${appConfig.apiBaseUrl}/exports/${encodeURIComponent(runId)}/artifact`
+}
+
 export interface HistoryEntry {
   occurred_at: string
   source: string

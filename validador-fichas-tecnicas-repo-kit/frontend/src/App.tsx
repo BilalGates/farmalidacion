@@ -1,4 +1,16 @@
 import { useEffect, useState } from 'react'
+import {
+  BadgeCheck,
+  Database,
+  Download,
+  FileStack,
+  History,
+  Home,
+  ListChecks,
+  Upload,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 
 import { fetchDatabaseInfo, fetchReviewers } from './api/client'
 import type { DatabaseInfo, Reviewer } from './api/types'
@@ -19,9 +31,13 @@ import { MaintenanceScreen } from './screens/MaintenanceScreen'
 interface NavItem {
   readonly id: string
   readonly label: string
-  readonly icon: string
+  readonly icon: LucideIcon
   /** Un módulo no disponible se anuncia, no se oculta: forma parte de la visión. */
   readonly available: boolean
+}
+
+function NavIcon({ icon: Icon }: { readonly icon: LucideIcon }) {
+  return <Icon className='nav__icon' aria-hidden='true' strokeWidth={1.8} />
 }
 
 /**
@@ -34,15 +50,15 @@ interface NavItem {
  * pantalla.
  */
 const NAV: readonly NavItem[] = [
-  { id: 'inicio', label: 'Inicio', icon: '⌂', available: true },
-  { id: 'fichas', label: 'Registros', icon: '▤', available: true },
-  { id: 'cola', label: 'Cola de revisión', icon: '☷', available: true },
-  { id: 'validaciones', label: 'Validaciones', icon: '✓', available: true },
-  { id: 'importaciones', label: 'Importaciones', icon: '↓', available: true },
-  { id: 'exportaciones', label: 'Exportaciones', icon: '↑', available: true },
-  { id: 'fuentes', label: 'Fuentes', icon: '◉', available: true },
-  { id: 'novedades', label: 'Novedades CIMA', icon: '◌', available: true },
-  { id: 'revisores', label: 'Revisores', icon: '☺', available: true },
+  { id: 'inicio', label: 'Inicio', icon: Home, available: true },
+  { id: 'fichas', label: 'Registros', icon: FileStack, available: true },
+  { id: 'cola', label: 'Cola de revisión', icon: ListChecks, available: true },
+  { id: 'validaciones', label: 'Validaciones', icon: BadgeCheck, available: true },
+  { id: 'importaciones', label: 'Importaciones', icon: Download, available: true },
+  { id: 'exportaciones', label: 'Exportaciones', icon: Upload, available: true },
+  { id: 'fuentes', label: 'Fuentes', icon: Database, available: true },
+  { id: 'novedades', label: 'Novedades CIMA', icon: History, available: true },
+  { id: 'revisores', label: 'Revisores', icon: Users, available: true },
 ]
 
 function activeNavId(routeName: string, routeId: string | null): string {
@@ -101,7 +117,7 @@ export function App() {
                   aria-current={active === item.id ? 'page' : undefined}
                   onClick={() => navigate(item.id === 'inicio' ? '/' : `/${item.id}`)}
                 >
-                  <span className='nav__icon' aria-hidden='true'>{item.icon}</span>
+                  <NavIcon icon={item.icon} />
                   <span>{item.label}</span>
                 </button>
               </li>

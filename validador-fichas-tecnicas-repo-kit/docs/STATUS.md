@@ -973,6 +973,16 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
 
 9 de septiembre de 2026.
 
+## Reconciliación del estado mostrado en la interfaz
+
+- La ficha ya no presenta como inexistentes capacidades terminadas: segunda
+  validación ciega, conciliación, barrera de exportación y mantenimiento CIMA.
+- La extracción se identifica como técnicamente preparada, pero no activa. Su
+  activación sigue condicionada a GOLD-002 y a las decisiones D-014/D-015; no
+  se simulan resultados ni se elige un modelo desde la interfaz.
+- La pantalla distingue implementación técnica de activación operativa y de
+  validación clínica.
+
 ## UX-001 — Sistema visual unificado
 
 - Rediseño transversal del frontend aplicado sin modificar contratos de API ni reglas clínicas.
@@ -980,5 +990,6 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
 - Tokens compartidos para color, espaciado, foco, tarjetas, tablas, formularios, estados y superficies; las pantallas de cola, fichas, revisión, fuentes, importaciones, validaciones, exportaciones y novedades heredan el mismo lenguaje visual.
 - Dashboard reorganizado con métricas y estado del proceso exclusivamente a partir de datos del backend; no se añaden cifras simuladas.
 - Accesibilidad conservada: texto además de color, foco visible, navegación por teclado y reducción de movimiento.
-- Verificación: ESLint correcto, build Vite correcto y 99/99 pruebas Vitest.
+- Verificación final: ESLint correcto, build Vite correcto y 117/117 pruebas Vitest.
 - Segunda pasada de pulido: selector de revisor accesible y no nativo; cola compacta con estado vacío; resumen de segunda validación; progreso de ficha; evidencia no duplicada por fila; metadatos técnicos plegables y contención de textos extensos.
+- Dirección visual refinada a una base neutra editorial, con radios de 4–7 px, superficies planas, iconografía lineal coherente y degradado rosa–morado reservado para acciones y selección. Se añadieron transiciones breves con soporte para reducción de movimiento; los estados clínicos mantienen su semántica independiente.

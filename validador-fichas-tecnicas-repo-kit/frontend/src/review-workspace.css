@@ -2,8 +2,8 @@
 .review-workspace > * { min-width: 0; }
 .review-evidence { position: sticky; top: 6.2rem; max-height: calc(100vh - 7.4rem); overflow: auto; overflow-wrap: anywhere; }
 .review-shortcuts { grid-column: 1 / -1; position: static; padding: .5rem .7rem; box-shadow: none; background: rgba(255,255,255,.82); }
-.review-field--active { outline: 2px solid #2563eb; outline-offset: 3px; border-radius: 14px; }
-[data-review-field]:focus-visible { outline: 3px solid #1d4ed8; }
+.review-field--active { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 7px; }
+[data-review-field]:focus-visible { outline: 3px solid var(--focus-ring); }
 @media (max-width: 1100px) { .review-workspace { grid-template-columns: minmax(0, 1fr); } .review-evidence { position: static; } }
 
 /* Estado de guardado del campo (DEV-505). El revisor debe poder distinguir
@@ -16,8 +16,8 @@
 }
 
 .alert--info {
-  border-left: 3px solid #2f6f9f;
-  background: #eef5fb;
+  border-left: 3px solid var(--info);
+  background: var(--info-soft);
   padding: 0.5rem 0.75rem;
   margin: 0 0 0.75rem;
 }
@@ -71,7 +71,7 @@
 
 .block-editor__list > li {
   border: 1px solid var(--border, #ccd3dc);
-  border-radius: 10px;
+  border-radius: 6px;
   padding: 0.5rem 0.75rem;
   margin-bottom: 0.5rem;
 }

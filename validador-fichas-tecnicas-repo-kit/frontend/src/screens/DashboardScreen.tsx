@@ -103,7 +103,7 @@ export function DashboardScreen() {
       </AsyncBoundary>
 
       <details className='disclosure dashboard-scope'>
-        <summary>Alcance actual y próximos módulos</summary>
+        <summary>Alcance técnico y activación pendiente</summary>
         <div className='cards'>
           <article className='card card--plain'>
             <h3>Qué funciona hoy</h3>
@@ -111,14 +111,16 @@ export function DashboardScreen() {
               <li>Consulta de los maestros importados con la procedencia de cada valor.</li>
               <li>Listado de fuentes, versiones documentales e importaciones ejecutadas.</li>
               <li>Revisión firmada campo a campo sobre el conjunto de demostración.</li>
+              <li>Segunda revisión ciega, conciliación y exportación con barreras de seguridad.</li>
+              <li>Versionado, diferencias y mantenimiento continuo de documentos CIMA.</li>
             </ul>
           </article>
           <article className='card card--plain'>
-            <h3>Qué llegará después</h3>
+            <h3>Qué requiere activación o validación</h3>
             <ul>
-              <li>Contraste versionado con CIMA y vinculación con el maestro.</li>
-              <li>Extracción asistida con evidencia literal verificable.</li>
-              <li>Doble validación y exportación al sistema destino.</li>
+              <li>Enlazar los documentos CIMA con los registros del despliegue real.</li>
+              <li>Seleccionar el modelo local y validar sus umbrales con el conjunto oro.</li>
+              <li>Confirmar con farmacia cualquier prefijo de riesgo adicional a L04.</li>
             </ul>
           </article>
         </div>

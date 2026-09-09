@@ -14,6 +14,7 @@ from pharma_validator_api.models import (
     ExternalIdentifier,
     FieldValue,
     ReviewQueueEntry,
+    SecondReviewAssignment,
     SourceFragment,
     TargetRecord,
     ValueProvenance,
@@ -32,6 +33,8 @@ from pharma_validator_api.review import (
     record_decision,
 )
 from pharma_validator_api.review_queue import DEFAULT_LEASE
+from pharma_validator_api.risk_rules import assess
+from pharma_validator_api.second_review_store import open_second_review
 from pharma_validator_api.reviewer_identity import (
     ROLE_LABELS,
     ReviewerDirectory,
@@ -45,6 +48,50 @@ from pharma_validator_api.validation_states import (
 )
 
 router = APIRouter(prefix="/records", tags=["registros"])
+
+
+def _open_required_second_reviews(
+    session: Session, *, target_record_id: str, actor_id: str
+) -> int:
+    """Abre la segunda lectura de todos los campos ya decididos de un L04."""
+    values = list(
+        session.scalars(
+            select(FieldValue)
+            .join(BlockInstance, FieldValue.block_instance_id == BlockInstance.id)
+            .where(BlockInstance.target_record_id == target_record_id)
+        ).all()
+    )
+    decisions = current_decisions_for(session, [item.id for item in values])
+    atc_values = [item for item in values if item.field_name.strip().upper() == "ATC"]
+    atc = next(
+        (
+            decisions[item.id].final_value or item.literal_value
+            for item in atc_values
+            if (decisions.get(item.id) and decisions[item.id].final_value) or item.literal_value
+        ),
+        None,
+    )
+    if assess(atc).requires_double_review is not True:
+        return 0
+    existing = set(
+        session.scalars(
+            select(SecondReviewAssignment.field_value_id).where(
+                SecondReviewAssignment.target_record_id == target_record_id
+            )
+        ).all()
+    )
+    opened = 0
+    for item in values:
+        if item.id not in decisions or item.id in existing:
+            continue
+        open_second_review(session, field_value_id=item.id, actor_id=actor_id)
+        opened += 1
+    session.execute(
+        update(ReviewQueueEntry)
+        .where(ReviewQueueEntry.target_record_id == target_record_id)
+        .values(requires_second_review=True, updated_at=datetime.now(UTC))
+    )
+    return opened
 
 
 class ExternalIdentifierRead(BaseModel):
@@ -723,6 +770,12 @@ def save_decision(
             decision=decision,
             directory=directory,
         )
+        if settings.enable_second_review:
+            _open_required_second_reviews(
+                session,
+                target_record_id=block.target_record_id,
+                actor_id=signer.identifier,
+            )
     except (ValidationStateError, ReviewerIdentityError, ValueError) as error:
         raise ApplicationError(str(error), status_code=400) from error
     return DecisionRead(

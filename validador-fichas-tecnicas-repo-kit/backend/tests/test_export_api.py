@@ -10,11 +10,12 @@ from pathlib import Path
 import pytest
 from conftest import seed_reviewable_record
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
 from pharma_validator_api.config import Settings
 from pharma_validator_api.main import create_app
+from pharma_validator_api.models import BlockInstance, FieldValue, SecondReviewAssignment
 from pharma_validator_api.review import record_decision
 from pharma_validator_api.reviewer_identity import ReviewerDirectory
 from pharma_validator_api.validation_states import ValidationDecision
@@ -90,6 +91,50 @@ def test_a_run_produces_an_artifact_and_a_summary(
     written = list((tmp_path / "exports").glob("*.csv"))
     assert len(written) == 1
     assert "acido nicotinico" in written[0].read_text(encoding="utf-8")
+
+
+def test_export_artifact_can_be_downloaded_and_is_verified(
+    scratch_db_url: str, tmp_path: Path
+) -> None:
+    client = build(scratch_db_url, tmp_path)
+    created = client.post("/exports", json=PROFILE).json()
+    response = client.get(f"/exports/{created['run_id']}/artifact")
+    assert response.status_code == 200
+    assert response.content.startswith(b"Descripcion;Activo")
+    assert "attachment" in response.headers["content-disposition"]
+
+    artifact = next((tmp_path / "exports").glob("*.csv"))
+    artifact.write_bytes(b"contenido manipulado")
+    rejected = client.get(f"/exports/{created['run_id']}/artifact")
+    assert rejected.status_code == 409
+    assert "integridad" in rejected.json()["detail"]
+
+
+def test_l04_decision_opens_blind_second_review_automatically(
+    scratch_db_url: str, tmp_path: Path
+) -> None:
+    engine = create_engine(scratch_db_url)
+    with Session(engine) as session:
+        seed_reviewable_record(session)
+        block_id = session.scalar(
+            select(BlockInstance.id).where(BlockInstance.target_record_id == "rec-1")
+        )
+        session.add_all([
+            FieldValue(id="fv-atc", block_instance_id=block_id, field_name="ATC", literal_value="L04AB01", observed_type="text", logical_state="valued"),
+            FieldValue(id="fv-risk-value", block_instance_id=block_id, field_name="DOSIS", literal_value="10", observed_type="text", logical_state="valued"),
+        ])
+        session.commit()
+    engine.dispose()
+    client = TestClient(create_app(Settings(env="test", database_url=scratch_db_url, reviewers=("ana:Ana", "luis:Luis"), enable_second_review=True)))
+    response = client.post(
+        "/records/values/fv-risk-value/decisions",
+        json={"reviewer_id": "ana", "state": "confirmado", "final_value": "10"},
+    )
+    assert response.status_code == 201, response.text
+    with Session(create_engine(scratch_db_url)) as session:
+        assignment = session.scalar(select(SecondReviewAssignment).where(SecondReviewAssignment.field_value_id == "fv-risk-value"))
+        assert assignment is not None
+        assert assignment.first_reviewer_id == "ana"
 
 
 def test_an_unknown_actor_cannot_export(scratch_db_url: str, tmp_path: Path) -> None:

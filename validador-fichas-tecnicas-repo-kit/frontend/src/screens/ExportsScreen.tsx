@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { fetchExportExclusions, fetchExports } from '../api/client'
+import { exportArtifactUrl, fetchExportExclusions, fetchExports } from '../api/client'
 import type { ExportExclusionRow } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
@@ -112,6 +112,7 @@ export function ExportsScreen() {
                 <th scope='col'>Excluidas</th>
                 <th scope='col'>Hash</th>
                 <th scope='col'>Exclusiones</th>
+                <th scope='col'>Artefacto</th>
               </tr>
             </thead>
             <tbody>
@@ -144,6 +145,13 @@ export function ExportsScreen() {
                     >
                       {openRun === run.run_id ? 'Ocultar' : 'Ver'}
                     </button>
+                  </td>
+                  <td>
+                    {run.content_hash ? (
+                      <a className='button button--ghost' href={exportArtifactUrl(run.run_id)} download>
+                        Descargar
+                      </a>
+                    ) : '—'}
                   </td>
                 </tr>
               ))}

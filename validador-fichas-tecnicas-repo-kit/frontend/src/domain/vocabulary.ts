@@ -70,6 +70,8 @@ export const ASSIGNABLE_STATES: readonly ValidationState[] = [
 ]
 
 export interface RoadmapNote {
+  /** Estado técnico real; no equivale a validación clínica. */
+  readonly status: 'disponible' | 'preparado' | 'pendiente'
   /** Qué hace hoy esta sección. */
   readonly now: string
   /** Qué falta por implementar. */
@@ -89,20 +91,23 @@ export interface RoadmapNote {
  */
 export const ROADMAP_NOTES: Record<string, RoadmapNote> = {
   cima: {
-    now: 'Las fuentes que ve en pantalla proceden del conjunto de demostración cargado localmente.',
-    missing: 'La consulta en vivo a CIMA y su versionado documental no están conectados a esta pantalla.',
+    status: 'disponible',
+    now: 'La ingesta y el mantenimiento CIMA conservan versiones documentales inmutables, calculan diferencias por apartado y reabren selectivamente los campos afectados. Las novedades y sus diferencias se consultan en «Novedades CIMA».',
+    missing: 'Para operar con datos reales hay que cargar el corpus, enlazar sus documentos con los registros destino y habilitar la consulta de mantenimiento en el despliegue.',
     future:
-      'Farmalidación consultará y versionará la información procedente de CIMA para contrastarla con el maestro, conservando cada versión de forma inmutable.',
-    dependency: 'Fase 2 implementada en el backend (DEV-202/205/208); su consumo desde la interfaz es posterior.',
+      'Tras la configuración operativa, cada cambio de CIMA generará una nueva versión y una tarea de revisión sin borrar decisiones anteriores.',
+    dependency: 'Implementación técnica DEV-202/205/208 y DEV-701–704 terminada; la asociación REAL y la activación dependen de los datos del despliegue.',
   },
   extraccion: {
-    now: 'Los valores mostrados provienen de las fuentes cargadas; no hay ninguna propuesta generada automáticamente.',
-    missing: 'La extracción con modelo local no está integrada en esta vertical.',
+    status: 'preparado',
+    now: 'La cadena de extracción local, salida guiada, procesamiento reanudable y verificación literal está implementada. Una cita que no coincida exactamente con la versión documental se rechaza antes de llegar a revisión.',
+    missing: 'No se muestran propuestas automáticas todavía: falta elegir y desplegar el modelo local, ejecutar el conjunto oro con dos farmacéuticos y aprobar los umbrales por campo.',
     future:
-      'La extracción automática propondrá valores estructurados a partir de las fuentes documentales. Toda propuesta deberá citar evidencia literal verificable y respetará las reglas de revisión definidas por el proyecto.',
-    dependency: 'Fase 4 no abierta: el conjunto oro sigue sin anotar (GOLD-002) y D-014/D-015 siguen pendientes.',
+      'Al activarse, sólo las propuestas admitidas por la política del campo aparecerán junto a su evidencia literal; los campos protegidos seguirán sin valor preseleccionado.',
+    dependency: 'GOLD-002 y decisiones D-014/D-015. Son validaciones humanas y operativas, no código pendiente de la pantalla.',
   },
   discrepancias: {
+    status: 'pendiente',
     now: 'Se muestran las diferencias detectadas entre fuentes, conservando todos los valores y su procedencia.',
     missing: 'No existe resolución automática: la matriz de prioridad por campo no está cargada en esta vertical.',
     future:
@@ -110,13 +115,15 @@ export const ROADMAP_NOTES: Record<string, RoadmapNote> = {
     dependency: 'ADR-0007 aceptado; la prioridad concreta por campo sigue requiriendo aprobación humana.',
   },
   dobleValidacion: {
-    now: 'Se registra una sola firma por decisión, con garantía declarada.',
-    missing: 'La segunda validación a ciegas y la conciliación de discrepancias no están implementadas.',
+    status: 'disponible',
+    now: 'La segunda lectura a ciegas y la conciliación están implementadas en «Validaciones». El primer firmante no puede realizar la segunda lectura y las dos decisiones originales se conservan íntegras.',
+    missing: 'La función permanece detrás de configuración hasta habilitarla en el despliegue. La lista de riesgo aprobada incluye L04; farmacia aún puede ampliarla.',
     future:
-      'El flujo definitivo incorporará las reglas de revisión y doble validación definidas en las fases posteriores, exigiendo dos revisores distintos para los registros de riesgo.',
-    dependency: 'Fase 6; la lista ATC de riesgo adicional a L04 sigue pendiente (D-017).',
+      'Los registros que casen con las reglas de riesgo exigirán dos revisores distintos y no podrán exportarse mientras exista una discrepancia abierta.',
+    dependency: 'DEV-607/608 terminados. D-017 sólo mantiene pendiente una posible ampliación farmacéutica de los prefijos adicionales a L04.',
   },
   exportacion: {
+    status: 'pendiente',
     now: 'No existe ninguna exportación activa en esta vertical.',
     missing: 'El contrato exacto con el sistema destino no está cerrado.',
     future:
@@ -124,6 +131,7 @@ export const ROADMAP_NOTES: Record<string, RoadmapNote> = {
     dependency: 'D-011 (contrato de exportación) y D-012 (separador decimal) siguen pendientes.',
   },
   importaciones: {
+    status: 'pendiente',
     now: 'Los importadores de maestros están implementados y verificados en el backend.',
     missing: 'No existe todavía una pantalla para lanzar y supervisar importaciones.',
     future:
@@ -131,6 +139,7 @@ export const ROADMAP_NOTES: Record<string, RoadmapNote> = {
     dependency: 'Fase 3 cerrada en backend; la interfaz de operación es trabajo posterior.',
   },
   auditoria: {
+    status: 'pendiente',
     now: 'Cada decisión se guarda como evento append-only y su historial se consulta en la ficha.',
     missing: 'No existe una vista transversal de auditoría ni consulta histórica global.',
     future:
@@ -138,6 +147,7 @@ export const ROADMAP_NOTES: Record<string, RoadmapNote> = {
     dependency: 'Fase 6.',
   },
   teclado: {
+    status: 'pendiente',
     now: 'La navegación es con ratón y teclado estándar del navegador.',
     missing: 'Los atajos completos de revisión sin ratón no están implementados.',
     future:
