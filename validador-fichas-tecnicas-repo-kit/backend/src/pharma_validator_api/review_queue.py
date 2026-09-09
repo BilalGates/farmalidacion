@@ -23,6 +23,7 @@ QueueState = Literal[
     "requiere_segunda_revision",
     "bloqueado",
 ]
+ReviewSet = Literal["oro", "medida", "corpus"]
 
 OPEN_STATES: frozenset[str] = frozenset(
     {"pendiente", "asignado", "en_revision", "requiere_segunda_revision"}
@@ -77,6 +78,8 @@ class QueueItem:
     assigned_at: datetime | None = None
     priority: int = 0
     created_at: datetime | None = None
+    review_set: ReviewSet = "corpus"
+    requires_second_review: bool = False
 
     def __post_init__(self) -> None:
         if not self.target_record_id:
@@ -87,6 +90,8 @@ class QueueItem:
             raise ValueError(f"El estado {self.state} exige revisor asignado.")
         if self.state in ("pendiente", "completado", "bloqueado") and self.assignee_id:
             raise ValueError(f"El estado {self.state} no admite revisor asignado.")
+        if self.review_set not in ("oro", "medida", "corpus"):
+            raise ValueError(f"Conjunto de revisión desconocido: {self.review_set}.")
 
     def lease_expired(self, now: datetime, lease: timedelta = DEFAULT_LEASE) -> bool:
         """Una asignación caducada deja de proteger el trabajo."""
@@ -153,6 +158,8 @@ def plan_assignment(item: QueueItem, reviewer_id: str, now: datetime,
         assigned_at=now,
         priority=item.priority,
         created_at=item.created_at,
+        review_set=item.review_set,
+        requires_second_review=item.requires_second_review,
     )
 
 
@@ -170,6 +177,8 @@ def plan_transition(item: QueueItem, target: QueueState, reviewer_id: str,
         assigned_at=now if keeps_assignee else None,
         priority=item.priority,
         created_at=item.created_at,
+        review_set=item.review_set,
+        requires_second_review=item.requires_second_review,
     )
 
 

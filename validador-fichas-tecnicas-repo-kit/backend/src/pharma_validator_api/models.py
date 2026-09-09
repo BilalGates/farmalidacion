@@ -373,6 +373,10 @@ class ReviewQueueEntry(Base):
     assignee_id: Mapped[str | None] = mapped_column(String(80))
     assigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     priority: Mapped[int] = mapped_column(Integer, default=0)
+    review_set: Mapped[str] = mapped_column(String(20), default="corpus", server_default="corpus")
+    requires_second_review: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="0"
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 

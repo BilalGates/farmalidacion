@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from pharma_validator_api.config import Settings, get_settings
 from pharma_validator_api.maturity import CAPABILITIES, clinical_blockers
@@ -21,9 +21,11 @@ from pharma_validator_api.review_queue import (
     QueueItem,
     QueueState,
     ReviewQueueError,
+    ReviewSet,
 )
 from pharma_validator_api.review_queue_store import (
     assign,
+    assign_batch,
     claim_next,
     enqueue,
     list_queue,
@@ -40,6 +42,8 @@ class QueueItemRead(BaseModel):
     version: int
     assignee_id: str | None = None
     priority: int = 0
+    review_set: ReviewSet
+    requires_second_review: bool
 
 
 class AssignRequest(BaseModel):
@@ -55,8 +59,22 @@ class TransitionRequest(BaseModel):
 
 
 class EnqueueRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     target_record_id: str = Field(min_length=1)
     priority: int = 0
+    review_set: ReviewSet = "corpus"
+    requires_second_review: bool = False
+
+
+class BatchAssignmentItem(BaseModel):
+    target_record_id: str = Field(min_length=1)
+    expected_version: int = Field(ge=1)
+
+
+class BatchAssignRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reviewer_id: str = Field(min_length=1)
+    items: list[BatchAssignmentItem] = Field(min_length=1, max_length=100)
 
 
 def _read(item: QueueItem) -> QueueItemRead:
@@ -66,6 +84,8 @@ def _read(item: QueueItem) -> QueueItemRead:
         version=item.version,
         assignee_id=item.assignee_id,
         priority=item.priority,
+        review_set=item.review_set,
+        requires_second_review=item.requires_second_review,
     )
 
 
@@ -92,9 +112,24 @@ def get_queue(
     settings: SettingsDependency,
     state: QueueState | None = None,
     assignee_id: Annotated[str | None, Query()] = None,
+    entity_type: Annotated[str | None, Query()] = None,
+    block_type: Annotated[str | None, Query()] = None,
+    review_set: Annotated[ReviewSet | None, Query()] = None,
+    requires_second_review: Annotated[bool | None, Query()] = None,
 ) -> list[QueueItemRead]:
     _require_enabled(settings)
-    return [_read(i) for i in list_queue(session, state=state, assignee_id=assignee_id)]
+    return [
+        _read(i)
+        for i in list_queue(
+            session,
+            state=state,
+            assignee_id=assignee_id,
+            entity_type=entity_type,
+            block_type=block_type,
+            review_set=review_set,
+            requires_second_review=requires_second_review,
+        )
+    ]
 
 
 @router.post('', response_model=QueueItemRead, status_code=201)
@@ -104,7 +139,36 @@ def post_enqueue(
     _require_enabled(settings)
     if session.get(TargetRecord, payload.target_record_id) is None:
         raise HTTPException(status_code=404, detail='Registro no encontrado.')
-    return _read(enqueue(session, payload.target_record_id, priority=payload.priority))
+    return _read(
+        enqueue(
+            session,
+            payload.target_record_id,
+            priority=payload.priority,
+            review_set=payload.review_set,
+            requires_second_review=payload.requires_second_review,
+        )
+    )
+
+
+@router.post('/assign-batch', response_model=list[QueueItemRead])
+def post_assign_batch(
+    payload: BatchAssignRequest,
+    session: SessionDependency,
+    settings: SettingsDependency,
+) -> list[QueueItemRead]:
+    _require_enabled(settings)
+    identifiers = [item.target_record_id for item in payload.items]
+    if len(identifiers) != len(set(identifiers)):
+        raise HTTPException(status_code=400, detail="Un lote no puede repetir registros.")
+    try:
+        assigned = assign_batch(
+            session,
+            tuple((item.target_record_id, item.expected_version) for item in payload.items),
+            payload.reviewer_id,
+        )
+    except ReviewQueueError as error:
+        raise _guard(error) from error
+    return [_read(item) for item in assigned]
 
 
 @router.post('/next', response_model=QueueItemRead | None)

@@ -108,6 +108,68 @@ def test_enqueue_and_read_back(client: TestClient) -> None:
     assert client.get("/queue/rec-0").json()["priority"] == 3
 
 
+def test_queue_filters_explicit_facets_without_guessing_membership(client: TestClient) -> None:
+    first = client.post(
+        "/queue",
+        json={
+            "target_record_id": "rec-0",
+            "review_set": "oro",
+            "requires_second_review": True,
+        },
+    )
+    client.post("/queue", json={"target_record_id": "rec-1", "review_set": "corpus"})
+    assert first.json()["review_set"] == "oro"
+    assert first.json()["requires_second_review"] is True
+    assert [row["target_record_id"] for row in client.get(
+        "/queue?entity_type=medicamento&block_type=general&review_set=oro"
+        "&requires_second_review=true"
+    ).json()] == ["rec-0"]
+
+
+def test_batch_assignment_is_atomic_and_versioned(client: TestClient) -> None:
+    first = client.post("/queue", json={"target_record_id": "rec-0"}).json()
+    second = client.post("/queue", json={"target_record_id": "rec-1"}).json()
+    stale = client.post(
+        "/queue/assign-batch",
+        json={
+            "reviewer_id": "ana",
+            "items": [
+                {"target_record_id": "rec-0", "expected_version": first["version"]},
+                {"target_record_id": "rec-1", "expected_version": second["version"] + 1},
+            ],
+        },
+    )
+    assert stale.status_code == 409
+    assert client.get("/queue/rec-0").json()["state"] == "pendiente"
+    assigned = client.post(
+        "/queue/assign-batch",
+        json={
+            "reviewer_id": "ana",
+            "items": [
+                {"target_record_id": "rec-0", "expected_version": first["version"]},
+                {"target_record_id": "rec-1", "expected_version": second["version"]},
+            ],
+        },
+    )
+    assert assigned.status_code == 200
+    assert {row["assignee_id"] for row in assigned.json()} == {"ana"}
+
+
+def test_batch_rejects_duplicate_records(client: TestClient) -> None:
+    item = client.post("/queue", json={"target_record_id": "rec-0"}).json()
+    response = client.post(
+        "/queue/assign-batch",
+        json={
+            "reviewer_id": "ana",
+            "items": [
+                {"target_record_id": "rec-0", "expected_version": item["version"]},
+                {"target_record_id": "rec-0", "expected_version": item["version"]},
+            ],
+        },
+    )
+    assert response.status_code == 400
+
+
 def test_assigning_twice_reports_conflict_not_server_error(client: TestClient) -> None:
     """409 y no 500: que otro llegara antes es un resultado previsible."""
     client.post("/queue", json={"target_record_id": "rec-0"})

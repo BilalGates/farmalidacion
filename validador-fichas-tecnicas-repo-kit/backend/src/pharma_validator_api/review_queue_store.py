@@ -13,12 +13,13 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import CursorResult, select, update
 from sqlalchemy.orm import Session
 
-from pharma_validator_api.models import ReviewQueueEntry
+from pharma_validator_api.models import BlockInstance, ReviewQueueEntry, TargetRecord
 from pharma_validator_api.review_queue import (
     DEFAULT_LEASE,
     QueueConflictError,
     QueueItem,
     QueueState,
+    ReviewSet,
     assert_version_matches,
     plan_assignment,
     plan_transition,
@@ -46,10 +47,13 @@ def _to_item(row: ReviewQueueEntry) -> QueueItem:
         assigned_at=_aware(row.assigned_at),
         priority=row.priority,
         created_at=_aware(row.created_at),
+        review_set=row.review_set,  # type: ignore[arg-type]
+        requires_second_review=row.requires_second_review,
     )
 
 
 def enqueue(session: Session, target_record_id: str, *, priority: int = 0,
+            review_set: ReviewSet = "corpus", requires_second_review: bool = False,
             now: datetime | None = None) -> QueueItem:
     """Encola un registro. Reencolar uno ya presente no lo duplica ni lo reinicia."""
     moment = now or datetime.now(UTC)
@@ -63,6 +67,8 @@ def enqueue(session: Session, target_record_id: str, *, priority: int = 0,
         state="pendiente",
         version=1,
         priority=priority,
+        review_set=review_set,
+        requires_second_review=requires_second_review,
         created_at=moment,
         updated_at=moment,
     )
@@ -79,16 +85,33 @@ def read(session: Session, target_record_id: str) -> QueueItem | None:
 
 
 def list_queue(session: Session, *, state: QueueState | None = None,
-               assignee_id: str | None = None) -> tuple[QueueItem, ...]:
+               assignee_id: str | None = None, entity_type: str | None = None,
+               block_type: str | None = None, review_set: ReviewSet | None = None,
+               requires_second_review: bool | None = None) -> tuple[QueueItem, ...]:
     statement = select(ReviewQueueEntry)
     if state is not None:
         statement = statement.where(ReviewQueueEntry.state == state)
     if assignee_id is not None:
         statement = statement.where(ReviewQueueEntry.assignee_id == assignee_id)
+    if entity_type is not None:
+        statement = statement.join(TargetRecord).where(TargetRecord.entity_type == entity_type)
+    if block_type is not None:
+        statement = statement.join(
+            BlockInstance, BlockInstance.target_record_id == ReviewQueueEntry.target_record_id
+        ).where(BlockInstance.block_type == block_type)
+    if review_set is not None:
+        statement = statement.where(ReviewQueueEntry.review_set == review_set)
+    if requires_second_review is not None:
+        statement = statement.where(
+            ReviewQueueEntry.requires_second_review == requires_second_review
+        )
+    statement = statement.distinct()
     return queue_order(tuple(_to_item(r) for r in session.scalars(statement).all()))
 
 
-def _persist(session: Session, planned: QueueItem, expected_version: int) -> QueueItem:
+def _persist(
+    session: Session, planned: QueueItem, expected_version: int, *, commit: bool = True
+) -> QueueItem:
     """Escribe sólo si la fila sigue en la versión leída.
 
     `rowcount == 0` significa que alguien escribió entre la lectura y esta
@@ -106,6 +129,8 @@ def _persist(session: Session, planned: QueueItem, expected_version: int) -> Que
             assignee_id=planned.assignee_id,
             assigned_at=planned.assigned_at,
             priority=planned.priority,
+            review_set=planned.review_set,
+            requires_second_review=planned.requires_second_review,
             updated_at=datetime.now(UTC),
         )
     )
@@ -114,7 +139,8 @@ def _persist(session: Session, planned: QueueItem, expected_version: int) -> Que
         raise QueueConflictError(
             "Otro revisor modificó este trabajo mientras se editaba. Recargue antes de decidir."
         )
-    session.commit()
+    if commit:
+        session.commit()
     return planned
 
 
@@ -149,6 +175,32 @@ def transition(session: Session, target_record_id: str, target: QueueState,
         assert_version_matches(item, expected_version)
     planned = plan_transition(item, target, reviewer_id, moment, lease)
     return _persist(session, planned, item.version)
+
+
+def assign_batch(
+    session: Session,
+    assignments: tuple[tuple[str, int], ...],
+    reviewer_id: str,
+    *,
+    now: datetime | None = None,
+    lease: timedelta = DEFAULT_LEASE,
+) -> tuple[QueueItem, ...]:
+    """Asigna un lote completo o ninguno, conservando el bloqueo optimista."""
+    if not assignments:
+        raise QueueConflictError("El lote de asignación no puede estar vacío.")
+    moment = now or datetime.now(UTC)
+    planned: list[QueueItem] = []
+    try:
+        for target_record_id, expected_version in assignments:
+            item = _require(session, target_record_id)
+            assert_version_matches(item, expected_version)
+            candidate = plan_assignment(item, reviewer_id, moment, lease)
+            planned.append(_persist(session, candidate, item.version, commit=False))
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    return tuple(planned)
 
 
 def claim_next(session: Session, reviewer_id: str, *, now: datetime | None = None,
