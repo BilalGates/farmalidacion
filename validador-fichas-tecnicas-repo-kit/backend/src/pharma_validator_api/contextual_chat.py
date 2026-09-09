@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 
@@ -34,8 +35,25 @@ class ChatResult:
 
 STOPWORDS = frozenset(
     {
-        "algo", "apartado", "como", "cual", "dame", "dice", "documento", "el", "en",
-        "la", "las", "lo", "los", "menciona", "me", "muestra", "que", "sobre", "un",
+        "algo",
+        "apartado",
+        "como",
+        "cual",
+        "dame",
+        "dice",
+        "documento",
+        "el",
+        "en",
+        "la",
+        "las",
+        "lo",
+        "los",
+        "menciona",
+        "me",
+        "muestra",
+        "que",
+        "sobre",
+        "un",
         "una",
     }
 )
@@ -77,14 +95,38 @@ def _latest_artifacts(session: Session, record_id: str) -> tuple[SourceDocumentA
         session.scalars(
             select(SourceDocumentArtifact)
             .where(
-                SourceDocumentArtifact.document_version_id.in_(
-                    [row.id for row in latest.values()]
-                )
+                SourceDocumentArtifact.document_version_id.in_([row.id for row in latest.values()])
             )
-            .where(SourceDocumentArtifact.artifact_role == "section")
+            .where(SourceDocumentArtifact.artifact_role.in_(("section", "full_document")))
             .order_by(SourceDocumentArtifact.locator, SourceDocumentArtifact.ordinal)
         ).all()
     )
+
+
+def _sections(artifact: SourceDocumentArtifact) -> tuple[tuple[str, str], ...]:
+    """Lee apartados explícitos o el JSON segmentado archivado como documento."""
+    text = _text(artifact)
+    if text is None:
+        return ()
+    if artifact.artifact_role == "section":
+        return ((artifact.locator, text),)
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return ()
+    if not isinstance(payload, list):
+        return ()
+    result: list[tuple[str, str]] = []
+    for item in payload:
+        section = item.get("seccion") if isinstance(item, dict) else None
+        content = item.get("contenido") if isinstance(item, dict) else None
+        if (
+            isinstance(section, (str, int))
+            and not isinstance(section, bool)
+            and isinstance(content, str)
+        ):
+            result.append((str(section), content))
+    return tuple(result)
 
 
 def _excerpt(text: str, terms: tuple[str, ...], *, maximum: int = 500) -> str:
@@ -117,26 +159,24 @@ def answer_from_document(session: Session, *, record_id: str, question: str) -> 
             if len(token) >= 3 and token not in STOPWORDS
         )
     )
-    ranked: list[tuple[int, SourceDocumentArtifact, str]] = []
+    ranked: list[tuple[int, SourceDocumentArtifact, str, str]] = []
     for artifact in artifacts:
-        text = _text(artifact)
-        if text is None:
-            continue
-        if requested_section is not None:
-            if artifact.locator == requested_section:
-                ranked.append((10_000, artifact, text))
-            continue
-        score = sum(text.casefold().count(term) for term in terms)
-        if score:
-            ranked.append((score, artifact, text))
-    ranked.sort(key=lambda item: (-item[0], item[1].locator, item[1].ordinal))
+        for section, text in _sections(artifact):
+            if requested_section is not None:
+                if section == requested_section:
+                    ranked.append((10_000, artifact, section, text))
+                continue
+            score = sum(text.casefold().count(term) for term in terms)
+            if score:
+                ranked.append((score, artifact, section, text))
+    ranked.sort(key=lambda item: (-item[0], item[2], item[1].ordinal))
     citations = tuple(
         ChatCitation(
             document_version_id=artifact.document_version_id,
-            section=artifact.locator,
+            section=section,
             literal_text=text if requested_section else _excerpt(text, terms),
         )
-        for _, artifact, text in ranked[:5]
+        for _, artifact, section, text in ranked[:5]
     )
     if not citations:
         return ChatResult(
