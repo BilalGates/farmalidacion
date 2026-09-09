@@ -31,6 +31,7 @@ from pharma_validator_api.models import (
     BlockInstance,
     CatalogFieldDefinition,
     DocumentRecordLink,
+    ExportRun,
     FieldValue,
     ImportBatch,
     ImportDiagnostic,
@@ -299,9 +300,8 @@ def read_dashboard(session: SessionDependency) -> DashboardRead:
         select(ImportBatch.created_at).order_by(ImportBatch.created_at.desc()).limit(1)
     )
 
-    #: Los estados se derivan de la presencia real de datos. «Extracción» y
-    #: «Exportación» no tienen todavía tabla propia: se declaran pendientes en
-    #: lugar de fingir un estado que nadie podría comprobar.
+    #: Los estados se derivan de la presencia real de datos. Una capacidad
+    #: implementada sin ejecuciones se distingue de una ejecución disponible.
     def stage(key: str, label: str, present: int, detail_present: str) -> PipelineStageRead:
         return PipelineStageRead(
             key=key,
@@ -326,11 +326,15 @@ def read_dashboard(session: SessionDependency) -> DashboardRead:
         PipelineStageRead(
             key="cima",
             label="CIMA",
-            status="pendiente",
+            status=(
+                "disponible"
+                if _scalar_count(session, SourceDocument, SourceDocument.source_type.like("cima%"))
+                else "pendiente"
+            ),
             detail=(
-                "No hay documentos CIMA asociados a registros en la base de datos."
-                if not _scalar_count(session, SourceDocument, SourceDocument.source_type == "cima")
-                else "Documentos CIMA presentes."
+                "Documentos CIMA versionados presentes."
+                if _scalar_count(session, SourceDocument, SourceDocument.source_type.like("cima%"))
+                else "No hay documentos CIMA cargados en esta base de datos."
             ),
         ),
         stage(
@@ -342,14 +346,22 @@ def read_dashboard(session: SessionDependency) -> DashboardRead:
         PipelineStageRead(
             key="extraccion",
             label="Extracción de fichas técnicas",
-            status="pendiente",
-            detail="La extracción asistida no forma parte de esta vertical.",
+            status="parcial" if document_versions and catalog_fields else "pendiente",
+            detail=(
+                "Cadena técnica preparada; modelo y umbrales pendientes de validación."
+                if document_versions and catalog_fields
+                else "Requiere catálogo y versiones documentales cargadas."
+            ),
         ),
         PipelineStageRead(
             key="exportacion",
             label="Exportación",
-            status="pendiente",
-            detail="Sin destino de exportación configurado.",
+            status="disponible" if _scalar_count(session, ExportRun) else "pendiente",
+            detail=(
+                "Existen exportaciones archivadas y verificables."
+                if _scalar_count(session, ExportRun)
+                else "Sin ejecuciones archivadas; el contrato del proveedor sigue pendiente."
+            ),
         ),
     ]
 
@@ -915,9 +927,8 @@ def read_record(record_id: str, session: SessionDependency) -> RecordDetailRead:
         ).all()
     }
 
-    #: Sólo se declara «disponible» lo que está enlazado a este registro. La
-    #: vinculación Maestro↔CIMA no existe todavía en el modelo, de modo que se
-    #: anuncia como pendiente en vez de insinuar una asociación no verificada.
+    #: Sólo se declara «disponible» lo que está enlazado a este registro.
+    has_cima_ft = any(item.startswith("cima_document_type_1") for item in present_types)
     sources = [
         RecordSourceAvailabilityRead(
             key="maestro",
@@ -932,20 +943,23 @@ def read_record(record_id: str, session: SessionDependency) -> RecordDetailRead:
         RecordSourceAvailabilityRead(
             key="cima",
             label="CIMA",
-            status="disponible" if "cima" in present_types else "pendiente",
+            status="disponible" if has_cima_ft else "pendiente",
             detail=(
-                "Documento CIMA enlazado a este registro."
-                if "cima" in present_types
-                else "Vinculación con CIMA pendiente: el modelo no almacena todavía "
-                "una correspondencia verificada entre el maestro y el nregistro de CIMA."
+                "Documento CIMA enlazado mediante correspondencia CN exacta."
+                if has_cima_ft
+                else "Vinculación pendiente: este registro no tiene una correspondencia CN exacta en el corpus CIMA cargado."
             ),
         ),
         RecordSourceAvailabilityRead(
             key="ficha_tecnica",
             label="Ficha técnica",
-            status="disponible" if "ficha_tecnica" in present_types else "no_disponible",
+            status="disponible"
+            if has_cima_ft or "ficha_tecnica" in present_types
+            else "no_disponible",
             detail=(
-                "Ficha técnica enlazada."
+                "Ficha técnica CIMA versionada y enlazada."
+                if has_cima_ft
+                else "Ficha técnica enlazada."
                 if "ficha_tecnica" in present_types
                 else "Sin ficha técnica asociada a este registro."
             ),

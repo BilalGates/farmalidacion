@@ -225,6 +225,10 @@ def persist_cima_document_version(
         acquired_at=acquired_at,
     )
     session.add(version)
+    # No hay relaciones ORM declaradas entre versión y artefactos; por tanto la
+    # unidad de trabajo no puede deducir siempre el orden del INSERT. Materializar
+    # explícitamente el padre evita fallos FK en bases grandes con autoflush.
+    session.flush()
     session.add_all(
         [
             SourceDocumentArtifact(

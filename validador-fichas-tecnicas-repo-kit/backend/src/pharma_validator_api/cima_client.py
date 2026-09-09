@@ -35,7 +35,7 @@ class CimaRetryDelayError(CimaClientError):
 
 class CimaHTTPError(CimaClientError):
     def __init__(self, response: CimaResponse) -> None:
-        super().__init__(f'CIMA respondió HTTP {response.status_code}: {response.url}')
+        super().__init__(f"CIMA respondió HTTP {response.status_code}: {response.url}")
         self.response = response
 
 
@@ -52,7 +52,7 @@ class CimaResponse:
     @property
     def content_type(self) -> str | None:
         return next(
-            (value for name, value in self.headers if name.lower() == 'content-type'),
+            (value for name, value in self.headers if name.lower() == "content-type"),
             None,
         )
 
@@ -69,7 +69,7 @@ class RateLimiter:
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         if requests_per_second <= 0:
-            raise ValueError('requests_per_second debe ser mayor que cero.')
+            raise ValueError("requests_per_second debe ser mayor que cero.")
         self._interval = 1.0 / requests_per_second
         self._monotonic = monotonic
         self._sleep = sleep
@@ -94,32 +94,32 @@ class ImmutableCimaCache:
     @staticmethod
     def key(url: str, accept: str) -> str:
         payload = json.dumps(
-            {'method': 'GET', 'url': url, 'accept': accept},
+            {"method": "GET", "url": url, "accept": accept},
             ensure_ascii=False,
             sort_keys=True,
-            separators=(',', ':'),
+            separators=(",", ":"),
         ).encode()
         return hashlib.sha256(payload).hexdigest()
 
     def load(self, key: str) -> CimaResponse | None:
-        archive = self.root / f'{key}.zip'
+        archive = self.root / f"{key}.zip"
         if archive.exists():
             try:
                 with zipfile.ZipFile(archive) as stored:
-                    if set(stored.namelist()) != {'response.body', 'manifest.json'}:
-                        raise CimaCacheIntegrityError(f'Entrada de caché incompleta: {key}')
-                    body = stored.read('response.body')
-                    manifest_body = stored.read('manifest.json')
+                    if set(stored.namelist()) != {"response.body", "manifest.json"}:
+                        raise CimaCacheIntegrityError(f"Entrada de caché incompleta: {key}")
+                    body = stored.read("response.body")
+                    manifest_body = stored.read("manifest.json")
             except (OSError, zipfile.BadZipFile, KeyError) as exc:
-                raise CimaCacheIntegrityError(f'Archivo de caché inválido: {key}') from exc
+                raise CimaCacheIntegrityError(f"Archivo de caché inválido: {key}") from exc
             return self._response(key, body, manifest_body)
         entry = self.root / key
         if not entry.exists():
             return None
-        body_path = entry / 'response.body'
-        manifest_path = entry / 'manifest.json'
+        body_path = entry / "response.body"
+        manifest_path = entry / "manifest.json"
         if not body_path.is_file() or not manifest_path.is_file():
-            raise CimaCacheIntegrityError(f'Entrada de caché incompleta: {key}')
+            raise CimaCacheIntegrityError(f"Entrada de caché incompleta: {key}")
         return self._response(key, body_path.read_bytes(), manifest_path.read_bytes())
 
     @staticmethod
@@ -127,22 +127,22 @@ class ImmutableCimaCache:
         try:
             manifest = json.loads(manifest_body)
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-            raise CimaCacheIntegrityError(f'Manifiesto de caché inválido: {key}') from exc
+            raise CimaCacheIntegrityError(f"Manifiesto de caché inválido: {key}") from exc
         digest = hashlib.sha256(body).hexdigest()
-        if digest != manifest.get('content_sha256'):
-            raise CimaCacheIntegrityError(f'Hash de caché no coincide: {key}')
+        if digest != manifest.get("content_sha256"):
+            raise CimaCacheIntegrityError(f"Hash de caché no coincide: {key}")
         try:
             return CimaResponse(
-                url=manifest['url'],
-                status_code=manifest['status_code'],
-                headers=tuple((name, value) for name, value in manifest['headers']),
+                url=manifest["url"],
+                status_code=manifest["status_code"],
+                headers=tuple((name, value) for name, value in manifest["headers"]),
                 body=body,
                 content_sha256=digest,
-                fetched_at=manifest['fetched_at'],
+                fetched_at=manifest["fetched_at"],
                 from_cache=True,
             )
         except (KeyError, TypeError, ValueError) as exc:
-            raise CimaCacheIntegrityError(f'Contrato de caché inválido: {key}') from exc
+            raise CimaCacheIntegrityError(f"Contrato de caché inválido: {key}") from exc
 
     def store(self, key: str, response: CimaResponse) -> CimaResponse:
         self.root.mkdir(parents=True, exist_ok=True)
@@ -150,26 +150,26 @@ class ImmutableCimaCache:
         if current is not None:
             return current
         with tempfile.NamedTemporaryFile(
-            prefix=f'.{key}-', suffix='.zip', dir=self.root, delete=False
+            prefix=f".{key}-", suffix=".zip", dir=self.root, delete=False
         ) as temporary_file:
             temporary = Path(temporary_file.name)
         try:
             manifest = {
-                'schema_version': '1.0.0',
-                'url': response.url,
-                'status_code': response.status_code,
-                'headers': response.headers,
-                'content_sha256': response.content_sha256,
-                'fetched_at': response.fetched_at,
+                "schema_version": "1.0.0",
+                "url": response.url,
+                "status_code": response.status_code,
+                "headers": response.headers,
+                "content_sha256": response.content_sha256,
+                "fetched_at": response.fetched_at,
             }
             manifest_body = (
-                json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2) + '\n'
+                json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
             ).encode()
-            with zipfile.ZipFile(temporary, 'w', compression=zipfile.ZIP_STORED) as archive:
-                archive.writestr('response.body', response.body)
-                archive.writestr('manifest.json', manifest_body)
+            with zipfile.ZipFile(temporary, "w", compression=zipfile.ZIP_STORED) as archive:
+                archive.writestr("response.body", response.body)
+                archive.writestr("manifest.json", manifest_body)
             try:
-                temporary.rename(self.root / f'{key}.zip')
+                temporary.rename(self.root / f"{key}.zip")
             except FileExistsError:
                 return self.load(key) or response
             except PermissionError:
@@ -199,13 +199,13 @@ class CimaClient:
         monotonic: Callable[[], float] = time.monotonic,
     ) -> None:
         parsed_base = httpx.URL(base_url)
-        if parsed_base.scheme != 'https' or not parsed_base.host:
-            raise ValueError('CIMA base_url debe ser una URL HTTPS absoluta.')
+        if parsed_base.scheme != "https" or not parsed_base.host:
+            raise ValueError("CIMA base_url debe ser una URL HTTPS absoluta.")
         if timeout_seconds <= 0 or max_retries < 0 or backoff_seconds < 0:
-            raise ValueError('Configuración temporal de CIMA inválida.')
+            raise ValueError("Configuración temporal de CIMA inválida.")
         if max_retry_delay_seconds < 0:
-            raise ValueError('max_retry_delay_seconds no puede ser negativo.')
-        self._base_url = str(parsed_base).rstrip('/')
+            raise ValueError("max_retry_delay_seconds no puede ser negativo.")
+        self._base_url = str(parsed_base).rstrip("/")
         self._max_retries = max_retries
         self._backoff_seconds = backoff_seconds
         self._max_retry_delay_seconds = max_retry_delay_seconds
@@ -219,7 +219,7 @@ class CimaClient:
         self._http = httpx.Client(
             timeout=timeout_seconds,
             transport=transport,
-            headers={'User-Agent': 'farmalidacion-cima-client/0.1'},
+            headers={"User-Agent": "farmalidacion-cima-client/0.1"},
         )
 
     def close(self) -> None:
@@ -232,11 +232,11 @@ class CimaClient:
         self.close()
 
     def _validate_path(self, path: str) -> None:
-        if not path.startswith('/') or '://' in path or '..' in path.split('/'):
-            raise ValueError('La ruta CIMA debe ser relativa y no contener segmentos ascendentes.')
+        if not path.startswith("/") or "://" in path or ".." in path.split("/"):
+            raise ValueError("La ruta CIMA debe ser relativa y no contener segmentos ascendentes.")
 
     def _delay_for(self, response: httpx.Response, retry_number: int) -> float:
-        retry_after = response.headers.get('Retry-After')
+        retry_after = response.headers.get("Retry-After")
         try:
             delay = float(retry_after) if retry_after is not None else None
         except ValueError:
@@ -245,7 +245,7 @@ class CimaClient:
             delay = self._backoff_seconds * (2**retry_number)
         if delay > self._max_retry_delay_seconds:
             raise CimaRetryDelayError(
-                f'CIMA solicita una espera de {delay:g}s, superior al máximo configurado.'
+                f"CIMA solicita una espera de {delay:g}s, superior al máximo configurado."
             )
         return delay
 
@@ -267,16 +267,16 @@ class CimaClient:
         path: str,
         *,
         params: Sequence[tuple[str, str]] = (),
-        accept: str = 'application/json',
+        accept: str = "application/json",
         use_cache: bool = True,
     ) -> CimaResponse:
         self._validate_path(path)
         query_params: list[tuple[str, str | int | float | bool | None]] = list(params)
         request = self._http.build_request(
-            'GET',
-            f'{self._base_url}{path}',
+            "GET",
+            f"{self._base_url}{path}",
             params=query_params,
-            headers={'Accept': accept},
+            headers={"Accept": accept},
         )
         key = self._cache.key(str(request.url), accept)
         if use_cache:
@@ -287,16 +287,16 @@ class CimaClient:
         for attempt in range(self._max_retries + 1):
             self._rate_limiter.wait()
             request = self._http.build_request(
-                'GET',
-                f'{self._base_url}{path}',
+                "GET",
+                f"{self._base_url}{path}",
                 params=query_params,
-                headers={'Accept': accept},
+                headers={"Accept": accept},
             )
             try:
                 raw_response = self._http.send(request)
             except httpx.TransportError as exc:
                 if attempt >= self._max_retries:
-                    raise CimaTransportError(f'Fallo de transporte CIMA: {request.url}') from exc
+                    raise CimaTransportError(f"Fallo de transporte CIMA: {request.url}") from exc
                 self._sleep(self._backoff_seconds * (2**attempt))
                 continue
 
@@ -309,7 +309,7 @@ class CimaClient:
             if not raw_response.is_success:
                 raise CimaHTTPError(captured)
             return self._cache.store(key, captured) if use_cache else captured
-        raise AssertionError('Bucle de reintentos CIMA inalcanzable.')
+        raise AssertionError("Bucle de reintentos CIMA inalcanzable.")
 
     def medication(
         self,
@@ -319,28 +319,28 @@ class CimaClient:
         use_cache: bool = True,
     ) -> CimaResponse:
         if (nregistro is None) == (cn is None):
-            raise ValueError('Debe indicarse exactamente uno de nregistro o cn.')
-        name, value = ('nregistro', nregistro) if nregistro is not None else ('cn', cn)
-        return self.get('/medicamento', params=[(name, value or '')], use_cache=use_cache)
+            raise ValueError("Debe indicarse exactamente uno de nregistro o cn.")
+        name, value = ("nregistro", nregistro) if nregistro is not None else ("cn", cn)
+        return self.get("/medicamento", params=[(name, value or "")], use_cache=use_cache)
 
     def medications(self, *, pagina: int = 1) -> CimaResponse:
         return self.get(
-            '/medicamentos',
-            params=[('pagina', str(pagina)), ('autorizados', '1'), ('comerc', '1')],
+            "/medicamentos",
+            params=[("pagina", str(pagina)), ("autorizados", "1"), ("comerc", "1")],
         )
 
     def presentations(self, *, nregistro: str, pagina: int = 1) -> CimaResponse:
         return self.get(
-            '/presentaciones',
-            params=[('nregistro', nregistro), ('pagina', str(pagina))],
+            "/presentaciones",
+            params=[("nregistro", nregistro), ("pagina", str(pagina))],
         )
 
     def sections(
         self, *, nregistro: str, document_type: int = 1, use_cache: bool = True
     ) -> CimaResponse:
         return self.get(
-            f'/docSegmentado/secciones/{document_type}',
-            params=[('nregistro', nregistro)],
+            f"/docSegmentado/secciones/{document_type}",
+            params=[("nregistro", nregistro)],
             use_cache=use_cache,
         )
 
@@ -350,22 +350,71 @@ class CimaClient:
         nregistro: str,
         section: str | None = None,
         document_type: int = 1,
-        accept: str = 'application/json',
+        accept: str = "application/json",
         use_cache: bool = True,
     ) -> CimaResponse:
-        params = [('nregistro', nregistro)]
+        params = [("nregistro", nregistro)]
         if section is not None:
-            params.append(('seccion', section))
+            params.append(("seccion", section))
         return self.get(
-            f'/docSegmentado/contenido/{document_type}',
+            f"/docSegmentado/contenido/{document_type}",
             params=params,
             accept=accept,
             use_cache=use_cache,
         )
 
     def changes(self, *, date: str, nregistros: Sequence[str] = ()) -> CimaResponse:
-        params = [('fecha', date)]
-        params.extend(('nregistro', item) for item in nregistros)
+        params = [("fecha", date)]
+        params.extend(("nregistro", item) for item in nregistros)
         # El registro puede crecer durante el día. Reutilizar para siempre la
         # primera respuesta de una fecha ocultaría cambios posteriores.
-        return self.get('/registroCambios', params=params, use_cache=False)
+        first = self.get("/registroCambios", params=params, use_cache=False)
+        try:
+            payload = first.json()
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return first
+        if not isinstance(payload, dict) or not isinstance(payload.get("resultados"), list):
+            return first
+        total = payload.get("totalFilas")
+        size = payload.get("tamanioPagina")
+        page = payload.get("pagina")
+        if not all(
+            isinstance(item, int) and not isinstance(item, bool) for item in (total, size, page)
+        ):
+            return first
+        assert isinstance(total, int) and isinstance(size, int) and isinstance(page, int)
+        if size <= 0 or page != 1:
+            raise CimaClientError("Paginación incompatible en registroCambios.")
+        results = list(payload["resultados"])
+        pages = (total + size - 1) // size
+        for number in range(2, pages + 1):
+            current = self.get(
+                "/registroCambios",
+                params=[*params, ("pagina", str(number))],
+                use_cache=False,
+            )
+            current_payload = current.json()
+            if (
+                not isinstance(current_payload, dict)
+                or current_payload.get("pagina") != number
+                or current_payload.get("totalFilas") != total
+                or not isinstance(current_payload.get("resultados"), list)
+            ):
+                raise CimaClientError(
+                    "La paginación de registroCambios cambió durante la consulta."
+                )
+            results.extend(current_payload["resultados"])
+        if len(results) != total:
+            raise CimaClientError(
+                f"registroCambios declaró {total} filas y devolvió {len(results)}."
+            )
+        merged = json.dumps(results, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        return CimaResponse(
+            url=first.url,
+            status_code=first.status_code,
+            headers=first.headers,
+            body=merged,
+            content_sha256=hashlib.sha256(merged).hexdigest(),
+            fetched_at=first.fetched_at,
+            from_cache=False,
+        )

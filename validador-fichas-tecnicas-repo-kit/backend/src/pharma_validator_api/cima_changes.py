@@ -45,9 +45,7 @@ class CimaChangeReport:
 
 
 class ChangesClient(Protocol):
-    def changes(
-        self, *, date: str, nregistros: Sequence[str] = ()
-    ) -> CimaResponse: ...
+    def changes(self, *, date: str, nregistros: Sequence[str] = ()) -> CimaResponse: ...
 
 
 def _requested_date(value: str) -> str:
@@ -72,8 +70,10 @@ def parse_change_response(response: CimaResponse, *, requested_date: str) -> Cim
         payload = json.loads(response.body)
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise CimaChangesError("registroCambios no devolvió JSON válido.") from exc
+    if isinstance(payload, dict):
+        payload = payload.get("resultados")
     if not isinstance(payload, list):
-        raise CimaChangesError("registroCambios debe devolver una lista.")
+        raise CimaChangesError("registroCambios debe devolver resultados en una lista.")
 
     parsed: list[CimaChange] = []
     unknown: set[str] = set()
@@ -81,12 +81,12 @@ def parse_change_response(response: CimaResponse, *, requested_date: str) -> Cim
     for index, item in enumerate(payload, start=1):
         if not isinstance(item, dict):
             raise CimaChangesError(f"Cambio {index}: se esperaba un objeto.")
-        nregistro = _non_empty_string(
-            item.get("nregistro"), field="nregistro", index=index
-        )
+        nregistro = _non_empty_string(item.get("nregistro"), field="nregistro", index=index)
         occurred_at = item.get("fecha")
         change_type = item.get("tipoCambio")
-        areas_value = item.get("cambios")
+        # La API viva usa `cambio`; se conserva `cambios` por compatibilidad
+        # con la forma publicada anteriormente y con fixtures archivados.
+        areas_value = item.get("cambio", item.get("cambios"))
         if not isinstance(occurred_at, int) or isinstance(occurred_at, bool) or occurred_at < 0:
             raise CimaChangesError(f"Cambio {index}: fecha Epoch incompatible.")
         if change_type not in CHANGE_KINDS:
@@ -95,10 +95,7 @@ def parse_change_response(response: CimaResponse, *, requested_date: str) -> Cim
             raise CimaChangesError(f"Cambio {index}: cambios debe ser una lista.")
         areas = tuple(
             sorted(
-                {
-                    _non_empty_string(area, field="cambios[]", index=index)
-                    for area in areas_value
-                }
+                {_non_empty_string(area, field="cambios[]", index=index) for area in areas_value}
             )
         )
         unknown.update(set(areas) - KNOWN_AREAS)

@@ -30,17 +30,17 @@ from pharma_validator_api.review import (
     evaluate_field_conflict,
     evaluate_field_conflict_from,
     provenance_for,
-    record_decision,
+    record_decision_in_transaction,
 )
 from pharma_validator_api.review_queue import DEFAULT_LEASE
-from pharma_validator_api.risk_rules import assess
-from pharma_validator_api.second_review_store import open_second_review
 from pharma_validator_api.reviewer_identity import (
     ROLE_LABELS,
     ReviewerDirectory,
     ReviewerIdentityError,
 )
 from pharma_validator_api.reviewer_store import directory_from_database
+from pharma_validator_api.risk_rules import assess
+from pharma_validator_api.second_review_store import open_second_review
 from pharma_validator_api.validation_states import (
     ValidationDecision,
     ValidationState,
@@ -50,9 +50,7 @@ from pharma_validator_api.validation_states import (
 router = APIRouter(prefix="/records", tags=["registros"])
 
 
-def _open_required_second_reviews(
-    session: Session, *, target_record_id: str, actor_id: str
-) -> int:
+def _open_required_second_reviews(session: Session, *, target_record_id: str, actor_id: str) -> int:
     """Abre la segunda lectura de todos los campos ya decididos de un L04."""
     values = list(
         session.scalars(
@@ -63,14 +61,12 @@ def _open_required_second_reviews(
     )
     decisions = current_decisions_for(session, [item.id for item in values])
     atc_values = [item for item in values if item.field_name.strip().upper() == "ATC"]
-    atc = next(
-        (
-            decisions[item.id].final_value or item.literal_value
-            for item in atc_values
-            if (decisions.get(item.id) and decisions[item.id].final_value) or item.literal_value
-        ),
-        None,
-    )
+
+    def effective_literal(item: FieldValue) -> str | None:
+        decision = decisions.get(item.id)
+        return (decision.final_value if decision else None) or item.literal_value
+
+    atc = next((value for item in atc_values if (value := effective_literal(item))), None)
     if assess(atc).requires_double_review is not True:
         return 0
     existing = set(
@@ -764,7 +760,7 @@ def save_decision(
             comment=payload.comment,
             seconds_spent=payload.seconds_spent,
         )
-        record = record_decision(
+        record = record_decision_in_transaction(
             session,
             field_value_id=field_value_id,
             decision=decision,
@@ -776,6 +772,7 @@ def save_decision(
                 target_record_id=block.target_record_id,
                 actor_id=signer.identifier,
             )
+        session.commit()
     except (ValidationStateError, ReviewerIdentityError, ValueError) as error:
         raise ApplicationError(str(error), status_code=400) from error
     return DecisionRead(

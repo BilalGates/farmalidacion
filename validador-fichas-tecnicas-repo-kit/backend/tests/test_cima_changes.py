@@ -50,6 +50,21 @@ def test_duplicate_rows_and_areas_have_a_stable_representation() -> None:
     assert report.changes[0].areas == ("ft",)
 
 
+def test_parses_live_paginated_wrapper_and_singular_change_key() -> None:
+    report = parse_change_response(
+        response(
+            {
+                "totalFilas": 1,
+                "pagina": 1,
+                "tamanioPagina": 200,
+                "resultados": [{"nregistro": "1", "fecha": 7, "tipoCambio": 3, "cambio": ["ft"]}],
+            }
+        ),
+        requested_date="09/09/2026",
+    )
+    assert report.changes[0].areas == ("ft",)
+
+
 @pytest.mark.parametrize(
     "payload, message",
     [
@@ -76,9 +91,7 @@ class StubClient:
 
 def test_query_validates_date_and_deduplicates_filters_without_reordering() -> None:
     client = StubClient([])
-    report = query_cima_changes(
-        client, date="09/09/2026", nregistros=("51347", "99999", "51347")
-    )
+    report = query_cima_changes(client, date="09/09/2026", nregistros=("51347", "99999", "51347"))
 
     assert report.changes == ()
     assert client.calls == [("09/09/2026", ("51347", "99999"))]

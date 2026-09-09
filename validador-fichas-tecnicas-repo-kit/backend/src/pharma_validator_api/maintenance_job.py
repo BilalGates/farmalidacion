@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import func, select
@@ -9,7 +10,7 @@ from sqlalchemy.orm import Session
 from pharma_validator_api.cima_changes import query_cima_changes
 from pharma_validator_api.maintenance_refresh import MaintenanceClient
 from pharma_validator_api.maintenance_store import process_change_report
-from pharma_validator_api.models import MaintenanceRun
+from pharma_validator_api.models import MaintenanceRun, SourceDocument
 
 
 class MaintenanceJobError(RuntimeError):
@@ -66,6 +67,20 @@ def run_one_day(
     session.commit()
     try:
         report = query_cima_changes(client, date=requested)
+        tracked = set(
+            session.scalars(
+                select(SourceDocument.name).where(
+                    SourceDocument.source_type == "cima_document_type_1"
+                )
+            ).all()
+        )
+        if tracked:
+            # El piloto mantiene su corpus, no descarga silenciosamente todo el
+            # inventario CIMA cuando registroCambios devuelve cambios globales.
+            report = replace(
+                report,
+                changes=tuple(item for item in report.changes if item.nregistro in tracked),
+            )
         events = process_change_report(session, client=client, report=report)
         run.status = "completed"
         run.event_count = len(events)
