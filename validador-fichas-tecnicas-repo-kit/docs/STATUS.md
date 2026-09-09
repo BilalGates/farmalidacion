@@ -1,5 +1,77 @@
 # Estado del proyecto
 
+## DEV-502 — cola completa y asignación por lotes (9 de septiembre de 2026)
+
+DEV-502 queda cerrado técnicamente. La clasificación de conjunto y doble
+validación pasa a ser explícita y persistente; el listado filtra por entidad,
+bloque, estado, conjunto, doble validación y persona asignada. La interfaz
+permite seleccionar y asignar lotes.
+
+La operación por lote exige la versión observada de cada entrada y es atómica:
+un conflicto no deja asignaciones parciales. La migración `a7b8c9d0e1f2`
+clasifica de forma conservadora las filas previas como `corpus` y sin doble
+validación. No se infiere prioridad clínica.
+
+## Fase 7 — chat contextual citado (9 de septiembre de 2026)
+
+DEV-705 queda cerrado técnicamente. La pantalla de revisión incorpora una
+consulta documental colapsable y de sólo lectura. Busca de forma determinista
+en los apartados de la última ficha CIMA tipo 1 vinculada; toda respuesta
+positiva incluye versión, apartado y fragmento literal. La consulta no usa un
+modelo generativo, no recomienda y no puede escribir campos.
+
+Con DEV-701 a DEV-705 implementados, el bloque técnico de Fase 7 previsto en el
+backlog queda completado. La aceptación farmacéutica continúa regida por
+ADR-0010.
+
+## Fase 7 — operación diaria y alertas (9 de septiembre de 2026)
+
+DEV-704 queda cerrado técnicamente. La migración `f6a7b8c9d0e1` añade el
+historial de ejecuciones. El último día completado actúa como cursor; una pasada
+recupera días pendientes en orden y un fallo no lo adelanta. Cada reintento
+queda numerado y el panel muestra el último error operativo.
+
+`scripts/run_cima_maintenance.py` es el punto de entrada finito para el
+programador del entorno. No se introduce un scheduler residente adicional.
+DEV-705, opcional y P2, se aborda a continuación en el historial superior.
+
+## Fase 7 — panel de novedades y diff (9 de septiembre de 2026)
+
+DEV-703 queda cerrado técnicamente. `maintenance_change_event` archiva cada
+observación de forma inmutable e idempotente, incluidos estado/comercialización
+sin cambio de ficha. La API separa lista ligera y detalle con diff completo. La
+interfaz incorpora `Novedades CIMA`, muestra campos reabiertos y carga el diff
+sólo a petición.
+
+La migración `e5f6a7b8c9d0` es aditiva y reversible. Queda DEV-704 para ejecutar
+el flujo diariamente, conservar cursores operativos y hacer visibles fallos y
+reintentos.
+
+## Fase 7 — refresco y revisión selectiva (9 de septiembre de 2026)
+
+DEV-702 queda cerrado en su núcleo técnico. Los cambios `ft` de DEV-701
+disparan una descarga fresca por apartado, una versión documental inmutable y
+un diff. Sólo se reabren campos vinculados por procedencia al apartado cambiado;
+si la procedencia sólo identifica el documento completo, la reapertura es
+conservadora. La decisión previa nunca se sobrescribe: se añade
+`revision_pendiente` con actor técnico y referencias al diff y versiones.
+
+Versión, vínculos y reaperturas se escriben en una transacción. Repetir el mismo
+contenido no crea nada. DEV-703 queda como siguiente paso para persistir/servir
+el panel de novedades y los avisos de estado o comercialización.
+
+## Fase 7 — consulta incremental CIMA (9 de septiembre de 2026)
+
+DEV-701 queda cerrado en su núcleo técnico. `cima_changes` consulta
+`registroCambios`, valida altas/bajas/modificaciones y conserva sin interpretar
+el Epoch ambiguo de AEMPS. Los códigos de cambio desconocidos quedan visibles,
+no se descartan. La consulta no reutiliza la caché inmutable: una respuesta del
+mismo día puede crecer y servir la primera para siempre ocultaría novedades.
+
+El alcance termina antes de cualquier mutación. Descargar y persistir la nueva
+versión, calcular el diff y marcar revisiones corresponde a DEV-702; panel y
+operación programada corresponden a DEV-703/704.
+
 ## Fase 6 — exportación, doble validación y auditoría (8 de septiembre de 2026)
 
 Los tres módulos puros que existían desde Fase 5 —`export_engine`,
@@ -888,4 +960,14 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
 
 ## Última actualización
 
-4 de septiembre de 2026.
+9 de septiembre de 2026.
+
+## UX-001 — Sistema visual unificado
+
+- Rediseño transversal del frontend aplicado sin modificar contratos de API ni reglas clínicas.
+- Nuevo armazón adaptable con navegación lateral, contexto REAL/DEMO y selector de revisor persistente.
+- Tokens compartidos para color, espaciado, foco, tarjetas, tablas, formularios, estados y superficies; las pantallas de cola, fichas, revisión, fuentes, importaciones, validaciones, exportaciones y novedades heredan el mismo lenguaje visual.
+- Dashboard reorganizado con métricas y estado del proceso exclusivamente a partir de datos del backend; no se añaden cifras simuladas.
+- Accesibilidad conservada: texto además de color, foco visible, navegación por teclado y reducción de movimiento.
+- Verificación: ESLint correcto, build Vite correcto y 99/99 pruebas Vitest.
+- Segunda pasada de pulido: selector de revisor accesible y no nativo; cola compacta con estado vacío; resumen de segunda validación; progreso de ficha; evidencia no duplicada por fila; metadatos técnicos plegables y contención de textos extensos.

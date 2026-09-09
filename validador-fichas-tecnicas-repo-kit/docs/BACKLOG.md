@@ -4,9 +4,9 @@
 
 Completar desarrollo técnico de fases 4–7; después realizar todas las
 comprobaciones farmacéuticas. GOLD y umbrales no bloquean implementación.
-Integración actual: cola visible, guardado condicionado a asignación vigente,
-campo activo, evidencia lateral y navegación Alt+flechas. DEV-503/504 siguen
-parciales hasta completar contexto de párrafo y todos los atajos especificados.
+Integración actual: cola filtrable y asignable por lotes, guardado condicionado
+a asignación vigente, campo activo, evidencia lateral y navegación completa por
+teclado. DEV-502/503/504 están cerradas técnicamente.
 
 ## Actualización de camino crítico — 7 de septiembre de 2026
 
@@ -439,10 +439,12 @@ La vertical demostrable del 3 de septiembre de 2026 añadió el selector de revi
 
 ### DEV-502 — Cola y asignación de lotes (`P0`)
 
-**Estado:** integración parcial verificada el 8-09-2026. Dominio, persistencia y API
-de cola implementados; pantalla con filtro de estado, alta, asignación y apertura
-de registro. Guardado protegido por asignación vigente. Pendientes lotes y filtros
-por entidad, bloque, conjunto y doble validación.
+**Estado: cerrada técnicamente (9-09-2026).** Dominio, persistencia y API de cola;
+pantalla con filtros combinables por entidad, bloque, estado, conjunto y doble
+validación; alta y asignación individual o por lote. El conjunto y la marca de
+doble validación son datos explícitos, nunca inferencias clínicas. La asignación
+por lote es atómica y versionada; un conflicto revierte el lote completo.
+Migración `a7b8c9d0e1f2`. Contrato en `docs/REVIEW_QUEUE_CONTRACT.md`.
 
 ### DEV-503 — Pantalla de tres zonas (`P0`)
 
@@ -643,13 +645,54 @@ ejemplo aceptado por el proveedor (D-011) y la ejecución en su entorno.
 
 ### DEV-701 — Consulta de cambios CIMA (`P0`)
 
+**Estado: núcleo técnico cerrado (9-09-2026).** `cima_changes` consulta y
+valida `registroCambios`, conserva el Epoch literal, clasifica altas, bajas y
+modificaciones, señala códigos de área nuevos sin descartarlos y produce una
+representación determinista. La operación evita deliberadamente la caché
+inmutable porque el registro del mismo día puede crecer. Contrato en
+`docs/CIMA_CHANGE_QUERY_CONTRACT.md`. La descarga/persistencia de nuevas
+versiones y la apertura selectiva de revisión continúan en DEV-702.
+
 ### DEV-702 — Revisión pendiente selectiva (`P0`)
+
+**Estado: núcleo técnico cerrado (9-09-2026).** `maintenance_refresh` conecta
+los cambios `ft` de DEV-701 con descarga fresca por apartado, versión
+content-addressed, diff y reapertura selectiva basada en procedencia. Las
+decisiones anteriores no se modifican: se añade un evento
+`revision_pendiente` firmado por el actor técnico y referenciado a ambas
+versiones y al diff. Capturas idénticas no duplican nada y toda la escritura es
+transaccional. Contrato en `docs/CIMA_MAINTENANCE_REFRESH_CONTRACT.md`.
 
 ### DEV-703 — Panel de novedades y diff (`P1`)
 
+**Estado: cerrado técnicamente (9-09-2026).** Migración aditiva
+`e5f6a7b8c9d0`, registro inmutable/idempotente de novedades, API con lista
+ligera y detalle con diff, y pantalla `Novedades CIMA`. Los cambios no `ft`
+quedan visibles sin fabricar una versión; los `ft` enlazan versiones, diff y
+reaperturas de DEV-702. Contrato en `docs/CIMA_NOVELTY_PANEL_CONTRACT.md`.
+
 ### DEV-704 — Operación programada y alertas (`P1`)
 
+**Estado: cerrado técnicamente (9-09-2026).** `maintenance_run` conserva cada
+intento; el cursor deriva del último día completado y recupera días pendientes
+en orden. Un fallo queda visible, no adelanta el cursor y el siguiente intento
+repite la fecha. `scripts/run_cima_maintenance.py` ofrece una pasada finita para
+el scheduler de infraestructura; `/maintenance/runs` y `Novedades CIMA`
+muestran el estado operativo. Contrato en
+`docs/CIMA_MAINTENANCE_OPERATION_CONTRACT.md`.
+
 ### DEV-705 — Chat contextual citado (`P2`)
+
+**Estado: cerrado técnicamente (9-09-2026).** Panel colapsable en la revisión y
+endpoint de consulta documental estrictamente de sólo lectura. La recuperación
+determinista usa la ficha CIMA tipo 1 más reciente enlazada al registro; una
+respuesta sólo se considera contestada si aporta versión, apartado y fragmento
+literal. No genera recomendaciones ni escribe campos. Contrato en
+`docs/CONTEXTUAL_CHAT_CONTRACT.md`.
+
+### UX-001 — Sistema visual unificado (`P1`)
+
+**Estado: cerrado técnicamente (9-09-2026).** Armazón, navegación, dashboard y componentes compartidos renovados sobre las rutas existentes. No cambia contratos de datos, políticas de pre-relleno ni reglas de validación. Verificado con ESLint, build de producción y 99 pruebas frontend.
 
 ## Orden recomendado de las primeras issues
 
