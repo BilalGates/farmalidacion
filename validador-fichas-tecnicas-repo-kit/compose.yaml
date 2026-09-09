@@ -36,6 +36,11 @@ services:
       # El navegador accede al backend directamente durante la demo local.
       APP_CORS_ALLOW_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173"]'
       APP_REVIEWERS: '["mtorres:M. Torres","jlopez:J. Lopez"]'
+      # La demo incluye el flujo técnico completo de doble validación.
+      APP_ENABLE_SECOND_REVIEW: 'true'
+      # Exportación técnica habilitada; los perfiles siguen sin aceptación del proveedor.
+      APP_ENABLE_EXPORT: 'true'
+      APP_EXPORT_ARTIFACT_DIR: /app/data/exports
     command:
       - sh
       - -c
@@ -79,6 +84,14 @@ services:
       APP_LOAD_SHOWCASE_FIXTURE: 'false'
       APP_CORS_ALLOW_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173"]'
       APP_REVIEWERS: '["mtorres:M. Torres","jlopez:J. Lopez"]'
+      # Activa la segunda lectura ciega y la conciliación ya implementadas.
+      APP_ENABLE_SECOND_REVIEW: 'true'
+      # Exportación técnica habilitada; los perfiles siguen sin aceptación del proveedor.
+      APP_ENABLE_EXPORT: 'true'
+      APP_EXPORT_ARTIFACT_DIR: /app/data/exports
+      # El corpus piloto y sus enlaces exactos están materializados en real.db.
+      APP_ENABLE_CIMA_LINK: 'true'
+      APP_ENABLE_AUTO_REVALIDATION: 'true'
     command:
       - sh
       - -c
