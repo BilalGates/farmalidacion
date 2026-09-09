@@ -1,5 +1,16 @@
 # Estado del proyecto
 
+## DEV-511 — informe preparado, medición humana pendiente (9 de septiembre de 2026)
+
+La instrumentación del informe de medida está cerrada. Agrega por entidad y
+modo los minutos por registro, estados finales, corrección de propuestas y
+discrepancias, sin aceptar sesiones sintéticas ni convertir denominadores
+vacíos en tasas cero. Sólo declara completitud con 50 fichas observadas en los
+dos modos.
+
+No se ha ejecutado el piloto farmacéutico ni se afirma ahorro. Esa ejecución de
+dos semanas continúa pendiente de las acciones humanas previstas por ADR-0010.
+
 ## DEV-502 — cola completa y asignación por lotes (9 de septiembre de 2026)
 
 DEV-502 queda cerrado técnicamente. La clasificación de conjunto y doble

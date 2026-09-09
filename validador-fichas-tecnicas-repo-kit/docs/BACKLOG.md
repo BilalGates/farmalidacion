@@ -564,6 +564,13 @@ extensión. **Decisión farmacéutica pendiente (D-015):** qué campos pasan a
 
 ### DEV-511 — Ejecución del conjunto de medida (`P0`)
 
+**Estado: instrumentación cerrada; ejecución humana pendiente (9-09-2026).**
+`pilot_reporting` y `scripts/build_pilot_report.py` consolidan las cuatro
+métricas mínimas de la especificación, rechazan observaciones sintéticas y no
+presentan como resultado un conjunto incompleto. La ejecución real de dos
+semanas sobre 50 fichas requiere farmacéuticos y no se simula. Contrato en
+`docs/PILOT_MEASUREMENT_REPORT_CONTRACT.md`.
+
 ## EPIC E6 — Exportación, riesgo y auditoría
 
 ### DEV-601 — Cerrar contrato de exportación (`P0`)
