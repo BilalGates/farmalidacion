@@ -215,6 +215,7 @@ def test_repeated_change_parameters_and_content_accept_are_preserved(tmp_path: P
 
     with client(tmp_path, httpx.MockTransport(handler)) as cima:
         response = cima.changes(date='26/08/2026', nregistros=['1', '2'])
+        cima.changes(date='26/08/2026', nregistros=['1', '2'])
 
     assert requests[0].url.params.multi_items() == [
         ('fecha', '26/08/2026'),
@@ -223,6 +224,8 @@ def test_repeated_change_parameters_and_content_accept_are_preserved(tmp_path: P
     ]
     assert requests[0].headers['Accept'] == 'application/json'
     assert response.body == b'contenido literal'
+    assert len(requests) == 2
+    assert not list((tmp_path / 'cache').glob('*.zip'))
 
 
 def test_input_scope_and_rate_limiter_are_explicit(tmp_path: Path) -> None:

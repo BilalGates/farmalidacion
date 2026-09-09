@@ -268,6 +268,7 @@ class CimaClient:
         *,
         params: Sequence[tuple[str, str]] = (),
         accept: str = 'application/json',
+        use_cache: bool = True,
     ) -> CimaResponse:
         self._validate_path(path)
         query_params: list[tuple[str, str | int | float | bool | None]] = list(params)
@@ -278,9 +279,10 @@ class CimaClient:
             headers={'Accept': accept},
         )
         key = self._cache.key(str(request.url), accept)
-        cached = self._cache.load(key)
-        if cached is not None:
-            return cached
+        if use_cache:
+            cached = self._cache.load(key)
+            if cached is not None:
+                return cached
 
         for attempt in range(self._max_retries + 1):
             self._rate_limiter.wait()
@@ -306,14 +308,20 @@ class CimaClient:
                 continue
             if not raw_response.is_success:
                 raise CimaHTTPError(captured)
-            return self._cache.store(key, captured)
+            return self._cache.store(key, captured) if use_cache else captured
         raise AssertionError('Bucle de reintentos CIMA inalcanzable.')
 
-    def medication(self, *, nregistro: str | None = None, cn: str | None = None) -> CimaResponse:
+    def medication(
+        self,
+        *,
+        nregistro: str | None = None,
+        cn: str | None = None,
+        use_cache: bool = True,
+    ) -> CimaResponse:
         if (nregistro is None) == (cn is None):
             raise ValueError('Debe indicarse exactamente uno de nregistro o cn.')
         name, value = ('nregistro', nregistro) if nregistro is not None else ('cn', cn)
-        return self.get('/medicamento', params=[(name, value or '')])
+        return self.get('/medicamento', params=[(name, value or '')], use_cache=use_cache)
 
     def medications(self, *, pagina: int = 1) -> CimaResponse:
         return self.get(
@@ -327,10 +335,13 @@ class CimaClient:
             params=[('nregistro', nregistro), ('pagina', str(pagina))],
         )
 
-    def sections(self, *, nregistro: str, document_type: int = 1) -> CimaResponse:
+    def sections(
+        self, *, nregistro: str, document_type: int = 1, use_cache: bool = True
+    ) -> CimaResponse:
         return self.get(
             f'/docSegmentado/secciones/{document_type}',
             params=[('nregistro', nregistro)],
+            use_cache=use_cache,
         )
 
     def content(
@@ -340,6 +351,7 @@ class CimaClient:
         section: str | None = None,
         document_type: int = 1,
         accept: str = 'application/json',
+        use_cache: bool = True,
     ) -> CimaResponse:
         params = [('nregistro', nregistro)]
         if section is not None:
@@ -348,9 +360,12 @@ class CimaClient:
             f'/docSegmentado/contenido/{document_type}',
             params=params,
             accept=accept,
+            use_cache=use_cache,
         )
 
     def changes(self, *, date: str, nregistros: Sequence[str] = ()) -> CimaResponse:
         params = [('fecha', date)]
         params.extend(('nregistro', item) for item in nregistros)
-        return self.get('/registroCambios', params=params)
+        # El registro puede crecer durante el día. Reutilizar para siempre la
+        # primera respuesta de una fecha ocultaría cambios posteriores.
+        return self.get('/registroCambios', params=params, use_cache=False)
