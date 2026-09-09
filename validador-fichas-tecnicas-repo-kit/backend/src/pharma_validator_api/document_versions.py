@@ -143,10 +143,8 @@ def _assert_existing_version(
             current.source_url,
             current.status_code,
             current.media_type,
-            current.response_headers,
             current.content_hash,
             current.body,
-            current.fetched_at,
         )
         expected_values = (
             artifact.artifact_role,
@@ -155,10 +153,8 @@ def _assert_existing_version(
             response.url,
             response.status_code,
             response.content_type,
-            _response_headers(response),
             response.content_sha256,
             response.body,
-            response.fetched_at,
         )
         if current_values != expected_values:
             raise DocumentVersionConflictError(
@@ -174,6 +170,7 @@ def persist_cima_document_version(
     document_type: int,
     artifacts: tuple[ArtifactInput, ...],
     source_version: str | None = None,
+    commit: bool = True,
 ) -> PersistedDocumentVersion:
     if not nregistro or document_type <= 0:
         raise DocumentVersionError('Identidad documental CIMA incompatible.')
@@ -252,7 +249,10 @@ def persist_cima_document_version(
             for artifact in artifacts
         ]
     )
-    session.commit()
+    if commit:
+        session.commit()
+    else:
+        session.flush()
     return PersistedDocumentVersion(document.id, version_id, content_hash, True)
 
 

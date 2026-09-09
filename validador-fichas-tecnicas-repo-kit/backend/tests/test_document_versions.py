@@ -151,7 +151,9 @@ def test_changed_content_creates_new_version_without_overwriting_old(tmp_path: P
         ) == b'nueva seccion dos'
 
 
-def test_metadata_collision_and_persisted_corruption_fail_visibly(tmp_path: Path) -> None:
+def test_capture_metadata_changes_reuse_content_and_corruption_fails_visibly(
+    tmp_path: Path,
+) -> None:
     session, _ = migrated_session(tmp_path)
     with session:
         persisted = persist_cima_document_version(
@@ -172,13 +174,14 @@ def test_metadata_collision_and_persisted_corruption_fail_visibly(tmp_path: Path
                 extra_headers=(('ETag', 'distinto'),),
             ),
         )
-        with pytest.raises(DocumentVersionConflictError, match='Artefacto persistido incompatible'):
-            persist_cima_document_version(
-                session,
-                nregistro='51347',
-                document_type=1,
-                artifacts=tuple(changed_headers),
-            )
+        repeated = persist_cima_document_version(
+            session,
+            nregistro='51347',
+            document_type=1,
+            artifacts=tuple(changed_headers),
+        )
+        assert repeated.created is False
+        assert repeated.version_id == persisted.version_id
 
         stored = session.scalar(
             select(SourceDocumentArtifact).where(
