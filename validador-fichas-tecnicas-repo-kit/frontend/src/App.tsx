@@ -23,7 +23,6 @@ import { DashboardScreen } from './screens/DashboardScreen'
 import { ImportsScreen } from './screens/ImportsScreen'
 import { RealRecordListScreen } from './screens/RealRecordListScreen'
 import { ReviewersScreen } from './screens/ReviewersScreen'
-import { ReviewScreen } from './screens/ReviewScreen'
 import { SourcesScreen } from './screens/SourcesScreen'
 import { ExportsScreen } from './screens/ExportsScreen'
 import { QueueScreen } from './screens/QueueScreen'
@@ -153,12 +152,11 @@ export function App() {
       </header>
 
       <div className='main'>
-        <main className='content'>
+        <main className={`content${route.name === 'fichas' || route.name === 'ficha' ? ' content--records' : ''}`}>
           <ModeBanner info={database} />
           {route.name === 'inicio' && <DashboardScreen />}
-          {route.name === 'fichas' && <RealRecordListScreen />}
-          {route.name === 'ficha' && (
-            <ReviewScreen key={route.id} recordId={route.id} reviewer={reviewer} />
+          {(route.name === 'fichas' || route.name === 'ficha') && (
+            <RealRecordListScreen recordId={route.name === 'ficha' ? route.id : undefined} reviewer={reviewer} />
           )}
           {route.name === 'fuentes' && <SourcesScreen />}
           {route.name === 'importaciones' && <ImportsScreen />}

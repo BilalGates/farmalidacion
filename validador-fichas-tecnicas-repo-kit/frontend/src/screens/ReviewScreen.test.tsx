@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 
 import { clearRecordCache } from '../api/recordCache'
@@ -144,6 +144,74 @@ afterEach(() => {
   clearRecordCache()
   vi.unstubAllGlobals()
   window.localStorage.clear()
+})
+
+it('en compacto abre un solo editor y conserva borradores al filtrar', async () => {
+  routeFetch({})
+  render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} compact />)
+  await screen.findByRole('heading', { name: 'Omeprazol 20 mg' })
+  fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
+  fireEvent.change(screen.getByLabelText('Decisión de revisión'), { target: { value: 'corregido' } })
+  fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: 'borrador explícito' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Revisar' }))
+  expect(screen.getAllByLabelText('Decisión de revisión')).toHaveLength(1)
+  expect(screen.getByLabelText('Decisión de revisión')).toHaveValue('')
+  fireEvent.change(screen.getByLabelText('Localizar campo'), { target: { value: 'descripción' } })
+  expect(screen.getByRole('complementary', { name: 'Evidencia del campo activo' })).toHaveTextContent('Texto literal del maestro.')
+  fireEvent.click(screen.getByRole('button', { name: 'Revisar' }))
+  expect(screen.getByLabelText('Valor final')).toHaveValue('borrador explícito')
+})
+
+it('guardar y siguiente campo solo avanza tras confirmación del backend', async () => {
+  const saved = record()
+  saved.blocks[0].values[0].validation_state = 'confirmado'
+  saved.blocks[0].values[0].history = [{ sequence: 1, state: 'confirmado', final_value: 'dato revisado', comment: null, reviewer_id: 'ana', reviewer_assurance: 'declarada', decided_at: '2026-09-10T09:00:00Z' }]
+  routeFetch({ afterDecision: saved })
+  render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} compact />)
+  await screen.findByRole('heading', { name: 'Omeprazol 20 mg' })
+  fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
+  fireEvent.change(screen.getByLabelText('Decisión de revisión'), { target: { value: 'confirmado' } })
+  expect(screen.getByLabelText('Valor final')).toHaveValue('')
+  fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: 'dato revisado' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar y siguiente campo' }))
+  await screen.findByText('Decisión guardada.')
+  await waitFor(() => expect(document.querySelector('[data-review-field="value-2"] button[aria-expanded="true"]')).not.toBeNull())
+  expect(localStorage.getItem('farmalidacion.draft.rec-1.value-1')).toBeNull()
+})
+
+it('un rechazo de guardar y avanzar conserva el campo y el borrador', async () => {
+  routeFetch({ decision: { ok: false, status: 409, body: { detail: 'Revisión rechazada.' } } })
+  render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} compact />)
+  await screen.findByRole('heading', { name: 'Omeprazol 20 mg' })
+  fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
+  fireEvent.change(screen.getByLabelText('Decisión de revisión'), { target: { value: 'confirmado' } })
+  fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: 'mi borrador' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar y siguiente campo' }))
+  await screen.findByText('Revisión rechazada.')
+  expect(screen.getByLabelText('Valor final')).toHaveValue('mi borrador')
+  expect(document.querySelector('[data-review-field="value-1"] button[aria-expanded="true"]')).not.toBeNull()
+})
+
+it('bloquea la edición mientras se guarda para no descartar cambios escritos durante la petición', async () => {
+  let finish: ((response: Response) => void) | undefined
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (String(input).includes('/decisions') && init?.method === 'POST') return new Promise<Response>(resolve => { finish = resolve })
+    return new Response(JSON.stringify(String(input).includes('/timing/') ? { id: 'sesion' } : record()))
+  }))
+  render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} compact />)
+  await screen.findByRole('heading', { name: 'Omeprazol 20 mg' })
+  fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
+  fireEvent.change(screen.getByLabelText('Decisión de revisión'), { target: { value: 'confirmado' } })
+  fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: 'valor enviado' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar decisión' }))
+  await waitFor(() => expect(finish).toBeDefined())
+  expect(screen.getByLabelText('Decisión de revisión')).toBeDisabled()
+  expect(screen.getByLabelText('Valor final')).toBeDisabled()
+  expect(screen.getByLabelText('Comentario de revisión')).toBeDisabled()
+  await act(async () => finish?.(new Response(JSON.stringify({ detail: 'Rechazado' }), { status: 409 })))
+  await screen.findByText('Rechazado')
+  expect(screen.getByLabelText('Valor final')).toBeEnabled()
+  expect(screen.getByLabelText('Valor final')).toHaveValue('valor enviado')
 })
 
 it('presenta las tres zonas con la evidencia del campo activo', async () => {

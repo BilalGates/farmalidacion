@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Provenance } from '../api/types'
 import { sourceLabel } from '../domain/vocabulary'
 
@@ -82,14 +83,23 @@ export function parseEvidenceRow(literalText: string): EvidenceCell[] | null {
 function EvidenceRow({
   cells,
   highlightField,
+  contextual = false,
 }: {
   cells: EvidenceCell[]
   highlightField?: string
+  contextual?: boolean
 }) {
+  const [expanded, setExpanded] = useState(false)
+  const indices = cells.flatMap((cell, index) => cell.header === highlightField ? [index] : [])
+  const contextCells = indices.length > 0
+    ? cells.filter((_, index) => indices.some(active => Math.abs(index - active) <= 1))
+    : cells
+  const visibleCells = contextual && !expanded ? contextCells : cells
   return (
+    <>
     <table className='evidence-row'>
       <tbody>
-        {cells.map((cell) => {
+        {visibleCells.map((cell) => {
           const isHighlighted =
             highlightField !== undefined && cell.header !== null && cell.header === highlightField
           return (
@@ -109,6 +119,11 @@ function EvidenceRow({
         })}
       </tbody>
     </table>
+    {contextual && contextCells.length < cells.length && <button type='button' className='button button--ghost'
+      aria-expanded={expanded} onClick={() => setExpanded(current => !current)}>
+      {expanded ? 'Ver fragmento con contexto' : `Ver fila completa (${cells.length} celdas)`}
+    </button>}
+    </>
   )
 }
 
@@ -117,10 +132,12 @@ function ProvenanceItem({
   item,
   showEvidence,
   highlightField,
+  contextual,
 }: {
   item: Provenance
   showEvidence: boolean
   highlightField?: string
+  contextual?: boolean
 }) {
   const cells = item.literal_text === null ? null : parseEvidenceRow(item.literal_text)
   return (
@@ -135,7 +152,7 @@ function ProvenanceItem({
             {cells === null ? (
               <blockquote className='sources__evidence'>{item.literal_text}</blockquote>
             ) : (
-              <EvidenceRow cells={cells} highlightField={highlightField} />
+              <EvidenceRow cells={cells} highlightField={highlightField} contextual={contextual} />
             )}
             <details className='sources__technical'>
               <summary>Detalles técnicos de la fuente</summary>
@@ -165,11 +182,13 @@ export function ProvenanceList({
   provenance,
   showEvidence = true,
   highlightField,
+  contextual = false,
 }: {
   provenance: Provenance[]
   showEvidence?: boolean
   /** Campo que se está revisando; su celda se destaca en la fila de origen. */
   highlightField?: string
+  contextual?: boolean
 }) {
   if (provenance.length === 0) {
     return <p className='muted'>Sin procedencia declarada.</p>
@@ -182,6 +201,7 @@ export function ProvenanceList({
           item={item}
           showEvidence={showEvidence}
           highlightField={highlightField}
+          contextual={contextual}
         />
       ))}
     </ul>
