@@ -65,6 +65,7 @@ it('envía los filtros explícitos al servidor', async () => {
   vi.stubGlobal('fetch', fetchMock)
   render(<QueueScreen reviewer={null} />)
   await screen.findByText('La cola está al día')
+  fireEvent.click(screen.getByRole('button', { name: /Más filtros/ }))
   fireEvent.change(screen.getByLabelText('Entidad'), { target: { value: 'medicamento' } })
   fireEvent.change(screen.getByLabelText('Bloque'), { target: { value: 'general' } })
   fireEvent.change(screen.getByLabelText('Filtrar por conjunto'), { target: { value: 'oro' } })
