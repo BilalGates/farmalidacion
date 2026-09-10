@@ -9,6 +9,11 @@ describe('tipografia global', () => {
     expect(styles).toContain("--font-ui: 'Basic', sans-serif")
     expect(styles).not.toMatch(/font-family:\s*(?:'Inter'|'Metamorphous'|ui-monospace|monospace)/)
   })
+
+  it('no sintetiza negritas que deforman letras y cifras', () => {
+    expect(styles).toContain('font-synthesis: none')
+    expect(styles).not.toContain('font-synthesis: weight')
+  })
 })
 
 describe('sistema visual profesional', () => {
