@@ -1,5 +1,13 @@
 # Matriz inicial de trazabilidad
 
+## UI-REG-001 — ADR-0012
+
+Especificación §§9–10 y decisión de diseño del 10-09-2026 →
+`RecordsWorkspace`, `ReviewScreen`, `FieldRow`, `ProvenanceList`.
+Cobertura: `RecordsWorkspace.test.tsx`, `ReviewScreen.test.tsx`,
+`ProvenanceList.test.tsx`, `App.test.tsx` y `RealData.test.tsx`.
+Se verifican continuidad, borradores, políticas, contexto de fuente y paginación.
+
 ## Integración del 8-09-2026
 
 - DEV-502: inicio y devolución a pendientes desde QueueScreen con expected_version;
@@ -138,6 +146,12 @@
 | Adaptador del extractor local detrás de la interfaz abstracta | Plan Fase 4; DEV-401/402/403/405; D-014 pendiente | 4 | `pharma_validator_api.llm_extractor` | 9 pruebas sin red ni GPU: cita inventada rechazada por el verificador aunque la emita el adaptador; servidor caído es incidencia y no bloquea la revisión manual; respuesta malformada no se repara; la petición exige salida guiada estricta con temperatura 0; la identidad arrastra el modelo configurado; ningún camino elige modelo |
 | Encaje extremo a extremo del proceso oro | Plan Fase 4; contrato de anotación; DEV-407/408 | 4 | `backend/tests/test_gold_pipeline_end_to_end.py` | 5 pruebas sobre el recorrido anotaciones → checker → conciliación → gold final → evaluación → métricas: camino feliz con serialización JSONL de ida y vuelta; desacuerdo que llega al CSV como `open` conservando ambas anotaciones y sin puntuar; `pending` impide cerrar; artefactos idénticos byte a byte; alucinación penalizada con exactitud 0 |
 | Lenguaje visual coherente y adaptable | Especificación 10 y 14; UX-001 | transversal | `frontend/src/App.tsx`; `frontend/src/styles.css`; `frontend/src/screens/DashboardScreen.tsx` | navegación y contexto de modo visibles; componentes operativos comparten tokens; foco de teclado y reducción de movimiento; ESLint, build Vite y 99/99 Vitest |
+| Fuentes agrupadas sin perder identidad documental | ADR-0001; UX-002 | transversal | `frontend/src/screens/SourcesScreen.tsx` | resumen por tipo con agregados; expansión accesible que conserva todos los documentos y su detalle; 2 pruebas específicas, ESLint y build Vite |
 | Chat contextual citado y de sólo lectura | Especificación 10.6; DEV-705 | 7 | `pharma_validator_api.contextual_chat`; `chat_api`; `frontend/src/components/ContextualChat.tsx` | respuesta positiva sólo con versión, apartado y fragmento literal; apartado completo sin resumir; ausencia documental explícita; payload de escritura rechazado; panel colapsable sin acciones sobre campos |
 | Cola filtrable y asignación atómica por lotes | Especificación 10.5; DEV-502 | 5 | `review_queue_store`; `queue_api`; `QueueScreen`; migración `a7b8c9d0e1f2` | filtros combinables; conjunto y doble validación explícitos; lote versionado; conflicto revierte todas las asignaciones; duplicados rechazados |
 | Informe reproducible del conjunto de medida | Especificación 17; DEV-511 | 5 | `pilot_reporting`; `scripts/build_pilot_report.py`; `docs/PILOT_MEASUREMENT_REPORT_CONTRACT.md` | manual y asistida por ficha; cuatro métricas mínimas; sintéticos rechazados; tasas sin denominador nulas; incompleto nunca se declara resultado |
+
+
+## UI — Novedades CIMA (10-09-2026)
+
+Rediseño del panel de novedades (§13): resumen de eventos cargados por tipo, etiquetas de cambio y reapertura, historial en panel y detalle documental contextual. Conserva fuentes, eventos y consulta bajo demanda. Prueba de pantalla cubre resumen y apertura del diff.

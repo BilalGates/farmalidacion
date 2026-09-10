@@ -1,5 +1,28 @@
 # Estado del proyecto
 
+## Registros compacto — 10 de septiembre de 2026
+
+Implementación de ADR-0012: listado y ficha integrados, columnas ajustables,
+campos con etiquetas y código, un editor desplegado, filtros por campo/bloque,
+fuente contextual ampliable y avance explícito entre pendientes. Se reutilizan
+las decisiones, borradores, historial y barreras existentes.
+
+Verificación del cierre:
+
+- `npm test -- --reporter=dot`: 20 archivos, 131 pruebas aprobadas.
+- `npm run lint`: aprobado sin advertencias.
+- `npm run build` y build Docker del frontend: aprobados.
+- `docker compose --profile real up -d --no-deps --build frontend-real`:
+  frontend actualizado y saludable en `http://localhost:5173/#/fichas`.
+- Inspección con Edge/Playwright en 1366×768, 1920×1080, 1024×768 y
+  390×844: sin desbordamiento horizontal, avance entre registros operativo,
+  ningún error de página y cero decisiones enviadas durante la inspección.
+- En escritorio, el botón de siguiente pendiente permanece dentro de la
+  ventana. En móvil, las zonas se apilan para conservar su legibilidad.
+
+Esta verificación técnica no constituye aceptación farmacéutica ni una medida
+de ahorro. Las etiquetas desconocidas mantienen su código original.
+
 ## Integración CIMA REAL operativa (9 de septiembre de 2026)
 
 - Se cargó en `real.db` el corpus piloto verificado: 500 documentos, 500
@@ -1000,7 +1023,13 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
 
 ## Última actualización
 
-9 de septiembre de 2026.
+10 de septiembre de 2026.
+
+## Agrupación visual de fuentes
+
+- La pantalla de fuentes agrupa los documentos por tipo de origen y muestra totales de documentos, registros, lotes e incidencias.
+- Cada grupo se puede desplegar para conservar el acceso al documento, versión, estado y detalle individual; no cambia el contrato de API ni el modelo documental.
+- La agregación y la interacción expandir/contraer quedan cubiertas por Vitest.
 
 ## Reconciliación del estado mostrado en la interfaz
 
@@ -1022,3 +1051,8 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
 - Verificación final: ESLint correcto, build Vite correcto y 117/117 pruebas Vitest.
 - Segunda pasada de pulido: selector de revisor accesible y no nativo; cola compacta con estado vacío; resumen de segunda validación; progreso de ficha; evidencia no duplicada por fila; metadatos técnicos plegables y contención de textos extensos.
 - Dirección visual refinada a una base neutra editorial, con radios de 4–7 px, superficies planas, iconografía lineal coherente y degradado rosa–morado reservado para acciones y selección. Se añadieron transiciones breves con soporte para reducción de movimiento; los estados clínicos mantienen su semántica independiente.
+
+
+## UI — Novedades CIMA (10-09-2026)
+
+Rediseño del panel de novedades (§13): resumen de eventos cargados por tipo, etiquetas de cambio y reapertura, historial en panel y detalle documental contextual. Conserva fuentes, eventos y consulta bajo demanda. Prueba de pantalla cubre resumen y apertura del diff.

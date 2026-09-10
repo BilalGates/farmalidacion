@@ -1,5 +1,12 @@
 # Backlog inicial
 
+## UI-REG-001 — Registros compacto (10-09-2026)
+
+Implementado según ADR-0012: navegación conjunta, un editor por campo,
+filtros, fuente con contexto y avance explícito. Conservar evidencia de pruebas
+en STATUS. Pendiente de observación farmacéutica del flujo con datos reales;
+la extensión visual al resto del programa se realiza por módulo.
+
 ## Orden vigente — D-028 / ADR-0010
 
 Completar desarrollo técnico de fases 4–7; después realizar todas las
@@ -696,8 +703,17 @@ literal. No genera recomendaciones ni escribe campos. Contrato en
 
 **Estado: cerrado técnicamente (9-09-2026).** Armazón, navegación, dashboard y componentes compartidos renovados sobre las rutas existentes. Segunda revisión visual completada con base neutra, acento rosa–morado contenido, menor radio, iconografía lineal y movimiento accesible. No cambia contratos de datos, políticas de pre-relleno ni reglas de validación. Verificado con ESLint, build de producción y 117 pruebas frontend.
 
+### UX-002 — Agrupar documentos por origen en Fuentes (`P2`)
+
+**Estado: cerrado técnicamente (10-09-2026).** La lista plana se resume por tipo de fuente con agregados y permite desplegar todos los documentos originales. La agrupación es exclusivamente visual: conserva el detalle individual y no modifica versiones, identidades ni contratos de API. Verificada con 2 pruebas específicas, ESLint y build de producción.
+
 ## Orden recomendado de las primeras issues
 
 `DEV-001 (completada) → DEV-002A (completada) → DEV-002 → DEV-003 → DEV-004 → DEV-005 → DEV-006 → DEV-007 → DEV-008A (completada) → DEV-008 → DEV-009 → DEV-010 (completada) → DEV-011`
 
 Solo después: `DEV-101` en adelante.
+
+
+## UI — Novedades CIMA (10-09-2026)
+
+Rediseño del panel de novedades (§13): resumen de eventos cargados por tipo, etiquetas de cambio y reapertura, historial en panel y detalle documental contextual. Conserva fuentes, eventos y consulta bajo demanda. Prueba de pantalla cubre resumen y apertura del diff.

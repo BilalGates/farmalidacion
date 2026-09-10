@@ -1,5 +1,12 @@
 # Registro de decisiones
 
+## D-029 — Espacio compacto de Registros
+
+Cerrada por instrucción del responsable el 10-09-2026. ADR-0012: listado,
+campos y evidencia en la misma pantalla; avance mediante botón, nombres
+legibles junto a códigos y fuente con contexto ampliable. Variante compacta
+elegida y autorizada para implementación tras el prototipo.
+
 Estados: `cerrada`, `propuesta`, `pendiente`, `bloqueada`, `descartada`. Una decisión solo está cerrada cuando existe evidencia de aprobación y, cuando afecta a arquitectura, un ADR aceptado.
 
 | ID | Decisión | Estado | Debe cerrarse antes de | Recomendación inicial | Evidencia / ADR |
