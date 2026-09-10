@@ -523,7 +523,7 @@ export function ReviewScreen({
           <ContextualChat recordId={recordId} />
         </aside>
 
-        <footer className='panel review-shortcuts'>
+        {!compact && <footer className='panel review-shortcuts'>
           <button
             type='button'
             className='button button--ghost'
@@ -544,10 +544,10 @@ export function ReviewScreen({
               ))}
             </dl>
           )}
-        </footer>
+        </footer>}
       </div>
 
-      <ContextPanel className='panel review-assurance'>
+      {!compact && <ContextPanel className='panel review-assurance'>
         {compact ? <summary>Validación farmacéutica y trazabilidad</summary> : <h2>Validación farmacéutica</h2>}
         <p className='note'>
           Cada decisión se guarda como un evento y no sustituye a la anterior: el historial de cada
@@ -557,7 +557,7 @@ export function ReviewScreen({
         <RoadmapNote title='Doble validación' note={ROADMAP_NOTES.dobleValidacion} />
         <RoadmapNote title='Extracción asistida' note={ROADMAP_NOTES.extraccion} />
         <RoadmapNote title='Contraste con CIMA' note={ROADMAP_NOTES.cima} />
-      </ContextPanel>
+      </ContextPanel>}
     </div>
   )
 }

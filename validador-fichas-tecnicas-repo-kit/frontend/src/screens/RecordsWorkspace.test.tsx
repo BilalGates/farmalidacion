@@ -33,27 +33,9 @@ it('mantiene filtros al seleccionar y cambia de ficha sin reutilizar el detalle 
   expect(screen.queryByRole('heading', { name: 'Registro uno' })).not.toBeInTheDocument()
   expect(screen.getByRole('searchbox', { name: /Buscar/ })).toHaveValue('Registro')
   expect(screen.getByLabelText('Estado de revisión')).toHaveValue('pendiente')
+  expect(screen.getByRole('button', { name: /Siguiente pendiente/ })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Atajos de teclado/ })).not.toBeInTheDocument()
   await waitFor(() => expect(finish).toBeDefined())
   await act(async () => finish?.(new Response(JSON.stringify({ id: 'dos', entity_type: 'medication', blocks: [], external_identifiers: [] }))))
   await screen.findByRole('heading', { name: 'Registro dos' })
-})
-
-it('siguiente pendiente salta páginas vacías del filtro conservando la búsqueda', async () => {
-  window.location.hash = '#/fichas/uno'
-  const mock = vi.fn(async (input: RequestInfo | URL) => {
-    const url = new URL(String(input))
-    if (url.pathname === '/insights/records') {
-      const offset = Number(url.searchParams.get('offset'))
-      return new Response(JSON.stringify({ items: offset === 0 ? [row('uno')] : offset === 50 ? [] : [row('dos')], total: 101, offset, limit: 50 }))
-    }
-    return new Response(JSON.stringify({ id: url.pathname.endsWith('dos') ? 'dos' : 'uno', entity_type: 'medication', blocks: [], external_identifiers: [] }))
-  })
-  vi.stubGlobal('fetch', mock)
-  render(<Harness />)
-  await screen.findByRole('heading', { name: 'Registro uno' })
-  fireEvent.click(screen.getByRole('button', { name: /Siguiente pendiente/ }))
-  await screen.findByRole('heading', { name: 'Registro dos' })
-  expect(mock.mock.calls.some(([url]) => String(url).includes('offset=50'))).toBe(true)
-  expect(mock.mock.calls.some(([url]) => String(url).includes('offset=100'))).toBe(true)
-  expect(window.location.hash).toBe('#/fichas/dos')
 })

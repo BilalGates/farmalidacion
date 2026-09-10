@@ -17,8 +17,16 @@ Verificación del cierre:
 - Inspección con Edge/Playwright en 1366×768, 1920×1080, 1024×768 y
   390×844: sin desbordamiento horizontal, avance entre registros operativo,
   ningún error de página y cero decisiones enviadas durante la inspección.
-- En escritorio, el botón de siguiente pendiente permanece dentro de la
-  ventana. En móvil, las zonas se apilan para conservar su legibilidad.
+- En móvil, las zonas se apilan para conservar su legibilidad.
+
+Ajuste de rendimiento y limpieza visual del 10 de septiembre: la ficha carga
+campos, procedencias, decisiones e historial por lotes en vez de consultar por
+cada campo. En el contenedor real, las ocho primeras fichas (5–69 campos)
+pasaron de 2,8–12,6 s a 2,1–2,3 s. El listado precarga además las dos fichas
+siguientes, por lo que el cambio habitual entre registros reutiliza la petición
+en vuelo o la respuesta reciente. La vista compacta ya no muestra los bloques
+de atajos y trazabilidad/borradores. Conserva «Siguiente pendiente» como una
+acción aislada para mantener el flujo de revisión consecutiva.
 
 Esta verificación técnica no constituye aceptación farmacéutica ni una medida
 de ahorro. Las etiquetas desconocidas mantienen su código original.

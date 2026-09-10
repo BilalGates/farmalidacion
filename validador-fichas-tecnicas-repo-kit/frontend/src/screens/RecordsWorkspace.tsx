@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ArrowRight, Search } from 'lucide-react'
 import { fetchRealRecords } from '../api/client'
+import { prefetchRecord } from '../api/recordCache'
 import type { Reviewer, ReviewState, TargetRecord } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { ReviewBadge } from '../components/StateBadge'
@@ -42,13 +43,23 @@ export function RecordsWorkspace({ recordId, reviewer = null }: { recordId?: str
   const { data, error, loading } = useQuery(() => fetchRealRecords({
     origin: 'real', q: query || undefined, estado: estado || undefined, limit: PAGE_SIZE, offset,
   }), [query, estado, offset, retry])
+  const selectedId = recordId
   useEffect(() => { data?.items.forEach(item => knownNames.current.set(item.id, item.display_name)) }, [data])
+  useEffect(() => {
+    if (!data || busy) return
+    const selectedIndex = data.items.findIndex(item => item.id === selectedId)
+    const candidates = selectedIndex >= 0
+      ? data.items.slice(selectedIndex + 1, selectedIndex + 3)
+      : data.items.slice(0, 2)
+    candidates.forEach(item => prefetchRecord(item.id))
+  }, [data, selectedId, busy])
 
-  // Una búsqueda de siguiente pendiente nunca puede seleccionar sobre filtros nuevos.
-  useEffect(() => { searchGeneration.current += 1; setSeeking(false); setNotice('')
+  useEffect(() => {
+    searchGeneration.current += 1
+    setSeeking(false)
+    setNotice('')
     return () => { searchGeneration.current += 1 }
   }, [query, estado, offset, recordId])
-  const selectedId = recordId
   const selectedItem = data?.items.find(item => item.id === selectedId)
   const onRecordChange = useCallback((record: TargetRecord) => {
     const values = record.blocks.flatMap(block => block.values)
@@ -57,11 +68,12 @@ export function RecordsWorkspace({ recordId, reviewer = null }: { recordId?: str
     setObservedStates(previous => previous[record.id] === state ? previous : { ...previous, [record.id]: state })
   }, [])
 
-  function select(id: string) { if (!busy && !seeking) navigate(`/fichas/${encodeURIComponent(id)}`) }
+  function select(id: string) { if (!busy) navigate(`/fichas/${encodeURIComponent(id)}`) }
   async function nextPending() {
     if (!data || busy || loading || seeking) return
     const generation = ++searchGeneration.current
-    setSeeking(true); setNotice('')
+    setSeeking(true)
+    setNotice('')
     try {
       const currentPage = estado && estado !== 'pendiente'
         ? await fetchRealRecords({ origin: 'real', q: query || undefined, limit: PAGE_SIZE, offset })
@@ -71,24 +83,27 @@ export function RecordsWorkspace({ recordId, reviewer = null }: { recordId?: str
       const next = currentPage.items.slice(start + 1).find(item => (observedStates[item.id] ?? item.review_state) === 'pendiente')
       if (next) {
         if (estado && estado !== 'pendiente') setEstado('pendiente')
-        navigate(`/fichas/${encodeURIComponent(next.id)}`); return
+        navigate(`/fichas/${encodeURIComponent(next.id)}`)
+        return
       }
-      // La API filtra estado después de paginar. total no es un total de pendientes.
       for (let pageOffset = offset + PAGE_SIZE; pageOffset < data.total; pageOffset += PAGE_SIZE) {
         setNotice('Buscando el siguiente pendiente…')
         const page = await fetchRealRecords({ origin: 'real', q: query || undefined, estado: 'pendiente', limit: PAGE_SIZE, offset: pageOffset })
         if (generation !== searchGeneration.current) return
         const candidate = page.items.find(item => (observedStates[item.id] ?? item.review_state) === 'pendiente')
         if (candidate) {
-          setEstado('pendiente'); setOffset(pageOffset)
+          setEstado('pendiente')
+          setOffset(pageOffset)
           navigate(`/fichas/${encodeURIComponent(candidate.id)}`)
           return
         }
       }
-      setNotice('No hay más registros pendientes después de esta posición para esta búsqueda.')
+      setNotice('No hay más registros pendientes para esta búsqueda.')
     } catch (cause) {
       if (generation === searchGeneration.current) setNotice(cause instanceof Error ? cause.message : 'No se pudo buscar el siguiente pendiente.')
-    } finally { if (generation === searchGeneration.current) setSeeking(false) }
+    } finally {
+      if (generation === searchGeneration.current) setSeeking(false)
+    }
   }
 
   return <div ref={rootRef} className='screen records-workspace' style={{ '--records-list-width': `${listWidth}%`, '--records-source-width': `${sourceWidth}%` } as CSSProperties}>
@@ -114,7 +129,7 @@ export function RecordsWorkspace({ recordId, reviewer = null }: { recordId?: str
           {data && <p className='records-count'>{estado ? `${data.items.length} en esta página` : `${data.total.toLocaleString('es-ES')} registros`} · página {Math.floor(offset / PAGE_SIZE) + 1} de {Math.max(1, Math.ceil(data.total / PAGE_SIZE))}</p>}
         </div>
         <div className='records-browser__list' aria-busy={loading}>
-          {loading ? <p className='records-empty' role='status'>Cargando registros…</p> : error ? <div className='records-empty' role='alert'><p>{error}</p><button className='button' onClick={() => setRetry(value => value + 1)}>Reintentar</button></div> : !data?.items.length ? <div className='records-empty'><p>{data?.total === 0 && query ? 'La búsqueda no devuelve resultados' : 'No hay coincidencias en esta página.'}</p><p>{query ? `Búsqueda: «${query}». ` : ''}Puedes cambiar los filtros o continuar a la siguiente página.</p></div> : data.items.map(item => <button key={item.id} type='button' className='records-item' disabled={busy || seeking} aria-pressed={selectedId === item.id} onClick={() => select(item.id)}>
+          {loading ? <p className='records-empty' role='status'>Cargando registros…</p> : error ? <div className='records-empty' role='alert'><p>{error}</p><button className='button' onClick={() => setRetry(value => value + 1)}>Reintentar</button></div> : !data?.items.length ? <div className='records-empty'><p>{data?.total === 0 && query ? 'La búsqueda no devuelve resultados' : 'No hay coincidencias en esta página.'}</p><p>{query ? `Búsqueda: «${query}». ` : ''}Puedes cambiar los filtros o continuar a la siguiente página.</p></div> : data.items.map(item => <button key={item.id} type='button' className='records-item' disabled={busy} aria-pressed={selectedId === item.id} onClick={() => select(item.id)}>
             <span className='records-item__name'>{item.display_name || 'Sin descripción'}</span>
             <span className='records-item__identifier'>{item.identifier || item.id}</span>
             <span className='records-item__meta'>{TYPES[item.entity_type] ?? item.entity_type} · {item.block_count} bloques · {item.field_count} campos</span>
@@ -122,17 +137,19 @@ export function RecordsWorkspace({ recordId, reviewer = null }: { recordId?: str
           </button>)}
         </div>
         <nav className='records-pagination' aria-label='Páginas de registros'>
-          <button type='button' className='button' disabled={busy || seeking || loading || offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}>Anterior</button>
-          <button type='button' className='button' disabled={busy || seeking || loading || !data || offset + PAGE_SIZE >= data.total} onClick={() => setOffset(offset + PAGE_SIZE)}>Siguiente</button>
+          <button type='button' className='button' disabled={busy || loading || offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}>Anterior</button>
+          <button type='button' className='button' disabled={busy || loading || !data || offset + PAGE_SIZE >= data.total} onClick={() => setOffset(offset + PAGE_SIZE)}>Siguiente</button>
         </nav>
       </aside>
       <section className='records-detail' aria-label='Revisión del registro seleccionado'>
         {selectedId ? <ReviewScreen key={selectedId} recordId={selectedId} reviewer={reviewer} compact displayName={selectedItem?.display_name ?? knownNames.current.get(selectedId)} onBusyChange={setBusy} onRecordChange={onRecordChange} /> : <div className='records-welcome'><h2>Tu espacio de revisión</h2><p>Selecciona un registro para consultar sus campos y su fuente original.</p></div>}
       </section>
     </div>
-    <footer className='records-footer'>
-      <span role='status'>{notice || (busy ? 'Guardando decisión…' : 'Los borradores se conservan en este navegador. Las decisiones se firman al guardar.')}</span>
-      {seeking ? <button className='button' onClick={() => { searchGeneration.current += 1; setSeeking(false); setNotice('Búsqueda detenida.') }}>Detener búsqueda</button> : <button type='button' className='button button--primary' onClick={() => void nextPending()} disabled={busy || loading || !data}>Siguiente pendiente <ArrowRight size={16} aria-hidden='true' /></button>}
+    <footer className='records-footer records-footer--action'>
+      {notice && <span role='status'>{notice}</span>}
+      <button type='button' className='button button--primary' onClick={() => void nextPending()} disabled={busy || loading || seeking || !data}>
+        {seeking ? 'Buscando…' : 'Siguiente pendiente'} {!seeking && <ArrowRight size={16} aria-hidden='true' />}
+      </button>
     </footer>
   </div>
 }

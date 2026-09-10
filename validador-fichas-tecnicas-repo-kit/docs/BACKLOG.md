@@ -539,6 +539,12 @@ campos 90 ms. Una ficha ya precargada no cuesta petición nueva. El objetivo de
 <100 ms se cumple sobre datos ya precargados; una petición de red contra el
 corpus real no lo alcanza y no se afirma que lo haga. 7 pruebas.
 
+**Refuerzo (10-09-2026).** El espacio integrado de Registros activa la precarga
+de las dos filas siguientes. El detalle elimina las consultas repetidas por
+campo y recupera valores, procedencias, estados e historial por lotes. En el
+contenedor con la base real montada, la muestra inicial de ocho fichas bajó de
+2,8–12,6 s a 2,1–2,3 s antes de aplicar la caché de navegación.
+
 ### DEV-510 — Tests de sesgo de automatización (`P0`)
 
 **Objetivo:** convertir las reglas de pre-relleno de la especificación 9 en decisiones ejecutables y comprobables, independientes de la interfaz.
