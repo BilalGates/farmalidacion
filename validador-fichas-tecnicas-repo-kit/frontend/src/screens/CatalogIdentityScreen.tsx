@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Archive, ExternalLink, History, Save } from 'lucide-react'
+import { Archive, ExternalLink, GitBranch, History, Save } from 'lucide-react'
 
 import {
   fetchCatalogHistory,
   fetchCatalogIdentity,
+  fetchCatalogRelations,
   updateCatalogIdentity,
 } from '../api/client'
-import type { CatalogIdentity, CatalogRevision, Reviewer } from '../api/types'
+import type { CatalogIdentity, CatalogRelation, CatalogRevision, Reviewer } from '../api/types'
 import { AsyncBoundary } from '../components/AsyncState'
 import { formatDateTime, orDash } from '../domain/format'
 import { navigate } from '../navigation'
@@ -17,6 +18,15 @@ const TYPE_LABELS: Record<string, string> = {
   active_ingredient: 'Sustancia activa',
 }
 
+const RELATION_LABELS: Record<string, string> = {
+  product_authorization: 'Producto → autorización',
+  authorization_presentation: 'Autorización → presentación',
+  presentation_dcpf: 'Presentación → DCPF',
+  dcpf_dcp: 'DCPF → DCP',
+  dcp_dcsa: 'DCP → DCSA',
+  dcp_active_ingredient: 'Composición',
+}
+
 interface Props {
   readonly identityId: string
   readonly reviewer: Reviewer | null
@@ -25,6 +35,7 @@ interface Props {
 export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
   const [identity, setIdentity] = useState<CatalogIdentity | null>(null)
   const [history, setHistory] = useState<CatalogRevision[]>([])
+  const [relations, setRelations] = useState<CatalogRelation[]>([])
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [reason, setReason] = useState('')
@@ -38,13 +49,15 @@ export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
     setLoading(true)
     setError(null)
     try {
-      const [record, revisions] = await Promise.all([
+      const [record, revisions, linked] = await Promise.all([
         fetchCatalogIdentity(identityId), fetchCatalogHistory(identityId),
+        fetchCatalogRelations(identityId),
       ])
       setIdentity(record)
       setName(record.display_name)
       setCode(record.code ?? '')
       setHistory(revisions)
+      setRelations(linked)
     } catch (caught) {
       setError(caught instanceof Error ? caught : new Error('No se pudo abrir el expediente.'))
     } finally { setLoading(false) }
@@ -112,6 +125,11 @@ export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
               <section className='panel'><p className='eyebrow'>Procedencia</p><h2>Valor fuente</h2><dl className='definition'><div><dt>Sistema</dt><dd>{identity.source_system}</dd></div><div><dt>Versión</dt><dd>{identity.source_version}</dd></div><div><dt>Literal conservado</dt><dd><code>{orDash(identity.source_literal)}</code></dd></div></dl>{identity.target_record_id && <button type='button' className='button' onClick={() => navigate(`/registros/${encodeURIComponent(identity.target_record_id!)}`)}><ExternalLink size={16} aria-hidden='true' /> Ver datos importados</button>}</section>
             </aside>
           </div>
+
+          <section className='panel catalog-relations' aria-labelledby='catalog-relations-title'>
+            <div className='panel__head'><div><p className='eyebrow'>Estructura farmacéutica</p><h2 id='catalog-relations-title'><GitBranch size={18} aria-hidden='true' /> Relaciones y composición</h2></div></div>
+            {relations.length === 0 ? <div className='catalog-relations__empty'><strong>Sin relaciones tipadas disponibles</strong><p>{identity.identity_type === 'dcp' ? 'La composición no aparece hasta que el maestro proporcione vínculos inequívocos con sustancias activas.' : 'No se ha identificado todavía el nivel anterior o siguiente sin saltar la jerarquía.'}</p></div> : <ul>{relations.map((relation) => <li key={relation.id}><button type='button' onClick={() => navigate(`/catalogo/${encodeURIComponent(relation.related_identity.id)}`)}><span className='catalog-relations__direction'>{relation.direction === 'outgoing' ? 'Hacia' : 'Desde'}{relation.ordinal ? ` · ${relation.ordinal}` : ''}</span><strong>{relation.related_identity.display_name}</strong><small>{RELATION_LABELS[relation.relation_type] ?? relation.relation_type} · {TYPE_LABELS[relation.related_identity.identity_type] ?? relation.related_identity.identity_type} · {orDash(relation.related_identity.code)}</small></button></li>)}</ul>}
+          </section>
 
           <section className='panel catalog-history' aria-labelledby='catalog-history-title'>
             <div className='panel__head'><div><p className='eyebrow'>Auditoría</p><h2 id='catalog-history-title'><History size={18} aria-hidden='true' /> Historial de cambios</h2></div></div>

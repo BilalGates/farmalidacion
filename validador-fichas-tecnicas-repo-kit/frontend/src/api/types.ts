@@ -327,6 +327,14 @@ export interface CatalogRevision {
   recorded_at: string
 }
 
+export interface CatalogRelation {
+  id: string
+  relation_type: string
+  direction: 'incoming' | 'outgoing'
+  ordinal: number | null
+  related_identity: CatalogIdentity
+}
+
 export interface ValueProvenance {
   source_system: string | null
   document_name: string | null

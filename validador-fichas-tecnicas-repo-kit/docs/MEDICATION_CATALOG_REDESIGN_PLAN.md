@@ -100,8 +100,10 @@ localizar una presentación no exige conocer su tipo interno.
 
 Estado: primer corte navegable implementado. Permite corregir nombre y código,
 exige revisor y motivo, aplica bloqueo optimista, conserva el literal fuente,
-archiva sin borrar y presenta el historial. Composición, relaciones,
-clasificaciones y comparación CIMA siguen pendientes.
+archiva sin borrar y presenta el historial. Las relaciones tipadas entrantes y
+salientes y la composición ya son navegables; si falta un nivel, se explica sin
+fabricar el enlace. Edición de relaciones, clasificaciones y comparación CIMA
+siguen pendientes.
 
 - Cabecera que explique qué se está editando y su lugar en la jerarquía.
 - Resumen, composición, presentación, clasificaciones, fuentes e historial.

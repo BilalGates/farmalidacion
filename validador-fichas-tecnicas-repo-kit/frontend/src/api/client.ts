@@ -7,6 +7,7 @@ import type {
   CatalogIdentityPage,
   CatalogIdentityType,
   CatalogRevision,
+  CatalogRelation,
   Dashboard,
   DatabaseInfo,
   DataOrigin,
@@ -274,6 +275,10 @@ export function fetchCatalogIdentity(id: string): Promise<CatalogIdentity> {
 
 export function fetchCatalogHistory(id: string): Promise<CatalogRevision[]> {
   return request<CatalogRevision[]>(`/catalog/identities/${encodeURIComponent(id)}/history`)
+}
+
+export function fetchCatalogRelations(id: string): Promise<CatalogRelation[]> {
+  return request<CatalogRelation[]>(`/catalog/identities/${encodeURIComponent(id)}/relations`)
 }
 
 export function updateCatalogIdentity(

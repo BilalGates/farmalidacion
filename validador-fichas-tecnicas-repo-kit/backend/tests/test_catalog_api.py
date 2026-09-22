@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 
 from pharma_validator_api.config import Settings
 from pharma_validator_api.main import create_app
+from pharma_validator_api.models import MedicationCatalogRelation
 
 
 def client(scratch_db_url: str) -> TestClient:
@@ -130,3 +131,42 @@ def test_contract_rejects_unknown_identity_types_and_extra_fields(scratch_db_url
     extra = api.post("/catalog/identities", json=create_payload(silent_overwrite=True))
     assert extra.status_code == 422
 
+
+def test_relations_show_direction_and_related_identity(scratch_db_url: str) -> None:
+    api = client(scratch_db_url)
+    assert api.post(
+        "/catalog/identities",
+        json=create_payload(id="dcp-1", identity_type="dcp", code="DCP-1"),
+    ).status_code == 201
+    assert api.post(
+        "/catalog/identities",
+        json=create_payload(
+            id="ingredient-1",
+            identity_type="active_ingredient",
+            code="ING-1",
+            display_name="Sustancia uno",
+        ),
+    ).status_code == 201
+    with api.app.state.session_factory() as session:
+        session.add(
+            MedicationCatalogRelation(
+                id="relation-1",
+                relation_type="dcp_active_ingredient",
+                source_identity_id="dcp-1",
+                target_identity_id="ingredient-1",
+                ordinal=1,
+                source_fragment_id=None,
+            )
+        )
+        session.commit()
+
+    outgoing = api.get("/catalog/identities/dcp-1/relations")
+    assert outgoing.status_code == 200
+    assert outgoing.json()[0]["direction"] == "outgoing"
+    assert outgoing.json()[0]["ordinal"] == 1
+    assert outgoing.json()[0]["related_identity"]["display_name"] == "Sustancia uno"
+
+    incoming = api.get("/catalog/identities/ingredient-1/relations")
+    assert incoming.status_code == 200
+    assert incoming.json()[0]["direction"] == "incoming"
+    assert incoming.json()[0]["related_identity"]["id"] == "dcp-1"

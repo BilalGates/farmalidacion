@@ -17,6 +17,7 @@ it('exige motivo y conserva el actor al modificar', async () => {
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
     if (init?.method === 'PUT') return new Response(JSON.stringify({ ...IDENTITY, display_name: 'Nombre corregido', version: 2 }))
     if (url.includes('/history')) return new Response(JSON.stringify([]))
+    if (url.includes('/relations')) return new Response(JSON.stringify([]))
     return new Response(JSON.stringify(IDENTITY))
   })
   vi.stubGlobal('fetch', fetchMock)
@@ -29,7 +30,7 @@ it('exige motivo y conserva el actor al modificar', async () => {
   fireEvent.change(screen.getByLabelText('Motivo del cambio'), { target: { value: 'Corrección revisada.' } })
   fireEvent.click(save)
 
-  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4))
-  const payload = JSON.parse(String(fetchMock.mock.calls[2][1]?.body))
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(5))
+  const payload = JSON.parse(String(fetchMock.mock.calls[3][1]?.body))
   expect(payload).toMatchObject({ actor_id: 'ana', expected_version: 1, reason: 'Corrección revisada.' })
 })

@@ -17,6 +17,7 @@ from pharma_validator_api.catalog_store import (
 from pharma_validator_api.errors import ApplicationError
 from pharma_validator_api.models import (
     MedicationCatalogIdentity,
+    MedicationCatalogRelation,
     MedicationCatalogRevision,
     TargetRecord,
 )
@@ -80,6 +81,14 @@ class CatalogRevisionRead(BaseModel):
     actor_assurance: str
     reason: str
     recorded_at: str
+
+
+class CatalogRelationRead(BaseModel):
+    id: str
+    relation_type: str
+    direction: str
+    ordinal: int | None
+    related_identity: CatalogIdentityRead
 
 
 def _read(row: MedicationCatalogIdentity) -> CatalogIdentityRead:
@@ -244,3 +253,42 @@ def identity_history(
         )
         for row in rows
     ]
+
+
+@router.get(
+    "/identities/{identity_id}/relations", response_model=list[CatalogRelationRead]
+)
+def identity_relations(
+    identity_id: str, session: SessionDependency
+) -> list[CatalogRelationRead]:
+    if session.get(MedicationCatalogIdentity, identity_id) is None:
+        raise ApplicationError("Identidad de catálogo no encontrada.", status_code=404)
+    rows = session.scalars(
+        select(MedicationCatalogRelation)
+        .where(
+            (MedicationCatalogRelation.source_identity_id == identity_id)
+            | (MedicationCatalogRelation.target_identity_id == identity_id)
+        )
+        .order_by(
+            MedicationCatalogRelation.relation_type,
+            MedicationCatalogRelation.ordinal,
+            MedicationCatalogRelation.id,
+        )
+    ).all()
+    result: list[CatalogRelationRead] = []
+    for row in rows:
+        outgoing = row.source_identity_id == identity_id
+        related_id = row.target_identity_id if outgoing else row.source_identity_id
+        related = session.get(MedicationCatalogIdentity, related_id)
+        if related is None:
+            raise RuntimeError(f"Relación de catálogo sin identidad: {row.id}.")
+        result.append(
+            CatalogRelationRead(
+                id=row.id,
+                relation_type=row.relation_type,
+                direction="outgoing" if outgoing else "incoming",
+                ordinal=row.ordinal,
+                related_identity=_read(related),
+            )
+        )
+    return result

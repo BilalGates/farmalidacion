@@ -1059,6 +1059,9 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
   paginación de servidor. El expediente permite editar nombre/código, archivar,
   consultar el literal fuente y revisar el historial, siempre con revisor y
   motivo explícitos.
+- El expediente consulta relaciones en ambos sentidos y permite navegar por la
+  jerarquía y la composición. La ausencia de DCPF o de composición se muestra
+  como dato pendiente; nunca se sustituye por un enlace entre niveles incorrectos.
 
 ## Reconciliación del estado mostrado en la interfaz
 
