@@ -10,6 +10,7 @@ from sqlalchemy.engine import make_url
 
 from pharma_validator_api.block_api import router as block_router
 from pharma_validator_api.catalog_api import router as catalog_router
+from pharma_validator_api.catalog_projection import project_target_records
 from pharma_validator_api.chat_api import router as chat_router
 from pharma_validator_api.config import Settings, get_settings
 from pharma_validator_api.data_origin import DataOrigin, apply_origin_filter
@@ -90,6 +91,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if active.load_showcase_fixture:
             with session_factory() as session:
                 load_showcase_fixture(session, active.showcase_fixture_path)
+        if active.data_mode == "demo":
+            with session_factory() as session:
+                project_target_records(session, apply=True)
+                session.commit()
         yield
         engine.dispose()
 

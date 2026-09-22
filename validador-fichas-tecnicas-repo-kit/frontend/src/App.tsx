@@ -29,6 +29,7 @@ import { ExportsScreen } from './screens/ExportsScreen'
 import { QueueScreen } from './screens/QueueScreen'
 import { SecondReviewScreen } from './screens/SecondReviewScreen'
 import { MaintenanceScreen } from './screens/MaintenanceScreen'
+import { CatalogIdentityScreen } from './screens/CatalogIdentityScreen'
 
 interface NavItem {
   readonly id: string
@@ -64,7 +65,7 @@ const NAV: readonly NavItem[] = [
 ]
 
 function activeNavId(routeName: string, routeId: string | null): string {
-  if (routeName === 'ficha' || routeName === 'fichas') return 'fichas'
+  if (routeName === 'ficha' || routeName === 'fichas' || routeName === 'catalogo') return 'fichas'
   if (routeName === 'fuentes') return 'fuentes'
   if (routeName === 'importaciones') return 'importaciones'
   if (routeName === 'seccion' && routeId) return routeId
@@ -159,6 +160,9 @@ export function App() {
           {route.name === 'fichas' && <RealRecordListScreen />}
           {route.name === 'ficha' && (
             <ReviewScreen key={route.id} recordId={route.id} reviewer={reviewer} />
+          )}
+          {route.name === 'catalogo' && (
+            <CatalogIdentityScreen key={route.id} identityId={route.id} reviewer={reviewer} />
           )}
           {route.name === 'fuentes' && <SourcesScreen />}
           {route.name === 'importaciones' && <ImportsScreen />}

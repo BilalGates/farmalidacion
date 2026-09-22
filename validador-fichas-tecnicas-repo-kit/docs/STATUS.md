@@ -1053,6 +1053,12 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
   informa como `MISSING_DCPF_BRIDGE` hasta disponer de una fuente fiable.
 - La proyección sólo se ha probado sobre bases desechables. No se ha ejecutado
   sobre una base real ni se han modificado fuentes importadas.
+- El modo DEMO proyecta sus fixtures al arrancar para que el explorador del
+  catálogo y el expediente editable puedan probarse sin tocar datos reales.
+- El explorador ya consulta las identidades tipadas con filtros por nivel y
+  paginación de servidor. El expediente permite editar nombre/código, archivar,
+  consultar el literal fuente y revisar el historial, siempre con revisor y
+  motivo explícitos.
 
 ## Reconciliación del estado mostrado en la interfaz
 

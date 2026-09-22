@@ -287,6 +287,46 @@ export interface RealRecordPage {
   offset: number
 }
 
+export type CatalogIdentityType =
+  | 'commercial_product'
+  | 'authorization'
+  | 'presentation'
+  | 'dcpf'
+  | 'dcp'
+  | 'dcsa'
+  | 'active_ingredient'
+
+export interface CatalogIdentity {
+  id: string
+  identity_type: CatalogIdentityType
+  code: string | null
+  display_name: string
+  target_record_id: string | null
+  source_system: string
+  source_version: string
+  source_literal: string | null
+  active: boolean
+  version: number
+}
+
+export interface CatalogIdentityPage {
+  items: CatalogIdentity[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface CatalogRevision {
+  sequence: number
+  action: string
+  before_state: string | null
+  after_state: string
+  actor_id: string
+  actor_assurance: string
+  reason: string
+  recorded_at: string
+}
+
 export interface ValueProvenance {
   source_system: string | null
   document_name: string | null

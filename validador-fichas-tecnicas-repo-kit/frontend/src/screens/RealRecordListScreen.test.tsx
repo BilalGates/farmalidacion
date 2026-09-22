@@ -12,30 +12,30 @@ const PAGE = {
   offset: 0,
 }
 
-it('separa presentaciones, medicamentos y principios activos', async () => {
+it('separa los niveles farmacéuticos del catálogo', async () => {
   const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE)))
   vi.stubGlobal('fetch', fetchMock)
   render(<RealRecordListScreen />)
-  await screen.findByText('No hay registros de este origen')
+  await screen.findByText('No hay identidades en este nivel')
 
   fireEvent.click(screen.getByRole('button', { name: 'Presentaciones' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
-  expect(fetchMock.mock.calls[1][0]).toContain('entity_type=specialty')
+  expect(fetchMock.mock.calls[1][0]).toContain('identity_type=presentation')
 
-  fireEvent.click(screen.getByRole('button', { name: 'Medicamentos' }))
+  fireEvent.click(screen.getByRole('button', { name: 'DCP' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
-  expect(fetchMock.mock.calls[2][0]).toContain('entity_type=medication')
+  expect(fetchMock.mock.calls[2][0]).toContain('identity_type=dcp')
 
-  fireEvent.click(screen.getByRole('button', { name: 'Principios activos' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Sustancias activas' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4))
-  expect(fetchMock.mock.calls[3][0]).toContain('entity_type=active_ingredient')
+  expect(fetchMock.mock.calls[3][0]).toContain('identity_type=active_ingredient')
 })
 
 it('combina nivel y búsqueda sin descargar el catálogo al navegador', async () => {
   const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE)))
   vi.stubGlobal('fetch', fetchMock)
   render(<RealRecordListScreen />)
-  await screen.findByText('No hay registros de este origen')
+  await screen.findByText('No hay identidades en este nivel')
 
   fireEvent.click(screen.getByRole('button', { name: 'Presentaciones' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
@@ -43,7 +43,6 @@ it('combina nivel y búsqueda sin descargar el catálogo al navegador', async ()
   fireEvent.click(screen.getByRole('button', { name: 'Buscar' }))
 
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
-  expect(fetchMock.mock.calls[2][0]).toContain('entity_type=specialty')
+  expect(fetchMock.mock.calls[2][0]).toContain('identity_type=presentation')
   expect(fetchMock.mock.calls[2][0]).toContain('q=654789')
 })
-

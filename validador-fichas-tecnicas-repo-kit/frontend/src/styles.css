@@ -1080,3 +1080,27 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   .metric { min-height: 96px; border-right: 0; border-top: 1px solid var(--line-soft); }
   .metric:first-child { border-top: 0; }
 }
+
+.catalog-toggle { display: inline-flex; align-items: center; gap: .5rem; min-height: 40px; color: var(--ink-soft); font-size: .9rem; }
+.catalog-record__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.catalog-record__grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, .8fr); gap: 1rem; align-items: start; }
+.catalog-record__side { display: grid; gap: 1rem; }
+.catalog-form { display: grid; grid-template-columns: 1fr minmax(180px, .35fr); gap: 1rem; padding-top: 1rem; }
+.catalog-form__reason { grid-column: 1 / -1; }
+.catalog-actions { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line-soft); }
+.catalog-actions .button, .catalog-record__side .button { display: inline-flex; align-items: center; gap: .45rem; }
+.button--danger { border-color: #e6bcc2; color: var(--danger); background: var(--danger-soft); }
+.button--danger:hover { border-color: var(--danger); background: #f6e2e5; }
+.catalog-history h2 { display: flex; align-items: center; gap: .5rem; }
+.catalog-history ol { display: grid; gap: 0; margin: 1rem 0 0; padding: 0; list-style: none; }
+.catalog-history li { display: grid; grid-template-columns: 44px 1fr; gap: .8rem; padding: .85rem 0; border-top: 1px solid var(--line-soft); }
+.catalog-history li:first-child { border-top: 0; }
+.catalog-history p { margin: .25rem 0; }
+.catalog-history small { color: var(--ink-faint); }
+.catalog-history__sequence { display: grid; place-items: center; align-self: start; min-height: 30px; border-radius: 5px; color: var(--accent-strong); background: var(--accent-soft); font-weight: 700; }
+
+@media (max-width: 850px) {
+  .catalog-record__grid { grid-template-columns: 1fr; }
+  .catalog-form { grid-template-columns: 1fr; }
+  .catalog-form__reason { grid-column: auto; }
+}

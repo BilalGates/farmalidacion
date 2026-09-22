@@ -1,13 +1,10 @@
 import { useState } from 'react'
 
-import { fetchRealRecords } from '../api/client'
-import type { ReviewState } from '../api/types'
+import { fetchCatalogIdentities } from '../api/client'
+import type { CatalogIdentityType } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
-import { OriginBadge } from '../components/OriginBadge'
-import { ReviewBadge } from '../components/StateBadge'
 import { orDash } from '../domain/format'
-import { REVIEW_STATE_LABELS } from '../domain/vocabulary'
 import { navigate } from '../navigation'
 
 /**
@@ -24,41 +21,43 @@ import { navigate } from '../navigation'
 
 const PAGE_SIZE = 50
 
-/** Filtros de estado, en el orden en que avanza una revisión. */
-const ESTADOS: readonly ReviewState[] = ['pendiente', 'en_revision', 'validado']
-
 const ENTITY_FILTERS = [
   { value: null, label: 'Todo el catálogo' },
-  { value: 'specialty', label: 'Presentaciones' },
-  { value: 'medication', label: 'Medicamentos' },
-  { value: 'active_ingredient', label: 'Principios activos' },
+  { value: 'presentation', label: 'Presentaciones' },
+  { value: 'dcpf', label: 'DCPF' },
+  { value: 'dcp', label: 'DCP' },
+  { value: 'dcsa', label: 'DCSA' },
+  { value: 'active_ingredient', label: 'Sustancias activas' },
 ] as const
 
 const ENTITY_LABELS: Record<string, string> = {
-  medication: 'Medicamento',
-  active_ingredient: 'Principio activo',
-  specialty: 'Especialidad',
+  commercial_product: 'Producto comercial',
+  authorization: 'Autorización',
+  presentation: 'Presentación',
+  dcpf: 'DCPF',
+  dcp: 'DCP',
+  dcsa: 'DCSA',
+  active_ingredient: 'Sustancia activa',
 }
 
 export function RealRecordListScreen() {
   const [term, setTerm] = useState('')
   const [query, setQuery] = useState('')
   const [offset, setOffset] = useState(0)
-  const [estado, setEstado] = useState<ReviewState | null>(null)
-  const [entityType, setEntityType] = useState<string | null>(null)
+  const [entityType, setEntityType] = useState<CatalogIdentityType | null>(null)
+  const [showArchived, setShowArchived] = useState(false)
   const [retryKey, setRetryKey] = useState(0)
 
   const { data, error, loading } = useQuery(
     () =>
-      fetchRealRecords({
-        origin: 'real',
+      fetchCatalogIdentities({
         q: query || undefined,
-        entityType: entityType ?? undefined,
-        estado: estado ?? undefined,
+        identityType: entityType ?? undefined,
+        active: showArchived ? undefined : true,
         limit: PAGE_SIZE,
         offset,
       }),
-    [query, entityType, estado, offset, retryKey],
+    [query, entityType, showArchived, offset, retryKey],
   )
 
   function search(event: React.FormEvent) {
@@ -77,14 +76,14 @@ export function RealRecordListScreen() {
           <p className='eyebrow'>Catálogo</p>
           <h1>Catálogo de medicamentos</h1>
           <p className='lede'>
-            Localice primero el nivel que necesita: presentación, medicamento o principio activo.
-            Los datos originales y su procedencia permanecen visibles al abrir la ficha.
+            Navegue por nivel farmacéutico y abra sólo el registro que necesita. La tabla se
+            pagina en el servidor para seguir siendo manejable con miles de elementos.
           </p>
         </div>
       </div>
 
       <p className='origin-notice origin-notice--real'>
-        Datos reales importados de los maestros Excel, con su procedencia registrada.
+        Estado canónico editable. El valor fuente y su historial se conservan por separado.
       </p>
 
       <form className='toolbar' onSubmit={search} role='search'>
@@ -116,62 +115,32 @@ export function RealRecordListScreen() {
             </button>
           ))}
         </div>
-        <div className='filters' role='group' aria-label='Estado de revisión'>
-          <button
-            type='button'
-            className={`chip${estado === null ? ' chip--active' : ''}`}
-            aria-pressed={estado === null}
-            onClick={() => {
-              setOffset(0)
-              setEstado(null)
-            }}
-          >
-            Todos
-          </button>
-          {ESTADOS.map((name) => (
-            <button
-              key={name}
-              type='button'
-              className={`chip${estado === name ? ' chip--active' : ''}`}
-              aria-pressed={estado === name}
-              onClick={() => {
-                setOffset(0)
-                setEstado(name)
-              }}
-            >
-              {REVIEW_STATE_LABELS[name] ?? name}
-            </button>
-          ))}
-        </div>
+        <label className='catalog-toggle'>
+          <input
+            type='checkbox'
+            checked={showArchived}
+            onChange={(event) => { setOffset(0); setShowArchived(event.target.checked) }}
+          />
+          Incluir archivados
+        </label>
       </form>
 
       <AsyncBoundary
         loading={loading}
         error={error}
         empty={(data?.total ?? 0) === 0}
-        emptyTitle={query ? 'La búsqueda no devuelve resultados' : 'No hay registros de este origen'}
+        emptyTitle={query ? 'La búsqueda no devuelve resultados' : 'No hay identidades en este nivel'}
         emptyDetail={
           query
             ? `Ningún registro real contiene «${query}» en su descripción o identificador.`
-            : 'No hay registros importados. Ejecute scripts/ingest_master_files.py para cargar los maestros Excel.'
+            : 'Este nivel todavía no se ha podido proyectar desde una fuente fiable.'
         }
         onRetry={() => setRetryKey((k) => k + 1)}
       >
         {data && (
           <>
             <p className='muted'>
-              {estado === null ? (
-                <>
-                  {data.total.toLocaleString('es-ES')} registros · página {page} de {pages}
-                </>
-              ) : (
-                /* Con filtro de estado el total no se recalcula: contarlo exigiría
-                   recorrer el maestro entero. Se dice cuántos trae esta página en
-                   lugar de presentar como total lo que no lo es. */
-                <>
-                  {data.items.length} en esta página · página {page} de {pages}
-                </>
-              )}
+              {data.total.toLocaleString('es-ES')} identidades · página {page} de {pages}
             </p>
             <table className='table'>
               <thead>
@@ -179,10 +148,8 @@ export function RealRecordListScreen() {
                   <th scope='col'>Descripción</th>
                   <th scope='col'>Identificador</th>
                   <th scope='col'>Tipo</th>
-                  <th scope='col'>Origen</th>
+                  <th scope='col'>Fuente</th>
                   <th scope='col'>Estado</th>
-                  <th scope='col'>Bloques</th>
-                  <th scope='col'>Campos</th>
                   <th scope='col'>
                     <span className='visually-hidden'>Acciones</span>
                   </th>
@@ -192,25 +159,17 @@ export function RealRecordListScreen() {
                 {data.items.map((item) => (
                   <tr key={item.id}>
                     <th scope='row'>{orDash(item.display_name)}</th>
-                    <td>
-                      <code>{orDash(item.identifier)}</code>
-                    </td>
-                    <td>{ENTITY_LABELS[item.entity_type] ?? item.entity_type}</td>
-                    <td>
-                      <OriginBadge origin={item.origin} />
-                    </td>
-                    <td>
-                      <ReviewBadge state={item.review_state} />
-                    </td>
-                    <td>{item.block_count}</td>
-                    <td>{item.field_count}</td>
+                    <td><code>{orDash(item.code)}</code></td>
+                    <td>{ENTITY_LABELS[item.identity_type] ?? item.identity_type}</td>
+                    <td>{item.source_system}</td>
+                    <td><span className={`badge ${item.active ? 'badge--validado' : 'badge--descartado'}`}>{item.active ? 'Vigente' : 'Archivado'}</span></td>
                     <td>
                       <button
                         type='button'
                         className='button'
-                        onClick={() => navigate(`/fichas/${encodeURIComponent(item.id)}`)}
+                        onClick={() => navigate(`/catalogo/${encodeURIComponent(item.id)}`)}
                       >
-                        Abrir ficha
+                        Abrir expediente
                       </button>
                     </td>
                   </tr>

@@ -13,6 +13,7 @@ export type Route =
   | { readonly name: 'inicio' }
   | { readonly name: 'fichas' }
   | { readonly name: 'ficha'; readonly id: string }
+  | { readonly name: 'catalogo'; readonly id: string }
   | { readonly name: 'fuentes' }
   | { readonly name: 'importaciones' }
   | { readonly name: 'seccion'; readonly id: string }
@@ -31,6 +32,8 @@ export function parseRoute(hash: string): Route {
   if (record) return { name: 'ficha', id: decodeURIComponent(record[1]) }
   const detail = /^fichas\/(.+)$/.exec(path)
   if (detail) return { name: 'ficha', id: decodeURIComponent(detail[1]) }
+  const catalog = /^catalogo\/(.+)$/.exec(path)
+  if (catalog) return { name: 'catalogo', id: decodeURIComponent(catalog[1]) }
   return { name: 'seccion', id: path }
 }
 

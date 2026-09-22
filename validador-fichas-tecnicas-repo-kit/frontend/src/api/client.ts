@@ -3,6 +3,10 @@ import type {
   BlockEditRecord,
   BlockEditWrite,
   BlockOccurrence,
+  CatalogIdentity,
+  CatalogIdentityPage,
+  CatalogIdentityType,
+  CatalogRevision,
   Dashboard,
   DatabaseInfo,
   DataOrigin,
@@ -245,6 +249,48 @@ export function setReviewerActive(identifier: string, active: boolean): Promise<
 
 export function fetchRealRecord(id: string): Promise<RealRecordDetail> {
   return request<RealRecordDetail>(`/insights/records/${encodeURIComponent(id)}`)
+}
+
+export function fetchCatalogIdentities(params: {
+  q?: string
+  identityType?: CatalogIdentityType
+  active?: boolean
+  limit?: number
+  offset?: number
+} = {}): Promise<CatalogIdentityPage> {
+  const search = new URLSearchParams()
+  if (params.q) search.set('q', params.q)
+  if (params.identityType) search.set('identity_type', params.identityType)
+  if (params.active !== undefined) search.set('active', String(params.active))
+  if (params.limit !== undefined) search.set('limit', String(params.limit))
+  if (params.offset !== undefined) search.set('offset', String(params.offset))
+  const query = search.toString()
+  return request<CatalogIdentityPage>(`/catalog/identities${query ? `?${query}` : ''}`)
+}
+
+export function fetchCatalogIdentity(id: string): Promise<CatalogIdentity> {
+  return request<CatalogIdentity>(`/catalog/identities/${encodeURIComponent(id)}`)
+}
+
+export function fetchCatalogHistory(id: string): Promise<CatalogRevision[]> {
+  return request<CatalogRevision[]>(`/catalog/identities/${encodeURIComponent(id)}/history`)
+}
+
+export function updateCatalogIdentity(
+  id: string,
+  payload: {
+    expected_version: number
+    display_name: string
+    code: string | null
+    active: boolean
+    actor_id: string
+    reason: string
+  },
+): Promise<CatalogIdentity> {
+  return request<CatalogIdentity>(`/catalog/identities/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
 }
 
 /* --------------------------------------------------------------------------

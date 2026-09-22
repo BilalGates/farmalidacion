@@ -80,9 +80,9 @@ completa; un conflicto concurrente no deja escritura parcial.
 
 ### CAT-005 — Explorador de catálogo (`P0`)
 
-Estado: primer corte implementado sobre el modelo existente; selector de nivel y
-búsqueda combinada se ejecutan en servidor. Jerarquía expandible, vistas
-guardadas y columnas configurables pendientes de CAT-003.
+Estado: listado conectado al catálogo tipado, con búsqueda, filtro explícito por
+Presentación/DCPF/DCP/DCSA/Sustancia, vigencia y paginación en servidor.
+Jerarquía expandible, vistas guardadas y columnas configurables pendientes.
 
 - Entradas por productos, presentaciones, productos clínicos y principios
   activos.
@@ -97,6 +97,11 @@ consultas calientes responden dentro del presupuesto medido y la tarea de
 localizar una presentación no exige conocer su tipo interno.
 
 ### CAT-006 — Expediente editable (`P0`)
+
+Estado: primer corte navegable implementado. Permite corregir nombre y código,
+exige revisor y motivo, aplica bloqueo optimista, conserva el literal fuente,
+archiva sin borrar y presenta el historial. Composición, relaciones,
+clasificaciones y comparación CIMA siguen pendientes.
 
 - Cabecera que explique qué se está editando y su lugar en la jerarquía.
 - Resumen, composición, presentación, clasificaciones, fuentes e historial.
