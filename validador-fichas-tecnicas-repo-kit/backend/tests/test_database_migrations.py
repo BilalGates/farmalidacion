@@ -29,6 +29,17 @@ DOMAIN_TABLES = {
     "target_record",
     "target_record_link",
     "value_provenance",
+    "medication_catalog_identity",
+    "medication_catalog_relation",
+    "medication_catalog_classification",
+    "medication_catalog_revision",
+}
+
+CATALOG_TABLES = {
+    "medication_catalog_identity",
+    "medication_catalog_relation",
+    "medication_catalog_classification",
+    "medication_catalog_revision",
 }
 
 
@@ -167,3 +178,19 @@ def test_index_migration_is_reversible(tmp_path: Path) -> None:
     finally:
         engine.dispose()
     command.downgrade(config, "base")
+
+
+def test_catalog_migration_is_additive_and_reversible(tmp_path: Path) -> None:
+    database_path = tmp_path / "catalog-migration.db"
+    config = alembic_config(database_path)
+    command.upgrade(config, "d5e6f7a8b9c0")
+    engine = create_engine(f"sqlite:///{database_path.as_posix()}")
+    before = set(inspect(engine).get_table_names())
+
+    command.upgrade(config, "b8c9d0e1f2a3")
+    after = set(inspect(engine).get_table_names())
+    assert after == before | CATALOG_TABLES
+
+    command.downgrade(config, "d5e6f7a8b9c0")
+    assert set(inspect(engine).get_table_names()) == before
+    engine.dispose()

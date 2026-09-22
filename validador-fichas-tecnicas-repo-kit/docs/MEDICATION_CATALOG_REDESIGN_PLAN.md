@@ -46,6 +46,10 @@ cuando la regla lo demuestra.
 
 ### CAT-003 — Identidades y relaciones tipadas (`P0`)
 
+Estado: esquema aditivo y contrato puro implementados. Falta proyectar los
+maestros mediante un informe previo de ambigüedades; no se ha poblado ninguna
+base real.
+
 - Migración aditiva para producto comercial/autorización, presentación, DCPF,
   DCP, DCSA y composición.
 - Relaciones explícitas con fuente, versión y vigencia.
@@ -56,6 +60,10 @@ Aceptación: los fixtures y una muestra real recorren ambos sentidos de la
 jerarquía; una composición admite varios principios activos.
 
 ### CAT-004 — Estado canónico editable (`P0`)
+
+Estado: núcleo de persistencia implementado para alta, modificación y archivo
+de identidades, con historial append-only y bloqueo optimista. API y formularios
+del expediente pendientes.
 
 - Crear, modificar, archivar, sustituir, relacionar y clasificar.
 - Historial append-only de antes/después, actor y motivo.

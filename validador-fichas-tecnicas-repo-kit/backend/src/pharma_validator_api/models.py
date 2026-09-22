@@ -168,6 +168,126 @@ class TargetRecordLink(Base):
     source_fragment_id: Mapped[str | None] = mapped_column(ForeignKey("source_fragment.id"))
 
 
+class MedicationCatalogIdentity(Base):
+    """Identidad farmacéutica tipada superpuesta al registro genérico.
+
+    Es una capa aditiva: `target_record_id` puede enlazar el dato importado
+    existente, pero ninguna identidad obliga a reescribirlo. `version` protege
+    las ediciones concurrentes del estado canónico.
+    """
+
+    __tablename__ = "medication_catalog_identity"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_system",
+            "identity_type",
+            "code",
+            "source_version",
+            name="uq_medication_catalog_source_identity",
+        ),
+        Index("ix_medication_catalog_identity_type_name", "identity_type", "display_name"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    identity_type: Mapped[str] = mapped_column(String(40))
+    code: Mapped[str | None] = mapped_column(Text)
+    display_name: Mapped[str] = mapped_column(Text)
+    target_record_id: Mapped[str | None] = mapped_column(
+        ForeignKey("target_record.id"), index=True
+    )
+    source_system: Mapped[str] = mapped_column(String(100))
+    source_version: Mapped[str] = mapped_column(Text)
+    source_literal: Mapped[str | None] = mapped_column(Text)
+    source_fragment_id: Mapped[str | None] = mapped_column(ForeignKey("source_fragment.id"))
+    active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+
+
+class MedicationCatalogRelation(Base):
+    """Arista tipada, ordenada y atribuible entre identidades del catálogo."""
+
+    __tablename__ = "medication_catalog_relation"
+    __table_args__ = (
+        UniqueConstraint(
+            "relation_type",
+            "source_identity_id",
+            "target_identity_id",
+            name="uq_medication_catalog_relation",
+        ),
+        Index("ix_medication_catalog_relation_source", "source_identity_id", "relation_type"),
+        Index("ix_medication_catalog_relation_target", "target_identity_id", "relation_type"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    relation_type: Mapped[str] = mapped_column(String(60))
+    source_identity_id: Mapped[str] = mapped_column(
+        ForeignKey("medication_catalog_identity.id")
+    )
+    target_identity_id: Mapped[str] = mapped_column(
+        ForeignKey("medication_catalog_identity.id")
+    )
+    ordinal: Mapped[int | None] = mapped_column(Integer)
+    source_fragment_id: Mapped[str | None] = mapped_column(ForeignKey("source_fragment.id"))
+
+
+class MedicationCatalogClassification(Base):
+    """Clase comercial o condición no excluyente de una presentación."""
+
+    __tablename__ = "medication_catalog_classification"
+    __table_args__ = (
+        UniqueConstraint(
+            "presentation_identity_id",
+            "classification_type",
+            "value",
+            "source_version",
+            name="uq_medication_catalog_classification",
+        ),
+        Index(
+            "ix_medication_catalog_classification_value",
+            "classification_type",
+            "value",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    presentation_identity_id: Mapped[str] = mapped_column(
+        ForeignKey("medication_catalog_identity.id"), index=True
+    )
+    classification_type: Mapped[str] = mapped_column(String(40))
+    value: Mapped[str] = mapped_column(String(80))
+    source_system: Mapped[str] = mapped_column(String(100))
+    source_version: Mapped[str] = mapped_column(Text)
+    source_fragment_id: Mapped[str | None] = mapped_column(ForeignKey("source_fragment.id"))
+    active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+
+
+class MedicationCatalogRevision(Base):
+    """Cambio append-only del estado canónico de una identidad."""
+
+    __tablename__ = "medication_catalog_revision"
+    __table_args__ = (
+        UniqueConstraint("identity_id", "sequence", name="uq_medication_catalog_revision"),
+        Index("ix_medication_catalog_revision_identity", "identity_id", "sequence"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    identity_id: Mapped[str] = mapped_column(ForeignKey("medication_catalog_identity.id"))
+    sequence: Mapped[int] = mapped_column(Integer)
+    action: Mapped[str] = mapped_column(String(40))
+    before_state: Mapped[str | None] = mapped_column(Text)
+    after_state: Mapped[str] = mapped_column(Text)
+    actor_id: Mapped[str] = mapped_column(String(80))
+    actor_assurance: Mapped[str] = mapped_column(String(20))
+    reason: Mapped[str] = mapped_column(Text)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+@event.listens_for(MedicationCatalogRevision, "before_update")
+@event.listens_for(MedicationCatalogRevision, "before_delete")
+def _reject_catalog_revision_mutation(*_: object) -> None:
+    raise ImmutableHistoryError("El historial canónico es append-only: registre otra revisión.")
+
+
 class BlockInstance(Base):
     __tablename__ = "block_instance"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)

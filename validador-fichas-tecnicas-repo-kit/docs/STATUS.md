@@ -27,6 +27,12 @@
 - CAT-005 inicia la sustitución de la lista plana: «Catálogo» separa
   presentaciones, medicamentos y principios activos mediante filtros
   server-side combinables con la búsqueda existente.
+- La migración aditiva `b8c9d0e1f2a3` crea identidades, relaciones,
+  clasificaciones y revisiones del catálogo sin transformar registros
+  existentes. Su downgrade retira sólo esas cuatro tablas.
+- `catalog_store` inicia CAT-004: alta, modificación y archivo conservan literal
+  fuente, exigen actor/motivo, incrementan versión y dejan revisión append-only.
+  Una versión observada obsoleta se rechaza sin escritura parcial.
 
 ## Integración CIMA REAL operativa (9 de septiembre de 2026)
 
