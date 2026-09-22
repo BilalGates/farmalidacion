@@ -19,6 +19,9 @@
   modificado `real.db`.
 - BOT PLUS se limita a una futura integración oficial contratada. D-033 sigue
   pendiente de licencia, catálogo de servicios y entorno de prueba.
+- CAT-002 inicia con `national_code`: acepta únicamente seis o siete dígitos,
+  conserva el literal, extrae el término de trabajo y marca el control como no
+  validado. No modifica la vinculación CIMA ni crea identidades.
 
 ## Integración CIMA REAL operativa (9 de septiembre de 2026)
 

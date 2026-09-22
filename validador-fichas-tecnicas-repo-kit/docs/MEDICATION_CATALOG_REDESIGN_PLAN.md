@@ -32,6 +32,9 @@ composiciones; farmacia reconoce la terminología de la pantalla.
 
 ### CAT-002 — Contrato del CN (`P0`)
 
+Estado: parser conservador implementado y probado; integración en búsqueda,
+persistencia y auditoría real pendiente.
+
 - Introducir valor canónico de seis dígitos y literal fuente separado.
 - Aceptar búsqueda con seis o siete dígitos.
 - Validar el séptimo dígito únicamente con regla aprobada y versionada.
