@@ -33,6 +33,10 @@
 - `catalog_store` inicia CAT-004: alta, modificación y archivo conservan literal
   fuente, exigen actor/motivo, incrementan versión y dejan revisión append-only.
   Una versión observada obsoleta se rechaza sin escritura parcial.
+- `/catalog/identities` expone listado paginado, búsqueda, detalle, alta,
+  modificación/archivo e historial. Los contratos rechazan niveles y campos
+  desconocidos; los actores se resuelven contra el directorio activo y un
+  conflicto de versión responde 409 para que la pantalla pueda recargar.
 
 ## Integración CIMA REAL operativa (9 de septiembre de 2026)
 

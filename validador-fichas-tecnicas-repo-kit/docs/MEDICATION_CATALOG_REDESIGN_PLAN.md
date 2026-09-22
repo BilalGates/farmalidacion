@@ -62,8 +62,8 @@ jerarquía; una composición admite varios principios activos.
 ### CAT-004 — Estado canónico editable (`P0`)
 
 Estado: núcleo de persistencia implementado para alta, modificación y archivo
-de identidades, con historial append-only y bloqueo optimista. API y formularios
-del expediente pendientes.
+de identidades, con historial append-only y bloqueo optimista. API de
+identidades e historial implementada; formularios del expediente pendientes.
 
 - Crear, modificar, archivar, sustituir, relacionar y clasificar.
 - Historial append-only de antes/después, actor y motivo.

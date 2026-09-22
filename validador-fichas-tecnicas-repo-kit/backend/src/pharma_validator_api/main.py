@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.engine import make_url
 
 from pharma_validator_api.block_api import router as block_router
+from pharma_validator_api.catalog_api import router as catalog_router
 from pharma_validator_api.chat_api import router as chat_router
 from pharma_validator_api.config import Settings, get_settings
 from pharma_validator_api.data_origin import DataOrigin, apply_origin_filter
@@ -113,6 +114,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # `/records/{record_id}`, que de otro modo capturaría `/records/{id}/blocks`.
     application.include_router(block_router)
     application.include_router(chat_router)
+    application.include_router(catalog_router)
     application.include_router(records_router)
     application.include_router(insights_router)
     application.include_router(queue_router)
