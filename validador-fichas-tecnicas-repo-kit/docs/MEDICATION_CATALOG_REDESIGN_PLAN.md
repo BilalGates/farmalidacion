@@ -46,9 +46,12 @@ cuando la regla lo demuestra.
 
 ### CAT-003 — Identidades y relaciones tipadas (`P0`)
 
-Estado: esquema aditivo y contrato puro implementados. Falta proyectar los
-maestros mediante un informe previo de ambigüedades; no se ha poblado ninguna
-base real.
+Estado: esquema aditivo, contrato puro y primera proyección conservadora
+implementados. La proyección crea presentación, DCP y sustancia activa desde
+registros inequívocos, además de composición DCP→sustancia. Funciona en
+diagnóstico por defecto, es idempotente y conserva el CN literal. No fabrica
+DCPF: los vínculos históricos especialidad→medicamento quedan diagnosticados
+como puente pendiente. No se ha poblado ninguna base real.
 
 - Migración aditiva para producto comercial/autorización, presentación, DCPF,
   DCP, DCSA y composición.

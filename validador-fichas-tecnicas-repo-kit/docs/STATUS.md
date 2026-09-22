@@ -1038,7 +1038,21 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
 
 ## Última actualización
 
-9 de septiembre de 2026.
+22 de septiembre de 2026.
+
+## Rediseño del catálogo — proyección conservadora
+
+- Los registros existentes ya pueden analizarse y materializarse como
+  presentación, DCP y sustancia activa mediante una operación determinista e
+  idempotente. El modo por defecto es diagnóstico y no escribe.
+- La composición medicamento→principio activo se convierte en la relación
+  tipada DCP→sustancia activa, incluyendo composiciones múltiples.
+- El Código Nacional se trabaja con seis dígitos, conservando literalmente la
+  entrada de seis o siete; un formato no autorizado queda como diagnóstico.
+- No se deduce DCPF a partir del vínculo especialidad→medicamento. Cada caso se
+  informa como `MISSING_DCPF_BRIDGE` hasta disponer de una fuente fiable.
+- La proyección sólo se ha probado sobre bases desechables. No se ha ejecutado
+  sobre una base real ni se han modificado fuentes importadas.
 
 ## Reconciliación del estado mostrado en la interfaz
 
