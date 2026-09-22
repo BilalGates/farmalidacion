@@ -1062,6 +1062,10 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
 - El expediente consulta relaciones en ambos sentidos y permite navegar por la
   jerarquía y la composición. La ausencia de DCPF o de composición se muestra
   como dato pendiente; nunca se sustituye por un enlace entre niveles incorrectos.
+- El modo DEMO carga idempotentemente el fixture sintético de aceptación del
+  dominio: 11 identidades, 11 relaciones y 6 clasificaciones. Permite recorrer
+  dos presentaciones que comparten DCP y una composición con dos sustancias,
+  sin presentar esos valores como información farmacéutica real.
 
 ## Reconciliación del estado mostrado en la interfaz
 

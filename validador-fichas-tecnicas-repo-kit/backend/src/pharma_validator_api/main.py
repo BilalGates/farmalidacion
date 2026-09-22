@@ -10,6 +10,7 @@ from sqlalchemy.engine import make_url
 
 from pharma_validator_api.block_api import router as block_router
 from pharma_validator_api.catalog_api import router as catalog_router
+from pharma_validator_api.catalog_demo_fixture import load_catalog_demo_fixture
 from pharma_validator_api.catalog_projection import project_target_records
 from pharma_validator_api.chat_api import router as chat_router
 from pharma_validator_api.config import Settings, get_settings
@@ -95,6 +96,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             with session_factory() as session:
                 project_target_records(session, apply=True)
                 session.commit()
+                catalog_fixture = (
+                    active.demo_fixture_path.parent / "medication-domain-acceptance.json"
+                )
+                if catalog_fixture.exists():
+                    load_catalog_demo_fixture(session, catalog_fixture)
         yield
         engine.dispose()
 
