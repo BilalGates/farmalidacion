@@ -1,5 +1,18 @@
 # Backlog inicial
 
+## Nuevo camino de producto — catálogo editable (22 de septiembre de 2026)
+
+ADR-0012 redefine el siguiente bloque de trabajo sin invalidar la infraestructura
+terminada. El producto se orienta a explorar, mantener, comparar y revisar el
+catálogo completo. La validación farmacéutica es operación continua y no una
+barrera previa al rediseño.
+
+El epic CAT-001..CAT-010 y su orden verificable están en
+`docs/MEDICATION_CATALOG_REDESIGN_PLAN.md`. El camino inmediato es contrato de
+dominio, CN y prototipo de exploración; las migraciones se difieren hasta probar
+los casos multicomponente y multipresentación. BOT PLUS queda como spike externo
+D-033 y no bloquea el resto.
+
 ## Orden vigente — D-028 / ADR-0010
 
 Completar desarrollo técnico de fases 4–7; después realizar todas las

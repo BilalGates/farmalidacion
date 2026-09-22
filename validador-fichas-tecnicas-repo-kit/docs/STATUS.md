@@ -1,5 +1,25 @@
 # Estado del proyecto
 
+## Rediseño del catálogo iniciado (22 de septiembre de 2026)
+
+- La revisión funcional con farmacia confirma que la aceptación farmacéutica se
+  realizará progresivamente dentro del producto y no debe frenar la ingeniería.
+- ADR-0012 adopta la jerarquía explícita producto/autorización → presentación/CN
+  → DCPF → DCP → DCSA, con composición múltiple y sin fusionar identidades.
+- Se aprueba evolucionar desde validación de valores y edición de bloques hacia
+  mantenimiento completo: fuente inmutable, estado canónico y revisión
+  append-only.
+- El CN de trabajo usa seis dígitos y conserva siempre el literal fuente; el
+  cálculo del dígito de control no se implementará sin regla documentada.
+- Original, genérico y biosimilar forman una dimensión distinta de huérfano,
+  estupefaciente, psicotrópico, especial control y otras condiciones.
+- `docs/MEDICATION_CATALOG_REDESIGN_PLAN.md` define CAT-001..CAT-010. CAT-001
+  dispone ya de glosario y fixture sintético multipresentación/multicomponente;
+  queda mapear los campos reales. No se ha creado todavía ninguna migración ni
+  modificado `real.db`.
+- BOT PLUS se limita a una futura integración oficial contratada. D-033 sigue
+  pendiente de licencia, catálogo de servicios y entorno de prueba.
+
 ## Integración CIMA REAL operativa (9 de septiembre de 2026)
 
 - Se cargó en `real.db` el corpus piloto verificado: 500 documentos, 500

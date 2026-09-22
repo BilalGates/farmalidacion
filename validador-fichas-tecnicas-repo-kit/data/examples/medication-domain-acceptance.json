@@ -1,0 +1,75 @@
+{
+  "schema_version": "medication-domain-acceptance-v1",
+  "synthetic": true,
+  "purpose": "Validar estructura y navegación; no contiene afirmaciones clínicas reales.",
+  "commercial_products": [
+    {
+      "id": "product-example-combination",
+      "display_name": "PRODUCTO EJEMPLO COMBINADO",
+      "authorizations": [
+        {
+          "id": "authorization-example-1",
+          "nregistro": "SYNTHETIC-NREG-1",
+          "presentations": [
+            {
+              "id": "presentation-example-1",
+              "national_code": {
+                "canonical_six": "123456",
+                "source_literal": "1234567",
+                "check_digit_status": "not_validated"
+              },
+              "dcpf": {
+                "code": "SYNTHETIC-DCPF-20",
+                "display_name": "Producto ejemplo 10 mg + 5 mg, 20 comprimidos",
+                "package_quantity": "20",
+                "package_unit": "comprimidos",
+                "dcp": {
+                  "code": "SYNTHETIC-DCP-10-5",
+                  "display_name": "Producto ejemplo 10 mg + 5 mg comprimidos",
+                  "dose_form": "comprimido",
+                  "active_ingredients": [
+                    {
+                      "order": 1,
+                      "ingredient_code": "SYNTHETIC-INGREDIENT-A",
+                      "display_name": "SUSTANCIA EJEMPLO A",
+                      "dcsa_code": "SYNTHETIC-DCSA-A",
+                      "strength": "10",
+                      "strength_unit": "mg"
+                    },
+                    {
+                      "order": 2,
+                      "ingredient_code": "SYNTHETIC-INGREDIENT-B",
+                      "display_name": "SUSTANCIA EJEMPLO B",
+                      "dcsa_code": "SYNTHETIC-DCSA-B",
+                      "strength": "5",
+                      "strength_unit": "mg"
+                    }
+                  ]
+                }
+              },
+              "commercial_class": "generico",
+              "conditions": ["huerfano", "uso_hospitalario"]
+            },
+            {
+              "id": "presentation-example-2",
+              "national_code": {
+                "canonical_six": "654321",
+                "source_literal": "654321",
+                "check_digit_status": "not_supplied"
+              },
+              "dcpf": {
+                "code": "SYNTHETIC-DCPF-40",
+                "display_name": "Producto ejemplo 10 mg + 5 mg, 40 comprimidos",
+                "package_quantity": "40",
+                "package_unit": "comprimidos",
+                "dcp_ref": "SYNTHETIC-DCP-10-5"
+              },
+              "commercial_class": "generico",
+              "conditions": ["huerfano", "uso_hospitalario"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
