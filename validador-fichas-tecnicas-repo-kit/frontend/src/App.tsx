@@ -53,7 +53,7 @@ function NavIcon({ icon: Icon }: { readonly icon: LucideIcon }) {
  */
 const NAV: readonly NavItem[] = [
   { id: 'inicio', label: 'Inicio', icon: Home, available: true },
-  { id: 'fichas', label: 'Registros', icon: FileStack, available: true },
+  { id: 'fichas', label: 'Catálogo', icon: FileStack, available: true },
   { id: 'cola', label: 'Cola de revisión', icon: ListChecks, available: true },
   { id: 'validaciones', label: 'Validaciones', icon: BadgeCheck, available: true },
   { id: 'importaciones', label: 'Importaciones', icon: Download, available: true },

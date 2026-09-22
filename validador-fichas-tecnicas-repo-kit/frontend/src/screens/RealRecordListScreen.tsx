@@ -27,6 +27,13 @@ const PAGE_SIZE = 50
 /** Filtros de estado, en el orden en que avanza una revisión. */
 const ESTADOS: readonly ReviewState[] = ['pendiente', 'en_revision', 'validado']
 
+const ENTITY_FILTERS = [
+  { value: null, label: 'Todo el catálogo' },
+  { value: 'specialty', label: 'Presentaciones' },
+  { value: 'medication', label: 'Medicamentos' },
+  { value: 'active_ingredient', label: 'Principios activos' },
+] as const
+
 const ENTITY_LABELS: Record<string, string> = {
   medication: 'Medicamento',
   active_ingredient: 'Principio activo',
@@ -38,6 +45,7 @@ export function RealRecordListScreen() {
   const [query, setQuery] = useState('')
   const [offset, setOffset] = useState(0)
   const [estado, setEstado] = useState<ReviewState | null>(null)
+  const [entityType, setEntityType] = useState<string | null>(null)
   const [retryKey, setRetryKey] = useState(0)
 
   const { data, error, loading } = useQuery(
@@ -45,11 +53,12 @@ export function RealRecordListScreen() {
       fetchRealRecords({
         origin: 'real',
         q: query || undefined,
+        entityType: entityType ?? undefined,
         estado: estado ?? undefined,
         limit: PAGE_SIZE,
         offset,
       }),
-    [query, estado, offset, retryKey],
+    [query, entityType, estado, offset, retryKey],
   )
 
   function search(event: React.FormEvent) {
@@ -65,11 +74,11 @@ export function RealRecordListScreen() {
     <div className='screen'>
       <div className='screen__head'>
         <div>
-          <p className='eyebrow'>Revisión</p>
-          <h1>Registros</h1>
+          <p className='eyebrow'>Catálogo</p>
+          <h1>Catálogo de medicamentos</h1>
           <p className='lede'>
-            Consulte y revise los registros importados desde los maestros. El origen de los datos
-            se elige de forma explícita y nunca se mezclan en una misma tabla.
+            Localice primero el nivel que necesita: presentación, medicamento o principio activo.
+            Los datos originales y su procedencia permanecen visibles al abrir la ficha.
           </p>
         </div>
       </div>
@@ -84,13 +93,29 @@ export function RealRecordListScreen() {
           <input
             type='search'
             value={term}
-            placeholder='Descripción o identificador del maestro'
+            placeholder='CN, nombre, identificador o principio activo'
             onChange={(event) => setTerm(event.target.value)}
           />
         </label>
         <button type='submit' className='button button--primary'>
           Buscar
         </button>
+        <div className='filters' role='group' aria-label='Nivel del catálogo'>
+          {ENTITY_FILTERS.map((item) => (
+            <button
+              key={item.label}
+              type='button'
+              className={`chip${entityType === item.value ? ' chip--active' : ''}`}
+              aria-pressed={entityType === item.value}
+              onClick={() => {
+                setOffset(0)
+                setEntityType(item.value)
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
         <div className='filters' role='group' aria-label='Estado de revisión'>
           <button
             type='button'
@@ -185,7 +210,7 @@ export function RealRecordListScreen() {
                         className='button'
                         onClick={() => navigate(`/fichas/${encodeURIComponent(item.id)}`)}
                       >
-                        Revisar
+                        Abrir ficha
                       </button>
                     </td>
                   </tr>

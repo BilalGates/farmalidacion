@@ -69,6 +69,10 @@ completa; un conflicto concurrente no deja escritura parcial.
 
 ### CAT-005 — Explorador de catálogo (`P0`)
 
+Estado: primer corte implementado sobre el modelo existente; selector de nivel y
+búsqueda combinada se ejecutan en servidor. Jerarquía expandible, vistas
+guardadas y columnas configurables pendientes de CAT-003.
+
 - Entradas por productos, presentaciones, productos clínicos y principios
   activos.
 - Búsqueda por nombre, `nregistro`, CN, DCPF, DCP, DCSA y sustancia.

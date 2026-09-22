@@ -194,12 +194,14 @@ export function fetchImport(id: string): Promise<ImportDetail> {
 export function fetchRealRecords(params: {
   origin: DataOrigin
   q?: string
+  entityType?: string
   estado?: ReviewState
   limit?: number
   offset?: number
 }): Promise<RealRecordPage> {
   const search = new URLSearchParams({ origin: params.origin })
   if (params.q) search.set('q', params.q)
+  if (params.entityType) search.set('entity_type', params.entityType)
   if (params.estado) search.set('estado', params.estado)
   if (params.limit !== undefined) search.set('limit', String(params.limit))
   if (params.offset !== undefined) search.set('offset', String(params.offset))

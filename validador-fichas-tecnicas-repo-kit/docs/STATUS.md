@@ -22,6 +22,11 @@
 - CAT-002 inicia con `national_code`: acepta únicamente seis o siete dígitos,
   conserva el literal, extrae el término de trabajo y marca el control como no
   validado. No modifica la vinculación CIMA ni crea identidades.
+- CAT-003 dispone de un contrato puro de grafo que valida niveles, composición
+  múltiple, clasificaciones y ausencia de ciclos antes de crear tablas.
+- CAT-005 inicia la sustitución de la lista plana: «Catálogo» separa
+  presentaciones, medicamentos y principios activos mediante filtros
+  server-side combinables con la búsqueda existente.
 
 ## Integración CIMA REAL operativa (9 de septiembre de 2026)
 
