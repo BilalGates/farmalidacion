@@ -33,7 +33,13 @@ from pharma_validator_api.models import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-RAW = ROOT / "data" / "reference" / "raw"
+CHECKED_IN_RAW = ROOT / "data" / "reference" / "raw"
+EXTERNAL_BASE = ROOT.parent / "Catalogo_campos_clinicos_medicamentos" / "base"
+RAW = (
+    CHECKED_IN_RAW
+    if (CHECKED_IN_RAW / MASTER_SOURCES[1].filename).is_file()
+    else EXTERNAL_BASE
+)
 
 
 def migrated_session(tmp_path: Path) -> Session:

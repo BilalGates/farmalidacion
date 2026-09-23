@@ -12,7 +12,11 @@ from pharma_validator_api.catalog_importer import CATALOG_FILENAME, import_catal
 from pharma_validator_api.models import CatalogFieldDefinition, ImportBatch, ImportDiagnostic
 
 ROOT = Path(__file__).resolve().parents[2]
-CATALOG = ROOT / "data" / "reference" / "raw" / CATALOG_FILENAME
+CHECKED_IN_CATALOG = ROOT / "data" / "reference" / "raw" / CATALOG_FILENAME
+EXTERNAL_CATALOG = (
+    ROOT.parent / "Catalogo_campos_clinicos_medicamentos" / CATALOG_FILENAME
+)
+CATALOG = CHECKED_IN_CATALOG if CHECKED_IN_CATALOG.is_file() else EXTERNAL_CATALOG
 EXPECTED_HASH = "a10160ebe5c7fe0b5d2a35a12d4597c982bacdafe04cb0f8d98c437183d19eac"
 
 

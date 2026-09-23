@@ -49,6 +49,9 @@ markers = [
 ```
 
 Las cuatro pruebas están marcadas `@pytest.mark.slow` y `@pytest.mark.reference`.
+El fixture `master_data_directory` usa por defecto `data/reference/raw`; para
+leer la carpeta externa operativa sin copiar libros, se puede definir
+`FARMALIDACION_MASTER_DATA_DIR` con el directorio que contiene los tres maestros.
 
 ## Las dos suites
 

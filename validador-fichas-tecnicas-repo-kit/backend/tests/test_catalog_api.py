@@ -1,8 +1,16 @@
+from datetime import UTC, datetime
+
 from fastapi.testclient import TestClient
 
 from pharma_validator_api.config import Settings
 from pharma_validator_api.main import create_app
-from pharma_validator_api.models import MedicationCatalogRelation
+from pharma_validator_api.models import (
+    MedicationCatalogIdentity,
+    MedicationCatalogRelation,
+    SourceDocument,
+    SourceDocumentVersion,
+    SourceFragment,
+)
 
 
 def client(scratch_db_url: str) -> TestClient:
@@ -50,6 +58,116 @@ def test_create_list_read_and_history(scratch_db_url: str) -> None:
     assert history.status_code == 200
     assert [item["action"] for item in history.json()] == ["crear"]
     assert history.json()[0]["actor_assurance"] == "declarada"
+
+
+def test_catalog_sort_is_server_side_and_stable(scratch_db_url: str) -> None:
+    api = client(scratch_db_url)
+    for identity_id, name, code in (
+        ("item-a", "Beta", "20"),
+        ("item-b", "Alfa", "30"),
+        ("item-c", "Gamma", "10"),
+    ):
+        assert api.post(
+            "/catalog/identities",
+            json=create_payload(id=identity_id, display_name=name, code=code),
+        ).status_code == 201
+
+    by_name = api.get("/catalog/identities", params={"sort_by": "name_desc"})
+    assert [item["display_name"] for item in by_name.json()["items"]] == [
+        "Gamma", "Beta", "Alfa",
+    ]
+    by_code = api.get(
+        "/catalog/identities", params={"sort_by": "code_asc", "limit": 2}
+    )
+    assert [item["code"] for item in by_code.json()["items"]] == ["10", "20"]
+    assert api.get("/catalog/identities", params={"sort_by": "random"}).status_code == 422
+
+
+def test_seven_digit_national_code_search_uses_six_digit_working_code(
+    scratch_db_url: str,
+) -> None:
+    api = client(scratch_db_url)
+    assert api.post(
+        "/catalog/identities", json=create_payload(code="654789")
+    ).status_code == 201
+
+    by_six = api.get("/catalog/identities", params={"q": "654789"}).json()
+    by_seven = api.get("/catalog/identities", params={"q": "6547893"}).json()
+    invalid_length = api.get("/catalog/identities", params={"q": "65478930"}).json()
+
+    assert by_six["total"] == 1
+    assert by_seven["total"] == 1
+    assert by_seven["items"][0]["code"] == "654789"
+    assert invalid_length["total"] == 0
+
+
+def test_catalog_can_be_filtered_by_its_exact_source_workbook(scratch_db_url: str) -> None:
+    api = client(scratch_db_url)
+    assert api.post("/catalog/identities", json=create_payload()).status_code == 201
+    with api.app.state.session_factory() as session:
+        document = SourceDocument(
+            id="specialties-document",
+            source_type="master_excel",
+            name="Especialidades-CargaMaster190626.xlsx",
+        )
+        version = SourceDocumentVersion(
+            id="specialties-version",
+            document_id=document.id,
+            content_hash="a" * 64,
+            source_version=None,
+            source_locator=document.name,
+            acquired_at=datetime.now(UTC),
+        )
+        fragment = SourceFragment(
+            id="specialties-fragment",
+            document_version_id=version.id,
+            locator_type="excel_row",
+            locator='{"row":2,"sheet":"General"}',
+            literal_text="{}",
+        )
+        identity = session.get(MedicationCatalogIdentity, "presentation-1")
+        assert identity is not None
+        session.add(document)
+        session.flush()
+        session.add(version)
+        session.flush()
+        session.add(fragment)
+        session.flush()
+        identity.source_fragment_id = fragment.id
+        session.commit()
+
+    source_view = api.get(
+        "/catalog/identities",
+        params={"source_workbook": "especialidades", "identity_type": "presentation"},
+    )
+    assert source_view.status_code == 200
+    assert source_view.json()["total"] == 1
+    assert source_view.json()["items"][0]["source_workbook"] == "especialidades"
+    assert api.get(
+        "/catalog/identities",
+        params={"source_workbook": "medicamentos", "identity_type": "dcp"},
+    ).json()["total"] == 0
+    assert api.get(
+        "/catalog/identities",
+        params={"source_workbook": "especialidades", "identity_type": "dcp"},
+    ).json()["total"] == 0
+    assert api.get(
+        "/catalog/identities", params={"source_workbook": "otro"}
+    ).status_code == 422
+    detail = api.get("/catalog/identities/presentation-1")
+    assert detail.json()["source_workbook"] == "especialidades"
+    changed = api.put(
+        "/catalog/identities/presentation-1",
+        json={
+            "expected_version": 1,
+            "display_name": "Producto revisado",
+            "code": "654789",
+            "active": True,
+            "actor_id": "ana",
+            "reason": "Prueba de que la procedencia sigue visible.",
+        },
+    )
+    assert changed.json()["source_workbook"] == "especialidades"
 
 
 def test_update_and_archive_require_observed_version(scratch_db_url: str) -> None:

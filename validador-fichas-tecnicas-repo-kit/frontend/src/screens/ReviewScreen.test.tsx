@@ -90,6 +90,12 @@ function record(): TargetRecord {
           },
         ],
       },
+      {
+        id: 'block-2',
+        block_type: 'specialty_excipient',
+        ordinal: 1,
+        values: [],
+      },
     ],
   }
 }
@@ -152,10 +158,52 @@ it('presenta las tres zonas con la evidencia del campo activo', async () => {
 
   await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
   expect(screen.getByLabelText('Campos del registro')).toBeInTheDocument()
+  expect(screen.getByText('Libro Especialidades · hoja General')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 2, name: 'Datos generales' })).toBeInTheDocument()
+  expect(screen.getByText('Libro Especialidades · hoja Excipientes')).toBeInTheDocument()
 
   const evidence = screen.getByRole('complementary', { name: 'Evidencia del campo activo' })
   expect(within(evidence).getByText('Texto literal del maestro.')).toBeInTheDocument()
   expect(screen.getByText('0 de 2 campos revisados')).toBeInTheDocument()
+})
+
+it('permite mantener campos de registros fuente sin identidad canónica ni decisión farmacéutica', async () => {
+  const mock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input)
+    if (url.includes('/timing/')) {
+      return { ok: true, status: 201, json: async () => ({ id: 'sesion-1' }) } as Response
+    }
+    if (init?.method === 'POST' && url.includes('/maintenance')) {
+      return { ok: true, status: 201, json: async () => ({ sequence: 1 }) } as Response
+    }
+    return { ok: true, status: 200, json: async () => record() } as Response
+  })
+  vi.stubGlobal('fetch', mock)
+  render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} />)
+
+  await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
+  fireEvent.click(screen.getByText('Mantenimiento del libro original · editar datos importados'))
+  await screen.findByRole('heading', { level: 2, name: 'Campos importados' })
+  fireEvent.click(screen.getAllByRole('button', { name: 'Editar campo' })[0])
+  fireEvent.change(screen.getByLabelText('Nuevo valor para DESCRIPCION'), {
+    target: { value: 'Omeprazol 20 mg corregido' },
+  })
+  fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Corrección de prueba' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+
+  await waitFor(() => expect(mock.mock.calls.some(([url, init]) =>
+    String(url).includes('/records/values/value-1/maintenance') && init?.method === 'POST',
+  )).toBe(true))
+  expect(mock.mock.calls.some(([url]) => String(url).includes('/decisions'))).toBe(false)
+  const maintenanceCall = mock.mock.calls.find(([url, init]) =>
+    String(url).includes('/records/values/value-1/maintenance') && init?.method === 'POST',
+  )
+  expect(JSON.parse(String(maintenanceCall?.[1]?.body))).toMatchObject({
+    expected_sequence: 0,
+    value: 'Omeprazol 20 mg corregido',
+    actor_id: 'ana',
+    reason: 'Corrección de prueba',
+  })
 })
 
 it('Alt+flechas mueve el foco entre campos sin guardar nada', async () => {

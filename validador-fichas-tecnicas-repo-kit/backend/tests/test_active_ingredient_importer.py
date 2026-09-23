@@ -27,9 +27,6 @@ from pharma_validator_api.models import (
     ValueProvenance,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
-SOURCE = ROOT / "data" / "reference" / "raw" / SOURCE_FILENAME
-
 
 def migrated_session(tmp_path: Path) -> Session:
     database_path = tmp_path / "active-ingredients.db"
@@ -44,14 +41,17 @@ def file_hash(path: Path) -> str:
 
 @pytest.mark.slow
 @pytest.mark.reference
-def test_real_master_import_is_lossless_idempotent_and_provenanced(tmp_path: Path) -> None:
-    before = file_hash(SOURCE)
+def test_real_master_import_is_lossless_idempotent_and_provenanced(
+    tmp_path: Path, master_data_directory: Path,
+) -> None:
+    source = master_data_directory / SOURCE_FILENAME
+    before = file_hash(source)
     assert before == SOURCE_HASH
 
     with migrated_session(tmp_path) as session:
-        first = import_active_ingredients(session, SOURCE)
+        first = import_active_ingredients(session, source)
         session.commit()
-        second = import_active_ingredients(session, SOURCE)
+        second = import_active_ingredients(session, source)
         session.commit()
 
         assert first.created is True
@@ -110,7 +110,7 @@ def test_real_master_import_is_lossless_idempotent_and_provenanced(tmp_path: Pat
         assert provenance is not None
         assert provenance.provenance_role == "master_baseline"
 
-    assert file_hash(SOURCE) == before
+    assert file_hash(source) == before
 
 
 def test_invalid_workbook_fails_batch_and_keeps_diagnostic(tmp_path: Path) -> None:

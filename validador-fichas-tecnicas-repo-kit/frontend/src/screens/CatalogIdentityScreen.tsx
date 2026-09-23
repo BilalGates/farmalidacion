@@ -13,11 +13,17 @@ import type { CatalogClassification, CatalogIdentity, CatalogRelation, CatalogRe
 import { AsyncBoundary } from '../components/AsyncState'
 import { formatDateTime, orDash } from '../domain/format'
 import { navigate } from '../navigation'
+import { SourceFieldsMaintenance } from './CatalogSourceFields'
 
 const TYPE_LABELS: Record<string, string> = {
   commercial_product: 'Producto comercial', authorization: 'Autorización',
   presentation: 'Presentación', dcpf: 'DCPF', dcp: 'DCP', dcsa: 'DCSA',
   active_ingredient: 'Sustancia activa',
+}
+const SOURCE_WORKBOOK_LABELS: Record<string, string> = {
+  especialidades: 'Especialidades-CargaMaster190626.xlsx',
+  medicamentos: 'Medicamento-cargaMaster25062026.xlsx',
+  principios_activos: 'PrincipioActivoCargaMaster-22062026.xlsx',
 }
 
 const RELATION_LABELS: Record<string, string> = {
@@ -158,9 +164,11 @@ export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
             </section>
 
             <aside className='catalog-record__side'>
-              <section className='panel'><p className='eyebrow'>Procedencia</p><h2>Valor fuente</h2><dl className='definition'><div><dt>Sistema</dt><dd>{identity.source_system}</dd></div><div><dt>Versión</dt><dd>{identity.source_version}</dd></div><div><dt>Literal conservado</dt><dd><code>{orDash(identity.source_literal)}</code></dd></div></dl>{identity.target_record_id && <button type='button' className='button' onClick={() => navigate(`/registros/${encodeURIComponent(identity.target_record_id!)}`)}><ExternalLink size={16} aria-hidden='true' /> Ver datos importados</button>}</section>
+              <section className='panel'><p className='eyebrow'>Procedencia</p><h2>Valor fuente</h2><dl className='definition'>{identity.source_workbook && <div><dt>Libro Excel</dt><dd>{SOURCE_WORKBOOK_LABELS[identity.source_workbook] ?? identity.source_workbook}</dd></div>}<div><dt>Sistema</dt><dd>{identity.source_system}</dd></div><div><dt>Versión</dt><dd>{identity.source_version}</dd></div><div><dt>Literal conservado</dt><dd><code>{orDash(identity.source_literal)}</code></dd></div></dl>{identity.target_record_id && <button type='button' className='button' onClick={() => navigate(`/registros/${encodeURIComponent(identity.target_record_id!)}`)}><ExternalLink size={16} aria-hidden='true' /> Ver datos importados</button>}</section>
             </aside>
           </div>
+
+          {identity.target_record_id && <SourceFieldsMaintenance recordId={identity.target_record_id} reviewer={reviewer} />}
 
           <section className='panel catalog-relations' aria-labelledby='catalog-relations-title'>
             <div className='panel__head'><div><p className='eyebrow'>Estructura farmacéutica</p><h2 id='catalog-relations-title'><GitBranch size={18} aria-hidden='true' /> Relaciones y composición</h2></div></div>

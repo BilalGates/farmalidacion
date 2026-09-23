@@ -4,6 +4,12 @@
 
 Los hashes de esta tabla corresponden a los ficheros recibidos el 24 de agosto de 2026. Los originales deben mantenerse fuera de Git en `data/reference/raw/`.
 
+Ubicación operativa indicada por el responsable el 23 de septiembre de 2026 para
+los tres maestros activos: `../Catalogo_campos_clinicos_medicamentos/base/`
+(respecto a la raíz del repositorio). Se verificaron allí los tres SHA-256 de
+esta tabla; el directorio está fuera de Git. El maestro de interacciones se
+incorporará más adelante y no forma parte de esta ubicación actual.
+
 | Fichero | SHA-256 | Papel |
 |---|---|---|
 | `ESPEC_validador_fichas_tecnicas.md` | `d951f0a23787a0355fc9f9f7e1e0c4d2e40441f7f5ef249492b4742fb29173a4` | Especificación funcional y técnica v2 |
@@ -62,7 +68,44 @@ Los hashes de esta tabla corresponden a los ficheros recibidos el 24 de agosto d
 - Algunas hojas presentan miles de filas físicas por formato o fórmulas heredadas; el importador debe distinguir filas materialmente pobladas de rango usado aparente.
 - Debe convertirse en fixture de aceptación y no editarse manualmente durante la prueba.
 
-## 3. Consecuencias para el diseño
+## 3. Contrato real por hoja (cabeceras del snapshot activo)
+
+Se inspeccionó solo la fila de cabeceras con los mismos parsers XML de los
+importadores; no se escribieron los libros. Los tres importadores enumeran cada
+hoja, conservan sus cabeceras y cargan cada celda material como valor literal con
+procedencia a la fila Excel. Las hojas sin filas de datos también se registran.
+
+| Libro | Hoja | Columnas | Función estructural / clave observada | Estado en el snapshot |
+|---|---|---:|---|---|
+| Especialidades | `General` | 120 | Registro de especialidad; `BN_IDEXTERNO`, `CODIGO_NACIONAL`, referencia `ME_IDEXTERNO`; `PVL`/`PVP` | Con datos |
+| Especialidades | `Excipientes` | 9 | Ocurrencia repetible; `BN_IDEXTERNO` enlaza con la especialidad y `EX_IDEXTERNO` identifica excipiente | Con datos; hay huérfanos documentados |
+| Medicamentos | `General` | 58 | Registro de medicamento; `MED_IDEXTERNO`, `ID_MEDICAMENTO`; incluye `MED_DCP` y `MED_ATC` | Con datos |
+| Medicamentos | `Composicion` | 13 | Ocurrencia repetible de composición; referencias `MED_IDEXTERNO` y `PA_IDEXTERNO` | Con datos |
+| Medicamentos | `Indicacion` | 8 | Ocurrencia repetible; referencias medicamento e indicación | Con datos |
+| Medicamentos | `Frecuencia` | 9 | Ocurrencia repetible; referencias medicamento y frecuencia | Solo cabecera |
+| Medicamentos | `Via` | 8 | Ocurrencia repetible; referencias medicamento y vía | Con datos |
+| Medicamentos | `Prescripcion` | 27 | Ocurrencia de prescripción por `GRUPO_POBLACIONAL`, con frecuencia, vía, dosis, unidad y observaciones | Solo cabecera |
+| Medicamentos | `Links` | 10 | Enlaces y presentación; columna `DESCRIPCION` duplicada en D y F | Con datos; el nombre de campo no es único |
+| Principios activos | `General` | 101 | Registro de principio activo; `IDEXTERNO`, `ID_PRINCIPIO_ACTIVO`, `ATC`; incluye límites de dosis por población | Con datos |
+| Principios activos | `Frecuencia` | 9 | Ocurrencia repetible; referencias `PA_IDEXTERNO` y frecuencia | Solo cabecera |
+| Principios activos | `Via` | 9 | Ocurrencia repetible; referencias `PA_IDEXTERNO` y vía | Solo cabecera |
+| Principios activos | `ConsejosAdministracion` | 19 | Ocurrencia de consejo por vía, forma farmacéutica y población | Solo cabecera |
+| Principios activos | `DatosAnaliticos` | 19 | Ocurrencia de dato analítico; incluye corte, gravedad y poblaciones | Solo cabecera |
+
+La carga conserva ambas columnas `DESCRIPCION` de `Links` como valores
+independientes. `field_value.source_column_index` preserva el ordinal Excel y la
+revisión etiqueta cabeceras repetidas con su letra (por ejemplo, `columna D` y
+`columna F`), sin renombrar el campo fuente ni inferir su significado. La nueva
+migración rellena esa coordenada en valores ya importados cuando puede
+reconstruirla desde su identificador estable y el fragmento original.
+
+El perfil confirma además 4.211 relaciones de composición inequívocas y deja
+sin crear el puente especialidad→medicamento cuando no existe una única
+coincidencia. En la hoja `Excipientes`, 275 filas quedan en cuarentena por padre
+ausente (184 identificadores distintos). Estos resultados pertenecen al
+importador y no autorizan a corregir los libros de origen.
+
+## 4. Consecuencias para el diseño
 
 - No existe una relación simple uno-a-uno entre ficha técnica y registro de destino.
 - No basta con una restricción única por `registro_id + campo_id`.
@@ -70,7 +113,7 @@ Los hashes de esta tabla corresponden a los ficheros recibidos el 24 de agosto d
 - Los importadores deben conservar los valores originales, registrar diagnósticos y evitar coerciones silenciosas.
 - La exportación debe reconstruir filas por bloque y no solo una fila ancha por medicamento.
 
-## 4. Pruebas mínimas sobre estos ficheros
+## 5. Pruebas mínimas sobre estos ficheros
 
 1. Verificación de hashes.
 2. Perfilado reproducible de hojas, filas, columnas, tipos, nulos y duplicados.

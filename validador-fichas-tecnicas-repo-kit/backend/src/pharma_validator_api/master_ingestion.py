@@ -117,6 +117,15 @@ def _metrics(result: object) -> dict[str, int]:
     return collected
 
 
+def _source_path(raw_directory: Path, source: MasterSource) -> Path:
+    direct = raw_directory / source.filename
+    if direct.is_file() or source.key != "catalog" or raw_directory.name != "base":
+        return direct
+    # El catálogo de definición vive junto a la carpeta `base` que contiene
+    # los tres maestros de registros en la disposición recibida del usuario.
+    return raw_directory.parent / source.filename
+
+
 def resolve_sources(
     raw_directory: Path,
     *,
@@ -137,7 +146,7 @@ def resolve_sources(
     missing = [
         source.filename
         for source in selected
-        if not (raw_directory / source.filename).is_file()
+        if not _source_path(raw_directory, source).is_file()
     ]
     if missing:
         raise MasterIngestionError(
@@ -164,7 +173,7 @@ def ingest_masters(
     sources = resolve_sources(raw_directory, only=only)
     reports: list[SourceIngestionReport] = []
     for source in sources:
-        path = raw_directory / source.filename
+        path = _source_path(raw_directory, source)
         content_hash = sha256(path.read_bytes()).hexdigest()
         result = source.importer(session, path, source_version=source_version)
         session.commit()

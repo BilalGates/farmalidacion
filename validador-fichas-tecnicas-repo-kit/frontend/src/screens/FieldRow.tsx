@@ -27,6 +27,7 @@ import {
  */
 export function FieldRow({
   value,
+  label = value.field_name,
   recordId,
   reviewer,
   saving,
@@ -34,6 +35,7 @@ export function FieldRow({
   onSave,
 }: {
   value: FieldValue
+  label?: string
   recordId: string
   reviewer: Reviewer | null
   saving: boolean
@@ -121,7 +123,7 @@ export function FieldRow({
     >
       <div className='field-row__main'>
         <div className='field-row__identity'>
-          <span className='field-row__name'>{value.field_name}</span>
+          <span className='field-row__name'>{label}</span>
           <span className='field-row__type'>{value.observed_type}</span>
         </div>
         <div className='field-row__value'>

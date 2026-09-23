@@ -2,11 +2,11 @@
 
 import json
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import func, select
+from sqlalchemy import asc, desc, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -23,8 +23,12 @@ from pharma_validator_api.models import (
     MedicationCatalogIdentity,
     MedicationCatalogRelation,
     MedicationCatalogRevision,
+    SourceDocument,
+    SourceDocumentVersion,
+    SourceFragment,
     TargetRecord,
 )
+from pharma_validator_api.national_code import national_code_search_term
 from pharma_validator_api.records import DirectoryDependency, SessionDependency
 from pharma_validator_api.reviewer_identity import (
     Reviewer,
@@ -33,6 +37,15 @@ from pharma_validator_api.reviewer_identity import (
 )
 
 router = APIRouter(prefix="/catalog", tags=["catálogo"])
+
+SOURCE_WORKBOOKS = {
+    "especialidades": "Especialidades-CargaMaster190626.xlsx",
+    "medicamentos": "Medicamento-cargaMaster25062026.xlsx",
+    "principios_activos": "PrincipioActivoCargaMaster-22062026.xlsx",
+}
+WORKBOOK_BY_FILENAME = {filename: source for source, filename in SOURCE_WORKBOOKS.items()}
+CatalogSourceWorkbook = Literal["especialidades", "medicamentos", "principios_activos"]
+CatalogSort = Literal["name_asc", "name_desc", "code_asc", "code_desc"]
 
 
 class CatalogIdentityRead(BaseModel):
@@ -43,6 +56,7 @@ class CatalogIdentityRead(BaseModel):
     target_record_id: str | None
     source_system: str
     source_version: str
+    source_workbook: str | None = None
     source_literal: str | None
     active: bool
     version: int
@@ -127,7 +141,9 @@ class CatalogClassificationHistoryRead(BaseModel):
     recorded_at: str
 
 
-def _read(row: MedicationCatalogIdentity) -> CatalogIdentityRead:
+def _read(
+    row: MedicationCatalogIdentity, *, source_workbook: str | None = None
+) -> CatalogIdentityRead:
     return CatalogIdentityRead(
         id=row.id,
         identity_type=row.identity_type,
@@ -136,10 +152,31 @@ def _read(row: MedicationCatalogIdentity) -> CatalogIdentityRead:
         target_record_id=row.target_record_id,
         source_system=row.source_system,
         source_version=row.source_version,
+        source_workbook=source_workbook,
         source_literal=row.source_literal,
         active=bool(row.active),
         version=row.version,
     )
+
+
+def _source_workbook_for_identity(
+    session: Session, row: MedicationCatalogIdentity
+) -> str | None:
+    if not row.source_fragment_id:
+        return None
+    filename = session.scalar(
+        select(SourceDocument.name)
+        .join(
+            SourceDocumentVersion,
+            SourceDocument.id == SourceDocumentVersion.document_id,
+        )
+        .join(
+            SourceFragment,
+            SourceDocumentVersion.id == SourceFragment.document_version_id,
+        )
+        .where(SourceFragment.id == row.source_fragment_id)
+    )
+    return WORKBOOK_BY_FILENAME.get(filename or "")
 
 
 def _reviewer(directory: ReviewerDirectory, actor_id: str) -> Reviewer:
@@ -155,12 +192,31 @@ def list_identities(
     identity_type: CatalogIdentityType | None = None,
     commercial_class: str | None = None,
     condition: Annotated[list[str] | None, Query()] = None,
+    source_workbook: CatalogSourceWorkbook | None = None,
+    sort_by: CatalogSort = "name_asc",
     q: str | None = None,
     active: bool | None = True,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> CatalogIdentityPage:
     statement = select(MedicationCatalogIdentity)
+    if source_workbook is not None:
+        filename = SOURCE_WORKBOOKS[source_workbook]
+        source_fragment_ids = (
+            select(SourceFragment.id)
+            .join(
+                SourceDocumentVersion,
+                SourceFragment.document_version_id == SourceDocumentVersion.id,
+            )
+            .join(
+                SourceDocument,
+                SourceDocumentVersion.document_id == SourceDocument.id,
+            )
+            .where(SourceDocument.name == filename)
+        )
+        statement = statement.where(
+            MedicationCatalogIdentity.source_fragment_id.in_(source_fragment_ids)
+        )
     if identity_type is not None:
         statement = statement.where(MedicationCatalogIdentity.identity_type == identity_type)
     if active is not None:
@@ -206,21 +262,55 @@ def list_identities(
             )
             statement = statement.where(MedicationCatalogIdentity.id.in_(condition_query))
     if q and q.strip():
-        needle = f"%{q.strip()}%"
-        statement = statement.where(
+        query = q.strip()
+        needle = f"%{query}%"
+        search_by_name_or_code = (
             MedicationCatalogIdentity.display_name.like(needle)
             | MedicationCatalogIdentity.code.like(needle)
         )
+        # Un CN recibido con siete dígitos permite localizar el código de
+        # trabajo de seis, pero no valida el control ni crea equivalencias.
+        if len(query) == 7 and query.isascii() and query.isdigit():
+            canonical_six = national_code_search_term(query)
+            statement = statement.where(
+                or_(
+                    search_by_name_or_code,
+                    MedicationCatalogIdentity.code == canonical_six,
+                )
+            )
+        else:
+            statement = statement.where(search_by_name_or_code)
     total = session.scalar(select(func.count()).select_from(statement.subquery())) or 0
+    sort_column = (
+        MedicationCatalogIdentity.display_name
+        if sort_by.startswith("name_")
+        else MedicationCatalogIdentity.code
+    )
+    sort_order = asc if sort_by.endswith("_asc") else desc
     rows = session.scalars(
-        statement.order_by(
-            MedicationCatalogIdentity.display_name,
-            MedicationCatalogIdentity.id,
-        )
+        statement.order_by(sort_order(sort_column), MedicationCatalogIdentity.id)
         .limit(limit)
         .offset(offset)
     ).all()
     row_ids = [row.id for row in rows]
+    fragment_ids = [row.source_fragment_id for row in rows if row.source_fragment_id]
+    workbook_by_fragment: dict[str, str] = {}
+    if fragment_ids:
+        for fragment_id, filename in session.execute(
+            select(SourceFragment.id, SourceDocument.name)
+            .join(
+                SourceDocumentVersion,
+                SourceFragment.document_version_id == SourceDocumentVersion.id,
+            )
+            .join(
+                SourceDocument,
+                SourceDocumentVersion.document_id == SourceDocument.id,
+            )
+            .where(SourceFragment.id.in_(fragment_ids))
+        ):
+            source = WORKBOOK_BY_FILENAME.get(filename)
+            if source is not None:
+                workbook_by_fragment[fragment_id] = source
     classifications_by_identity: dict[str, list[MedicationCatalogClassification]] = {
         row_id: [] for row_id in row_ids
     }
@@ -256,6 +346,9 @@ def list_identities(
                         for item in classifications
                         if item.classification_type == "condition"
                     ],
+                    "source_workbook": (
+                        workbook_by_fragment.get(row.source_fragment_id or "") or None
+                    ),
                 }
             )
         )
@@ -272,7 +365,7 @@ def read_identity(identity_id: str, session: SessionDependency) -> CatalogIdenti
     row = session.get(MedicationCatalogIdentity, identity_id)
     if row is None:
         raise ApplicationError("Identidad de catálogo no encontrada.", status_code=404)
-    return _read(row)
+    return _read(row, source_workbook=_source_workbook_for_identity(session, row))
 
 
 @router.post("/identities", response_model=CatalogIdentityRead, status_code=201)
@@ -312,7 +405,7 @@ def add_identity(
         ) from error
     except CatalogStoreError as error:
         raise ApplicationError(str(error), status_code=400) from error
-    return _read(row)
+    return _read(row, source_workbook=_source_workbook_for_identity(session, row))
 
 
 @router.put("/identities/{identity_id}", response_model=CatalogIdentityRead)
@@ -343,7 +436,7 @@ def change_identity(
         session.rollback()
         status = 404 if "no encontrada" in str(error) else 400
         raise ApplicationError(str(error), status_code=status) from error
-    return _read(row)
+    return _read(row, source_workbook=_source_workbook_for_identity(session, row))
 
 
 @router.get("/identities/{identity_id}/history", response_model=list[CatalogRevisionRead])
@@ -405,7 +498,9 @@ def identity_relations(
                 relation_type=row.relation_type,
                 direction="outgoing" if outgoing else "incoming",
                 ordinal=row.ordinal,
-                related_identity=_read(related),
+                related_identity=_read(
+                    related, source_workbook=_source_workbook_for_identity(session, related)
+                ),
             )
         )
     return result

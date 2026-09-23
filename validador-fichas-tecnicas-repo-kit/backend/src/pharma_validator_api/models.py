@@ -192,9 +192,7 @@ class MedicationCatalogIdentity(Base):
     identity_type: Mapped[str] = mapped_column(String(40))
     code: Mapped[str | None] = mapped_column(Text)
     display_name: Mapped[str] = mapped_column(Text)
-    target_record_id: Mapped[str | None] = mapped_column(
-        ForeignKey("target_record.id"), index=True
-    )
+    target_record_id: Mapped[str | None] = mapped_column(ForeignKey("target_record.id"), index=True)
     source_system: Mapped[str] = mapped_column(String(100))
     source_version: Mapped[str] = mapped_column(Text)
     source_literal: Mapped[str | None] = mapped_column(Text)
@@ -220,12 +218,8 @@ class MedicationCatalogRelation(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     relation_type: Mapped[str] = mapped_column(String(60))
-    source_identity_id: Mapped[str] = mapped_column(
-        ForeignKey("medication_catalog_identity.id")
-    )
-    target_identity_id: Mapped[str] = mapped_column(
-        ForeignKey("medication_catalog_identity.id")
-    )
+    source_identity_id: Mapped[str] = mapped_column(ForeignKey("medication_catalog_identity.id"))
+    target_identity_id: Mapped[str] = mapped_column(ForeignKey("medication_catalog_identity.id"))
     ordinal: Mapped[int | None] = mapped_column(Integer)
     source_fragment_id: Mapped[str | None] = mapped_column(ForeignKey("source_fragment.id"))
 
@@ -308,9 +302,38 @@ class FieldValue(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     block_instance_id: Mapped[str] = mapped_column(ForeignKey("block_instance.id"), index=True)
     field_name: Mapped[str] = mapped_column(String(160), index=True)
+    # Columna 1-based de la hoja Excel de origen. Preserva identidad si la cabecera se repite.
+    source_column_index: Mapped[int | None] = mapped_column(Integer)
     literal_value: Mapped[str | None] = mapped_column(Text)
     observed_type: Mapped[str] = mapped_column(String(80))
     logical_state: Mapped[str] = mapped_column(String(80))
+
+
+class FieldMaintenanceRevision(Base):
+    """Correcciones de mantenimiento del catálogo, separadas de la revisión clínica."""
+
+    __tablename__ = "field_maintenance_revision"
+    __table_args__ = (
+        UniqueConstraint("field_value_id", "sequence", name="uq_field_maintenance_sequence"),
+        Index("ix_field_maintenance_field_sequence", "field_value_id", "sequence"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    field_value_id: Mapped[str] = mapped_column(ForeignKey("field_value.id"), index=True)
+    sequence: Mapped[int] = mapped_column(Integer)
+    before_value: Mapped[str | None] = mapped_column(Text)
+    after_value: Mapped[str | None] = mapped_column(Text)
+    actor_id: Mapped[str] = mapped_column(String(80))
+    actor_assurance: Mapped[str] = mapped_column(String(20))
+    reason: Mapped[str] = mapped_column(Text)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+@event.listens_for(FieldMaintenanceRevision, "before_update")
+@event.listens_for(FieldMaintenanceRevision, "before_delete")
+def _reject_field_maintenance_mutation(*_: object) -> None:
+    raise ImmutableHistoryError(
+        "El historial de mantenimiento es append-only: registre otra revisión."
+    )
 
 
 class ValueProvenance(Base):
@@ -380,6 +403,46 @@ class QuarantinedSourceRow(Base):
     raw_payload: Mapped[str] = mapped_column(Text)
     payload_hash: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class QuarantinedFieldMaintenanceRevision(Base):
+    """Append-only corrections for a source cell whose row has no safe parent link."""
+
+    __tablename__ = "quarantined_field_maintenance_revision"
+    __table_args__ = (
+        UniqueConstraint(
+            "quarantined_row_id",
+            "source_column_index",
+            "sequence",
+            name="uq_quarantined_field_maintenance_sequence",
+        ),
+        Index(
+            "ix_quarantined_field_maintenance_cell_sequence",
+            "quarantined_row_id",
+            "source_column_index",
+            "sequence",
+        ),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    quarantined_row_id: Mapped[str] = mapped_column(
+        ForeignKey("quarantined_source_row.id"), index=True
+    )
+    source_column_index: Mapped[int] = mapped_column(Integer)
+    sequence: Mapped[int] = mapped_column(Integer)
+    before_value: Mapped[str | None] = mapped_column(Text)
+    after_value: Mapped[str | None] = mapped_column(Text)
+    actor_id: Mapped[str] = mapped_column(String(80))
+    actor_assurance: Mapped[str] = mapped_column(String(20))
+    reason: Mapped[str] = mapped_column(Text)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+@event.listens_for(QuarantinedFieldMaintenanceRevision, "before_update")
+@event.listens_for(QuarantinedFieldMaintenanceRevision, "before_delete")
+def _reject_quarantined_field_maintenance_mutation(*_: object) -> None:
+    raise ImmutableHistoryError(
+        "El historial de mantenimiento es append-only: registre otra revisión."
+    )
 
 
 class CatalogFieldDefinition(Base):

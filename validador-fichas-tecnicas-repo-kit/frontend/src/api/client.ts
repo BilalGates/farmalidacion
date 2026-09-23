@@ -5,7 +5,9 @@ import type {
   BlockOccurrence,
   CatalogIdentity,
   CatalogIdentityPage,
+  CatalogIdentitySort,
   CatalogIdentityType,
+  CatalogSourceWorkbook,
   CatalogRevision,
   CatalogRelation,
   CatalogClassification,
@@ -13,6 +15,10 @@ import type {
   DatabaseInfo,
   DataOrigin,
   DecisionWrite,
+  FieldMaintenanceEntry,
+  FieldMaintenanceWrite,
+  QuarantinedField,
+  QuarantinedSourceRowPage,
   ImportDetail,
   ImportList,
   RealRecordDetail,
@@ -253,11 +259,46 @@ export function fetchRealRecord(id: string): Promise<RealRecordDetail> {
   return request<RealRecordDetail>(`/insights/records/${encodeURIComponent(id)}`)
 }
 
+export function saveFieldMaintenance(
+  fieldValueId: string,
+  payload: FieldMaintenanceWrite,
+): Promise<FieldMaintenanceEntry> {
+  return request<FieldMaintenanceEntry>(`/records/values/${encodeURIComponent(fieldValueId)}/maintenance`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function fetchQuarantinedRows(params: {
+  sourceWorkbook?: string
+  limit?: number
+  offset?: number
+} = {}): Promise<QuarantinedSourceRowPage> {
+  const search = new URLSearchParams()
+  if (params.sourceWorkbook) search.set('source_workbook', params.sourceWorkbook)
+  if (params.limit !== undefined) search.set('limit', String(params.limit))
+  if (params.offset !== undefined) search.set('offset', String(params.offset))
+  return request<QuarantinedSourceRowPage>(`/records/quarantined?${search.toString()}`)
+}
+
+export function saveQuarantinedFieldMaintenance(
+  rowId: string,
+  columnIndex: number,
+  payload: FieldMaintenanceWrite,
+): Promise<QuarantinedField> {
+  return request<QuarantinedField>(
+    `/records/quarantined/${encodeURIComponent(rowId)}/values/${columnIndex}/maintenance`,
+    { method: 'POST', body: JSON.stringify(payload) },
+  )
+}
+
 export function fetchCatalogIdentities(params: {
   q?: string
   identityType?: CatalogIdentityType
   commercialClass?: string
   conditions?: string[]
+  sourceWorkbook?: CatalogSourceWorkbook
+  sortBy?: CatalogIdentitySort
   active?: boolean
   limit?: number
   offset?: number
@@ -267,6 +308,8 @@ export function fetchCatalogIdentities(params: {
   if (params.identityType) search.set('identity_type', params.identityType)
   if (params.commercialClass) search.set('commercial_class', params.commercialClass)
   params.conditions?.forEach((condition) => search.append('condition', condition))
+  if (params.sourceWorkbook) search.set('source_workbook', params.sourceWorkbook)
+  if (params.sortBy) search.set('sort_by', params.sortBy)
   if (params.active !== undefined) search.set('active', String(params.active))
   if (params.limit !== undefined) search.set('limit', String(params.limit))
   if (params.offset !== undefined) search.set('offset', String(params.offset))

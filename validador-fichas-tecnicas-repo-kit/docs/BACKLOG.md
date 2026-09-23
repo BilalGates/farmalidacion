@@ -8,10 +8,49 @@ catálogo completo. La validación farmacéutica es operación continua y no una
 barrera previa al rediseño.
 
 El epic CAT-001..CAT-010 y su orden verificable están en
-`docs/MEDICATION_CATALOG_REDESIGN_PLAN.md`. El camino inmediato es contrato de
-dominio, CN y prototipo de exploración; las migraciones se difieren hasta probar
-los casos multicomponente y multipresentación. BOT PLUS queda como spike externo
-D-033 y no bloquea el resto.
+`docs/MEDICATION_CATALOG_REDESIGN_PLAN.md`. El contrato de dominio, CN,
+proyección tipada y primer explorador ya avanzaron. Omeprazol pasó el recorrido
+técnico por una BD ORM temporal; sigue pendiente probarlo con importadores y
+exportador de producción y validar el modelo canónico con farmacia. La auditoría
+de cobertura con los importadores productivos ya pasó: 113.915 filas y
+2.170.900 valores comprobados; 275 filas/1.649 valores están preservados en
+cuarentena con mantenimiento por celda separado y probado en API, sin reparar
+su relación padre. Los editores ya cubren registros fuente enlazados, no
+enlazados y en cuarentena; faltan validar frontend/runtime y conectar la
+exportación hoja por hoja de los tres Excel, además de las pruebas de usabilidad.
+El adaptador de reconstrucción y la descarga conjunta protegida ya están en
+código y pasan una prueba de celda mantenida sobre XLSX sintético. La bandera
+de descarga sigue apagada hasta probar los tres maestros completos, los vacíos
+y el gate del modelo canónico.
+BOT PLUS queda como spike externo D-033 y no bloquea el resto.
+
+CAT-005 — mejora incremental: el listado muestra el rango de resultados y la
+página actual, y la tabla tiene desplazamiento vertical/horizontal accesible por
+teclado con cabecera fija. Se conserva el límite de 50 y la paginación server-side.
+Permite ordenar por nombre o código (ascendente/descendente) antes de paginar y
+abrir un expediente conserva filtros, orden, página y posición para regresar al
+mismo punto. Backend verificado: ruff, mypy y 11 pruebas de API pasadas. La
+prueba Vitest queda pendiente porque este entorno no tiene `frontend/node_modules`.
+
+CAT-001 — el inventario de `SOURCE_INVENTORY.md` incorpora las 14 hojas y sus
+cabeceras observadas. Las pruebas de importación aceptan
+`FARMALIDACION_MASTER_DATA_DIR`; la importación completa de Principios activos
+pasó contra la carpeta `base` en base temporal, con hash de origen intacto. La
+posición de columna ya se preserva en modelo/API/UI para distinguir `Links`
+con dos campos `DESCRIPCION`. `MEDICATION_SOURCE_FIELD_MAP.md` registra las
+asignaciones estructurales y los niveles que no tienen equivalencia fuente
+explícita. Falta validación farmacéutica. La edición canónica plena y la
+exportación de vuelta siguen pendientes de las puertas del modelo canónico y
+omeprazol.
+
+CAT-002 — la búsqueda del explorador acepta un CN de siete dígitos y prueba el
+código de trabajo de seis dígitos sin mutar identidades ni validar el control.
+CAT-004 — se añadió un registro append-only y un primer editor contextual en el
+expediente del catálogo para corregir campos importados sin pisar el literal
+fuente ni crear decisiones de revisión. La API devuelve valor vigente,
+secuencia e historial y rechaza ediciones obsoletas. El editor alcanza también
+los registros fuente no enlazados y las filas en cuarentena con rutas separadas.
+Faltan las pruebas de uso en volumen y el gate integral de exportación.
 
 ## Orden vigente — D-028 / ADR-0010
 

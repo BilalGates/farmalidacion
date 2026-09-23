@@ -1,5 +1,25 @@
 # Estado del proyecto
 
+## Adaptador de exportación de maestros (23 de septiembre de 2026)
+
+- El mantenimiento de campos abarca registros enlazados, registros fuente sin
+  identidad canónica y las filas en cuarentena, con historial separado de las
+  decisiones farmacéuticas.
+- `master_workbook_export` reconstruye cada XLSX desde su paquete original y
+  aplica sólo revisiones con coordenada libro/hoja/fila/columna. Exige coincidencia
+  del hash de origen y del lote importado, conserva las partes auxiliares del
+  archivo y entrega los tres libros juntos o ninguno.
+- La descarga `/master-workbooks/export` existe tras
+  `APP_ENABLE_MASTER_WORKBOOK_EXPORT=false` por defecto y requiere
+  `APP_MASTER_DATA_DIRECTORY` configurado. Las pruebas sintéticas de celda
+  mantenida, fila en cuarentena, hash, conjunto de tres libros y bandera
+  desactivada pasaron (5/5). Ruff y mypy del adaptador pasaron.
+- La auditoría anterior de ingesta real comprobó 113.915 filas y 2.170.900
+  valores en las 14 hojas. Quedan pendientes la prueba diferencial completa de
+  exportación con los tres maestros, la edición de celdas inicialmente vacías,
+  Vitest/build frontend, la revisión visual del contenedor y la aceptación del
+  modelo con farmacia. La descarga sigue apagada.
+
 ## Rediseño del catálogo iniciado (22 de septiembre de 2026)
 
 - La revisión funcional con farmacia confirma que la aceptación farmacéutica se
@@ -27,6 +47,22 @@
 - CAT-005 inicia la sustitución de la lista plana: «Catálogo» separa
   presentaciones, medicamentos y principios activos mediante filtros
   server-side combinables con la búsqueda existente.
+- Para listas extensas, el catálogo anuncia el tramo y la página visibles; la
+  tabla tiene desplazamiento accesible con teclado y cabecera fija. La página
+  continúa limitada a 50 filas desde el servidor. Al abrir un expediente se
+  conserva el contexto del listado y su posición vertical/horizontal. El orden
+  por nombre o código también se aplica en el API antes de paginar. La API se
+  verificó con 11 pruebas; Vitest y build frontend siguen pendientes por falta
+  de dependencias frontend instaladas.
+- Se levantaron las cabeceras de las 14 hojas de los tres libros activos y se
+  contrastaron con los importadores. El caso `Links!DESCRIPCION` está duplicado
+  (columnas D y F): el payload fuente conserva el ordinal, pero la API de campo
+  no lo expone. Queda como requisito del modelo para editar/exportar esa hoja
+  sin ambigüedad. Las pruebas reales de los importadores ahora admiten la ruta
+  externa mediante `FARMALIDACION_MASTER_DATA_DIR`.
+- La prueba de importación real de Principios activos pasó usando esa carpeta
+  externa y una base temporal: 7.189 ocurrencias, 35.945 valores, cero filas en
+  cuarentena y hash del Excel verificado antes y después. No se modificó el libro.
 - La migración aditiva `b8c9d0e1f2a3` crea identidades, relaciones,
   clasificaciones y revisiones del catálogo sin transformar registros
   existentes. Su downgrade retira sólo esas cuatro tablas.
@@ -1077,6 +1113,36 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
   por página.
 - El daemon Docker Desktop dejó de estar accesible durante este bloque. Esta
   versión aún no se ha podido desplegar ni validar en el mismo contenedor.
+- La pantalla del catálogo conserva búsqueda, filtros y página en la sesión del
+  navegador al abrir y volver de un expediente. Las condiciones se eligen con
+  casillas independientes (incluidas combinaciones AND) y hay una acción visible
+  para limpiar los filtros; el contador resume los filtros activos y el total de
+  registros. Cobertura añadida para combinación, reinicio (incluida búsqueda aún
+  no aplicada) y restauración. La selección de criterios enfoca Presentaciones,
+  búsqueda y paginación enfocan el bloque de resultados y un offset fuera del
+  total actual se corrige automáticamente sólo tras recibir la respuesta de la
+  consulta actual. La tabla tiene caption accesible y al elegir filtros de
+  clasificación desde Todo se conserva el nivel Presentaciones. La ejecución
+  frontend queda pendiente: Docker Desktop y su servicio local están detenidos,
+  y el intento autorizado de iniciar el servicio no pudo abrirlo.
+- Se han verificado en modo de solo lectura los tres ficheros de
+  `Catalogo_campos_clinicos_medicamentos/base`; sus SHA-256 coinciden con
+  `SOURCE_INVENTORY.md`. Especialidades contiene `General` y `Excipientes`;
+  Medicamentos contiene `General`, `Composicion`, `Indicacion`, `Frecuencia`,
+  `Via`, `Prescripcion` y `Links`; Principio activo contiene `General`,
+  `Frecuencia`, `Via`, `ConsejosAdministracion` y `DatosAnaliticos`. Las cuatro
+  hojas secundarias de Principio activo tienen solo cabecera en este snapshot.
+- Primer corte implementado de vistas por fuente: Especialidades/CN,
+  Medicamentos/DCP y Principios activos/PA. El filtro del API usa el nombre del
+  Excel unido por el `SourceFragment` real y la vista muestra el libro de origen;
+  no clasifica por una etiqueta cosmética. El endpoint de catálogo pasó
+  `10 passed`; Vitest y build frontend aún no ejecutados (dependencias locales
+  ausentes y Docker Desktop detenido). La edición de todos los campos y la
+  exportación reconstruida hoja por hoja siguen pendientes.
+- La ficha importada muestra ahora el tipo de registro en el contexto del libro
+  y cada bloque con el nombre del libro y la hoja original (p. ej., Medicamentos
+  · Composicion → «Composición»). Se conserva el agrupamiento actual por bloque
+  y sus ocurrencias; los nombres internos técnicos dejan de ser el rótulo visible.
 
 ## Reconciliación del estado mostrado en la interfaz
 
@@ -1098,3 +1164,96 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
 - Verificación final: ESLint correcto, build Vite correcto y 117/117 pruebas Vitest.
 - Segunda pasada de pulido: selector de revisor accesible y no nativo; cola compacta con estado vacío; resumen de segunda validación; progreso de ficha; evidencia no duplicada por fila; metadatos técnicos plegables y contención de textos extensos.
 - Dirección visual refinada a una base neutra editorial, con radios de 4–7 px, superficies planas, iconografía lineal coherente y degradado rosa–morado reservado para acciones y selección. Se añadieron transiciones breves con soporte para reducción de movimiento; los estados clínicos mantienen su semántica independiente.
+# 2026-09-23 — Identidad de columnas fuente repetidas
+
+- Se preserva la columna Excel 1-based en cada valor importado de los tres libros.
+- La migración aditiva recupera la coordenada de datos ya cargados usando el
+  fragmento literal y el UUID estable del valor; no modifica los Excel fuente.
+- El contrato de expediente expone la coordenada y la revisión solo la muestra
+  cuando una cabecera aparece más de una vez en la misma ocurrencia.
+- La evaluación de conflictos también separa columnas homónimas, para que D y F
+  no se interpreten como dos fuentes enfrentadas del mismo campo.
+- Pendiente: ejecutar pruebas de frontend/build en el contenedor en uso cuando
+  vuelva a estar disponible; no se inicia ni sustituye el contenedor.
+- CAT-002: la búsqueda del catálogo ya normaliza solo la consulta numérica de
+  siete dígitos al código de seis para localizar una presentación. No altera el
+  registro, no valida el control y no crea equivalencias; literal/auditoría aún
+  no se persisten como operación de búsqueda.
+- Verificación de la tanda anterior: 26 pruebas dirigidas pasan, Ruff y mypy
+  pasan en los módulos afectados y Alembic reconocía `c1d2e3f4a5b6` como head. La
+  suite total tuvo 721 aprobadas y 10 fallos por rutas de fixtures ausentes en
+  `data/reference/raw`; el archivo maestro real está en `base`.
+
+# 2026-09-23 — Mantenimiento editable de campos fuente
+
+- Nueva migración aditiva `f7a8b9c0d1e2` y entidad append-only para revisiones
+  de campos importados: antes/después, actor, assurance, motivo y secuencia.
+- La API `POST /records/values/{id}/maintenance` aplica control optimista,
+  identidad del actor, motivo obligatorio y conflicto 409. `GET /records/{id}`
+  devuelve literal fuente inmutable junto al valor mantenido e historial, sin
+  mezclarlo con decisiones farmacéuticas.
+- Las pruebas de API verifican que el literal sigue intacto, no se genera una
+  decisión de revisión y una edición obsoleta se rechaza. Pruebas dirigidas:
+  2/2 pasan. El editor visual, revisión UX de la pantalla y el consumo por el
+  exportador aún no están hechos.
+- Migración probada en SQLite temporal con upgrade/downgrade; la regresión
+  conjunta de mantenimiento, columnas fuente, catálogo y migraciones pasa
+  `21/21`, y Alembic reconoce `f7a8b9c0d1e2` como único head. Ruff y mypy
+  también pasan en los módulos afectados.
+- No se modifica `real.db` ni los tres Excel. El editor visual, Vitest/build y
+  la validación en el contenedor existente siguen pendientes; Docker Desktop
+  continúa sin estar disponible y no se ha creado otro contenedor.
+
+# 2026-09-23 — Editor contextual de campos fuente
+
+- El expediente del catálogo incorpora `CatalogSourceFields` para registros
+  enlazados: separa visualmente literal original/valor de trabajo, permite
+  editar por campo con motivo, muestra la columna Excel y el historial de
+  mantenimiento, y guarda contra la API de mantenimiento, no contra decisiones.
+- Se añadieron contratos tipados de frontend y una prueba que cubre el payload
+  de mantenimiento y comprueba que no se llama al endpoint `/decisions`.
+- No se pudo ejecutar Vitest/build: no hay `npm` disponible ni dependencias
+  frontend instaladas (tampoco en la caché pnpm local inspeccionada). Docker
+  Desktop no expone su pipe. El cambio visual está pendiente de esas dos
+  verificaciones; registros sin identidad canónica enlazada aún no tienen este
+  acceso contextual.
+
+# 2026-09-23 — Omeprazol persistido en esquema ORM temporal
+
+- `scripts/roundtrip_omeprazole_database.py` almacena el fixture real en una
+  SQLite en memoria con el esquema ORM actual, vuelve a leer los 616
+  `TargetRecord`/`BlockInstance` y 2.674 `FieldValue`, reconstruye el XLSX y
+  compara 22/22 hojas: cero diferencias.
+- La prueba añade una `FieldMaintenanceRevision` temporal: el comparador marca
+  exactamente una celda material; una segunda revisión restaura el literal y el
+  comparador vuelve a cero diferencias. El SHA-256 del original antes/después
+  coincide con el inventario.
+- Prueba reproducible pequeña: `tests/test_omeprazole_database_roundtrip.py`;
+  `6/6` pasan junto con los tests DEV-007/008. Ruff pasa en script y test.
+- Alcance: mapeo técnico provisional por coordenadas, no mapeo farmacéutico ni
+  uso de los importadores/exportador productivos de los tres maestros. ADR-0001
+  y la autorización para ampliar edición/exportación siguen sujetos a sus
+  puertas. Sin escritura sobre `real.db` ni los originales.
+
+# 2026-09-23 — Cobertura de los tres importadores maestros
+
+- `python -m scripts.audit_master_import_coverage` ejecutó en SQLite en memoria
+  el importador de catálogo y los tres importadores productivos. Inventario de
+  14 hojas, payload por fila y campos editables cotejados contra los archivos;
+  113.915 filas y 2.170.900 valores cubiertos, con hashes fuente intactos.
+- 275 filas de especialidades (1.649 valores) tienen `MISSING_PARENT`: el
+  payload literal está conservado y cotejado, pero esas filas no tienen todavía
+  campos editables en la interfaz. No se repararon enlaces.
+- Evidencia detallada: `docs/MASTER_IMPORT_COVERAGE_EVIDENCE.md`. Esto cierra la
+  comprobación de cobertura de entrada, no el ida/vuelta productivo: faltan
+  verificar visualmente los editores, la reconstrucción/exportación por libro y
+  hoja, la revisión del modelo con farmacia y la UI en el contenedor actual.
+- Se amplió el mantenimiento append-only a las celdas de cuarentena con clave
+  fila/columna, control optimista e identidad/motivo. La API devuelve el literal
+  original y valor vigente por separado; una corrección no cambia `MISSING_PARENT`
+  ni crea una relación.
+- Las fichas fuente exponen un editor de mantenimiento independiente de las
+  decisiones, también para registros sin identidad canónica. Se añadió la
+  pantalla «Filas en cuarentena» con filtro por libro, tabla paginada y editor
+  contextual. Backend/migración pasan 10 pruebas dirigidas, Ruff y mypy; frontend
+  no verificado (dependencias no disponibles) y contenedor no iniciado.

@@ -9,6 +9,7 @@ se ejecuta sobre la estructura real sin poner en riesgo el dato real.
 
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -26,6 +27,22 @@ from pharma_validator_api.models import (
     TargetRecord,
     ValueProvenance,
 )
+
+
+@pytest.fixture
+def master_data_directory() -> Path:
+    """Directorio de maestros reales, configurable sin copiar los Excel."""
+    configured = os.environ.get("FARMALIDACION_MASTER_DATA_DIR")
+    if configured:
+        return Path(configured).expanduser().resolve()
+    root = Path(__file__).resolve().parents[2]
+    checked_in = root / "data" / "reference" / "raw"
+    external_base = root.parent / "Catalogo_campos_clinicos_medicamentos" / "base"
+    return (
+        checked_in
+        if (checked_in / "PrincipioActivoCargaMaster-22062026.xlsx").is_file()
+        else external_base
+    )
 
 
 @pytest.fixture

@@ -23,7 +23,9 @@ from pharma_validator_api.fixtures import load_demo_fixture, load_showcase_fixtu
 from pharma_validator_api.insights import router as insights_router
 from pharma_validator_api.logging import configure_logging
 from pharma_validator_api.maintenance_api import router as maintenance_router
+from pharma_validator_api.master_workbook_export_api import router as master_export_router
 from pharma_validator_api.models import ImportBatch, TargetRecord
+from pharma_validator_api.quarantine_api import router as quarantine_router
 from pharma_validator_api.queue_api import maturity_router
 from pharma_validator_api.queue_api import router as queue_router
 from pharma_validator_api.records import router as records_router
@@ -117,8 +119,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         application.add_middleware(
             CORSMiddleware,
             allow_origins=list(active.cors_allow_origins),
-            allow_methods=['GET', 'POST', 'PUT'],
-            allow_headers=['Content-Type'],
+            allow_methods=["GET", "POST", "PUT"],
+            allow_headers=["Content-Type"],
         )
     register_error_handlers(application)
     # Las rutas de bloque se registran antes que `records_router`: éste declara
@@ -126,6 +128,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(block_router)
     application.include_router(chat_router)
     application.include_router(catalog_router)
+    application.include_router(quarantine_router)
     application.include_router(records_router)
     application.include_router(insights_router)
     application.include_router(queue_router)
@@ -133,6 +136,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(timing_router)
     application.include_router(second_review_router)
     application.include_router(export_router)
+    application.include_router(master_export_router)
     application.include_router(audit_router)
     application.include_router(risk_router)
     application.include_router(maintenance_router)
@@ -142,18 +146,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def health() -> HealthResponse:
         return HealthResponse(status="ok", service=active.app_name, environment=active.env)
 
-    @application.get(
-        "/database-info", response_model=DatabaseInfoResponse, tags=["sistema"]
-    )
+    @application.get("/database-info", response_model=DatabaseInfoResponse, tags=["sistema"])
     def database_info() -> DatabaseInfoResponse:
         with session_factory() as session:
             total = session.scalar(select(func.count()).select_from(TargetRecord)) or 0
             demo = (
                 session.scalar(
                     select(func.count()).select_from(
-                        apply_origin_filter(
-                            select(TargetRecord.id), DataOrigin.DEMO
-                        ).subquery()
+                        apply_origin_filter(select(TargetRecord.id), DataOrigin.DEMO).subquery()
                     )
                 )
                 or 0

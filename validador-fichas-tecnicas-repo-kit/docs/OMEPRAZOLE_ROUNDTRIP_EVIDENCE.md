@@ -33,3 +33,33 @@ Los artefactos regenerables permanecen bajo `artifacts/`, fuera de Git.
 - Las hojas de interacciones se preservan sin integrar su maestro en el piloto FT.
 - El fixture contiene cero fórmulas; no se generaliza evidencia real sobre fórmulas complejas.
 - ADR-0001 permanece propuesto y la puerta 0B requiere aceptación humana y decisiones abiertas resueltas.
+
+## Verificación adicional en la base ORM temporal — 2026-09-23
+
+El script `scripts/roundtrip_omeprazole_database.py` repitió el recorrido usando
+una SQLite en memoria con `Base.metadata` de la aplicación. El adaptador asigna
+identidad técnica provisional por ocurrencia y sólo usa coordenadas de fuente;
+no declara identidades farmacéuticas ni relaciones de negocio.
+
+| Evidencia | Resultado |
+|---|---:|
+| Hojas | 22/22 |
+| Ocurrencias provisionales persistidas como `TargetRecord`/`BlockInstance` | 616 |
+| `FieldValue` persistidos | 2.674 |
+| Diferencias tras exportar desde BD | 0 |
+| Diferencias tras una corrección de campo temporal | 1 celda material |
+| Diferencias tras restaurar con una segunda revisión | 0 |
+| SHA-256 original antes/después | idéntico: `5d11b447e5c3d9eed73b03e45d9cfe69c8cec54d89729e23a2bf95ae1564192b` |
+
+La salida idéntica conserva SHA-256
+`9ec597794fecd3db3ef6b4488184a9780a26dd8f949c66f9b475b1b257d1095d`.
+La ejecución genera y elimina la base en memoria y la prueba temporal; no escribe
+`real.db` ni altera el original.
+
+### Límite que permanece
+
+Esto demuestra persistencia, lectura, mantenimiento append-only y reconstrucción
+de coordenadas con el esquema ORM actual. No usa los importadores de los tres
+libros maestros ni el exportador de producción, no define equivalencias DCPF/
+DCP/DCSA y no sustituye la aprobación del modelo canónico o la aceptación de
+farmacia. La puerta de habilitación del flujo productivo permanece cerrada.

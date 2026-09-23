@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   BadgeCheck,
+  AlertTriangle,
   Database,
   Download,
   FileStack,
@@ -30,6 +31,7 @@ import { QueueScreen } from './screens/QueueScreen'
 import { SecondReviewScreen } from './screens/SecondReviewScreen'
 import { MaintenanceScreen } from './screens/MaintenanceScreen'
 import { CatalogIdentityScreen } from './screens/CatalogIdentityScreen'
+import { QuarantinedRecordsScreen } from './screens/QuarantinedRecordsScreen'
 
 interface NavItem {
   readonly id: string
@@ -58,6 +60,7 @@ const NAV: readonly NavItem[] = [
   { id: 'cola', label: 'Cola de revisión', icon: ListChecks, available: true },
   { id: 'validaciones', label: 'Validaciones', icon: BadgeCheck, available: true },
   { id: 'importaciones', label: 'Importaciones', icon: Download, available: true },
+  { id: 'cuarentena', label: 'Filas en cuarentena', icon: AlertTriangle, available: true },
   { id: 'exportaciones', label: 'Exportaciones', icon: Upload, available: true },
   { id: 'fuentes', label: 'Fuentes', icon: Database, available: true },
   { id: 'novedades', label: 'Novedades CIMA', icon: History, available: true },
@@ -166,6 +169,7 @@ export function App() {
           )}
           {route.name === 'fuentes' && <SourcesScreen />}
           {route.name === 'importaciones' && <ImportsScreen />}
+          {route.name === 'seccion' && route.id === 'cuarentena' && <QuarantinedRecordsScreen reviewer={reviewer} />}
           {route.name === 'seccion' && route.id === 'cola' && <QueueScreen reviewer={reviewer} />}
           {route.name === 'seccion' && route.id === 'validaciones' && (
             <SecondReviewScreen reviewer={reviewer} />
