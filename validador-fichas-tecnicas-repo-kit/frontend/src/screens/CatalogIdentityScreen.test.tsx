@@ -18,6 +18,7 @@ it('exige motivo y conserva el actor al modificar', async () => {
     if (init?.method === 'PUT') return new Response(JSON.stringify({ ...IDENTITY, display_name: 'Nombre corregido', version: 2 }))
     if (url.includes('/history')) return new Response(JSON.stringify([]))
     if (url.includes('/relations')) return new Response(JSON.stringify([]))
+    if (url.includes('/classifications')) return new Response(JSON.stringify([]))
     return new Response(JSON.stringify(IDENTITY))
   })
   vi.stubGlobal('fetch', fetchMock)

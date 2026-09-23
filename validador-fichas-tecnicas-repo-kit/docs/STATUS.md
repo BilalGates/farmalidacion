@@ -1066,6 +1066,12 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
   dominio: 11 identidades, 11 relaciones y 6 clasificaciones. Permite recorrer
   dos presentaciones que comparten DCP y una composición con dos sustancias,
   sin presentar esos valores como información farmacéutica real.
+- El expediente de presentaciones ya permite revisar clase comercial y
+  condiciones. Original/genérico/biosimilar son excluyentes entre sí; huérfano,
+  estupefaciente, psicotrópico, control especial y uso hospitalario se combinan.
+  Las modificaciones requieren revisor y motivo y se registran en el historial.
+- El daemon Docker Desktop dejó de estar accesible durante este bloque. Esta
+  versión aún no se ha podido desplegar ni validar en el mismo contenedor.
 
 ## Reconciliación del estado mostrado en la interfaz
 

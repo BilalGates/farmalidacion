@@ -128,6 +128,11 @@ el apartado fuente sin abandonar el registro.
 
 ### CAT-008 — Clasificación farmacéutica (`P1`)
 
+Estado: consulta y edición implementadas en el expediente de presentaciones.
+La clase comercial se mantiene exclusiva; las condiciones son combinables.
+Cada cambio exige revisor y motivo y queda en el historial append-only. Falta
+validar la pantalla en el contenedor y revisar la taxonomía final con farmacia.
+
 - Dimensión comercial: original, genérico, biosimilar o sin clasificar.
 - Condiciones no excluyentes: huérfano, estupefaciente, psicotrópico, especial
   control médico, uso hospitalario y futuras condiciones catalogadas.

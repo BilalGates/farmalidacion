@@ -1,11 +1,14 @@
 """API del catálogo tipado y editable (CAT-003/CAT-004)."""
 
+import json
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from pharma_validator_api.catalog_domain import CatalogIdentity, CatalogIdentityType
 from pharma_validator_api.catalog_store import (
@@ -16,6 +19,7 @@ from pharma_validator_api.catalog_store import (
 )
 from pharma_validator_api.errors import ApplicationError
 from pharma_validator_api.models import (
+    MedicationCatalogClassification,
     MedicationCatalogIdentity,
     MedicationCatalogRelation,
     MedicationCatalogRevision,
@@ -89,6 +93,36 @@ class CatalogRelationRead(BaseModel):
     direction: str
     ordinal: int | None
     related_identity: CatalogIdentityRead
+
+
+class CatalogClassificationRead(BaseModel):
+    id: str
+    classification_type: str
+    value: str
+    source_system: str
+    source_version: str
+    source_fragment_id: str | None
+    active: bool
+
+
+class CatalogClassificationWrite(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    classification_type: str = Field(min_length=1, max_length=40)
+    value: str = Field(min_length=1, max_length=80)
+    active: bool = True
+    actor_id: str = Field(min_length=1, max_length=80)
+    reason: str = Field(min_length=1)
+
+
+class CatalogClassificationHistoryRead(BaseModel):
+    sequence: int
+    action: str
+    before_state: str | None
+    after_state: str
+    actor_id: str
+    actor_assurance: str
+    reason: str
+    recorded_at: str
 
 
 def _read(row: MedicationCatalogIdentity) -> CatalogIdentityRead:
@@ -292,3 +326,229 @@ def identity_relations(
             )
         )
     return result
+
+
+def _classification_read(row: MedicationCatalogClassification) -> CatalogClassificationRead:
+    return CatalogClassificationRead(
+        id=row.id,
+        classification_type=row.classification_type,
+        value=row.value,
+        source_system=row.source_system,
+        source_version=row.source_version,
+        source_fragment_id=row.source_fragment_id,
+        active=bool(row.active),
+    )
+
+
+def _classification_state(row: MedicationCatalogClassification) -> str:
+    return json.dumps(
+        {
+            "id": row.id,
+            "presentation_identity_id": row.presentation_identity_id,
+            "classification_type": row.classification_type,
+            "value": row.value,
+            "source_system": row.source_system,
+            "source_version": row.source_version,
+            "source_fragment_id": row.source_fragment_id,
+            "active": bool(row.active),
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _classification_sequence(session: Session, identity_id: str) -> int:
+    current = session.scalar(
+        select(func.max(MedicationCatalogRevision.sequence)).where(
+            MedicationCatalogRevision.identity_id == identity_id
+        )
+    )
+    return (current or 0) + 1
+
+
+@router.get(
+    "/identities/{identity_id}/classifications",
+    response_model=list[CatalogClassificationRead],
+)
+def identity_classifications(
+    identity_id: str,
+    session: SessionDependency,
+    active: bool | None = True,
+) -> list[CatalogClassificationRead]:
+    identity = session.get(MedicationCatalogIdentity, identity_id)
+    if identity is None:
+        raise ApplicationError("Identidad de catálogo no encontrada.", status_code=404)
+    if identity.identity_type != "presentation":
+        raise ApplicationError(
+            "Las clasificaciones farmacéuticas se asignan a una presentación.",
+            status_code=422,
+        )
+    statement = select(MedicationCatalogClassification).where(
+        MedicationCatalogClassification.presentation_identity_id == identity_id
+    )
+    if active is not None:
+        statement = statement.where(MedicationCatalogClassification.active.is_(active))
+    rows = session.scalars(
+        statement.order_by(
+            MedicationCatalogClassification.classification_type,
+            MedicationCatalogClassification.value,
+        )
+    ).all()
+    return [_classification_read(row) for row in rows]
+
+
+@router.put(
+    "/identities/{identity_id}/classifications/{classification_id}",
+    response_model=CatalogClassificationRead,
+)
+def set_classification(
+    identity_id: str,
+    classification_id: str,
+    payload: CatalogClassificationWrite,
+    session: SessionDependency,
+    directory: DirectoryDependency,
+) -> CatalogClassificationRead:
+    reviewer = _reviewer(directory, payload.actor_id)
+    identity = session.get(MedicationCatalogIdentity, identity_id)
+    if identity is None:
+        raise ApplicationError("Identidad de catálogo no encontrada.", status_code=404)
+    if identity.identity_type != "presentation":
+        raise ApplicationError(
+            "Las clasificaciones farmacéuticas se asignan a una presentación.",
+            status_code=422,
+        )
+    if payload.classification_type not in {"commercial_class", "condition"}:
+        raise ApplicationError("Tipo de clasificación desconocido.", status_code=422)
+    if classification_id != f"{payload.classification_type}:{payload.value}":
+        raise ApplicationError(
+            "La clasificación de la ruta no coincide con el contenido.", status_code=422
+        )
+    if payload.classification_type == "commercial_class" and payload.value not in {
+        "original", "generico", "biosimilar", "sin_clasificar"
+    }:
+        raise ApplicationError(
+            "La clase comercial no pertenece al catálogo permitido.", status_code=422
+        )
+    if payload.classification_type == "condition" and payload.value not in {
+        "huerfano", "estupefaciente", "psicotropico", "especial_control_medico",
+        "uso_hospitalario",
+    }:
+        raise ApplicationError("La condición no pertenece al catálogo permitido.", status_code=422)
+
+    statement = select(MedicationCatalogClassification).where(
+        MedicationCatalogClassification.presentation_identity_id == identity_id,
+        MedicationCatalogClassification.classification_type == payload.classification_type,
+        MedicationCatalogClassification.value == payload.value,
+    )
+    try:
+        if payload.classification_type == "commercial_class" and payload.active:
+            current_classes = list(
+                session.scalars(
+                    select(MedicationCatalogClassification)
+                    .where(
+                        MedicationCatalogClassification.presentation_identity_id == identity_id,
+                        MedicationCatalogClassification.classification_type == "commercial_class",
+                        MedicationCatalogClassification.active.is_(True),
+                    )
+                )
+            )
+            for current in current_classes:
+                if current.value != payload.value:
+                    before_current = _classification_state(current)
+                    current.active = False
+                    current.source_system = "canonical_manual"
+                    current.source_version = "manual-v1"
+                    session.flush()
+                    session.add(
+                        MedicationCatalogRevision(
+                            identity_id=identity_id,
+                            sequence=_classification_sequence(session, identity_id),
+                            action="clasificacion_archivada",
+                            before_state=before_current,
+                            after_state=_classification_state(current),
+                            actor_id=reviewer.identifier,
+                            actor_assurance=reviewer.assurance,
+                            reason=payload.reason.strip(),
+                            recorded_at=datetime.now(UTC),
+                        )
+                    )
+
+        row = session.scalar(statement)
+        if row is None:
+            if not payload.active:
+                raise ApplicationError(
+                    "No existe una clasificación vigente que se pueda archivar.",
+                    status_code=404,
+                )
+            row = MedicationCatalogClassification(
+                presentation_identity_id=identity_id,
+                classification_type=payload.classification_type,
+                value=payload.value,
+                source_system="canonical_manual",
+                source_version="manual-v1",
+                source_fragment_id=None,
+                active=True,
+            )
+            session.add(row)
+            session.flush()
+            action = "clasificacion_creada"
+            before = None
+        else:
+            before = _classification_state(row)
+            row.active = payload.active
+            row.source_system = "canonical_manual"
+            row.source_version = "manual-v1"
+            action = "clasificacion_activada" if payload.active else "clasificacion_archivada"
+            session.flush()
+        session.add(
+            MedicationCatalogRevision(
+                identity_id=identity_id,
+                sequence=_classification_sequence(session, identity_id),
+                action=action,
+                before_state=before,
+                after_state=_classification_state(row),
+                actor_id=reviewer.identifier,
+                actor_assurance=reviewer.assurance,
+                reason=payload.reason.strip(),
+                recorded_at=datetime.now(UTC),
+            )
+        )
+        session.commit()
+    except IntegrityError as error:
+        session.rollback()
+        raise ApplicationError(
+            "La clasificación entra en conflicto con otra revisión.", status_code=409
+        ) from error
+    return _classification_read(row)
+
+
+@router.get(
+    "/identities/{identity_id}/classification-history",
+    response_model=list[CatalogClassificationHistoryRead],
+)
+def classification_history(
+    identity_id: str, session: SessionDependency
+) -> list[CatalogClassificationHistoryRead]:
+    if session.get(MedicationCatalogIdentity, identity_id) is None:
+        raise ApplicationError("Identidad de catálogo no encontrada.", status_code=404)
+    actions = ("clasificacion_creada", "clasificacion_activada", "clasificacion_archivada")
+    rows = session.scalars(
+        select(MedicationCatalogRevision)
+        .where(MedicationCatalogRevision.identity_id == identity_id)
+        .where(MedicationCatalogRevision.action.in_(actions))
+        .order_by(MedicationCatalogRevision.sequence)
+    ).all()
+    return [
+        CatalogClassificationHistoryRead(
+            sequence=row.sequence,
+            action=row.action,
+            before_state=row.before_state,
+            after_state=row.after_state,
+            actor_id=row.actor_id,
+            actor_assurance=row.actor_assurance,
+            reason=row.reason,
+            recorded_at=row.recorded_at.isoformat(),
+        )
+        for row in rows
+    ]

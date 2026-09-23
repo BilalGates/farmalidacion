@@ -4,10 +4,12 @@ import { Archive, ExternalLink, GitBranch, History, Save } from 'lucide-react'
 import {
   fetchCatalogHistory,
   fetchCatalogIdentity,
+  fetchCatalogClassifications,
   fetchCatalogRelations,
+  setCatalogClassification,
   updateCatalogIdentity,
 } from '../api/client'
-import type { CatalogIdentity, CatalogRelation, CatalogRevision, Reviewer } from '../api/types'
+import type { CatalogClassification, CatalogIdentity, CatalogRelation, CatalogRevision, Reviewer } from '../api/types'
 import { AsyncBoundary } from '../components/AsyncState'
 import { formatDateTime, orDash } from '../domain/format'
 import { navigate } from '../navigation'
@@ -27,6 +29,17 @@ const RELATION_LABELS: Record<string, string> = {
   dcp_active_ingredient: 'Composición',
 }
 
+const COMMERCIAL_CLASSES = [
+  ['original', 'Original'], ['generico', 'Genérico'],
+  ['biosimilar', 'Biosimilar'], ['sin_clasificar', 'Sin clasificar'],
+] as const
+const CONDITIONS = [
+  ['huerfano', 'Huérfano'], ['estupefaciente', 'Estupefaciente'],
+  ['psicotropico', 'Psicotrópico'],
+  ['especial_control_medico', 'Especial control médico'],
+  ['uso_hospitalario', 'Uso hospitalario'],
+] as const
+
 interface Props {
   readonly identityId: string
   readonly reviewer: Reviewer | null
@@ -36,6 +49,7 @@ export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
   const [identity, setIdentity] = useState<CatalogIdentity | null>(null)
   const [history, setHistory] = useState<CatalogRevision[]>([])
   const [relations, setRelations] = useState<CatalogRelation[]>([])
+  const [classifications, setClassifications] = useState<CatalogClassification[]>([])
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [reason, setReason] = useState('')
@@ -49,15 +63,16 @@ export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
     setLoading(true)
     setError(null)
     try {
-      const [record, revisions, linked] = await Promise.all([
+      const [record, revisions, linked, labels] = await Promise.all([
         fetchCatalogIdentity(identityId), fetchCatalogHistory(identityId),
-        fetchCatalogRelations(identityId),
+        fetchCatalogRelations(identityId), fetchCatalogClassifications(identityId),
       ])
       setIdentity(record)
       setName(record.display_name)
       setCode(record.code ?? '')
       setHistory(revisions)
       setRelations(linked)
+      setClassifications(labels)
     } catch (caught) {
       setError(caught instanceof Error ? caught : new Error('No se pudo abrir el expediente.'))
     } finally { setLoading(false) }
@@ -83,6 +98,27 @@ export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
     } catch (caught) {
       setSaveError(caught instanceof Error ? caught.message : 'No se pudieron guardar los cambios.')
     } finally { setSaving(false) }
+  }
+
+  async function changeClassification(type: 'commercial_class' | 'condition', value: string, active: boolean) {
+    if (!identity || !reviewer) return
+    const explanation = window.prompt(
+      active ? 'Motivo para añadir esta clasificación:' : 'Motivo para retirar esta clasificación:',
+    )
+    if (!explanation?.trim()) return
+    setSaveError('')
+    setNotice('')
+    try {
+      await setCatalogClassification(identity.id, {
+        classification_type: type, value, active,
+        actor_id: reviewer.identifier, reason: explanation.trim(),
+      })
+      setClassifications(await fetchCatalogClassifications(identity.id))
+      setHistory(await fetchCatalogHistory(identity.id))
+      setNotice('Clasificación actualizada y añadida al historial.')
+    } catch (caught) {
+      setSaveError(caught instanceof Error ? caught.message : 'No se pudo actualizar la clasificación.')
+    }
   }
 
   return (
@@ -130,6 +166,27 @@ export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
             <div className='panel__head'><div><p className='eyebrow'>Estructura farmacéutica</p><h2 id='catalog-relations-title'><GitBranch size={18} aria-hidden='true' /> Relaciones y composición</h2></div></div>
             {relations.length === 0 ? <div className='catalog-relations__empty'><strong>Sin relaciones tipadas disponibles</strong><p>{identity.identity_type === 'dcp' ? 'La composición no aparece hasta que el maestro proporcione vínculos inequívocos con sustancias activas.' : 'No se ha identificado todavía el nivel anterior o siguiente sin saltar la jerarquía.'}</p></div> : <ul>{relations.map((relation) => <li key={relation.id}><button type='button' onClick={() => navigate(`/catalogo/${encodeURIComponent(relation.related_identity.id)}`)}><span className='catalog-relations__direction'>{relation.direction === 'outgoing' ? 'Hacia' : 'Desde'}{relation.ordinal ? ` · ${relation.ordinal}` : ''}</span><strong>{relation.related_identity.display_name}</strong><small>{RELATION_LABELS[relation.relation_type] ?? relation.relation_type} · {TYPE_LABELS[relation.related_identity.identity_type] ?? relation.related_identity.identity_type} · {orDash(relation.related_identity.code)}</small></button></li>)}</ul>}
           </section>
+
+          {identity.identity_type === 'presentation' && <section className='panel catalog-classifications' aria-labelledby='catalog-classifications-title'>
+            <div className='panel__head'><div><p className='eyebrow'>Clasificación farmacéutica</p><h2 id='catalog-classifications-title'>Clase comercial y condiciones</h2></div></div>
+            <p className='catalog-classifications__hint'>Seleccione una única clase comercial. Las condiciones se combinan de forma independiente.</p>
+            <fieldset disabled={!reviewer}>
+              <legend>Clase comercial</legend>
+              <div className='catalog-classifications__options'>{COMMERCIAL_CLASSES.map(([value, label]) => {
+                const selected = classifications.some((item) => item.classification_type === 'commercial_class' && item.value === value && item.active)
+                return <label key={value}><input type='radio' name={`commercial-${identity.id}`} checked={selected} onChange={() => void changeClassification('commercial_class', value, true)} />{label}</label>
+              })}</div>
+            </fieldset>
+            <fieldset disabled={!reviewer}>
+              <legend>Condiciones</legend>
+              <div className='catalog-classifications__options'>{CONDITIONS.map(([value, label]) => {
+                const selected = classifications.some((item) => item.classification_type === 'condition' && item.value === value && item.active)
+                return <label key={value}><input type='checkbox' checked={selected} onChange={(event) => void changeClassification('condition', value, event.target.checked)} />{label}</label>
+              })}</div>
+            </fieldset>
+            {!reviewer && <p className='muted'>Seleccione un revisor para cambiar clasificaciones.</p>}
+            <p className='catalog-classifications__provenance'>Clasificaciones cargadas con fuente: {classifications.filter((item) => item.source_system !== 'canonical_manual').map((item) => item.source_system).filter((value, index, all) => all.indexOf(value) === index).join(', ') || 'sin clasificaciones importadas'}.</p>
+          </section>}
 
           <section className='panel catalog-history' aria-labelledby='catalog-history-title'>
             <div className='panel__head'><div><p className='eyebrow'>Auditoría</p><h2 id='catalog-history-title'><History size={18} aria-hidden='true' /> Historial de cambios</h2></div></div>

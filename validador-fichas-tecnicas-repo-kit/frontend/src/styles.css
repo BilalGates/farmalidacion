@@ -1107,6 +1107,13 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .catalog-relations__direction { color: var(--accent-strong); font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
 .catalog-relations__empty { margin-top: 1rem; padding: 1rem; border: 1px dashed var(--line); border-radius: 6px; background: #faf9fa; }
 .catalog-relations__empty p { margin: .3rem 0 0; color: var(--ink-soft); }
+.catalog-classifications { display: grid; gap: 1rem; }
+.catalog-classifications h2 { margin: 0; }
+.catalog-classifications__hint, .catalog-classifications__provenance { margin: 0; color: var(--ink-soft); font-size: .9rem; }
+.catalog-classifications fieldset { margin: 0; padding: .9rem 1rem 1rem; border: 1px solid var(--line); border-radius: 6px; }
+.catalog-classifications legend { padding: 0 .4rem; font-weight: 700; }
+.catalog-classifications__options { display: flex; flex-wrap: wrap; gap: .6rem 1.3rem; }
+.catalog-classifications__options label { display: inline-flex; align-items: center; gap: .5rem; min-height: 36px; cursor: pointer; }
 
 @media (max-width: 850px) {
   .catalog-record__grid { grid-template-columns: 1fr; }

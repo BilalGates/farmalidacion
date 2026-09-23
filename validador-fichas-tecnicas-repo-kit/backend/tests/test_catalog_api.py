@@ -170,3 +170,48 @@ def test_relations_show_direction_and_related_identity(scratch_db_url: str) -> N
     assert incoming.status_code == 200
     assert incoming.json()[0]["direction"] == "incoming"
     assert incoming.json()[0]["related_identity"]["id"] == "dcp-1"
+
+
+def test_classifications_keep_commercial_class_exclusive_and_conditions_multiple(
+    scratch_db_url: str,
+) -> None:
+    api = client(scratch_db_url)
+    assert api.post("/catalog/identities", json=create_payload()).status_code == 201
+
+    def set_class(kind: str, value: str, active: bool = True):
+        return api.put(
+            f"/catalog/identities/presentation-1/classifications/{kind}:{value}",
+            json={
+                "classification_type": kind,
+                "value": value,
+                "active": active,
+                "actor_id": "ana",
+                "reason": "Revisión funcional de prueba.",
+            },
+        )
+
+    assert set_class("commercial_class", "generico").status_code == 200
+    assert set_class("condition", "huerfano").status_code == 200
+    assert set_class("condition", "uso_hospitalario").status_code == 200
+    assert set_class("commercial_class", "biosimilar").status_code == 200
+
+    active = api.get("/catalog/identities/presentation-1/classifications").json()
+    assert {(item["classification_type"], item["value"]) for item in active} == {
+        ("commercial_class", "biosimilar"),
+        ("condition", "huerfano"),
+        ("condition", "uso_hospitalario"),
+    }
+    history = api.get("/catalog/identities/presentation-1/classification-history").json()
+    assert len(history) == 5
+    assert history[-1]["actor_id"] == "ana"
+    assert "Revisión funcional" in history[-1]["reason"]
+
+
+def test_classifications_are_only_allowed_on_presentations(scratch_db_url: str) -> None:
+    api = client(scratch_db_url)
+    assert api.post(
+        "/catalog/identities",
+        json=create_payload(id="dcp-1", identity_type="dcp"),
+    ).status_code == 201
+    response = api.get("/catalog/identities/dcp-1/classifications")
+    assert response.status_code == 422

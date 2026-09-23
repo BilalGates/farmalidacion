@@ -8,6 +8,7 @@ import type {
   CatalogIdentityType,
   CatalogRevision,
   CatalogRelation,
+  CatalogClassification,
   Dashboard,
   DatabaseInfo,
   DataOrigin,
@@ -279,6 +280,29 @@ export function fetchCatalogHistory(id: string): Promise<CatalogRevision[]> {
 
 export function fetchCatalogRelations(id: string): Promise<CatalogRelation[]> {
   return request<CatalogRelation[]>(`/catalog/identities/${encodeURIComponent(id)}/relations`)
+}
+
+export function fetchCatalogClassifications(id: string): Promise<CatalogClassification[]> {
+  return request<CatalogClassification[]>(
+    `/catalog/identities/${encodeURIComponent(id)}/classifications`,
+  )
+}
+
+export function setCatalogClassification(
+  identityId: string,
+  payload: {
+    classification_type: CatalogClassification['classification_type']
+    value: string
+    active: boolean
+    actor_id: string
+    reason: string
+  },
+): Promise<CatalogClassification> {
+  const key = encodeURIComponent(`${payload.classification_type}:${payload.value}`)
+  return request<CatalogClassification>(
+    `/catalog/identities/${encodeURIComponent(identityId)}/classifications/${key}`,
+    { method: 'PUT', body: JSON.stringify(payload) },
+  )
 }
 
 export function updateCatalogIdentity(

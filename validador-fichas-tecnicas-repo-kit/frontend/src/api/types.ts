@@ -335,6 +335,16 @@ export interface CatalogRelation {
   related_identity: CatalogIdentity
 }
 
+export interface CatalogClassification {
+  id: string
+  classification_type: 'commercial_class' | 'condition'
+  value: string
+  source_system: string
+  source_version: string
+  source_fragment_id: string | null
+  active: boolean
+}
+
 export interface ValueProvenance {
   source_system: string | null
   document_name: string | null
