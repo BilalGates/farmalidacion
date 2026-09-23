@@ -46,6 +46,8 @@ class CatalogIdentityRead(BaseModel):
     source_literal: str | None
     active: bool
     version: int
+    commercial_class: str | None = None
+    conditions: list[str] = Field(default_factory=list)
 
 
 class CatalogIdentityPage(BaseModel):
@@ -152,7 +154,7 @@ def list_identities(
     session: SessionDependency,
     identity_type: CatalogIdentityType | None = None,
     commercial_class: str | None = None,
-    condition: str | None = None,
+    condition: Annotated[list[str] | None, Query()] = None,
     q: str | None = None,
     active: bool | None = True,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
@@ -163,7 +165,7 @@ def list_identities(
         statement = statement.where(MedicationCatalogIdentity.identity_type == identity_type)
     if active is not None:
         statement = statement.where(MedicationCatalogIdentity.active.is_(active))
-    if commercial_class is not None or condition is not None:
+    if commercial_class is not None or condition:
         if identity_type not in (None, "presentation"):
             raise ApplicationError(
                 "Las clasificaciones sólo pueden filtrar presentaciones.", status_code=422
@@ -179,18 +181,28 @@ def list_identities(
                 MedicationCatalogClassification.value == commercial_class,
             )
             statement = statement.where(MedicationCatalogIdentity.id.in_(class_query))
-        if condition is not None:
-            if condition not in {
+        if condition:
+            allowed_conditions = {
                 "huerfano", "estupefaciente", "psicotropico", "especial_control_medico",
                 "uso_hospitalario",
-            }:
+            }
+            if any(value not in allowed_conditions for value in condition):
                 raise ApplicationError("Condición desconocida.", status_code=422)
+            conditions_query = (
+                select(MedicationCatalogClassification.presentation_identity_id)
+                .where(
+                    MedicationCatalogClassification.active.is_(True),
+                    MedicationCatalogClassification.classification_type == "condition",
+                    MedicationCatalogClassification.value.in_(set(condition)),
+                )
+                .group_by(MedicationCatalogClassification.presentation_identity_id)
+                .having(
+                    func.count(func.distinct(MedicationCatalogClassification.value))
+                    == len(set(condition))
+                )
+            )
             condition_query = select(
-                MedicationCatalogClassification.presentation_identity_id
-            ).where(
-                MedicationCatalogClassification.active.is_(True),
-                MedicationCatalogClassification.classification_type == "condition",
-                MedicationCatalogClassification.value == condition,
+                conditions_query.subquery().c.presentation_identity_id
             )
             statement = statement.where(MedicationCatalogIdentity.id.in_(condition_query))
     if q and q.strip():
@@ -208,8 +220,47 @@ def list_identities(
         .limit(limit)
         .offset(offset)
     ).all()
+    row_ids = [row.id for row in rows]
+    classifications_by_identity: dict[str, list[MedicationCatalogClassification]] = {
+        row_id: [] for row_id in row_ids
+    }
+    if row_ids:
+        for classification in session.scalars(
+            select(MedicationCatalogClassification)
+            .where(MedicationCatalogClassification.presentation_identity_id.in_(row_ids))
+            .where(MedicationCatalogClassification.active.is_(True))
+            .order_by(
+                MedicationCatalogClassification.classification_type,
+                MedicationCatalogClassification.value,
+            )
+        ):
+            classifications_by_identity[classification.presentation_identity_id].append(
+                classification
+            )
+    serialized = []
+    for row in rows:
+        classifications = classifications_by_identity[row.id]
+        serialized.append(
+            _read(row).model_copy(
+                update={
+                    "commercial_class": next(
+                        (
+                            item.value
+                            for item in classifications
+                            if item.classification_type == "commercial_class"
+                        ),
+                        None,
+                    ),
+                    "conditions": [
+                        item.value
+                        for item in classifications
+                        if item.classification_type == "condition"
+                    ],
+                }
+            )
+        )
     return CatalogIdentityPage(
-        items=[_read(row) for row in rows],
+        items=serialized,
         total=int(total),
         limit=limit,
         offset=offset,

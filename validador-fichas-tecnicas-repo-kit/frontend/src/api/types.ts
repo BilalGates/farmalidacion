@@ -307,6 +307,8 @@ export interface CatalogIdentity {
   source_literal: string | null
   active: boolean
   version: number
+  commercial_class?: string | null
+  conditions?: string[]
 }
 
 export interface CatalogIdentityPage {

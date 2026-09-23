@@ -1071,8 +1071,10 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
   estupefaciente, psicotrópico, control especial y uso hospitalario se combinan.
   Las modificaciones requieren revisor y motivo y se registran en el historial.
 - El catálogo filtra en servidor por clase comercial y condición de forma
-  combinable, junto con búsqueda, nivel y vigencia; la paginación sigue siendo
-  server-side.
+  combinable, también con varias condiciones simultáneas, junto con búsqueda,
+  nivel y vigencia; la paginación sigue siendo server-side. Las filas del
+  listado incluyen etiquetas de clase y condiciones cargadas en una consulta
+  por página.
 - El daemon Docker Desktop dejó de estar accesible durante este bloque. Esta
   versión aún no se ha podido desplegar ni validar en el mismo contenedor.
 

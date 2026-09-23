@@ -82,9 +82,9 @@ completa; un conflicto concurrente no deja escritura parcial.
 
 Estado: listado conectado al catálogo tipado, con búsqueda, filtro explícito por
 Presentación/DCPF/DCP/DCSA/Sustancia, vigencia y paginación en servidor.
-Las presentaciones admiten además filtros combinables por clase comercial y
-condición; jerarquía expandible, vistas guardadas y columnas configurables siguen
-pendientes.
+Las presentaciones muestran etiquetas de clasificación y admiten filtros
+combinables por clase comercial y una o varias condiciones; jerarquía expandible,
+vistas guardadas y columnas configurables siguen pendientes.
 
 - Entradas por productos, presentaciones, productos clínicos y principios
   activos.

@@ -53,6 +53,15 @@ const CONDITION_FILTERS = [
   { value: 'especial_control_medico', label: 'Control especial' },
   { value: 'uso_hospitalario', label: 'Uso hospitalario' },
 ] as const
+const CLASS_LABELS: Record<string, string> = {
+  original: 'Original', generico: 'Genérico', biosimilar: 'Biosimilar',
+  sin_clasificar: 'Sin clasificar',
+}
+const CONDITION_LABELS: Record<string, string> = {
+  huerfano: 'Huérfano', estupefaciente: 'Estupefaciente',
+  psicotropico: 'Psicotrópico', especial_control_medico: 'Control especial',
+  uso_hospitalario: 'Uso hospitalario',
+}
 
 export function RealRecordListScreen() {
   const [term, setTerm] = useState('')
@@ -61,7 +70,7 @@ export function RealRecordListScreen() {
   const [entityType, setEntityType] = useState<CatalogIdentityType | null>(null)
   const [showArchived, setShowArchived] = useState(false)
   const [commercialClass, setCommercialClass] = useState<string | null>(null)
-  const [condition, setCondition] = useState<string | null>(null)
+  const [conditions, setConditions] = useState<string[]>([])
   const [retryKey, setRetryKey] = useState(0)
 
   const { data, error, loading } = useQuery(
@@ -70,12 +79,12 @@ export function RealRecordListScreen() {
         q: query || undefined,
         identityType: entityType ?? undefined,
         commercialClass: commercialClass ?? undefined,
-        condition: condition ?? undefined,
+        conditions: conditions.length ? conditions : undefined,
         active: showArchived ? undefined : true,
         limit: PAGE_SIZE,
         offset,
       }),
-    [query, entityType, showArchived, commercialClass, condition, offset, retryKey],
+    [query, entityType, showArchived, commercialClass, conditions, offset, retryKey],
   )
 
   function search(event: React.FormEvent) {
@@ -145,10 +154,10 @@ export function RealRecordListScreen() {
           </div>
           <label className='field catalog-condition-filter'>
             <span className='field__label'>Condición</span>
-            <select value={condition ?? ''} onChange={(event) => { setOffset(0); setCondition(event.target.value || null) }}>
-              <option value=''>Todas</option>
+            <select multiple value={conditions} onChange={(event) => { setOffset(0); setConditions(Array.from(event.target.selectedOptions, (option) => option.value)) }}>
               {CONDITION_FILTERS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>
+            <small className='field__hint'>Puedes seleccionar varias; se mostrarán las presentaciones que cumplan todas.</small>
           </label>
         </>}
         <label className='catalog-toggle'>
@@ -194,7 +203,7 @@ export function RealRecordListScreen() {
               <tbody>
                 {data.items.map((item) => (
                   <tr key={item.id}>
-                    <th scope='row'>{orDash(item.display_name)}</th>
+                    <th scope='row'><span className='catalog-row__name'>{orDash(item.display_name)}</span>{item.identity_type === 'presentation' && <span className='catalog-row__tags'>{item.commercial_class && <span className='catalog-row__tag'>{CLASS_LABELS[item.commercial_class] ?? item.commercial_class}</span>}{item.conditions?.map((value) => <span className='catalog-row__tag catalog-row__tag--condition' key={value}>{CONDITION_LABELS[value] ?? value}</span>)}</span>}</th>
                     <td><code>{orDash(item.code)}</code></td>
                     <td>{ENTITY_LABELS[item.identity_type] ?? item.identity_type}</td>
                     <td>{item.source_system}</td>

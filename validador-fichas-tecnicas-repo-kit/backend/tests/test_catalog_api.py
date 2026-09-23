@@ -265,3 +265,30 @@ def test_catalog_can_filter_presentations_by_classification(scratch_db_url: str)
         params={"commercial_class": "generico", "condition": "huerfano"},
     )
     assert [item["id"] for item in combined.json()["items"]] == ["presentation-1"]
+    result_item = combined.json()["items"][0]
+    assert result_item["commercial_class"] == "generico"
+    assert result_item["conditions"] == ["huerfano"]
+
+    api.put(
+        "/catalog/identities/presentation-1/classifications/condition:uso_hospitalario",
+        json={
+            "classification_type": "condition",
+            "value": "uso_hospitalario",
+            "actor_id": "ana",
+            "reason": "Prueba.",
+        },
+    )
+    both_conditions = api.get(
+        "/catalog/identities",
+        params=[("condition", "huerfano"), ("condition", "uso_hospitalario")],
+    )
+    assert [item["id"] for item in both_conditions.json()["items"]] == ["presentation-1"]
+    all_conditions = api.get(
+        "/catalog/identities",
+        params=[
+            ("condition", "huerfano"),
+            ("condition", "uso_hospitalario"),
+            ("condition", "estupefaciente"),
+        ],
+    )
+    assert all_conditions.json()["total"] == 0

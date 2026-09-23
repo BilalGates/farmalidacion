@@ -1114,6 +1114,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .catalog-classifications legend { padding: 0 .4rem; font-weight: 700; }
 .catalog-classifications__options { display: flex; flex-wrap: wrap; gap: .6rem 1.3rem; }
 .catalog-classifications__options label { display: inline-flex; align-items: center; gap: .5rem; min-height: 36px; cursor: pointer; }
+.catalog-condition-filter select[multiple] { min-width: 205px; min-height: 86px; padding: .35rem; }
+.field__hint { color: var(--ink-faint); font-size: .78rem; }
+.catalog-row__name { display: block; }
+.catalog-row__tags { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .35rem; }
+.catalog-row__tag { display: inline-flex; padding: .12rem .38rem; border-radius: 3px; color: var(--accent-strong); background: #f0eafa; font-size: .68rem; font-weight: 650; line-height: 1.4; white-space: nowrap; }
+.catalog-row__tag--condition { color: #70521f; background: #fbf3e7; }
 
 @media (max-width: 850px) {
   .catalog-record__grid { grid-template-columns: 1fr; }
