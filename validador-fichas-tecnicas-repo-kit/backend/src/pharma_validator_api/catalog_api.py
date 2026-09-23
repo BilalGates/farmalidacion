@@ -151,6 +151,8 @@ def _reviewer(directory: ReviewerDirectory, actor_id: str) -> Reviewer:
 def list_identities(
     session: SessionDependency,
     identity_type: CatalogIdentityType | None = None,
+    commercial_class: str | None = None,
+    condition: str | None = None,
     q: str | None = None,
     active: bool | None = True,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
@@ -161,6 +163,36 @@ def list_identities(
         statement = statement.where(MedicationCatalogIdentity.identity_type == identity_type)
     if active is not None:
         statement = statement.where(MedicationCatalogIdentity.active.is_(active))
+    if commercial_class is not None or condition is not None:
+        if identity_type not in (None, "presentation"):
+            raise ApplicationError(
+                "Las clasificaciones sólo pueden filtrar presentaciones.", status_code=422
+            )
+        classification_query = select(
+            MedicationCatalogClassification.presentation_identity_id
+        ).where(MedicationCatalogClassification.active.is_(True))
+        if commercial_class is not None:
+            if commercial_class not in {"original", "generico", "biosimilar", "sin_clasificar"}:
+                raise ApplicationError("Clase comercial desconocida.", status_code=422)
+            class_query = classification_query.where(
+                MedicationCatalogClassification.classification_type == "commercial_class",
+                MedicationCatalogClassification.value == commercial_class,
+            )
+            statement = statement.where(MedicationCatalogIdentity.id.in_(class_query))
+        if condition is not None:
+            if condition not in {
+                "huerfano", "estupefaciente", "psicotropico", "especial_control_medico",
+                "uso_hospitalario",
+            }:
+                raise ApplicationError("Condición desconocida.", status_code=422)
+            condition_query = select(
+                MedicationCatalogClassification.presentation_identity_id
+            ).where(
+                MedicationCatalogClassification.active.is_(True),
+                MedicationCatalogClassification.classification_type == "condition",
+                MedicationCatalogClassification.value == condition,
+            )
+            statement = statement.where(MedicationCatalogIdentity.id.in_(condition_query))
     if q and q.strip():
         needle = f"%{q.strip()}%"
         statement = statement.where(
@@ -410,6 +442,8 @@ def set_classification(
     directory: DirectoryDependency,
 ) -> CatalogClassificationRead:
     reviewer = _reviewer(directory, payload.actor_id)
+    if not payload.reason.strip():
+        raise ApplicationError("Indique el motivo del cambio.", status_code=422)
     identity = session.get(MedicationCatalogIdentity, identity_id)
     if identity is None:
         raise ApplicationError("Identidad de catálogo no encontrada.", status_code=404)
@@ -435,6 +469,17 @@ def set_classification(
         "uso_hospitalario",
     }:
         raise ApplicationError("La condición no pertenece al catálogo permitido.", status_code=422)
+    if payload.classification_type == "commercial_class" and payload.active:
+        existing_class = session.scalar(
+            select(MedicationCatalogClassification).where(
+                MedicationCatalogClassification.presentation_identity_id == identity_id,
+                MedicationCatalogClassification.classification_type == "commercial_class",
+                MedicationCatalogClassification.active.is_(True),
+                MedicationCatalogClassification.value != payload.value,
+            )
+        )
+        if existing_class is not None and not payload.reason.strip():
+            raise ApplicationError("Cambiar la clase comercial exige un motivo.", status_code=422)
 
     statement = select(MedicationCatalogClassification).where(
         MedicationCatalogClassification.presentation_identity_id == identity_id,

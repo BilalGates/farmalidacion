@@ -1070,6 +1070,9 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
   condiciones. Original/genérico/biosimilar son excluyentes entre sí; huérfano,
   estupefaciente, psicotrópico, control especial y uso hospitalario se combinan.
   Las modificaciones requieren revisor y motivo y se registran en el historial.
+- El catálogo filtra en servidor por clase comercial y condición de forma
+  combinable, junto con búsqueda, nivel y vigencia; la paginación sigue siendo
+  server-side.
 - El daemon Docker Desktop dejó de estar accesible durante este bloque. Esta
   versión aún no se ha podido desplegar ni validar en el mismo contenedor.
 

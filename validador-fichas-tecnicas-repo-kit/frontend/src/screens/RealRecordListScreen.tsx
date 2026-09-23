@@ -40,12 +40,28 @@ const ENTITY_LABELS: Record<string, string> = {
   active_ingredient: 'Sustancia activa',
 }
 
+const CLASSIFICATION_FILTERS = [
+  { type: null, value: null, label: 'Todas las clases' },
+  { type: 'commercial_class', value: 'original', label: 'Original' },
+  { type: 'commercial_class', value: 'generico', label: 'Genérico' },
+  { type: 'commercial_class', value: 'biosimilar', label: 'Biosimilar' },
+] as const
+const CONDITION_FILTERS = [
+  { value: 'huerfano', label: 'Huérfano' },
+  { value: 'estupefaciente', label: 'Estupefaciente' },
+  { value: 'psicotropico', label: 'Psicotrópico' },
+  { value: 'especial_control_medico', label: 'Control especial' },
+  { value: 'uso_hospitalario', label: 'Uso hospitalario' },
+] as const
+
 export function RealRecordListScreen() {
   const [term, setTerm] = useState('')
   const [query, setQuery] = useState('')
   const [offset, setOffset] = useState(0)
   const [entityType, setEntityType] = useState<CatalogIdentityType | null>(null)
   const [showArchived, setShowArchived] = useState(false)
+  const [commercialClass, setCommercialClass] = useState<string | null>(null)
+  const [condition, setCondition] = useState<string | null>(null)
   const [retryKey, setRetryKey] = useState(0)
 
   const { data, error, loading } = useQuery(
@@ -53,11 +69,13 @@ export function RealRecordListScreen() {
       fetchCatalogIdentities({
         q: query || undefined,
         identityType: entityType ?? undefined,
+        commercialClass: commercialClass ?? undefined,
+        condition: condition ?? undefined,
         active: showArchived ? undefined : true,
         limit: PAGE_SIZE,
         offset,
       }),
-    [query, entityType, showArchived, offset, retryKey],
+    [query, entityType, showArchived, commercialClass, condition, offset, retryKey],
   )
 
   function search(event: React.FormEvent) {
@@ -115,6 +133,24 @@ export function RealRecordListScreen() {
             </button>
           ))}
         </div>
+        {(entityType === null || entityType === 'presentation') && <>
+          <div className='filters' role='group' aria-label='Clase comercial'>
+            {CLASSIFICATION_FILTERS.map((item) => <button
+              key={item.label}
+              type='button'
+              className={`chip${commercialClass === item.value ? ' chip--active' : ''}`}
+              aria-pressed={commercialClass === item.value}
+              onClick={() => { setOffset(0); setCommercialClass(item.value) }}
+            >{item.label}</button>)}
+          </div>
+          <label className='field catalog-condition-filter'>
+            <span className='field__label'>Condición</span>
+            <select value={condition ?? ''} onChange={(event) => { setOffset(0); setCondition(event.target.value || null) }}>
+              <option value=''>Todas</option>
+              {CONDITION_FILTERS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+          </label>
+        </>}
         <label className='catalog-toggle'>
           <input
             type='checkbox'
@@ -132,7 +168,7 @@ export function RealRecordListScreen() {
         emptyTitle={query ? 'La búsqueda no devuelve resultados' : 'No hay identidades en este nivel'}
         emptyDetail={
           query
-            ? `Ningún registro real contiene «${query}» en su descripción o identificador.`
+            ? `Ninguna identidad del catálogo contiene «${query}» en su descripción o código.`
             : 'Este nivel todavía no se ha podido proyectar desde una fuente fiable.'
         }
         onRetry={() => setRetryKey((k) => k + 1)}

@@ -256,6 +256,8 @@ export function fetchRealRecord(id: string): Promise<RealRecordDetail> {
 export function fetchCatalogIdentities(params: {
   q?: string
   identityType?: CatalogIdentityType
+  commercialClass?: string
+  condition?: string
   active?: boolean
   limit?: number
   offset?: number
@@ -263,6 +265,8 @@ export function fetchCatalogIdentities(params: {
   const search = new URLSearchParams()
   if (params.q) search.set('q', params.q)
   if (params.identityType) search.set('identity_type', params.identityType)
+  if (params.commercialClass) search.set('commercial_class', params.commercialClass)
+  if (params.condition) search.set('condition', params.condition)
   if (params.active !== undefined) search.set('active', String(params.active))
   if (params.limit !== undefined) search.set('limit', String(params.limit))
   if (params.offset !== undefined) search.set('offset', String(params.offset))

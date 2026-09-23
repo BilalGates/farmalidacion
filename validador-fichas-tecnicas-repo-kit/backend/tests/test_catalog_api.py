@@ -215,3 +215,53 @@ def test_classifications_are_only_allowed_on_presentations(scratch_db_url: str) 
     ).status_code == 201
     response = api.get("/catalog/identities/dcp-1/classifications")
     assert response.status_code == 422
+
+
+def test_catalog_can_filter_presentations_by_classification(scratch_db_url: str) -> None:
+    api = client(scratch_db_url)
+    assert api.post("/catalog/identities", json=create_payload()).status_code == 201
+    assert api.post(
+        "/catalog/identities",
+        json=create_payload(
+            id="presentation-2", code="123456", display_name="Otra presentación"
+        ),
+    ).status_code == 201
+    api.put(
+        "/catalog/identities/presentation-1/classifications/commercial_class:generico",
+        json={
+            "classification_type": "commercial_class",
+            "value": "generico",
+            "actor_id": "ana",
+            "reason": "Prueba.",
+        },
+    )
+    api.put(
+        "/catalog/identities/presentation-1/classifications/condition:huerfano",
+        json={
+            "classification_type": "condition",
+            "value": "huerfano",
+            "actor_id": "ana",
+            "reason": "Prueba.",
+        },
+    )
+
+    generic = api.get(
+        "/catalog/identities",
+        params={"identity_type": "presentation", "commercial_class": "generico"},
+    )
+    orphan = api.get(
+        "/catalog/identities", params={"condition": "huerfano"}
+    )
+    assert [item["id"] for item in generic.json()["items"]] == ["presentation-1"]
+    assert [item["id"] for item in orphan.json()["items"]] == ["presentation-1"]
+
+    wrong_level = api.get(
+        "/catalog/identities", params={"identity_type": "dcp", "condition": "huerfano"}
+    )
+    assert wrong_level.status_code == 422
+
+    combined = api.get(
+        "/catalog/identities",
+        params={"commercial_class": "generico", "condition": "huerfano"},
+    )
+    assert [item["id"] for item in combined.json()["items"]] == ["presentation-1"]
