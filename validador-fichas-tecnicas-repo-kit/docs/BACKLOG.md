@@ -79,6 +79,12 @@ fuente ni crear decisiones de revisión. La API devuelve valor vigente,
 secuencia e historial y rechaza ediciones obsoletas. El editor alcanza también
 los registros fuente no enlazados y las filas en cuarentena con rutas separadas.
 Faltan las pruebas de uso en volumen y el gate integral de exportación.
+## UI-REG-001 — Registros compacto (10-09-2026)
+
+Implementado según ADR-0012: navegación conjunta, un editor por campo,
+filtros, fuente con contexto y avance explícito. Conservar evidencia de pruebas
+en STATUS. Pendiente de observación farmacéutica del flujo con datos reales;
+la extensión visual al resto del programa se realiza por módulo.
 
 ## Orden vigente — D-028 / ADR-0010
 
@@ -612,6 +618,12 @@ campos 90 ms. Una ficha ya precargada no cuesta petición nueva. El objetivo de
 <100 ms se cumple sobre datos ya precargados; una petición de red contra el
 corpus real no lo alcanza y no se afirma que lo haga. 7 pruebas.
 
+**Refuerzo (10-09-2026).** El espacio integrado de Registros activa la precarga
+de las dos filas siguientes. El detalle elimina las consultas repetidas por
+campo y recupera valores, procedencias, estados e historial por lotes. En el
+contenedor con la base real montada, la muestra inicial de ocho fichas bajó de
+2,8–12,6 s a 2,1–2,3 s antes de aplicar la caché de navegación.
+
 ### DEV-510 — Tests de sesgo de automatización (`P0`)
 
 **Objetivo:** convertir las reglas de pre-relleno de la especificación 9 en decisiones ejecutables y comprobables, independientes de la interfaz.
@@ -776,8 +788,17 @@ literal. No genera recomendaciones ni escribe campos. Contrato en
 
 **Estado: cerrado técnicamente (9-09-2026).** Armazón, navegación, dashboard y componentes compartidos renovados sobre las rutas existentes. Segunda revisión visual completada con base neutra, acento rosa–morado contenido, menor radio, iconografía lineal y movimiento accesible. No cambia contratos de datos, políticas de pre-relleno ni reglas de validación. Verificado con ESLint, build de producción y 117 pruebas frontend.
 
+### UX-002 — Agrupar documentos por origen en Fuentes (`P2`)
+
+**Estado: cerrado técnicamente (10-09-2026).** La lista plana se resume por tipo de fuente con agregados y permite desplegar todos los documentos originales. La agrupación es exclusivamente visual: conserva el detalle individual y no modifica versiones, identidades ni contratos de API. Verificada con 2 pruebas específicas, ESLint y build de producción.
+
 ## Orden recomendado de las primeras issues
 
 `DEV-001 (completada) → DEV-002A (completada) → DEV-002 → DEV-003 → DEV-004 → DEV-005 → DEV-006 → DEV-007 → DEV-008A (completada) → DEV-008 → DEV-009 → DEV-010 (completada) → DEV-011`
 
 Solo después: `DEV-101` en adelante.
+
+
+## UI — Novedades CIMA (10-09-2026)
+
+Rediseño del panel de novedades (§13): resumen de eventos cargados por tipo, etiquetas de cambio y reapertura, historial en panel y detalle documental contextual. Conserva fuentes, eventos y consulta bajo demanda. Prueba de pantalla cubre resumen y apertura del diff.

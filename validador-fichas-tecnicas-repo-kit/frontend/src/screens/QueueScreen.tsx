@@ -10,7 +10,7 @@ import {
 import type { QueueItem } from '../api/client'
 import type { Reviewer } from '../api/types'
 import { navigate } from '../navigation'
-import { Check, Filter, Plus, RefreshCw, Search } from 'lucide-react'
+import { Check, ChevronDown, Filter, Plus, RefreshCw, Search, SlidersHorizontal, X } from 'lucide-react'
 
 const labels: Record<string, string> = {
   pendiente: 'Pendiente', asignado: 'Asignado', en_revision: 'En revisión',
@@ -31,6 +31,7 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
   const [reviewSet, setReviewSet] = useState<QueueItem['review_set']>('corpus')
   const [requiresSecondReview, setRequiresSecondReview] = useState(false)
   const [selected, setSelected] = useState<string[]>([])
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
 
   const filters = {
     state: filter,
@@ -39,10 +40,30 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
     review_set: setFilter,
     requires_second_review: secondFilter === '' ? undefined : secondFilter === 'true',
   }
+  const advancedFilterCount = [entityFilter, blockFilter, secondFilter].filter(Boolean).length
+  const activeFilters = [
+    filter && { key: 'state', label: `Estado: ${labels[filter] ?? filter}`, clear: () => setStateFilter('') },
+    setFilter && { key: 'set', label: `Conjunto: ${setFilter}`, clear: () => setReviewSetFilter('') },
+    entityFilter && { key: 'entity', label: `Entidad: ${entityFilter}`, clear: () => setEntityFilter('') },
+    blockFilter && { key: 'block', label: `Bloque: ${blockFilter}`, clear: () => setBlockFilter('') },
+    secondFilter && { key: 'second', label: `Doble validación: ${secondFilter === 'true' ? 'Sí' : 'No'}`, clear: () => setSecondFilter('') },
+  ].filter(Boolean) as { key: string; label: string; clear: () => void }[]
 
   async function reload() {
     setLoading(true)
     try { setItems(await fetchQueue(filters)); setSelected([]); setError('') }
+    catch (cause) { setError(cause instanceof ApiError ? cause.message : 'No se pudo cargar la cola.') }
+    finally { setLoading(false) }
+  }
+
+  async function clearFilters() {
+    setStateFilter('')
+    setEntityFilter('')
+    setBlockFilter('')
+    setReviewSetFilter('')
+    setSecondFilter('')
+    setLoading(true)
+    try { setItems(await fetchQueue({})); setSelected([]); setError('') }
     catch (cause) { setError(cause instanceof ApiError ? cause.message : 'No se pudo cargar la cola.') }
     finally { setLoading(false) }
   }
@@ -99,17 +120,33 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
           <label className='queue-check'><input type='checkbox' checked={requiresSecondReview} onChange={(event) => setRequiresSecondReview(event.target.checked)} /> Doble validación</label>
           <button className='button button--primary' disabled={busy || !recordId.trim()}><Plus size={16} aria-hidden='true' />Añadir</button>
         </form>
-        <div className='queue-filters'>
-          <div className='queue-toolbar__title'><Filter size={17} aria-hidden='true' /><span>Filtrar registros</span></div>
-          <div className='queue-filters__grid'>
-            <label className='field'><span className='field__label'>Estado</span><select value={filter} onChange={(event) => setStateFilter(event.target.value)}><option value=''>Todos</option>{Object.entries(labels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
-            <label className='field'><span className='field__label'>Entidad</span><input placeholder='Todas' value={entityFilter} onChange={(event) => setEntityFilter(event.target.value)} /></label>
-            <label className='field'><span className='field__label'>Bloque</span><input placeholder='Todos' value={blockFilter} onChange={(event) => setBlockFilter(event.target.value)} /></label>
-            <label className='field'><span className='field__label'>Conjunto</span><select aria-label='Filtrar por conjunto' value={setFilter} onChange={(event) => setReviewSetFilter(event.target.value)}><option value=''>Todos</option><option value='oro'>Oro</option><option value='medida'>Medida</option><option value='corpus'>Corpus</option></select></label>
-            <label className='field'><span className='field__label'>Doble validación</span><select aria-label='Filtrar doble validación' value={secondFilter} onChange={(event) => setSecondFilter(event.target.value)}><option value=''>Todas</option><option value='true'>Sí</option><option value='false'>No</option></select></label>
-            <div className='queue-filters__actions'><button className='button button--primary' aria-label='Aplicar filtros' disabled={busy || loading} onClick={() => void reload()}>Filtrar</button><button className='button button--icon' aria-label='Actualizar cola' disabled={busy || loading} onClick={() => void reload()}><RefreshCw size={17} aria-hidden='true' /></button></div>
+        <form className='queue-filters' onSubmit={(event) => { event.preventDefault(); void reload() }}>
+          <div className='queue-filters__head'>
+            <div>
+              <div className='queue-toolbar__title'><Filter size={17} aria-hidden='true' /><span>Encontrar registros</span></div>
+              <p>Acote la cola por los criterios que utiliza con más frecuencia.</p>
+            </div>
+            <div className='queue-filters__utility'>
+              <button type='button' className='button button--icon' aria-label='Actualizar cola' title='Actualizar cola' disabled={busy || loading} onClick={() => void reload()}><RefreshCw size={17} aria-hidden='true' /></button>
+            </div>
           </div>
-        </div>
+          <div className='queue-filters__primary'>
+            <label className='field'><span className='field__label'>Estado</span><select value={filter} onChange={(event) => setStateFilter(event.target.value)}><option value=''>Cualquier estado</option>{Object.entries(labels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+            <label className='field'><span className='field__label'>Conjunto</span><select aria-label='Filtrar por conjunto' value={setFilter} onChange={(event) => setReviewSetFilter(event.target.value)}><option value=''>Cualquier conjunto</option><option value='oro'>Oro</option><option value='medida'>Medida</option><option value='corpus'>Corpus</option></select></label>
+            <button type='button' className={`button queue-filters__more${showAdvancedFilters ? ' is-open' : ''}`} aria-expanded={showAdvancedFilters} onClick={() => setShowAdvancedFilters((current) => !current)}><SlidersHorizontal size={16} aria-hidden='true' />Más filtros{advancedFilterCount > 0 && <span>{advancedFilterCount}</span>}<ChevronDown size={15} aria-hidden='true' /></button>
+            <button className='button button--primary queue-filters__submit' aria-label='Aplicar filtros' disabled={busy || loading}>Aplicar</button>
+          </div>
+          {showAdvancedFilters && <div className='queue-filters__advanced'>
+            <label className='field'><span className='field__label'>Entidad</span><input placeholder='Ej. medicamento' value={entityFilter} onChange={(event) => setEntityFilter(event.target.value)} /></label>
+            <label className='field'><span className='field__label'>Bloque</span><input placeholder='Ej. general' value={blockFilter} onChange={(event) => setBlockFilter(event.target.value)} /></label>
+            <label className='field'><span className='field__label'>Doble validación</span><select aria-label='Filtrar doble validación' value={secondFilter} onChange={(event) => setSecondFilter(event.target.value)}><option value=''>Indiferente</option><option value='true'>Sí</option><option value='false'>No</option></select></label>
+          </div>}
+          {activeFilters.length > 0 && <div className='queue-filters__active' aria-label='Filtros seleccionados'>
+            <span>Seleccionados</span>
+            {activeFilters.map((active) => <button type='button' key={active.key} onClick={active.clear}>{active.label}<X size={13} aria-hidden='true' /></button>)}
+            <button type='button' className='queue-filters__clear' onClick={() => void clearFilters()} disabled={busy || loading}>Limpiar todo</button>
+          </div>}
+        </form>
       </div>
       {selected.length > 0 && <div className='queue-batch'>
         <span>{selected.length} seleccionados</span>

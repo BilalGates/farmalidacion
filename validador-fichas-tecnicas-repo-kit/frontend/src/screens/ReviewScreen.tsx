@@ -23,6 +23,8 @@ import { ROADMAP_NOTES, conflictLabel, sourceLabel } from '../domain/vocabulary'
 import { FocusTracker } from '../domain/focusTracker'
 import { SHORTCUTS, isTypingTarget, resolveShortcut } from '../domain/shortcuts'
 import { navigate } from '../navigation'
+import { blockLabel, fieldLabel, searchText } from '../domain/fieldLabels'
+import { clearDraft } from '../domain/drafts'
 import { BlockEditor } from './BlockEditor'
 import { SourceFieldsMaintenance } from './CatalogSourceFields'
 import { FieldRow } from './FieldRow'
@@ -134,10 +136,18 @@ export function ReviewScreen({
   recordId,
   reviewer,
   backTo = '/fichas',
+  compact = false,
+  displayName,
+  onBusyChange,
+  onRecordChange,
 }: {
   recordId: string
   reviewer: Reviewer | null
   backTo?: string
+  compact?: boolean
+  displayName?: string | null
+  onBusyChange?: (busy: boolean) => void
+  onRecordChange?: (record: TargetRecord) => void
 }) {
   const [record, setRecord] = useState<TargetRecord | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -149,6 +159,11 @@ export function ReviewScreen({
   const evidenceRef = useRef<HTMLElement>(null)
   const [helpOpen, setHelpOpen] = useState(false)
   const [sourceMaintenanceOpen, setSourceMaintenanceOpen] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [fieldSearch, setFieldSearch] = useState('')
+  const [blockFilter, setBlockFilter] = useState('')
+  const [onlyPending, setOnlyPending] = useState(false)
+  const structureRequest = useRef(0)
   // Ocurrencias del bloque cuyo editor está abierto. Se piden bajo demanda:
   // la mayoría de las revisiones no editan la estructura del registro.
   const [editing, setEditing] = useState<string | null>(null)
@@ -156,6 +171,11 @@ export function ReviewScreen({
   // Descarta respuestas de cargas anteriores: al cambiar de ficha deprisa, una
   // respuesta tardía sobrescribiría la ficha que el revisor ya está viendo.
   const generation = useRef(0)
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => { mounted.current = false; structureRequest.current += 1; onBusyChange?.(false) }
+  }, [onBusyChange])
 
   // Medición de tiempos (DEV-508). La sesión se abre una vez por ficha y
   // revisor; los tramos se declaran cerrados, de modo que si el navegador se
@@ -204,11 +224,12 @@ export function ReviewScreen({
 
   const load = useCallback(() => {
     const current = ++generation.current
-    loadRecord(recordId)
+    return loadRecord(recordId)
       .then((result) => {
         if (current !== generation.current) return
         setRecord(result)
         setError(null)
+        return result
       })
       .catch((cause: unknown) => {
         if (current !== generation.current) return
@@ -228,16 +249,27 @@ export function ReviewScreen({
     () => record?.blocks.flatMap((block) => block.values) ?? [],
     [record],
   )
-  const activeField = fields.find((value) => value.id === activeId) ?? fields[0] ?? null
+  useEffect(() => { if (record) onRecordChange?.(record) }, [record, onRecordChange])
+  const matchesField = (value: FieldValue) =>
+    (!onlyPending || !RESOLVED_STATES.includes(value.validation_state)) &&
+    searchText(`${fieldLabel(value.field_name)} ${value.field_name}`).includes(searchText(fieldSearch))
+  const visibleFields = compact ? (record?.blocks ?? [])
+    .filter(block => !blockFilter || block.block_type === blockFilter)
+    .flatMap(block => block.values).filter(matchesField) : fields
+  const activeField = visibleFields.find(value => value.id === activeId) ?? visibleFields[0] ?? null
 
   async function handleSave(
     fieldValueId: string,
     state: ValidationState,
     finalValue: string | null,
     comment: string | null,
+    advance = false,
   ) {
-    if (reviewer === null) return
+    if (reviewer === null || savingId !== null) return
+    const visible = Array.from(fieldsRef.current?.querySelectorAll<HTMLElement>('[data-review-field]') ?? []).filter(row => !row.closest('[hidden]'))
+    const nextId = visible[visible.findIndex(row => row.dataset.reviewField === fieldValueId) + 1]?.dataset.reviewField
     setSavingId(fieldValueId)
+    onBusyChange?.(true)
     setErrorFieldId(null)
     setNotice(null)
     try {
@@ -248,17 +280,27 @@ export function ReviewScreen({
         final_value: finalValue,
         comment,
       })
+      clearDraft(recordId, fieldValueId)
+      invalidateRecord(recordId)
+      if (!mounted.current) return
       setError(null)
       setNotice('Decisión guardada.')
-      invalidateRecord(recordId)
-      load()
+      const refreshed = await load()
+      if (advance && nextId && refreshed) {
+        setActiveId(nextId)
+        setExpandedId(nextId)
+        requestAnimationFrame(() => {
+          fieldsRef.current?.querySelector<HTMLElement>(`[data-review-field="${nextId}"]`)?.focus()
+        })
+      }
     } catch (cause: unknown) {
+      if (!mounted.current) return
       // El mensaje viene de las barreras del backend y se muestra literal.
       setError(cause instanceof ApiError ? cause.message : 'Error inesperado.')
       // El borrador se conserva: un guardado rechazado no puede perder trabajo.
       setErrorFieldId(fieldValueId)
     } finally {
-      setSavingId(null)
+      if (mounted.current) { setSavingId(null); onBusyChange?.(false) }
     }
   }
 
@@ -266,7 +308,7 @@ export function ReviewScreen({
   const moveField = useCallback((direction: 1 | -1) => {
     const rows = Array.from(
       fieldsRef.current?.querySelectorAll<HTMLElement>('[data-review-field]') ?? [],
-    )
+    ).filter((row) => !row.closest('[hidden]'))
     if (rows.length === 0) return
     const index = rows.findIndex((row) => row === document.activeElement?.closest('[data-review-field]'))
     // Si el foco no está en ningún campo, se entra por el primero.
@@ -339,18 +381,19 @@ export function ReviewScreen({
   const resolved = fields.filter((value) =>
     RESOLVED_STATES.includes(value.validation_state),
   ).length
+  const ContextPanel = compact ? 'details' : 'section'
 
   return (
-    <div className='screen review-screen'>
-      <button type='button' className='button button--ghost back' onClick={() => navigate(backTo)}>
+    <div className={`screen review-screen${compact ? ' review-screen--compact' : ''}`}>
+      {!compact && <button type='button' className='button button--ghost back' onClick={() => navigate(backTo)}>
         ← Volver al listado
-      </button>
+      </button>}
 
       {/* Zona A — contexto de la ficha. */}
       <div className='screen__head'>
         <div>
           <p className='eyebrow'>Revisión de ficha</p>
-          <h1>{recordTitle(record)}</h1>
+          <h1>{displayName || recordTitle(record)}</h1>
           <p className='lede'>
             <code>{record.id}</code> · {RECORD_TYPE_LABELS[record.entity_type] ?? record.entity_type}
           </p>
@@ -358,8 +401,8 @@ export function ReviewScreen({
       </div>
 
       {record.external_identifiers.length > 0 && (
-        <section className='panel'>
-          <h2>Identificación</h2>
+        <ContextPanel className='panel review-identification'>
+          {compact ? <summary>Identificación y versiones ({record.external_identifiers.length})</summary> : <h2>Identificación</h2>}
           <dl className='pairs'>
             {record.external_identifiers.map((item) => (
               <div key={`${item.source_system}-${item.source_identifier}`}>
@@ -370,12 +413,12 @@ export function ReviewScreen({
               </div>
             ))}
           </dl>
-        </section>
+        </ContextPanel>
       )}
 
       {conflicts.length > 0 && (
-        <section className='panel'>
-          <h2>Discrepancias entre fuentes</h2>
+        <ContextPanel className='panel review-conflicts'>
+          {compact ? <summary>Discrepancias entre fuentes · {conflicts.length} campos requieren revisión</summary> : <h2>Discrepancias entre fuentes</h2>}
           <ul className='conflicts'>
             {conflicts.map((value) => (
               <li key={value.id}>
@@ -397,7 +440,7 @@ export function ReviewScreen({
             procedencia y la decisión corresponde a un farmacéutico.
           </p>
           <RoadmapNote title='Resolución de discrepancias' note={ROADMAP_NOTES.discrepancias} />
-        </section>
+        </ContextPanel>
       )}
 
       {notice && (
@@ -420,8 +463,24 @@ export function ReviewScreen({
       <div className='review-workspace' onKeyDown={handleKeyDown}>
         {/* Zona B — campo de trabajo. */}
         <div ref={fieldsRef} aria-label='Campos del registro'>
+          {compact && <div className='review-field-tools'>
+            <label className='field'><span className='field__label'>Localizar campo</span>
+              <input type='search' value={fieldSearch} placeholder='Nombre o código original'
+                onChange={(event) => setFieldSearch(event.target.value)} />
+            </label>
+            <label className='field'><span className='field__label'>Bloque</span>
+              <select value={blockFilter} onChange={(event) => setBlockFilter(event.target.value)}>
+                <option value=''>Todos los bloques</option>
+                {groupBlocks(record.blocks).map(([name]) => <option key={name} value={name}>{blockLabel(name)}</option>)}
+              </select>
+            </label>
+            <label className='review-pending-filter'><input type='checkbox' checked={onlyPending}
+              onChange={(event) => setOnlyPending(event.target.checked)} /> Solo campos pendientes</label>
+          </div>}
+          {compact && !record.blocks.some(block => (!blockFilter || block.block_type === blockFilter) && block.values.some(matchesField)) &&
+            <p className='muted' role='status'>No hay campos que coincidan con los filtros.</p>}
           {groupBlocks(record.blocks).map(([blockType, blocks]) => (
-            <section className='panel' key={blockType}>
+            <section className='panel' key={blockType} hidden={compact && ((!!blockFilter && blockType !== blockFilter) || !blocks.some(block => block.values.some(matchesField)))}>
               <div className='panel__head'>
                 <div>
                   <p className='eyebrow'>
@@ -431,23 +490,27 @@ export function ReviewScreen({
                   </p>
                   <h2>{BLOCK_SOURCE_LABELS[blockType]?.title ?? blockType.replaceAll('_', ' ')}</h2>
                 </div>
+                <h2>{compact ? blockLabel(blockType) : blockType}</h2>
                 <button
                   type='button'
                   className='button button--ghost'
                   aria-expanded={editing === blockType}
                   onClick={() => {
+                    const request = ++structureRequest.current
                     if (editing === blockType) {
                       setEditing(null)
                       return
                     }
                     setEditing(blockType)
+                    setOccurrences([])
                     void fetchBlockOccurrences(record.id, blockType)
-                      .then(setOccurrences)
-                      .catch((cause: unknown) =>
+                      .then(result => { if (request === structureRequest.current) setOccurrences(result) })
+                      .catch((cause: unknown) => {
+                        if (request !== structureRequest.current) return
                         setError(
                           cause instanceof ApiError ? cause.message : 'Error inesperado.',
-                        ),
-                      )
+                        )
+                      })
                   }}
                 >
                   {editing === blockType ? 'Cerrar estructura' : 'Editar estructura'}
@@ -469,12 +532,13 @@ export function ReviewScreen({
                 />
               )}
               {blocks.map((block) => (
-                <div className='occurrence' key={block.id}>
+                <div className='occurrence' key={block.id} hidden={compact && !block.values.some(matchesField)}>
                   <p className='occurrence__label'>Ocurrencia {block.ordinal}</p>
                   {block.values.map((value) => (
                     <div
                       key={value.id}
                       data-review-field={value.id}
+                      hidden={compact && !matchesField(value)}
                       tabIndex={0}
                       onFocus={() => {
                         setActiveId(value.id)
@@ -489,11 +553,21 @@ export function ReviewScreen({
                           : value.field_name}
                         recordId={record.id}
                         reviewer={reviewer}
-                        saving={savingId === value.id}
+                        saving={savingId !== null}
                         saveError={errorFieldId === value.id}
+                        expanded={compact ? expandedId === value.id : undefined}
+                        onExpandedChange={compact ? (open) => {
+                          if (open) {
+                            setExpandedId(value.id); setActiveId(value.id)
+                            requestAnimationFrame(() => fieldsRef.current?.querySelector<HTMLElement>(`[data-review-field="${value.id}"]`)?.scrollIntoView?.({ block: 'start', inline: 'nearest' }))
+                          }
+                          else setExpandedId(current => current === value.id ? null : current)
+                        } : undefined}
                         onSave={(state, finalValue, comment) =>
                           void handleSave(value.id, state, finalValue, comment)
                         }
+                        onSaveAndAdvance={compact ? (state, finalValue, comment) =>
+                          void handleSave(value.id, state, finalValue, comment, true) : undefined}
                       />
                     </div>
                   ))}
@@ -512,14 +586,14 @@ export function ReviewScreen({
         >
           <div className='evidence-head'><span className='evidence-head__icon' aria-hidden='true'>⌕</span><div><p className='eyebrow'>Fuente activa</p><h2>Evidencia · {activeField?.field_name ?? 'Sin campos'}</h2></div></div>
           {activeField ? (
-            <ProvenanceList provenance={activeField.provenance} highlightField={activeField.field_name} />
+            <ProvenanceList key={activeField.id} provenance={activeField.provenance} highlightField={activeField.field_name} contextual={compact} />
           ) : (
-            <p className='muted'>Este registro no tiene campos almacenados.</p>
+            <p className='muted'>{fields.length ? 'No hay campos visibles con estos filtros.' : 'Este registro no tiene campos almacenados.'}</p>
           )}
           <ContextualChat recordId={recordId} />
         </aside>
 
-        <footer className='panel review-shortcuts'>
+        {!compact && <footer className='panel review-shortcuts'>
           <button
             type='button'
             className='button button--ghost'
@@ -540,7 +614,7 @@ export function ReviewScreen({
               ))}
             </dl>
           )}
-        </footer>
+        </footer>}
       </div>
 
       <section className='panel'>
@@ -557,6 +631,8 @@ export function ReviewScreen({
 
       <section className='panel'>
         <h2>Validación farmacéutica</h2>
+      {!compact && <ContextPanel className='panel review-assurance'>
+        {compact ? <summary>Validación farmacéutica y trazabilidad</summary> : <h2>Validación farmacéutica</h2>}
         <p className='note'>
           Cada decisión se guarda como un evento y no sustituye a la anterior: el historial de cada
           campo conserva quién decidió qué y cuándo. La firma es <strong>declarada</strong>, no
@@ -565,7 +641,7 @@ export function ReviewScreen({
         <RoadmapNote title='Doble validación' note={ROADMAP_NOTES.dobleValidacion} />
         <RoadmapNote title='Extracción asistida' note={ROADMAP_NOTES.extraccion} />
         <RoadmapNote title='Contraste con CIMA' note={ROADMAP_NOTES.cima} />
-      </section>
+      </ContextPanel>}
     </div>
   )
 }

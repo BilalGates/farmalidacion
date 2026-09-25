@@ -444,3 +444,4 @@ export function RealRecordListScreen() {
     </div>
   )
 }
+export { RecordsWorkspace as RealRecordListScreen } from './RecordsWorkspace'

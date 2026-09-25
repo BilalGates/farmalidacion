@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 
 import { fetchSource, fetchSources } from '../api/client'
+import type { SourceSummary } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
 import { formatDateTime, orDash, shortHash } from '../domain/format'
@@ -18,12 +20,55 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
   demo_showcase: 'Conjunto DEMO',
   cima: 'CIMA',
   ficha_tecnica: 'Ficha técnica',
+  cima_document_type_1: 'CIMA · Ficha técnica',
+  cima_document_type_2: 'CIMA · Prospecto',
 }
 
 const STATUS_LABELS: Record<string, string> = {
   disponible: 'Disponible',
   con_errores: 'Con errores',
   sin_datos: 'Sin datos',
+}
+
+const STATUS_PRIORITY: Record<string, number> = {
+  disponible: 0,
+  sin_datos: 1,
+  con_errores: 2,
+}
+
+interface SourceGroup {
+  sourceType: string
+  label: string
+  items: SourceSummary[]
+  status: string
+  records: number
+  batches: number
+  incidents: number
+  lastUpdatedAt: string | null
+}
+
+export function groupSources(items: SourceSummary[]): SourceGroup[] {
+  const grouped = new Map<string, SourceSummary[]>()
+  items.forEach((item) => grouped.set(item.source_type, [...(grouped.get(item.source_type) ?? []), item]))
+
+  return [...grouped.entries()].map(([sourceType, groupItems]) => ({
+    sourceType,
+    label: SOURCE_TYPE_LABELS[sourceType] ?? sourceType,
+    items: groupItems,
+    status: groupItems.reduce((worst, item) =>
+      (STATUS_PRIORITY[item.status] ?? 1) > (STATUS_PRIORITY[worst] ?? 1) ? item.status : worst,
+    groupItems[0].status),
+    records: groupItems.reduce((total, item) => total + item.records, 0),
+    batches: groupItems.reduce((total, item) => total + item.batches, 0),
+    incidents: groupItems.reduce(
+      (total, item) => total + item.diagnostics + item.quarantined_rows,
+      0,
+    ),
+    lastUpdatedAt: groupItems.reduce<string | null>((latest, item) => {
+      if (!item.last_updated_at) return latest
+      return !latest || item.last_updated_at > latest ? item.last_updated_at : latest
+    }, null),
+  }))
 }
 
 function SourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
@@ -116,7 +161,17 @@ function SourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
 
 export function SourcesScreen() {
   const [selected, setSelected] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const { data, error, loading } = useQuery(() => fetchSources(), [])
+
+  const toggleGroup = (sourceType: string) => {
+    setExpanded((current) => {
+      const next = new Set(current)
+      if (next.has(sourceType)) next.delete(sourceType)
+      else next.add(sourceType)
+      return next
+    })
+  }
 
   return (
     <div className='screen'>
@@ -125,8 +180,8 @@ export function SourcesScreen() {
           <p className='eyebrow'>Fuentes</p>
           <h1>Fuentes de datos cargadas</h1>
           <p className='lede'>
-            Cada fila es un documento de origen presente en la base de datos, con su versión y su
-            hash de contenido. Sólo aparece lo que se ha cargado realmente.
+            Los documentos se agrupan por origen. Despliega un grupo para consultar cada documento,
+            su versión y su hash de contenido.
           </p>
         </div>
       </div>
@@ -159,31 +214,56 @@ export function SourcesScreen() {
               </tr>
             </thead>
             <tbody>
-              {data.items.map((item) => (
-                <tr key={item.key}>
-                  <th scope='row'>{item.name}</th>
-                  <td>{SOURCE_TYPE_LABELS[item.source_type] ?? item.source_type}</td>
-                  <td>
-                    <span className={`badge badge--${item.status}`}>
-                      {STATUS_LABELS[item.status] ?? item.status}
-                    </span>
-                  </td>
-                  <td>{orDash(item.latest_version)}</td>
-                  <td>{item.records.toLocaleString('es-ES')}</td>
-                  <td>{item.batches}</td>
-                  <td>{item.diagnostics + item.quarantined_rows}</td>
-                  <td>{formatDateTime(item.last_updated_at)}</td>
-                  <td>
-                    <button
-                      type='button'
-                      className='button'
-                      onClick={() => setSelected(item.key)}
-                    >
-                      Ver detalle
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {groupSources(data.items).map((group) => {
+                const isExpanded = expanded.has(group.sourceType)
+                return (
+                  <Fragment key={group.sourceType}>
+                    <tr className='source-group'>
+                      <th scope='row'>
+                        <button
+                          type='button'
+                          className='source-group__toggle'
+                          aria-expanded={isExpanded}
+                          onClick={() => toggleGroup(group.sourceType)}
+                        >
+                          {isExpanded ? <ChevronDown aria-hidden='true' /> : <ChevronRight aria-hidden='true' />}
+                          <span>{group.label}</span>
+                          <span className='source-group__count'>{group.items.length} documentos</span>
+                        </button>
+                      </th>
+                      <td>{group.label}</td>
+                      <td><span className={`badge badge--${group.status}`}>{STATUS_LABELS[group.status] ?? group.status}</span></td>
+                      <td>—</td>
+                      <td>{group.records.toLocaleString('es-ES')}</td>
+                      <td>{group.batches}</td>
+                      <td>{group.incidents}</td>
+                      <td>{formatDateTime(group.lastUpdatedAt)}</td>
+                      <td />
+                    </tr>
+                    {isExpanded && group.items.map((item) => (
+                      <tr key={item.key} className='source-group__child'>
+                        <th scope='row'>{item.name}</th>
+                        <td>{SOURCE_TYPE_LABELS[item.source_type] ?? item.source_type}</td>
+                        <td>
+                          <span className={`badge badge--${item.status}`}>
+                            {STATUS_LABELS[item.status] ?? item.status}
+                          </span>
+                        </td>
+                        <td>{orDash(item.latest_version)}</td>
+                        <td>{item.records.toLocaleString('es-ES')}</td>
+                        <td>{item.batches}</td>
+                        <td>{item.diagnostics + item.quarantined_rows}</td>
+                        <td>{formatDateTime(item.last_updated_at)}</td>
+                        <td>
+                          <button type='button' className='button' onClick={() => setSelected(item.key)}>
+                            Ver detalle
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                )
+              })}
             </tbody>
           </table>
         )}

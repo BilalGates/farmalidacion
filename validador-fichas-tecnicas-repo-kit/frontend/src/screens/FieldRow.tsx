@@ -6,6 +6,7 @@ import { ValidationBadge } from '../components/StateBadge'
 import { ProvenanceList } from '../components/ProvenanceList'
 import { clearDraft, isEmptyDraft, readDraft, saveDraft } from '../domain/drafts'
 import { isTypingTarget, resolveShortcut } from '../domain/shortcuts'
+import { fieldLabel } from '../domain/fieldLabels'
 import {
   ASSIGNABLE_STATES,
   VALIDATION_STATE_LABELS,
@@ -33,6 +34,9 @@ export function FieldRow({
   saving,
   saveError,
   onSave,
+  expanded,
+  onExpandedChange,
+  onSaveAndAdvance,
 }: {
   value: FieldValue
   label?: string
@@ -41,11 +45,20 @@ export function FieldRow({
   saving: boolean
   saveError: boolean
   onSave: (state: ValidationState, finalValue: string | null, comment: string | null) => void
+  expanded?: boolean
+  onExpandedChange?: (open: boolean) => void
+  onSaveAndAdvance?: (state: ValidationState, finalValue: string | null, comment: string | null) => void
 }) {
   // El borrador se recupera al montar: recargar a mitad de una edición no
   // puede hacer que el revisor repita lo que ya había escrito.
   const restored = useRef(readDraft(recordId, value.id)).current
-  const [open, setOpen] = useState(restored !== null)
+  const [localOpen, setLocalOpen] = useState(restored !== null)
+  const open = expanded ?? localOpen
+  function setOpen(next: boolean | ((current: boolean) => boolean)) {
+    const result = typeof next === 'function' ? next(open) : next
+    if (onExpandedChange) onExpandedChange(result)
+    else setLocalOpen(result)
+  }
   const [state, setState] = useState<ValidationState | ''>(
     (restored?.state ?? '') as ValidationState | '',
   )
@@ -124,6 +137,8 @@ export function FieldRow({
       <div className='field-row__main'>
         <div className='field-row__identity'>
           <span className='field-row__name'>{label}</span>
+          <span className='field-row__name'>{fieldLabel(value.field_name)}</span>
+          {fieldLabel(value.field_name) !== value.field_name && <code className='field-row__code'>{value.field_name}</code>}
           <span className='field-row__type'>{value.observed_type}</span>
         </div>
         <div className='field-row__value'>
@@ -145,6 +160,7 @@ export function FieldRow({
           type='button'
           className='button button--ghost'
           aria-expanded={open}
+          aria-controls={`review-editor-${value.id}`}
           onClick={() => setOpen((current) => !current)}
         >
           {open ? 'Cerrar' : 'Revisar'}
@@ -156,7 +172,7 @@ export function FieldRow({
       </div>
 
       {open && (
-        <div className='review'>
+        <div className='review' id={`review-editor-${value.id}`}>
           {value.prefill_warning !== null && (
             <p className='field__warning' role='note'>
               {value.prefill_warning}
@@ -172,6 +188,7 @@ export function FieldRow({
               <span className='field__label'>Decisión</span>
               <select
                 aria-label='Decisión de revisión'
+                disabled={saving}
                 value={state}
                 onChange={(event) => setState(event.target.value as ValidationState | '')}
               >
@@ -190,6 +207,7 @@ export function FieldRow({
                 <input
                   type='text'
                   aria-label='Valor final'
+                  disabled={saving}
                   value={finalValue}
                   placeholder='Escriba el valor que valida'
                   onChange={(event) => setFinalValue(event.target.value)}
@@ -207,6 +225,7 @@ export function FieldRow({
               <input
                 type='text'
                 aria-label='Comentario de revisión'
+                disabled={saving}
                 value={comment}
                 onChange={(event) => setComment(event.target.value)}
               />
@@ -237,6 +256,10 @@ export function FieldRow({
             >
               {saving ? 'Guardando…' : 'Guardar decisión'}
             </button>
+            {onSaveAndAdvance && <button type='button' className='button' disabled={!canSubmit}
+              onClick={() => onSaveAndAdvance(state as ValidationState, needsValue ? finalValue : null, comment.trim() === '' ? null : comment)}>
+              Guardar y siguiente campo
+            </button>}
             {reviewer === null && (
               <span className='muted'>Seleccione un revisor para poder firmar.</span>
             )}

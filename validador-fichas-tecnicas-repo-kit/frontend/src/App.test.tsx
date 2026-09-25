@@ -42,7 +42,7 @@ function summary(overrides: Partial<RecordList['items'][number]> = {}) {
     pending_count: 3,
     resolved_count: 0,
     conflict_count: 1,
-    review_state: 'requiere_revision' as const,
+    review_state: 'pendiente' as const,
     last_reviewed_at: null,
     ...overrides,
   }
@@ -219,7 +219,14 @@ function mockFetch() {
     }
 
     const detail = /\/records\/(rec-\d)$/.exec(url)
-    if (detail) return ok(DETAIL)
+    if (detail) {
+      const result = structuredClone(DETAIL)
+      if (postCount) {
+        result.blocks[1].values[0].validation_state = 'confirmado'
+        result.blocks[1].values[0].history = [{ sequence: 1, state: 'confirmado', final_value: '2,5 mg', comment: null, reviewer_id: 'ana', reviewer_assurance: 'declarada', decided_at: '2026-09-10T09:00:00Z' }]
+      }
+      return ok(result)
+    }
 
     if (url.includes('/catalog/identities/')) {
       if (/\/(history|relations|classifications)$/.test(url)) return ok([])
@@ -289,7 +296,7 @@ function reviewButtonFor(fieldName: string): HTMLElement {
   const rows = [...document.querySelectorAll('.field-row')] as HTMLElement[]
   const row = rows.find(
     (candidate) =>
-      candidate.querySelector('.field-row__name')?.textContent === fieldName,
+      (candidate.querySelector('.field-row__code') ?? candidate.querySelector('.field-row__name'))?.textContent === fieldName,
   )
   if (!row) throw new Error(`No se encontró la fila del campo ${fieldName}`)
   return within(row).getByRole('button', { name: 'Revisar' })
@@ -374,6 +381,7 @@ describe('Recorrido de la vertical de revisión', () => {
     )
 
     await click(screen.getAllByRole('button', { name: 'Abrir expediente' })[0])
+    await click(screen.getByRole('button', { name: /Metotrexato 2,5 mg comprimidos/ }))
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Metotrexato 2,5 mg comprimidos' }),
     ).toBeVisible()
@@ -385,6 +393,7 @@ describe('Recorrido de la vertical de revisión', () => {
 
     await screen.findByRole('heading', { level: 1, name: 'Metotrexato 2,5 mg comprimidos' })
 
+    await click(screen.getByText(/Discrepancias entre fuentes ·/))
     // Ambos valores en conflicto siguen visibles, cada uno con su fuente.
     // Aparecen dos veces cada uno: en el resumen de discrepancias y en su campo.
     expect(screen.getAllByText('2,5 mg', { exact: true }).length).toBe(2)
@@ -437,6 +446,9 @@ describe('Recorrido de la vertical de revisión', () => {
     const row = (await screen.findByText('Metotrexato 2,5 mg comprimidos')).closest('tr')
     expect(row).not.toBeNull()
     expect(within(row as HTMLElement).getByText('Vigente')).toBeVisible()
+    const row = screen.getByRole('button', { name: /Metotrexato 2,5 mg comprimidos/ })
+    await waitFor(() => expect(within(row).getByText('En revisión')).toBeVisible())
+    expect(screen.getByRole('complementary', { name: 'Listado de registros' })).toBeVisible()
   })
 
   it('valida los requisitos de la decisión antes de enviarla', async () => {

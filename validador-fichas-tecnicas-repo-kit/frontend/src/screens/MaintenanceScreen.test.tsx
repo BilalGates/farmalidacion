@@ -23,17 +23,39 @@ it('muestra campos reabiertos y despliega el diff bajo demanda', async () => {
   }) as Response))
   render(<MaintenanceScreen />)
 
-  expect(await screen.findByText('51347')).toBeInTheDocument()
-  expect(screen.getByText('2')).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'Ver' }))
+  expect(await screen.findByText('Registro CIMA 51347')).toBeInTheDocument()
+  expect(screen.getByText('1 medicamento requiere revisión')).toBeInTheDocument()
+  expect(screen.getByText(/2 campos pendientes/)).toBeInTheDocument()
+  expect(screen.getByLabelText('Resumen de novedades')).toHaveTextContent('1 modificaciones')
+  expect(screen.getByLabelText('Resumen de novedades')).toHaveTextContent('0 altas')
+  const button = screen.getByRole('button', { name: 'Ver qué ha cambiado' })
+  fireEvent.click(button)
   expect(await screen.findByText('4.2')).toBeInTheDocument()
   expect(screen.getByText(/después/)).toBeInTheDocument()
+  const detail = screen.getByLabelText('Detalle de la novedad')
+  expect(detail.closest('.change-card')).toContainElement(button)
+})
+
+it('agrupa eventos del mismo registro para explicar el impacto una sola vez', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({
+    ok: true,
+    status: 200,
+    json: async () => String(input).endsWith('/maintenance/runs') ? [] : [
+      SUMMARY,
+      { ...SUMMARY, id: 'event-2', occurred_at_epoch: 2, affected_field_count: 0, has_diff: false },
+    ],
+  }) as Response))
+  render(<MaintenanceScreen />)
+
+  expect(await screen.findByText('2 eventos')).toBeInTheDocument()
+  expect(screen.getAllByText('Registro CIMA 51347')).toHaveLength(1)
+  expect(screen.getByText('1 medicamento requiere revisión')).toBeInTheDocument()
 })
 
 it('explica el estado vacío', async () => {
   vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => [] }) as Response))
   render(<MaintenanceScreen />)
-  expect(await screen.findByText('Sin novedades')).toBeInTheDocument()
+  expect(await screen.findByText('Tu catálogo está al día')).toBeInTheDocument()
 })
 
 it('hace visible el último fallo operativo y su intento', async () => {
