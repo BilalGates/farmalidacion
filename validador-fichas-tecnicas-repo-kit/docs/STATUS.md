@@ -1,5 +1,20 @@
 # Estado del proyecto
 
+## Tipos de celda en los maestros reales (25 de septiembre de 2026)
+
+- El inventario OOXML de los tres maestros encuentra únicamente cadenas
+  compartidas y números: principio activo 36.102 cadenas; medicamento 489.869
+  cadenas y 19.760 números; especialidades 1.278.618 cadenas y 346.970
+  números. No hay fórmulas, booleanos ni cadenas inline en estos libros; su
+  comportamiento queda cubierto por la suite sintética.
+- El comprobador real añade una corrección numérica temporal en
+  `General!T2` de medicamento y `General!W2` de especialidades. El XLSX de
+  salida conserva el tipo numérico y el valor exacto de prueba. Tras la
+  segunda revisión, las 72 partes internas de los tres libros vuelven a ser
+  idénticas a las originales, con hashes de fuente intactos.
+- Las seis hojas sin campo editable enlazado siguen pendientes de una vía de
+  prueba diferencial. La descarga productiva permanece desactivada.
+
 ## Reversión comprobada en los tres maestros reales (25 de septiembre de 2026)
 
 - Tras las ocho correcciones temporales en ocho hojas, el comprobador añade

@@ -108,15 +108,22 @@ ocho hojas reales: 1 de principio activo, 5 de medicamento y 2 de
 especialidades. Sólo cambian las hojas revisadas y `sharedStrings.xml`; los
 originales mantienen su hash. Seis hojas no contienen una celda editable
 enlazada para este recorrido y se informan como cobertura pendiente. Faltan
-otros tipos de celda, reversión y validación frontend.
+la reversión, los tipos numéricos y la validación frontend en este punto del
+recorrido; las dos primeras comprobaciones se completan a continuación.
 La suite sintética del exportador cubre ahora una segunda revisión que restaura
 el libro original byte a byte, números, booleanos, texto inline con espacios y
 rechazo de fórmulas. La validación de esos tipos en los maestros reales
 sigue pendiente.
 El comprobador real también añade una segunda revisión a las ocho celdas
 corregidas y confirma que los tres XLSX restaurados tienen cero cambios y sus
-72 partes internas vuelven a coincidir byte a byte con el origen. Quedan los
-tipos alternativos reales y las seis hojas sin celda editable enlazada.
+72 partes internas vuelven a coincidir byte a byte con el origen. Quedaban
+los tipos numéricos reales y las seis hojas sin celda editable enlazada.
+El inventario OOXML confirma que los tipos observados en estos tres libros son
+únicamente cadenas compartidas y números. Dos celdas numéricas enlazadas
+(`General!T2` de medicamento y `General!W2` de especialidades) pasan
+corrección conservando el tipo y reversión sin diferencias. Los demás tipos
+permanecen cubiertos en pruebas sintéticas; falta la cobertura diferencial de
+las seis hojas sin celda editable enlazada.
 El expediente ya permite completar una celda vacía de una fila fuente enlazada:
 selecciona una columna ausente de la cabecera importada, conserva `null` como
 literal y registra procedencia, actor, motivo y valor vigente. La prueba

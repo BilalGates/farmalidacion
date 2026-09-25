@@ -35,8 +35,12 @@ La suite sintética ya comprueba reversión byte a byte, tipos numérico, boolea
 e inline, y rechazo de fórmulas. La comprobación de tipos alternativos sobre
 origen real sigue pendiente.
 La reversión de las ocho correcciones reales ya devuelve las 72 partes XLSX
-idénticas y cero celdas cambiadas; faltan los tipos alternativos sobre origen
-real y la cobertura de las seis hojas sin celda editable enlazada.
+idénticas y cero celdas cambiadas; faltaba contrastar números sobre origen
+real y sigue pendiente la cobertura de las seis hojas sin celda editable enlazada.
+El inventario real sólo contiene cadenas compartidas y números. Una revisión
+numérica en medicamento y otra en especialidades conservan el tipo y revierten
+sin diferencias. Fórmulas, booleanos e inline quedan probados sintéticamente;
+continúa pendiente la cobertura de las seis hojas señaladas.
 BOT PLUS queda como spike externo D-033 y no bloquea el resto.
 
 CAT-005 — mejora incremental: el listado muestra el rango de resultados y la

@@ -80,6 +80,7 @@ def verify(source_directory: Path) -> dict[str, object]:
                         parts = len(source_zip.namelist())
                     result.append({"filename": item.filename, "parts_identical": parts})
                 selected_cells: dict[str, dict[str, tuple[str, str, str, str | None]]] = {}
+                numeric_cells: dict[str, tuple[str, str, str, str, str | None]] = {}
                 for name in MASTER_WORKBOOKS:
                     candidates = session.execute(
                         select(FieldValue, SourceFragment.locator)
@@ -136,6 +137,49 @@ def verify(source_directory: Path) -> dict[str, object]:
                                     recorded_at=datetime.now(UTC),
                                 )
                             )
+                        for field, locator in candidates:
+                            coordinates = json.loads(locator)
+                            sheet = str(coordinates["sheet"])
+                            reference = _reference(
+                                int(field.source_column_index), int(coordinates["row"])
+                            )
+                            if selected_cells[name].get(sheet, (None,))[0] == reference:
+                                continue
+                            cell = sheet_xml[sheet].find(
+                                f".//{{{MAIN_NS}}}c[@r='{reference}']"
+                            )
+                            if (
+                                cell is None
+                                or cell.get("t") not in (None, "n")
+                                or cell.find(f"{{{MAIN_NS}}}f") is not None
+                                or _cell_value(cell, shared) is None
+                            ):
+                                continue
+                            if _cell_value(cell, shared) != field.literal_value:
+                                raise AssertionError(
+                                    f"Literal numérico importado distinto: {name}:{sheet}!{reference}"
+                                )
+                            marker = "987654321"
+                            if field.literal_value == marker:
+                                continue
+                            numeric_cells[name] = (
+                                sheet, reference, marker, field.id, field.literal_value
+                            )
+                            session.add(
+                                FieldMaintenanceRevision(
+                                    field_value_id=field.id,
+                                    sequence=1,
+                                    before_value=field.literal_value,
+                                    after_value=marker,
+                                    actor_id="verificacion_temporal",
+                                    actor_assurance="tecnico",
+                                    reason="Comprobar celda numérica en base temporal",
+                                    recorded_at=datetime.now(UTC),
+                                )
+                            )
+                            break
+                    if name in MASTER_WORKBOOKS[1:] and name not in numeric_cells:
+                        raise AssertionError(f"Sin celda numérica editable importada: {name}")
                     match = next(row for row in result if row["filename"] == name)
                     match["sheets_without_linked_editable_cell"] = sorted(
                         set(sheet_paths) - set(selected_cells[name])
@@ -146,7 +190,8 @@ def verify(source_directory: Path) -> dict[str, object]:
                 )
                 for item in corrected:
                     selections = selected_cells[item.filename]
-                    if item.changed_cells != len(selections):
+                    numeric = numeric_cells.get(item.filename)
+                    if item.changed_cells != len(selections) + int(numeric is not None):
                         raise AssertionError(f"Número de cambios inesperado: {item.filename}")
                     with zipfile.ZipFile(source_directory / item.filename) as source_zip, zipfile.ZipFile(item.output) as output_zip:
                         sheet_paths = _workbook_sheets(source_zip)
@@ -158,6 +203,8 @@ def verify(source_directory: Path) -> dict[str, object]:
                             if source_zip.read(name) != output_zip.read(name)
                         }
                         expected_sheets = {sheet_paths[sheet] for sheet in selections}
+                        if numeric is not None:
+                            expected_sheets.add(sheet_paths[numeric[0]])
                         if not expected_sheets <= changed_parts or changed_parts - (
                             expected_sheets | {"xl/sharedStrings.xml"}
                         ):
@@ -170,12 +217,27 @@ def verify(source_directory: Path) -> dict[str, object]:
                                 raise AssertionError(
                                     f"Corrección no encontrada: {item.filename}:{sheet}!{reference}"
                                 )
+                        if numeric is not None:
+                            sheet, reference, marker, _, _ = numeric
+                            xml = ET.fromstring(output_zip.read(sheet_paths[sheet]))
+                            cell = xml.find(f".//{{{MAIN_NS}}}c[@r='{reference}']")
+                            if (
+                                cell is None
+                                or cell.get("t") not in (None, "n")
+                                or _cell_value(cell, shared) != marker
+                            ):
+                                raise AssertionError(
+                                    f"Corrección numérica inválida: {item.filename}:{sheet}!{reference}"
+                                )
                     match = next(row for row in result if row["filename"] == item.filename)
                     match["corrected_cells"] = [
                         f"{sheet}!{reference}"
                         for sheet, (reference, _, _, _) in selections.items()
                     ]
                     match["changed_parts"] = sorted(changed_parts)
+                    match["corrected_numeric_cell"] = (
+                        f"{numeric[0]}!{numeric[1]}" if numeric is not None else None
+                    )
                 for selections in selected_cells.values():
                     for _, marker, field_id, original_value in selections.values():
                         session.add(
@@ -190,6 +252,19 @@ def verify(source_directory: Path) -> dict[str, object]:
                                 recorded_at=datetime.now(UTC),
                             )
                         )
+                for _, _, marker, field_id, original_value in numeric_cells.values():
+                    session.add(
+                        FieldMaintenanceRevision(
+                            field_value_id=field_id,
+                            sequence=2,
+                            before_value=marker,
+                            after_value=original_value,
+                            actor_id="verificacion_temporal",
+                            actor_assurance="tecnico",
+                            reason="Comprobar reversión numérica en base temporal",
+                            recorded_at=datetime.now(UTC),
+                        )
+                    )
                 session.flush()
                 restored = export_master_workbooks(
                     session, source_directory, Path(temporary) / "restored"
