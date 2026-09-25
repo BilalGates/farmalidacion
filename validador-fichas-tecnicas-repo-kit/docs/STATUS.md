@@ -1,5 +1,21 @@
 # Estado del proyecto
 
+## Hojas sin filas de datos clasificadas (25 de septiembre de 2026)
+
+- El comprobador real clasifica las seis hojas sin campos editables enlazados
+  como hojas de solo cabecera: cuatro de principio activo (`Frecuencia`, `Via`,
+  `ConsejosAdministracion`, `DatosAnaliticos`) y dos de medicamento
+  (`Frecuencia`, `Prescripcion`). Para cada una confirma que el inventario
+  importado tiene cero filas y cero valores de datos y que el OOXML no contiene
+  valores ni fórmulas debajo de la cabecera.
+- Las seis partes de hoja permanecen byte a byte idénticas durante las
+  correcciones y reversiones en otras hojas. Las ocho hojas con datos tienen
+  prueba diferencial; no queda una hoja con datos sin clasificar en estos tres
+  libros. La comprobación volverá a fallar si aparece contenido bajo una de
+  esas cabeceras sin un campo editable enlazado.
+- Sigue pendiente la verificación frontend/runtime, el gate del modelo
+  canónico y la aceptación farmacéutica. La descarga productiva sigue apagada.
+
 ## Tipos de celda en los maestros reales (25 de septiembre de 2026)
 
 - El inventario OOXML de los tres maestros encuentra únicamente cadenas

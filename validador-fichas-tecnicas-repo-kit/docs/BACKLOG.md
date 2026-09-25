@@ -40,7 +40,10 @@ real y sigue pendiente la cobertura de las seis hojas sin celda editable enlazad
 El inventario real sólo contiene cadenas compartidas y números. Una revisión
 numérica en medicamento y otra en especialidades conservan el tipo y revierten
 sin diferencias. Fórmulas, booleanos e inline quedan probados sintéticamente;
-continúa pendiente la cobertura de las seis hojas señaladas.
+las seis hojas antes señaladas están confirmadas como solo cabecera por el
+inventario importado y el OOXML, y sus partes permanecen idénticas. Las ocho
+hojas con datos tienen prueba diferencial. Continúan pendientes frontend,
+modelo canónico y aceptación farmacéutica.
 BOT PLUS queda como spike externo D-033 y no bloquea el resto.
 
 CAT-005 — mejora incremental: el listado muestra el rango de resultados y la

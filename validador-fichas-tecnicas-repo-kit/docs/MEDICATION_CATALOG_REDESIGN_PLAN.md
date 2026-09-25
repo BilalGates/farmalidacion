@@ -124,6 +124,11 @@ El inventario OOXML confirma que los tipos observados en estos tres libros son
 corrección conservando el tipo y reversión sin diferencias. Los demás tipos
 permanecen cubiertos en pruebas sintéticas; falta la cobertura diferencial de
 las seis hojas sin celda editable enlazada.
+El comprobador cierra esa clasificación: las seis hojas tienen cero filas y
+cero valores de datos según la importación, no contienen celdas materiales bajo
+la cabecera en OOXML y permanecen byte a byte intactas durante corrección y
+reversión. Las ocho hojas con datos del conjunto recibido tienen prueba
+diferencial. Siguen las verificaciones de interfaz, modelo y aceptación.
 El expediente ya permite completar una celda vacía de una fila fuente enlazada:
 selecciona una columna ausente de la cabecera importada, conserva `null` como
 literal y registra procedencia, actor, motivo y valor vigente. La prueba

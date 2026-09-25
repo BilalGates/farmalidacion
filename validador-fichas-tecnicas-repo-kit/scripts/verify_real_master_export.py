@@ -34,6 +34,8 @@ from pharma_validator_api.models import (
     BlockInstance,
     FieldMaintenanceRevision,
     FieldValue,
+    ImportBatch,
+    ImportedSourceSheet,
     SourceDocument,
     SourceDocumentVersion,
     SourceFragment,
@@ -102,6 +104,18 @@ def verify(source_directory: Path) -> dict[str, object]:
                     with zipfile.ZipFile(source_directory / name) as source_zip:
                         sheet_paths = _workbook_sheets(source_zip)
                         _, _, shared = _shared_strings(source_zip)
+                        imported_sheets = session.scalars(
+                            select(ImportedSourceSheet)
+                            .join(ImportBatch, ImportedSourceSheet.import_batch_id == ImportBatch.id)
+                            .where(
+                                ImportBatch.source_locator == name,
+                                ImportBatch.content_hash == originals[name],
+                                ImportBatch.status == "completed",
+                            )
+                        ).all()
+                        sheet_metadata = {item.sheet_name: item for item in imported_sheets}
+                        if len(sheet_metadata) != len(imported_sheets) or set(sheet_metadata) != set(sheet_paths):
+                            raise AssertionError(f"Inventario de hojas importadas inválido: {name}")
                         sheet_xml = {
                             sheet: ET.fromstring(source_zip.read(path))
                             for sheet, path in sheet_paths.items()
@@ -181,9 +195,23 @@ def verify(source_directory: Path) -> dict[str, object]:
                     if name in MASTER_WORKBOOKS[1:] and name not in numeric_cells:
                         raise AssertionError(f"Sin celda numérica editable importada: {name}")
                     match = next(row for row in result if row["filename"] == name)
-                    match["sheets_without_linked_editable_cell"] = sorted(
-                        set(sheet_paths) - set(selected_cells[name])
-                    )
+                    header_only = sorted(set(sheet_paths) - set(selected_cells[name]))
+                    for sheet in header_only:
+                        metadata = sheet_metadata[sheet]
+                        if metadata.data_row_count != 0 or metadata.material_value_count != 0:
+                            raise AssertionError(f"Hoja con datos sin celda editable: {name}:{sheet}")
+                        for row in sheet_xml[sheet].findall(
+                            f".//{{{MAIN_NS}}}sheetData/{{{MAIN_NS}}}row"
+                        ):
+                            if int(row.get("r", "0")) <= metadata.header_row_number:
+                                continue
+                            if any(
+                                _cell_value(cell, shared) not in (None, "")
+                                or cell.find(f"{{{MAIN_NS}}}f") is not None
+                                for cell in row.findall(f"{{{MAIN_NS}}}c")
+                            ):
+                                raise AssertionError(f"Valor debajo de cabecera: {name}:{sheet}")
+                    match["header_only_sheets"] = header_only
                 session.flush()
                 corrected = export_master_workbooks(
                     session, source_directory, Path(temporary) / "corrected"
