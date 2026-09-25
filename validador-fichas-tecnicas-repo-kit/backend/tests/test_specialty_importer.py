@@ -32,12 +32,6 @@ from pharma_validator_api.specialty_importer import (
     import_specialties,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
-RAW = ROOT / "data" / "reference" / "raw"
-SOURCE = RAW / SOURCE_FILENAME
-ACTIVE_SOURCE = RAW / ACTIVE_SOURCE_FILENAME
-MEDICATION_SOURCE = RAW / MEDICATION_SOURCE_FILENAME
-
 
 def migrated_session(tmp_path: Path) -> Session:
     database_path = tmp_path / "specialties.db"
@@ -53,20 +47,23 @@ def file_hash(path: Path) -> str:
 @pytest.mark.slow
 @pytest.mark.reference
 def test_real_master_import_preserves_valid_rows_and_quarantines_orphans(
-    tmp_path: Path,
+    tmp_path: Path, master_data_directory: Path,
 ) -> None:
-    before = file_hash(SOURCE)
+    source = master_data_directory / SOURCE_FILENAME
+    active_source = master_data_directory / ACTIVE_SOURCE_FILENAME
+    medication_source = master_data_directory / MEDICATION_SOURCE_FILENAME
+    before = file_hash(source)
     assert before == SOURCE_HASH
 
     with migrated_session(tmp_path) as session:
-        assert import_active_ingredients(session, ACTIVE_SOURCE).status == "completed"
+        assert import_active_ingredients(session, active_source).status == "completed"
         session.commit()
-        assert import_medications(session, MEDICATION_SOURCE).status == "completed"
+        assert import_medications(session, medication_source).status == "completed"
         session.commit()
 
-        first = import_specialties(session, SOURCE)
+        first = import_specialties(session, source)
         session.commit()
-        second = import_specialties(session, SOURCE)
+        second = import_specialties(session, source)
         session.commit()
 
         assert first.created is True
@@ -146,7 +143,7 @@ def test_real_master_import_preserves_valid_rows_and_quarantines_orphans(
         }
         assert len(orphan_identifiers) == 184
 
-    assert file_hash(SOURCE) == before
+    assert file_hash(source) == before
 
 
 def test_invalid_workbook_fails_batch_and_keeps_diagnostic(tmp_path: Path) -> None:

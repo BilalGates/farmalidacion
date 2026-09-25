@@ -55,6 +55,17 @@ const RECORD_PAGE = {
   offset: 0,
 }
 
+const CATALOG_PAGE = {
+  items: [{
+    id: 'cat-real', identity_type: 'presentation', code: '707703',
+    display_name: 'Omeprazol 20 mg cápsula', target_record_id: null,
+    source_system: 'master_excel', source_version: '2026-06-19',
+    source_workbook: 'especialidades', source_literal: '707703',
+    active: true, version: 1,
+  }],
+  total: 1, limit: 50, offset: 0,
+}
+
 const DEMO_PAGE = {
   items: [
     {
@@ -273,6 +284,11 @@ function route(url: string): unknown {
   if (url.includes('/insights/sources')) return SOURCES
   if (url.includes('/insights/imports')) return IMPORTS
   if (url.includes('/insights/records/')) return RECORD_DETAIL
+  if (url.includes('/catalog/identities/cat-real/')) return []
+  if (url.includes('/catalog/identities/cat-real')) return CATALOG_PAGE.items[0]
+  if (url.includes('/catalog/identities')) {
+    return url.includes('q=') ? { ...CATALOG_PAGE, items: [], total: 0 } : CATALOG_PAGE
+  }
   if (url.includes('/insights/records')) {
     return url.includes('origin=demo') ? DEMO_PAGE : RECORD_PAGE
   }
@@ -287,6 +303,7 @@ beforeEach(() => {
   calls = []
   databaseInfo = REAL_DATABASE
   window.location.hash = ''
+  window.sessionStorage.removeItem('farmalidacion.catalog-list-state')
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
@@ -357,6 +374,9 @@ describe('separación entre datos reales y DEMO', () => {
     window.location.hash = '#/fichas'
     render(<App />)
     expect(await screen.findByText('Omeprazol 20 mg cápsula')).toBeInTheDocument()
+    expect(calls.some((url) => url.includes('/catalog/identities') && url.includes('active=true'))).toBe(true)
+    const row = screen.getByRole('row', { name: /Omeprazol 20 mg cápsula/ })
+    expect(within(row).getByText('Especialidades')).toBeInTheDocument()
     expect(calls.some((url) => url.includes('origin=real'))).toBe(true)
     expect(screen.getByRole('button', { name: /Omeprazol 20 mg cápsula/ })).toBeInTheDocument()
     expect(within(screen.getByRole('complementary', { name: 'Listado de registros' })).getByText('Real')).toBeInTheDocument()
@@ -381,10 +401,10 @@ describe('separación entre datos reales y DEMO', () => {
           ok: true,
           status: 200,
           json: async () =>
-            url.includes('/insights/records')
+            url.includes('/catalog/identities')
               ? empty
                 ? { items: [], total: 0, limit: 50, offset: 0 }
-                : RECORD_PAGE
+                : CATALOG_PAGE
               : [],
         } as Response
       }),
@@ -401,16 +421,17 @@ describe('separación entre datos reales y DEMO', () => {
 })
 
 describe('ficha de un registro real', () => {
-  it('abre el detalle REAL desde el listado y conserva la ruta de fichas', async () => {
+  it('abre el expediente REAL desde el catálogo', async () => {
     window.location.hash = '#/fichas'
     render(<App />)
     await screen.findByText('Omeprazol 20 mg cápsula')
 
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir expediente' }))
     fireEvent.click(screen.getByRole('button', { name: /Omeprazol 20 mg cápsula/ }))
 
-    await waitFor(() => expect(window.location.hash).toBe('#/fichas/rec-real'))
-    expect(await screen.findByText('707703')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Registros/ })).toHaveAttribute(
+    await waitFor(() => expect(window.location.hash).toBe('#/catalogo/cat-real'))
+    expect(await screen.findByRole('heading', { name: 'Omeprazol 20 mg cápsula' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Catálogo' })).toHaveAttribute(
       'aria-current',
       'page',
     )
@@ -533,11 +554,11 @@ describe('estado del conjunto de datos', () => {
 })
 
 describe('navegación', () => {
-  it('marca "Registros" como activo en /#/fichas', async () => {
+  it('marca "Catálogo" como activo en /#/fichas', async () => {
     window.location.hash = '#/fichas'
     render(<App />)
     await screen.findByText('Omeprazol 20 mg cápsula')
-    expect(screen.getByRole('button', { name: /Registros/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Catálogo' })).toHaveAttribute(
       'aria-current',
       'page',
     )
@@ -549,7 +570,7 @@ describe('navegación', () => {
     window.location.hash = '#/registros'
     render(<App />)
     await screen.findByText('Omeprazol 20 mg cápsula')
-    expect(screen.getByRole('button', { name: /Registros/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Catálogo' })).toHaveAttribute(
       'aria-current',
       'page',
     )
@@ -564,7 +585,7 @@ describe('navegación', () => {
 })
 
 describe('manejo de errores y reintento', () => {
-  it('muestra error y botón de reintento cuando falla /insights/records', async () => {
+  it('muestra error y botón de reintento cuando falla /catalog/identities', async () => {
     let callCount = 0
     window.location.hash = '#/fichas'
     vi.stubGlobal(
@@ -575,7 +596,7 @@ describe('manejo de errores y reintento', () => {
           return { ok: true, status: 200, json: async () => REAL_DATABASE } as Response
         if (url.includes('/records/reviewers'))
           return { ok: true, status: 200, json: async () => [] } as Response
-        if (url.includes('/insights/records')) {
+        if (url.includes('/catalog/identities')) {
           callCount += 1
           if (callCount === 1) {
             return {
@@ -584,7 +605,7 @@ describe('manejo de errores y reintento', () => {
               json: async () => ({ detail: 'Error interno del servidor.' }),
             } as Response
           }
-          return { ok: true, status: 200, json: async () => RECORD_PAGE } as Response
+          return { ok: true, status: 200, json: async () => CATALOG_PAGE } as Response
         }
         throw new Error(`Ruta no simulada: ${url}`)
       }),

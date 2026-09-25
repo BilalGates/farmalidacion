@@ -5,6 +5,7 @@ from typing import Annotated, cast
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import ColumnElement, func, or_, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
 from pharma_validator_api.config import Settings, get_settings
@@ -12,6 +13,7 @@ from pharma_validator_api.errors import ApplicationError
 from pharma_validator_api.models import (
     BlockInstance,
     ExternalIdentifier,
+    FieldMaintenanceRevision,
     FieldValue,
     ReviewQueueEntry,
     SecondReviewAssignment,
@@ -116,10 +118,24 @@ class DecisionRead(BaseModel):
     decided_at: str
 
 
+class FieldMaintenanceRead(BaseModel):
+    sequence: int
+    before_value: str | None
+    after_value: str | None
+    actor_id: str
+    actor_assurance: str
+    reason: str
+    recorded_at: str
+
+
 class FieldValueRead(BaseModel):
     id: str
     field_name: str
+    source_column_index: int | None = None
     literal_value: str | None
+    maintained_value: str | None = None
+    maintenance_sequence: int = 0
+    maintenance_history: list[FieldMaintenanceRead] = Field(default_factory=list)
     observed_type: str
     logical_state: str
     provenance: list[ProvenanceRead]
@@ -207,6 +223,13 @@ class DecisionWrite(BaseModel):
     field_required: bool = False
 
 
+class FieldMaintenanceWrite(BaseModel):
+    expected_sequence: int = Field(ge=0)
+    value: str | None = None
+    actor_id: str = Field(min_length=1, max_length=80)
+    reason: str = Field(min_length=1, max_length=2000)
+
+
 def get_session(request: Request) -> Iterator[Session]:
     factory = cast(sessionmaker[Session], request.app.state.session_factory)
     with factory() as session:
@@ -283,18 +306,23 @@ def _first_value(session: Session, record_id: str, names: tuple[str, ...]) -> st
     return None
 
 
+def _field_group_key(value: FieldValue) -> tuple[str, str, int | None]:
+    """Separa cabeceras duplicadas, pero conserva evidencia del mismo campo fuente."""
+    return (value.block_instance_id, value.field_name, value.source_column_index)
+
+
 def _group_by_field(
     session: Session, values: Sequence[FieldValue]
-) -> dict[tuple[str, str], tuple[FieldValue, ...]]:
+) -> dict[tuple[str, str, int | None], tuple[FieldValue, ...]]:
     """Agrupa valores por ocurrencia de bloque y nombre de campo.
 
     Agrupar por nombre de campo a secas fusionaría ocurrencias distintas del
     mismo bloque repetible, que es exactamente lo que la regla de ocurrencias
     explícitas prohíbe.
     """
-    grouped: dict[tuple[str, str], list[FieldValue]] = {}
+    grouped: dict[tuple[str, str, int | None], list[FieldValue]] = {}
     for value in values:
-        grouped.setdefault((value.block_instance_id, value.field_name), []).append(value)
+        grouped.setdefault(_field_group_key(value), []).append(value)
     return {key: tuple(items) for key, items in grouped.items()}
 
 
@@ -409,10 +437,10 @@ def _summarize_loaded(
             last_reviewed = decision.decided_at
     # La discrepancia se cuenta por campo dentro de la ocurrencia, no por fila:
     # dos fuentes que discrepan producen dos filas y el conflicto vive entre ellas.
-    grouped: dict[tuple[str, str], list[FieldValue]] = {}
+    grouped: dict[tuple[str, str, int | None], list[FieldValue]] = {}
     for value in values:
-        grouped.setdefault((value.block_instance_id, value.field_name), []).append(value)
-    for (block_id, field_name), group in grouped.items():
+        grouped.setdefault(_field_group_key(value), []).append(value)
+    for (block_id, field_name, _column), group in grouped.items():
         block = blocks_by_id.get(block_id)
         block_type = block.block_type if block is not None else "desconocido"
         evaluation = evaluate_field_conflict_from(
@@ -643,6 +671,7 @@ def read_record(record_id: str, session: SessionDependency) -> TargetRecordRead:
                         value,
                         record,
                         block,
+                        grouped[_field_group_key(value)],
                         grouped[(value.block_instance_id, value.field_name)],
                         provenance,
                         current,
@@ -667,6 +696,67 @@ def read_record(record_id: str, session: SessionDependency) -> TargetRecordRead:
     )
 
 
+@router.post(
+    "/values/{field_value_id}/maintenance", response_model=FieldMaintenanceRead, status_code=201
+)
+def maintain_field_value(
+    field_value_id: str,
+    payload: FieldMaintenanceWrite,
+    session: SessionDependency,
+    directory: DirectoryDependency,
+) -> FieldMaintenanceRead:
+    """Corrige el valor de trabajo sin alterar el literal ni emitir una decisión clínica."""
+    value = session.get(FieldValue, field_value_id)
+    if value is None:
+        raise ApplicationError("Campo no encontrado.", status_code=404)
+    current = session.scalar(
+        select(FieldMaintenanceRevision)
+        .where(FieldMaintenanceRevision.field_value_id == field_value_id)
+        .order_by(FieldMaintenanceRevision.sequence.desc())
+        .limit(1)
+    )
+    current_sequence = current.sequence if current else 0
+    if payload.expected_sequence != current_sequence:
+        raise ApplicationError(
+            "El campo cambió desde que lo abrió. Recargue antes de guardar.",
+            status_code=409,
+        )
+    reason = payload.reason.strip()
+    if not reason:
+        raise ApplicationError("Indique el motivo del cambio.", status_code=400)
+    if payload.value == (current.after_value if current else value.literal_value):
+        raise ApplicationError("El valor nuevo es igual al valor vigente.", status_code=400)
+    try:
+        actor = directory.resolve(payload.actor_id)
+    except ReviewerIdentityError as error:
+        raise ApplicationError(str(error), status_code=400) from error
+    revision = FieldMaintenanceRevision(
+        field_value_id=field_value_id,
+        sequence=current_sequence + 1,
+        before_value=current.after_value if current else value.literal_value,
+        after_value=payload.value,
+        actor_id=actor.identifier,
+        actor_assurance=actor.assurance,
+        reason=reason,
+        recorded_at=datetime.now(UTC),
+    )
+    session.add(revision)
+    try:
+        session.commit()
+    except IntegrityError as error:
+        session.rollback()
+        raise ApplicationError(
+            "El campo se modificó en paralelo. Recargue antes de guardar.",
+            status_code=409,
+        ) from error
+    return FieldMaintenanceRead(
+        sequence=revision.sequence,
+        before_value=revision.before_value,
+        after_value=revision.after_value,
+        actor_id=revision.actor_id,
+        actor_assurance=revision.actor_assurance,
+        reason=revision.reason,
+        recorded_at=revision.recorded_at.isoformat(),
 def _read_field_value_loaded(
     session: Session,
     value: FieldValue,
@@ -739,10 +829,33 @@ def _read_field_value(
         value.field_name,
         field_prefill_policy(session, value.field_name),
     )
+    maintenance_history = session.scalars(
+        select(FieldMaintenanceRevision)
+        .where(FieldMaintenanceRevision.field_value_id == value.id)
+        .order_by(FieldMaintenanceRevision.sequence)
+    ).all()
+    latest_maintenance = maintenance_history[-1] if maintenance_history else None
     return FieldValueRead(
         id=value.id,
         field_name=value.field_name,
+        source_column_index=value.source_column_index,
         literal_value=value.literal_value,
+        maintained_value=(
+            latest_maintenance.after_value if latest_maintenance else value.literal_value
+        ),
+        maintenance_sequence=latest_maintenance.sequence if latest_maintenance else 0,
+        maintenance_history=[
+            FieldMaintenanceRead(
+                sequence=item.sequence,
+                before_value=item.before_value,
+                after_value=item.after_value,
+                actor_id=item.actor_id,
+                actor_assurance=item.actor_assurance,
+                reason=item.reason,
+                recorded_at=item.recorded_at.isoformat(),
+            )
+            for item in maintenance_history
+        ],
         observed_type=value.observed_type,
         logical_state=value.logical_state,
         provenance=_provenance(session, value.id),

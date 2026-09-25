@@ -27,11 +27,6 @@ from pharma_validator_api.models import (
     ValueProvenance,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
-RAW = ROOT / "data" / "reference" / "raw"
-SOURCE = RAW / SOURCE_FILENAME
-ACTIVE_SOURCE = RAW / ACTIVE_SOURCE_FILENAME
-
 
 def migrated_session(tmp_path: Path) -> Session:
     database_path = tmp_path / "medications.db"
@@ -46,18 +41,22 @@ def file_hash(path: Path) -> str:
 
 @pytest.mark.slow
 @pytest.mark.reference
-def test_real_master_import_is_lossless_linked_and_idempotent(tmp_path: Path) -> None:
-    before = file_hash(SOURCE)
+def test_real_master_import_is_lossless_linked_and_idempotent(
+    tmp_path: Path, master_data_directory: Path,
+) -> None:
+    source = master_data_directory / SOURCE_FILENAME
+    active_source = master_data_directory / ACTIVE_SOURCE_FILENAME
+    before = file_hash(source)
     assert before == SOURCE_HASH
 
     with migrated_session(tmp_path) as session:
-        active = import_active_ingredients(session, ACTIVE_SOURCE)
+        active = import_active_ingredients(session, active_source)
         session.commit()
         assert active.status == "completed"
 
-        first = import_medications(session, SOURCE)
+        first = import_medications(session, source)
         session.commit()
-        second = import_medications(session, SOURCE)
+        second = import_medications(session, source)
         session.commit()
 
         assert first.created is True
@@ -142,7 +141,7 @@ def test_real_master_import_is_lossless_linked_and_idempotent(tmp_path: Path) ->
             )
         ) == 2
 
-    assert file_hash(SOURCE) == before
+    assert file_hash(source) == before
 
 
 def test_invalid_workbook_fails_batch_and_keeps_diagnostic(tmp_path: Path) -> None:

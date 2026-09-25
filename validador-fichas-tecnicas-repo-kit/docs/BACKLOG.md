@@ -1,5 +1,84 @@
 # Backlog inicial
 
+## Nuevo camino de producto — catálogo editable (22 de septiembre de 2026)
+
+ADR-0012 redefine el siguiente bloque de trabajo sin invalidar la infraestructura
+terminada. El producto se orienta a explorar, mantener, comparar y revisar el
+catálogo completo. La validación farmacéutica es operación continua y no una
+barrera previa al rediseño.
+
+El epic CAT-001..CAT-010 y su orden verificable están en
+`docs/MEDICATION_CATALOG_REDESIGN_PLAN.md`. El contrato de dominio, CN,
+proyección tipada y primer explorador ya avanzaron. Omeprazol pasó el recorrido
+técnico por una BD ORM temporal; sigue pendiente probarlo con importadores y
+exportador de producción y validar el modelo canónico con farmacia. La auditoría
+de cobertura con los importadores productivos ya pasó: 113.915 filas y
+2.170.900 valores comprobados; 275 filas/1.649 valores están preservados en
+cuarentena con mantenimiento por celda separado y probado en API, sin reparar
+su relación padre. Los editores ya cubren registros fuente enlazados, no
+enlazados y en cuarentena; faltan validar frontend/runtime y conectar la
+exportación hoja por hoja de los tres Excel, además de las pruebas de usabilidad.
+El adaptador de reconstrucción y la descarga conjunta protegida ya están en
+código. La verificación real importa los tres maestros en SQLite temporal,
+reconstruye sus 72 partes XLSX sin cambios y comprueba una corrección temporal
+en `General!A2` de cada libro; sólo cambian la hoja correspondiente y la tabla
+de cadenas. Una prueba sintética cubre la exportación de una celda que estaba
+ausente. El expediente ya permite crear esa corrección en filas fuente enlazadas
+con cabecera, coordenada y revisión verificadas; la prueba API→XLSX pasa.
+La pantalla de cuarentena también permite completar columnas ausentes sin
+modificar el payload ni resolver la relación padre. La verificación diferencial
+ya cubre ocho hojas reales (1/5/2 por libro) y enumera seis hojas sin celda
+editable enlazada. Quedan otros tipos de celda, reversiones y una vía de prueba
+para esas seis hojas. La bandera de descarga continúa apagada hasta
+completar esa cobertura, la revisión visual y el gate del modelo canónico.
+La suite sintética ya comprueba reversión byte a byte, tipos numérico, booleano
+e inline, y rechazo de fórmulas. La comprobación de tipos alternativos sobre
+origen real sigue pendiente.
+La reversión de las ocho correcciones reales ya devuelve las 72 partes XLSX
+idénticas y cero celdas cambiadas; faltaba contrastar números sobre origen
+real y sigue pendiente la cobertura de las seis hojas sin celda editable enlazada.
+El inventario real sólo contiene cadenas compartidas y números. Una revisión
+numérica en medicamento y otra en especialidades conservan el tipo y revierten
+sin diferencias. Fórmulas, booleanos e inline quedan probados sintéticamente;
+las seis hojas antes señaladas están confirmadas como solo cabecera por el
+inventario importado y el OOXML, y sus partes permanecen idénticas. Las ocho
+hojas con datos tienen prueba diferencial. Continúan pendientes frontend,
+modelo canónico y aceptación farmacéutica.
+BOT PLUS queda como spike externo D-033 y no bloquea el resto.
+
+CAT-004/CAT-005 — la verificación frontend del 25-09-2026 pasa 138 pruebas,
+lint y build. El navegador con SQLite DEMO temporal confirma catálogo poblado,
+expediente y cuarentena vacía. Se corrigió la carga de clasificaciones para
+consultarlas solo en presentaciones y el desbordamiento horizontal de la tabla
+en ventana estrecha. Quedan piloto con datos reales y aceptación farmacéutica.
+
+CAT-005 — mejora incremental: el listado muestra el rango de resultados y la
+página actual, y la tabla tiene desplazamiento vertical/horizontal accesible por
+teclado con cabecera fija. Se conserva el límite de 50 y la paginación server-side.
+Permite ordenar por nombre o código (ascendente/descendente) antes de paginar y
+abrir un expediente conserva filtros, orden, página y posición para regresar al
+mismo punto. Backend verificado: ruff, mypy y 11 pruebas de API pasadas. La
+prueba Vitest queda pendiente porque este entorno no tiene `frontend/node_modules`.
+
+CAT-001 — el inventario de `SOURCE_INVENTORY.md` incorpora las 14 hojas y sus
+cabeceras observadas. Las pruebas de importación aceptan
+`FARMALIDACION_MASTER_DATA_DIR`; la importación completa de Principios activos
+pasó contra la carpeta `base` en base temporal, con hash de origen intacto. La
+posición de columna ya se preserva en modelo/API/UI para distinguir `Links`
+con dos campos `DESCRIPCION`. `MEDICATION_SOURCE_FIELD_MAP.md` registra las
+asignaciones estructurales y los niveles que no tienen equivalencia fuente
+explícita. Falta validación farmacéutica. La edición canónica plena y la
+exportación de vuelta siguen pendientes de las puertas del modelo canónico y
+omeprazol.
+
+CAT-002 — la búsqueda del explorador acepta un CN de siete dígitos y prueba el
+código de trabajo de seis dígitos sin mutar identidades ni validar el control.
+CAT-004 — se añadió un registro append-only y un primer editor contextual en el
+expediente del catálogo para corregir campos importados sin pisar el literal
+fuente ni crear decisiones de revisión. La API devuelve valor vigente,
+secuencia e historial y rechaza ediciones obsoletas. El editor alcanza también
+los registros fuente no enlazados y las filas en cuarentena con rutas separadas.
+Faltan las pruebas de uso en volumen y el gate integral de exportación.
 ## UI-REG-001 — Registros compacto (10-09-2026)
 
 Implementado según ADR-0012: navegación conjunta, un editor por campo,

@@ -26,6 +26,7 @@ import { navigate } from '../navigation'
 import { blockLabel, fieldLabel, searchText } from '../domain/fieldLabels'
 import { clearDraft } from '../domain/drafts'
 import { BlockEditor } from './BlockEditor'
+import { SourceFieldsMaintenance } from './CatalogSourceFields'
 import { FieldRow } from './FieldRow'
 import '../review-workspace.css'
 
@@ -55,7 +56,41 @@ function groupBlocks(blocks: BlockInstance[]): [string, BlockInstance[]][] {
     list.push(block)
     grouped.set(block.block_type, list)
   }
-  return [...grouped.entries()]
+  const sheetOrder: Record<string, number> = {
+    specialty_general: 0,
+    specialty_excipient: 1,
+    medication_general: 0,
+    medication_composition: 1,
+    medication_indication: 2,
+    medication_frequency: 3,
+    medication_route: 4,
+    medication_prescription: 5,
+    medication_link: 6,
+    active_ingredient_general: 0,
+    active_ingredient_frequency: 1,
+    active_ingredient_route: 2,
+    active_ingredient_administration_advice: 3,
+    active_ingredient_analytical_data: 4,
+  }
+  return [...grouped.entries()].sort(
+    ([left], [right]) => (sheetOrder[left] ?? Number.MAX_SAFE_INTEGER)
+      - (sheetOrder[right] ?? Number.MAX_SAFE_INTEGER),
+  )
+}
+
+function excelColumnLabel(index: number): string {
+  let value = index
+  let label = ''
+  while (value > 0) {
+    value -= 1
+    label = String.fromCharCode(65 + (value % 26)) + label
+    value = Math.floor(value / 26)
+  }
+  return label
+}
+
+function duplicateFieldName(values: FieldValue[], name: string): boolean {
+  return values.filter((value) => value.field_name === name).length > 1
 }
 
 const RESOLVED_STATES: readonly ValidationState[] = [
@@ -65,6 +100,29 @@ const RESOLVED_STATES: readonly ValidationState[] = [
   'no_aplica',
   'descartado',
 ]
+
+const RECORD_TYPE_LABELS: Record<string, string> = {
+  specialty: 'Especialidad · libro Especialidades',
+  medication: 'Medicamento · libro Medicamentos',
+  active_ingredient: 'Principio activo · libro Principios activos',
+}
+
+const BLOCK_SOURCE_LABELS: Record<string, { workbook: string; sheet: string; title: string }> = {
+  specialty_general: { workbook: 'Especialidades', sheet: 'General', title: 'Datos generales' },
+  specialty_excipient: { workbook: 'Especialidades', sheet: 'Excipientes', title: 'Excipientes' },
+  medication_general: { workbook: 'Medicamentos', sheet: 'General', title: 'Datos generales' },
+  medication_composition: { workbook: 'Medicamentos', sheet: 'Composicion', title: 'Composición' },
+  medication_indication: { workbook: 'Medicamentos', sheet: 'Indicacion', title: 'Indicaciones' },
+  medication_frequency: { workbook: 'Medicamentos', sheet: 'Frecuencia', title: 'Frecuencia' },
+  medication_route: { workbook: 'Medicamentos', sheet: 'Via', title: 'Vías' },
+  medication_prescription: { workbook: 'Medicamentos', sheet: 'Prescripcion', title: 'Prescripción' },
+  medication_link: { workbook: 'Medicamentos', sheet: 'Links', title: 'Enlaces' },
+  active_ingredient_general: { workbook: 'Principios activos', sheet: 'General', title: 'Datos generales' },
+  active_ingredient_frequency: { workbook: 'Principios activos', sheet: 'Frecuencia', title: 'Frecuencia' },
+  active_ingredient_route: { workbook: 'Principios activos', sheet: 'Via', title: 'Vías' },
+  active_ingredient_administration_advice: { workbook: 'Principios activos', sheet: 'ConsejosAdministracion', title: 'Consejos de administración' },
+  active_ingredient_analytical_data: { workbook: 'Principios activos', sheet: 'DatosAnaliticos', title: 'Datos analíticos' },
+}
 
 /** Nombre legible del registro. No se inventa si la fuente no lo trae. */
 function recordTitle(record: TargetRecord): string {
@@ -100,6 +158,7 @@ export function ReviewScreen({
   const fieldsRef = useRef<HTMLDivElement>(null)
   const evidenceRef = useRef<HTMLElement>(null)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [sourceMaintenanceOpen, setSourceMaintenanceOpen] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [fieldSearch, setFieldSearch] = useState('')
   const [blockFilter, setBlockFilter] = useState('')
@@ -336,7 +395,7 @@ export function ReviewScreen({
           <p className='eyebrow'>Revisión de ficha</p>
           <h1>{displayName || recordTitle(record)}</h1>
           <p className='lede'>
-            <code>{record.id}</code> · {record.entity_type}
+            <code>{record.id}</code> · {RECORD_TYPE_LABELS[record.entity_type] ?? record.entity_type}
           </p>
         </div>
       </div>
@@ -423,6 +482,14 @@ export function ReviewScreen({
           {groupBlocks(record.blocks).map(([blockType, blocks]) => (
             <section className='panel' key={blockType} hidden={compact && ((!!blockFilter && blockType !== blockFilter) || !blocks.some(block => block.values.some(matchesField)))}>
               <div className='panel__head'>
+                <div>
+                  <p className='eyebrow'>
+                    {BLOCK_SOURCE_LABELS[blockType]
+                      ? `Libro ${BLOCK_SOURCE_LABELS[blockType].workbook} · hoja ${BLOCK_SOURCE_LABELS[blockType].sheet}`
+                      : 'Bloque del registro'}
+                  </p>
+                  <h2>{BLOCK_SOURCE_LABELS[blockType]?.title ?? blockType.replaceAll('_', ' ')}</h2>
+                </div>
                 <h2>{compact ? blockLabel(blockType) : blockType}</h2>
                 <button
                   type='button'
@@ -481,6 +548,9 @@ export function ReviewScreen({
                     >
                       <FieldRow
                         value={value}
+                        label={duplicateFieldName(block.values, value.field_name) && value.source_column_index != null
+                          ? `${value.field_name} · columna ${excelColumnLabel(value.source_column_index)}`
+                          : value.field_name}
                         recordId={record.id}
                         reviewer={reviewer}
                         saving={savingId !== null}
@@ -547,6 +617,20 @@ export function ReviewScreen({
         </footer>}
       </div>
 
+      <section className='panel'>
+        <details
+          className='disclosure review-source-maintenance'
+          onToggle={(event) => setSourceMaintenanceOpen(event.currentTarget.open)}
+          aria-label='Mantenimiento independiente de campos fuente'
+        >
+          <summary>Mantenimiento del libro original · editar datos importados</summary>
+          <p className='note'>Corrige el dato de trabajo sin registrar una decisión farmacéutica ni alterar el literal importado. Disponible también para registros que aún no tienen identidad canónica.</p>
+          {sourceMaintenanceOpen && <SourceFieldsMaintenance recordId={record.id} reviewer={reviewer} />}
+        </details>
+      </section>
+
+      <section className='panel'>
+        <h2>Validación farmacéutica</h2>
       {!compact && <ContextPanel className='panel review-assurance'>
         {compact ? <summary>Validación farmacéutica y trazabilidad</summary> : <h2>Validación farmacéutica</h2>}
         <p className='note'>

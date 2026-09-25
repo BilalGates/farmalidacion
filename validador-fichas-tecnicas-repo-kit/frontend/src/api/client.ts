@@ -3,10 +3,23 @@ import type {
   BlockEditRecord,
   BlockEditWrite,
   BlockOccurrence,
+  CatalogIdentity,
+  CatalogIdentityPage,
+  CatalogIdentitySort,
+  CatalogIdentityType,
+  CatalogSourceWorkbook,
+  CatalogRevision,
+  CatalogRelation,
+  CatalogClassification,
   Dashboard,
   DatabaseInfo,
   DataOrigin,
   DecisionWrite,
+  FieldMaintenanceEntry,
+  FieldMaintenanceWrite,
+  EmptySourceColumn,
+  QuarantinedField,
+  QuarantinedSourceRowPage,
   ImportDetail,
   ImportList,
   RealRecordDetail,
@@ -194,12 +207,14 @@ export function fetchImport(id: string): Promise<ImportDetail> {
 export function fetchRealRecords(params: {
   origin: DataOrigin
   q?: string
+  entityType?: string
   estado?: ReviewState
   limit?: number
   offset?: number
 }): Promise<RealRecordPage> {
   const search = new URLSearchParams({ origin: params.origin })
   if (params.q) search.set('q', params.q)
+  if (params.entityType) search.set('entity_type', params.entityType)
   if (params.estado) search.set('estado', params.estado)
   if (params.limit !== undefined) search.set('limit', String(params.limit))
   if (params.offset !== undefined) search.set('offset', String(params.offset))
@@ -243,6 +258,143 @@ export function setReviewerActive(identifier: string, active: boolean): Promise<
 
 export function fetchRealRecord(id: string): Promise<RealRecordDetail> {
   return request<RealRecordDetail>(`/insights/records/${encodeURIComponent(id)}`)
+}
+
+export function saveFieldMaintenance(
+  fieldValueId: string,
+  payload: FieldMaintenanceWrite,
+): Promise<FieldMaintenanceEntry> {
+  return request<FieldMaintenanceEntry>(`/records/values/${encodeURIComponent(fieldValueId)}/maintenance`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function fetchEmptySourceColumns(recordId: string, blockId: string): Promise<EmptySourceColumn[]> {
+  return request<EmptySourceColumn[]>(`/records/${encodeURIComponent(recordId)}/blocks/${encodeURIComponent(blockId)}/empty-source-columns`)
+}
+
+export function createEmptySourceValue(
+  recordId: string,
+  blockId: string,
+  payload: { source_column_index: number; value: string; actor_id: string; reason: string },
+): Promise<EmptySourceColumn & { id: string; maintained_value: string }> {
+  return request(`/records/${encodeURIComponent(recordId)}/blocks/${encodeURIComponent(blockId)}/empty-source-values`, {
+    method: 'POST', body: JSON.stringify(payload),
+  })
+}
+
+export function fetchQuarantinedRows(params: {
+  sourceWorkbook?: string
+  limit?: number
+  offset?: number
+} = {}): Promise<QuarantinedSourceRowPage> {
+  const search = new URLSearchParams()
+  if (params.sourceWorkbook) search.set('source_workbook', params.sourceWorkbook)
+  if (params.limit !== undefined) search.set('limit', String(params.limit))
+  if (params.offset !== undefined) search.set('offset', String(params.offset))
+  return request<QuarantinedSourceRowPage>(`/records/quarantined?${search.toString()}`)
+}
+
+export function saveQuarantinedFieldMaintenance(
+  rowId: string,
+  columnIndex: number,
+  payload: FieldMaintenanceWrite,
+): Promise<QuarantinedField> {
+  return request<QuarantinedField>(
+    `/records/quarantined/${encodeURIComponent(rowId)}/values/${columnIndex}/maintenance`,
+    { method: 'POST', body: JSON.stringify(payload) },
+  )
+}
+
+export function fetchQuarantinedEmptyColumns(rowId: string): Promise<EmptySourceColumn[]> {
+  return request<EmptySourceColumn[]>(`/records/quarantined/${encodeURIComponent(rowId)}/empty-source-columns`)
+}
+
+export function createQuarantinedEmptyValue(
+  rowId: string,
+  payload: { source_column_index: number; value: string; actor_id: string; reason: string },
+): Promise<QuarantinedField> {
+  return request<QuarantinedField>(`/records/quarantined/${encodeURIComponent(rowId)}/empty-source-values`, {
+    method: 'POST', body: JSON.stringify(payload),
+  })
+}
+
+export function fetchCatalogIdentities(params: {
+  q?: string
+  identityType?: CatalogIdentityType
+  commercialClass?: string
+  conditions?: string[]
+  sourceWorkbook?: CatalogSourceWorkbook
+  sortBy?: CatalogIdentitySort
+  active?: boolean
+  limit?: number
+  offset?: number
+} = {}): Promise<CatalogIdentityPage> {
+  const search = new URLSearchParams()
+  if (params.q) search.set('q', params.q)
+  if (params.identityType) search.set('identity_type', params.identityType)
+  if (params.commercialClass) search.set('commercial_class', params.commercialClass)
+  params.conditions?.forEach((condition) => search.append('condition', condition))
+  if (params.sourceWorkbook) search.set('source_workbook', params.sourceWorkbook)
+  if (params.sortBy) search.set('sort_by', params.sortBy)
+  if (params.active !== undefined) search.set('active', String(params.active))
+  if (params.limit !== undefined) search.set('limit', String(params.limit))
+  if (params.offset !== undefined) search.set('offset', String(params.offset))
+  const query = search.toString()
+  return request<CatalogIdentityPage>(`/catalog/identities${query ? `?${query}` : ''}`)
+}
+
+export function fetchCatalogIdentity(id: string): Promise<CatalogIdentity> {
+  return request<CatalogIdentity>(`/catalog/identities/${encodeURIComponent(id)}`)
+}
+
+export function fetchCatalogHistory(id: string): Promise<CatalogRevision[]> {
+  return request<CatalogRevision[]>(`/catalog/identities/${encodeURIComponent(id)}/history`)
+}
+
+export function fetchCatalogRelations(id: string): Promise<CatalogRelation[]> {
+  return request<CatalogRelation[]>(`/catalog/identities/${encodeURIComponent(id)}/relations`)
+}
+
+export function fetchCatalogClassifications(id: string): Promise<CatalogClassification[]> {
+  return request<CatalogClassification[]>(
+    `/catalog/identities/${encodeURIComponent(id)}/classifications`,
+  )
+}
+
+export function setCatalogClassification(
+  identityId: string,
+  payload: {
+    classification_type: CatalogClassification['classification_type']
+    value: string
+    active: boolean
+    actor_id: string
+    reason: string
+  },
+): Promise<CatalogClassification> {
+  const key = encodeURIComponent(`${payload.classification_type}:${payload.value}`)
+  return request<CatalogClassification>(
+    `/catalog/identities/${encodeURIComponent(identityId)}/classifications/${key}`,
+    { method: 'PUT', body: JSON.stringify(payload) },
+  )
+}
+
+export function updateCatalogIdentity(
+  id: string,
+  payload: {
+    expected_version: number
+    display_name: string
+    code: string | null
+    active: boolean
+    actor_id: string
+    reason: string
+  },
+): Promise<CatalogIdentity> {
+  return request<CatalogIdentity>(`/catalog/identities/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
 }
 
 /* --------------------------------------------------------------------------

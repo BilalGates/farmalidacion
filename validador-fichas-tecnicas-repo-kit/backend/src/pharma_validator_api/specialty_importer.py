@@ -384,6 +384,7 @@ def import_specialties(
                         "id": field_id,
                         "block_instance_id": block_id,
                         "field_name": headers.get(column, f"__COLUMN_{column}"),
+                        "source_column_index": column,
                         "literal_value": cell.literal_value,
                         "observed_type": cell.observed_type,
                         "logical_state": "empty" if cell.literal_value == "" else "valued",

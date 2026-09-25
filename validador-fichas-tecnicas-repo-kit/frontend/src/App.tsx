@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   BadgeCheck,
+  AlertTriangle,
   Database,
   Download,
   FileStack,
@@ -28,6 +29,8 @@ import { ExportsScreen } from './screens/ExportsScreen'
 import { QueueScreen } from './screens/QueueScreen'
 import { SecondReviewScreen } from './screens/SecondReviewScreen'
 import { MaintenanceScreen } from './screens/MaintenanceScreen'
+import { CatalogIdentityScreen } from './screens/CatalogIdentityScreen'
+import { QuarantinedRecordsScreen } from './screens/QuarantinedRecordsScreen'
 
 interface NavItem {
   readonly id: string
@@ -52,10 +55,11 @@ function NavIcon({ icon: Icon }: { readonly icon: LucideIcon }) {
  */
 const NAV: readonly NavItem[] = [
   { id: 'inicio', label: 'Inicio', icon: Home, available: true },
-  { id: 'fichas', label: 'Registros', icon: FileStack, available: true },
+  { id: 'fichas', label: 'Catálogo', icon: FileStack, available: true },
   { id: 'cola', label: 'Cola de revisión', icon: ListChecks, available: true },
   { id: 'validaciones', label: 'Validaciones', icon: BadgeCheck, available: true },
   { id: 'importaciones', label: 'Importaciones', icon: Download, available: true },
+  { id: 'cuarentena', label: 'Filas en cuarentena', icon: AlertTriangle, available: true },
   { id: 'exportaciones', label: 'Exportaciones', icon: Upload, available: true },
   { id: 'fuentes', label: 'Fuentes', icon: Database, available: true },
   { id: 'novedades', label: 'Novedades CIMA', icon: History, available: true },
@@ -63,7 +67,7 @@ const NAV: readonly NavItem[] = [
 ]
 
 function activeNavId(routeName: string, routeId: string | null): string {
-  if (routeName === 'ficha' || routeName === 'fichas') return 'fichas'
+  if (routeName === 'ficha' || routeName === 'fichas' || routeName === 'catalogo') return 'fichas'
   if (routeName === 'fuentes') return 'fuentes'
   if (routeName === 'importaciones') return 'importaciones'
   if (routeName === 'seccion' && routeId) return routeId
@@ -158,8 +162,12 @@ export function App() {
           {(route.name === 'fichas' || route.name === 'ficha') && (
             <RealRecordListScreen recordId={route.name === 'ficha' ? route.id : undefined} reviewer={reviewer} />
           )}
+          {route.name === 'catalogo' && (
+            <CatalogIdentityScreen key={route.id} identityId={route.id} reviewer={reviewer} />
+          )}
           {route.name === 'fuentes' && <SourcesScreen />}
           {route.name === 'importaciones' && <ImportsScreen />}
+          {route.name === 'seccion' && route.id === 'cuarentena' && <QuarantinedRecordsScreen reviewer={reviewer} />}
           {route.name === 'seccion' && route.id === 'cola' && <QueueScreen reviewer={reviewer} />}
           {route.name === 'seccion' && route.id === 'validaciones' && (
             <SecondReviewScreen reviewer={reviewer} />

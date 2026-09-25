@@ -46,10 +46,55 @@ export interface Decision {
   decided_at: string
 }
 
+export interface FieldMaintenanceEntry {
+  sequence: number
+  before_value: string | null
+  after_value: string | null
+  actor_id: string
+  actor_assurance: string
+  reason: string
+  recorded_at: string
+}
+
+export interface FieldMaintenanceWrite {
+  expected_sequence: number
+  value: string | null
+  actor_id: string
+  reason: string
+}
+
+export interface QuarantinedField {
+  source_column_index: number
+  field_name: string
+  literal_value: string | null
+  maintained_value: string | null
+  observed_type: string
+  maintenance_sequence: number
+  maintenance_history: FieldMaintenanceEntry[]
+}
+
+export interface QuarantinedSourceRow {
+  id: string
+  source_workbook: string
+  source_locator: string
+  reason_code: string
+  reason: string
+  fields: QuarantinedField[]
+}
+
+export interface QuarantinedSourceRowPage {
+  items: QuarantinedSourceRow[]
+  total: number
+}
+
 export interface FieldValue {
   id: string
   field_name: string
+  source_column_index?: number | null
   literal_value: string | null
+  maintained_value?: string | null
+  maintenance_sequence?: number
+  maintenance_history?: FieldMaintenanceEntry[]
   observed_type: string
   logical_state: string
   provenance: Provenance[]
@@ -285,6 +330,75 @@ export interface RealRecordPage {
   total: number
   limit: number
   offset: number
+}
+
+export interface EmptySourceColumn {
+  source_column_index: number
+  field_name: string
+}
+
+export type CatalogIdentityType =
+  | 'commercial_product'
+  | 'authorization'
+  | 'presentation'
+  | 'dcpf'
+  | 'dcp'
+  | 'dcsa'
+  | 'active_ingredient'
+
+export type CatalogSourceWorkbook = 'especialidades' | 'medicamentos' | 'principios_activos'
+export type CatalogIdentitySort = 'name_asc' | 'name_desc' | 'code_asc' | 'code_desc'
+
+export interface CatalogIdentity {
+  id: string
+  identity_type: CatalogIdentityType
+  code: string | null
+  display_name: string
+  target_record_id: string | null
+  source_system: string
+  source_version: string
+  source_workbook?: CatalogSourceWorkbook | null
+  source_literal: string | null
+  active: boolean
+  version: number
+  commercial_class?: string | null
+  conditions?: string[]
+}
+
+export interface CatalogIdentityPage {
+  items: CatalogIdentity[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface CatalogRevision {
+  sequence: number
+  action: string
+  before_state: string | null
+  after_state: string
+  actor_id: string
+  actor_assurance: string
+  reason: string
+  recorded_at: string
+}
+
+export interface CatalogRelation {
+  id: string
+  relation_type: string
+  direction: 'incoming' | 'outgoing'
+  ordinal: number | null
+  related_identity: CatalogIdentity
+}
+
+export interface CatalogClassification {
+  id: string
+  classification_type: 'commercial_class' | 'condition'
+  value: string
+  source_system: string
+  source_version: string
+  source_fragment_id: string | null
+  active: boolean
 }
 
 export interface ValueProvenance {

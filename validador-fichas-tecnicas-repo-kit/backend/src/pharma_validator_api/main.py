@@ -9,10 +9,14 @@ from sqlalchemy import func, select
 from sqlalchemy.engine import make_url
 
 from pharma_validator_api.block_api import router as block_router
+from pharma_validator_api.catalog_api import router as catalog_router
+from pharma_validator_api.catalog_demo_fixture import load_catalog_demo_fixture
+from pharma_validator_api.catalog_projection import project_target_records
 from pharma_validator_api.chat_api import router as chat_router
 from pharma_validator_api.config import Settings, get_settings
 from pharma_validator_api.data_origin import DataOrigin, apply_origin_filter
 from pharma_validator_api.database import create_database_engine, create_session_factory
+from pharma_validator_api.empty_source_fields import router as empty_source_fields_router
 from pharma_validator_api.errors import register_error_handlers
 from pharma_validator_api.export_api import audit_router, risk_router
 from pharma_validator_api.export_api import router as export_router
@@ -20,7 +24,9 @@ from pharma_validator_api.fixtures import load_demo_fixture, load_showcase_fixtu
 from pharma_validator_api.insights import router as insights_router
 from pharma_validator_api.logging import configure_logging
 from pharma_validator_api.maintenance_api import router as maintenance_router
+from pharma_validator_api.master_workbook_export_api import router as master_export_router
 from pharma_validator_api.models import ImportBatch, TargetRecord
+from pharma_validator_api.quarantine_api import router as quarantine_router
 from pharma_validator_api.queue_api import maturity_router
 from pharma_validator_api.queue_api import router as queue_router
 from pharma_validator_api.records import router as records_router
@@ -89,6 +95,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if active.load_showcase_fixture:
             with session_factory() as session:
                 load_showcase_fixture(session, active.showcase_fixture_path)
+        if active.data_mode == "demo":
+            with session_factory() as session:
+                project_target_records(session, apply=True)
+                session.commit()
+                catalog_fixture = (
+                    active.demo_fixture_path.parent / "medication-domain-acceptance.json"
+                )
+                if catalog_fixture.exists():
+                    load_catalog_demo_fixture(session, catalog_fixture)
         yield
         engine.dispose()
 
@@ -105,14 +120,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         application.add_middleware(
             CORSMiddleware,
             allow_origins=list(active.cors_allow_origins),
-            allow_methods=['GET', 'POST', 'PUT'],
-            allow_headers=['Content-Type'],
+            allow_methods=["GET", "POST", "PUT"],
+            allow_headers=["Content-Type"],
         )
     register_error_handlers(application)
     # Las rutas de bloque se registran antes que `records_router`: éste declara
     # `/records/{record_id}`, que de otro modo capturaría `/records/{id}/blocks`.
     application.include_router(block_router)
     application.include_router(chat_router)
+    application.include_router(catalog_router)
+    application.include_router(quarantine_router)
+    application.include_router(empty_source_fields_router)
     application.include_router(records_router)
     application.include_router(insights_router)
     application.include_router(queue_router)
@@ -120,6 +138,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(timing_router)
     application.include_router(second_review_router)
     application.include_router(export_router)
+    application.include_router(master_export_router)
     application.include_router(audit_router)
     application.include_router(risk_router)
     application.include_router(maintenance_router)
@@ -129,18 +148,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def health() -> HealthResponse:
         return HealthResponse(status="ok", service=active.app_name, environment=active.env)
 
-    @application.get(
-        "/database-info", response_model=DatabaseInfoResponse, tags=["sistema"]
-    )
+    @application.get("/database-info", response_model=DatabaseInfoResponse, tags=["sistema"])
     def database_info() -> DatabaseInfoResponse:
         with session_factory() as session:
             total = session.scalar(select(func.count()).select_from(TargetRecord)) or 0
             demo = (
                 session.scalar(
                     select(func.count()).select_from(
-                        apply_origin_filter(
-                            select(TargetRecord.id), DataOrigin.DEMO
-                        ).subquery()
+                        apply_origin_filter(select(TargetRecord.id), DataOrigin.DEMO).subquery()
                     )
                 )
                 or 0
