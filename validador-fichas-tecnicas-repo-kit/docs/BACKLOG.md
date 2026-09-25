@@ -46,6 +46,12 @@ hojas con datos tienen prueba diferencial. Continúan pendientes frontend,
 modelo canónico y aceptación farmacéutica.
 BOT PLUS queda como spike externo D-033 y no bloquea el resto.
 
+CAT-004/CAT-005 — la verificación frontend del 25-09-2026 pasa 138 pruebas,
+lint y build. El navegador con SQLite DEMO temporal confirma catálogo poblado,
+expediente y cuarentena vacía. Se corrigió la carga de clasificaciones para
+consultarlas solo en presentaciones y el desbordamiento horizontal de la tabla
+en ventana estrecha. Quedan piloto con datos reales y aceptación farmacéutica.
+
 CAT-005 — mejora incremental: el listado muestra el rango de resultados y la
 página actual, y la tabla tiene desplazamiento vertical/horizontal accesible por
 teclado con cabecera fija. Se conserva el límite de 50 y la paginación server-side.

@@ -1170,7 +1170,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .catalog-list-summary { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .35rem 1rem; }
 .catalog-list-summary strong { color: var(--ink); }
 .catalog-sort-control { min-width: min(100%, 200px); }
-.catalog-table-scroll { max-height: min(68vh, 760px); overflow: auto; border: 1px solid var(--line-soft); border-radius: 6px; }
+.catalog-results { min-width: 0; }
+.catalog-table-scroll { width: 100%; min-width: 0; max-height: min(68vh, 760px); overflow: auto; border: 1px solid var(--line-soft); border-radius: 6px; }
 .catalog-table-scroll:focus-visible { outline: 3px solid var(--accent-strong); outline-offset: 2px; }
 .catalog-table-scroll .table { min-width: 820px; margin: 0; }
 .catalog-table-scroll .table thead th { position: sticky; z-index: 1; top: 0; background: #f7f9fd; }

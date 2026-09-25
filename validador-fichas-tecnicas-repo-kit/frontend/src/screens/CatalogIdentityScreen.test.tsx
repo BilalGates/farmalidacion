@@ -39,6 +39,7 @@ it('exige motivo y conserva el actor al modificar', async () => {
   render(<CatalogIdentityScreen identityId='dcp-1' reviewer={REVIEWER} />)
 
   await screen.findByRole('heading', { name: 'Medicamento ejemplo' })
+  expect(fetchMock.mock.calls.some(([url]) => url.includes('/classifications'))).toBe(false)
   const save = screen.getByRole('button', { name: 'Guardar cambios' })
   expect(save).toBeDisabled()
   fireEvent.change(screen.getByLabelText('Nombre visible'), { target: { value: 'Nombre corregido' } })
@@ -53,7 +54,7 @@ it('exige motivo y conserva el actor al modificar', async () => {
 
 it('edita campos importados sin enviar una decisión farmacéutica', async () => {
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-    if (url.includes('/maintenance')) return new Response(JSON.stringify({ sequence: 1 }))
+    if (url.includes('/maintenance') && init?.method === 'POST') return new Response(JSON.stringify({ sequence: 1 }))
     if (url.includes('/records/record-1')) return new Response(JSON.stringify(SOURCE_RECORD))
     if (url.includes('/history')) return new Response(JSON.stringify([]))
     if (url.includes('/relations')) return new Response(JSON.stringify([]))
@@ -64,7 +65,7 @@ it('edita campos importados sin enviar una decisión farmacéutica', async () =>
   render(<CatalogIdentityScreen identityId='dcp-1' reviewer={REVIEWER} />)
 
   await screen.findByRole('heading', { name: 'Campos importados' })
-  expect(screen.getAllByText('Nombre original')).toHaveLength(2)
+  expect(await screen.findAllByText('Nombre original')).toHaveLength(2)
   fireEvent.click(screen.getByRole('button', { name: 'Editar campo' }))
   fireEvent.change(screen.getByLabelText('Nuevo valor para DESCRIPCION'), { target: { value: 'Nombre corregido' } })
   fireEvent.change(screen.getByLabelText('Motivo para DESCRIPCION'), { target: { value: 'Corrección de catálogo.' } })
@@ -76,4 +77,18 @@ it('edita campos importados sin enviar una decisión farmacéutica', async () =>
     expected_sequence: 0, value: 'Nombre corregido', actor_id: 'ana', reason: 'Corrección de catálogo.',
   })
   expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/decisions'))).toBe(false)
+})
+
+it('consulta clasificaciones solo para una presentación', async () => {
+  const presentation = { ...IDENTITY, id: 'presentation-1', identity_type: 'presentation', target_record_id: null }
+  const fetchMock = vi.fn(async (url: string) => {
+    if (url.includes('/classifications')) return new Response(JSON.stringify([]))
+    if (url.includes('/history') || url.includes('/relations')) return new Response(JSON.stringify([]))
+    return new Response(JSON.stringify(presentation))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  render(<CatalogIdentityScreen identityId={presentation.id} reviewer={REVIEWER} />)
+
+  await screen.findByRole('heading', { name: presentation.display_name })
+  expect(fetchMock.mock.calls.some(([url]) => url.includes('/classifications'))).toBe(true)
 })

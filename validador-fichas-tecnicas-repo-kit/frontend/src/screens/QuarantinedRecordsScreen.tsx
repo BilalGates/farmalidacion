@@ -71,7 +71,6 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
   }
 
   // Carga sólo al entrar; los cambios de página/filtro llaman load desde sus controles.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { void load(0, '', '') }, [])
 
   function beginEdit(field: QuarantinedField) {

@@ -1,5 +1,23 @@
 # Estado del proyecto
 
+## Frontend verificado con datos DEMO (25 de septiembre de 2026)
+
+- Se instalaron las dependencias del frontend y pasaron Vitest completo
+  (21 archivos, 138 pruebas), ESLint sin avisos y `tsc -b && vite build`.
+  Las suites antiguas de navegación se actualizaron al listado vigente
+  `/catalog/identities`; la ruta de revisión `/records` mantiene sus pruebas.
+- La revisión en navegador con backend y SQLite DEMO temporales confirmó el
+  catálogo poblado, un expediente de producto comercial y el estado vacío de
+  cuarentena. Se corrigió una consulta de clasificaciones reservada a
+  presentaciones que impedía abrir otros niveles del catálogo. Una prueba
+  verifica ambos casos. La tabla del catálogo desplaza horizontalmente dentro
+  de su contenedor en ventana estrecha, sin ensanchar toda la página.
+- Se corrigieron un error anulable de TypeScript, un refresco innecesario al
+  limpiar una búsqueda no aplicada y dos fallos de lint. La base y los
+  servidores de vista previa se retiraron al terminar. Queda la validación de
+  experiencia con los datos reales, además del gate del modelo y la aceptación
+  farmacéutica; la descarga productiva sigue desactivada.
+
 ## Hojas sin filas de datos clasificadas (25 de septiembre de 2026)
 
 - El comprobador real clasifica las seis hojas sin campos editables enlazados

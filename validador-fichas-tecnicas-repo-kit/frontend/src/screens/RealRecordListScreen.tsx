@@ -170,7 +170,7 @@ export function RealRecordListScreen() {
     setSourceWorkbook(null)
     setShowArchived(false)
     setCommercialClass(null)
-    setConditions([])
+    setConditions((selected) => selected.length ? [] : selected)
     setSortBy('name_asc')
   }
 
@@ -269,7 +269,8 @@ export function RealRecordListScreen() {
         table.scrollTop = initialState.tableScrollTop ?? 0
         table.scrollLeft = initialState.tableScrollLeft ?? 0
       }
-      if ((initialState.windowScrollY ?? 0) > 0) window.scrollTo(0, initialState.windowScrollY)
+      const savedWindowScrollY = initialState.windowScrollY ?? 0
+      if (savedWindowScrollY > 0) window.scrollTo(0, savedWindowScrollY)
     })
   }, [data, initialState.tableScrollLeft, initialState.tableScrollTop, initialState.windowScrollY, loading])
 

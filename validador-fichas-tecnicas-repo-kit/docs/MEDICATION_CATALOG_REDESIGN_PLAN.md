@@ -129,6 +129,11 @@ cero valores de datos según la importación, no contienen celdas materiales baj
 la cabecera en OOXML y permanecen byte a byte intactas durante corrección y
 reversión. Las ocho hojas con datos del conjunto recibido tienen prueba
 diferencial. Siguen las verificaciones de interfaz, modelo y aceptación.
+El frontend pasa Vitest (138 pruebas), ESLint y build. Una revisión de navegador
+con backend DEMO temporal confirma catálogo poblado, expediente y cuarentena
+vacía. Se corrigió la solicitud de clasificaciones de niveles no presentación
+y el ancho de la tabla en ventana estrecha. Permanece la prueba de uso con
+datos reales y la aceptación del modelo con farmacia.
 El expediente ya permite completar una celda vacía de una fila fuente enlazada:
 selecciona una columna ausente de la cabecera importada, conserva `null` como
 literal y registra procedencia, actor, motivo y valor vigente. La prueba

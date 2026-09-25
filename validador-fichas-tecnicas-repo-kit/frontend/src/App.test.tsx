@@ -221,6 +221,30 @@ function mockFetch() {
     const detail = /\/records\/(rec-\d)$/.exec(url)
     if (detail) return ok(DETAIL)
 
+    if (url.includes('/catalog/identities/')) {
+      if (/\/(history|relations|classifications)$/.test(url)) return ok([])
+      const record = listPayload.items.find((item) => url.endsWith(`/catalog/identities/${item.id}`))
+      return ok({
+        id: record?.id ?? 'rec-1', identity_type: 'dcp', code: record?.primary_identifier ?? null,
+        display_name: record?.display_name ?? 'Metotrexato 2,5 mg comprimidos',
+        target_record_id: null, source_system: 'demo', source_version: 'demo-v1',
+        source_literal: record?.primary_identifier ?? null, active: true, version: 1,
+      })
+    }
+    if (url.includes('/catalog/identities')) {
+      const query = new URL(url).searchParams.get('q')?.toLowerCase()
+      const items = listPayload.items
+        .filter((item) => !query || (item.display_name ?? '').toLowerCase().includes(query))
+        .map((item) => ({
+          id: item.id, identity_type: 'dcp', code: item.primary_identifier,
+          display_name: item.display_name, target_record_id: null,
+          source_system: 'demo', source_version: 'demo-v1',
+          source_workbook: 'medicamentos', source_literal: item.primary_identifier,
+          active: true, version: 1,
+        }))
+      return ok({ items, total: items.length, limit: 50, offset: 0 })
+    }
+
     // El listado único se sirve desde /insights/records, que pagina y devuelve
     // el origen y el estado de cada registro.
     const params = new URL(url, 'http://localhost').searchParams
@@ -309,6 +333,7 @@ beforeEach(() => {
   // La vertical de revisión DEMO ya no es la pantalla de inicio: el inicio es
   // el panel de datos reales. Estas pruebas arrancan en su ruta propia.
   window.location.hash = '#/registros'
+  window.sessionStorage.removeItem('farmalidacion.catalog-list-state')
   localStorage.clear()
   vi.stubGlobal('fetch', mockFetch())
 })
@@ -326,7 +351,7 @@ describe('Recorrido de la vertical de revisión', () => {
 
     expect(await screen.findByText('Datos actualizados')).toBeVisible()
     expect(document.querySelector('.mode-chip')).toBeNull()
-    expect(screen.getByRole('button', { name: /Registros/ })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Catálogo' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Validaciones' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Exportaciones' })).toBeVisible()
     // Los módulos sin construir ya no se anuncian: un menú que promete lo que no
@@ -348,7 +373,7 @@ describe('Recorrido de la vertical de revisión', () => {
       expect(screen.queryByText('Omeprazol 20 mg cápsulas duras')).not.toBeInTheDocument(),
     )
 
-    await click(screen.getAllByRole('button', { name: 'Revisar' })[0])
+    await click(screen.getAllByRole('button', { name: 'Abrir expediente' })[0])
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Metotrexato 2,5 mg comprimidos' }),
     ).toBeVisible()
@@ -411,7 +436,7 @@ describe('Recorrido de la vertical de revisión', () => {
     await click(screen.getByRole('button', { name: /Volver al listado/ }))
     const row = (await screen.findByText('Metotrexato 2,5 mg comprimidos')).closest('tr')
     expect(row).not.toBeNull()
-    expect(within(row as HTMLElement).getByText('En revisión')).toBeVisible()
+    expect(within(row as HTMLElement).getByText('Vigente')).toBeVisible()
   })
 
   it('valida los requisitos de la decisión antes de enviarla', async () => {

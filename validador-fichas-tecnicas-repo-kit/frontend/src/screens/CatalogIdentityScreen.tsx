@@ -69,9 +69,10 @@ export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
     setLoading(true)
     setError(null)
     try {
-      const [record, revisions, linked, labels] = await Promise.all([
-        fetchCatalogIdentity(identityId), fetchCatalogHistory(identityId),
-        fetchCatalogRelations(identityId), fetchCatalogClassifications(identityId),
+      const record = await fetchCatalogIdentity(identityId)
+      const [revisions, linked, labels] = await Promise.all([
+        fetchCatalogHistory(identityId), fetchCatalogRelations(identityId),
+        record.identity_type === 'presentation' ? fetchCatalogClassifications(identityId) : Promise.resolve([]),
       ])
       setIdentity(record)
       setName(record.display_name)
