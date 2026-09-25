@@ -247,17 +247,31 @@ def test_quarantined_cell_revision_is_applied_without_changing_its_raw_row(
             reason="Corrección de prueba",
             recorded_at=datetime.now(UTC),
         )
-        session.add_all([row, revision])
+        empty_revision = QuarantinedFieldMaintenanceRevision(
+            id="quarantined-empty-revision",
+            quarantined_row_id=row.id,
+            source_column_index=2,
+            sequence=1,
+            before_value=None,
+            after_value="Celda antes vacía",
+            actor_id="ana",
+            actor_assurance="farmaceutico",
+            reason="Completar celda de cuarentena",
+            recorded_at=datetime.now(UTC),
+        )
+        session.add_all([row, revision, empty_revision])
         session.commit()
         result = export_master_workbook(session, source, destination)
         assert session.get(QuarantinedSourceRow, row.id).raw_payload == row.raw_payload
-    assert result.changed_cells == 2
+    assert result.changed_cells == 3
     with zipfile.ZipFile(destination) as archive:
         sheet = ET.fromstring(archive.read("xl/worksheets/sheet1.xml"))
         shared = ET.fromstring(archive.read("xl/sharedStrings.xml"))
     strings = ["".join(item.text or "" for item in node.iter(f"{{{MAIN}}}t")) for node in shared]
     value = sheet.find(f".//{{{MAIN}}}c[@r='A2']/{{{MAIN}}}v")
     assert value is not None and strings[int(value.text or "-1")] == "Cuarentena corregida"
+    empty_cell = sheet.find(f".//{{{MAIN}}}c[@r='B2']/{{{MAIN}}}is/{{{MAIN}}}t")
+    assert empty_cell is not None and empty_cell.text == "Celda antes vacía"
 
 
 def test_three_book_export_publishes_only_a_complete_set(

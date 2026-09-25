@@ -299,6 +299,11 @@ class BlockInstance(Base):
 
 class FieldValue(Base):
     __tablename__ = "field_value"
+    __table_args__ = (
+        UniqueConstraint(
+            "block_instance_id", "source_column_index", name="uq_field_value_block_source_column"
+        ),
+    )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     block_instance_id: Mapped[str] = mapped_column(ForeignKey("block_instance.id"), index=True)
     field_name: Mapped[str] = mapped_column(String(160), index=True)

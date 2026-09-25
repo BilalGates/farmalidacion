@@ -3,10 +3,12 @@ import { AlertTriangle, ChevronLeft, ChevronRight, Pencil, Save, X } from 'lucid
 
 import {
   ApiError,
+  createQuarantinedEmptyValue,
+  fetchQuarantinedEmptyColumns,
   fetchQuarantinedRows,
   saveQuarantinedFieldMaintenance,
 } from '../api/client'
-import type { QuarantinedField, QuarantinedSourceRow, Reviewer } from '../api/types'
+import type { EmptySourceColumn, QuarantinedField, QuarantinedSourceRow, Reviewer } from '../api/types'
 import { formatDateTime } from '../domain/format'
 
 const PAGE_SIZE = 50
@@ -36,10 +38,17 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
   const [draft, setDraft] = useState('')
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
+  const [addingEmpty, setAddingEmpty] = useState(false)
+  const [emptyColumns, setEmptyColumns] = useState<EmptySourceColumn[]>([])
+  const [emptyColumn, setEmptyColumn] = useState<number | null>(null)
+  const [emptyValue, setEmptyValue] = useState('')
+  const [emptyReason, setEmptyReason] = useState('')
+  const [loadingColumns, setLoadingColumns] = useState(false)
   const selected = rows.find((row) => row.id === selectedId) ?? rows[0] ?? null
 
   async function load(nextOffset = offset, nextWorkbook = workbook, preferredId = selectedId) {
     setLoading(true)
+    setAddingEmpty(false)
     setLoadError('')
     try {
       const page = await fetchQuarantinedRows({
@@ -95,6 +104,49 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
     }
   }
 
+  async function beginAddEmpty() {
+    if (!selected) return
+    setAddingEmpty(true)
+    setEmptyColumns([])
+    setEmptyColumn(null)
+    setEmptyValue('')
+    setEmptyReason('')
+    setSaveError('')
+    setNotice('')
+    setLoadingColumns(true)
+    try {
+      const columns = await fetchQuarantinedEmptyColumns(selected.id)
+      setEmptyColumns(columns)
+      setEmptyColumn(columns[0]?.source_column_index ?? null)
+    } catch (error) {
+      setSaveError(error instanceof ApiError ? error.message : 'No se pudieron consultar las celdas vacías.')
+      setAddingEmpty(false)
+    } finally {
+      setLoadingColumns(false)
+    }
+  }
+
+  async function saveEmpty() {
+    if (!selected || !reviewer || emptyColumn === null || !emptyValue.trim() || !emptyReason.trim()) return
+    setSaving(true)
+    setSaveError('')
+    try {
+      await createQuarantinedEmptyValue(selected.id, {
+        source_column_index: emptyColumn,
+        value: emptyValue,
+        actor_id: reviewer.identifier,
+        reason: emptyReason.trim(),
+      })
+      await load(offset, workbook, selected.id)
+      setAddingEmpty(false)
+      setNotice('Celda vacía completada. La fila conserva su estado en cuarentena.')
+    } catch (error) {
+      setSaveError(error instanceof ApiError ? error.message : 'No se pudo completar la celda.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const pageNumber = Math.floor(offset / PAGE_SIZE) + 1
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -132,8 +184,8 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
                 <thead><tr><th>Libro</th><th>Hoja · fila</th><th>Motivo</th></tr></thead>
                 <tbody>{rows.map((row) => (
                   <tr key={row.id} className={row.id === selected?.id ? 'quarantine-screen__selected' : ''}>
-                    <td><button type='button' className='quarantine-screen__row-button' onClick={() => { setSelectedId(row.id); setEditingColumn(null); setSaveError(''); setNotice('') }}>{WORKBOOKS[row.source_workbook] ?? row.source_workbook}</button></td>
-                    <td><button type='button' className='quarantine-screen__row-button cell--mono' onClick={() => setSelectedId(row.id)}>{row.source_locator}</button></td>
+                    <td><button type='button' className='quarantine-screen__row-button' onClick={() => { setSelectedId(row.id); setEditingColumn(null); setAddingEmpty(false); setSaveError(''); setNotice('') }}>{WORKBOOKS[row.source_workbook] ?? row.source_workbook}</button></td>
+                    <td><button type='button' className='quarantine-screen__row-button cell--mono' onClick={() => { setSelectedId(row.id); setAddingEmpty(false) }}>{row.source_locator}</button></td>
                     <td><span className='badge badge--warning'>{row.reason_code}</span></td>
                   </tr>
                 ))}</tbody>
@@ -182,6 +234,18 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
                     </div>
                   )
                 })}</dl>
+                {addingEmpty ? <div className='quarantine-field__editor'>
+                  {loadingColumns ? <p role='status'>Consultando columnas de la hoja…</p> : emptyColumns.length === 0 ? <p className='muted'>No hay columnas vacías disponibles en esta fila.</p> : <>
+                    <label className='field'><span className='field__label'>Columna vacía</span><select aria-label='Columna vacía de la fila en cuarentena' value={emptyColumn ?? ''} onChange={(event) => setEmptyColumn(Number(event.target.value))}>{emptyColumns.map((column) => <option key={column.source_column_index} value={column.source_column_index}>{column.field_name} · columna {column.source_column_index}</option>)}</select></label>
+                    <label className='field'><span className='field__label'>Valor de trabajo</span><textarea aria-label='Valor para la celda vacía en cuarentena' rows={2} value={emptyValue} onChange={(event) => setEmptyValue(event.target.value)} /></label>
+                    <label className='field'><span className='field__label'>Motivo</span><textarea aria-label='Motivo para completar la celda en cuarentena' rows={2} maxLength={2000} value={emptyReason} onChange={(event) => setEmptyReason(event.target.value)} /></label>
+                    <p className='muted'>El Excel original y el motivo de cuarentena se conservarán.</p>
+                  </>}
+                  <div className='catalog-source-field__actions'>
+                    {emptyColumns.length > 0 && <button type='button' className='button button--primary' disabled={saving || !emptyValue.trim() || !emptyReason.trim()} onClick={() => void saveEmpty()}><Save size={16} aria-hidden='true' /> Guardar celda</button>}
+                    <button type='button' className='button button--ghost' disabled={saving} onClick={() => setAddingEmpty(false)}><X size={16} aria-hidden='true' /> Cancelar</button>
+                  </div>
+                </div> : <button type='button' className='button button--ghost' disabled={!reviewer || saving} onClick={() => void beginAddEmpty()}>Completar celda vacía</button>}
               </section>
             )}
           </div>

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { History, Pencil, Save, X } from 'lucide-react'
 
-import { fetchRecord, saveFieldMaintenance } from '../api/client'
-import type { FieldValue, Reviewer, TargetRecord } from '../api/types'
+import { createEmptySourceValue, fetchEmptySourceColumns, fetchRecord, saveFieldMaintenance } from '../api/client'
+import type { EmptySourceColumn, FieldValue, Reviewer, TargetRecord } from '../api/types'
 import { formatDateTime } from '../domain/format'
 
 interface Props {
@@ -30,6 +30,12 @@ export function SourceFieldsMaintenance({ recordId, reviewer }: Props) {
   const [draft, setDraft] = useState('')
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
+  const [addingBlockId, setAddingBlockId] = useState<string | null>(null)
+  const [emptyColumns, setEmptyColumns] = useState<EmptySourceColumn[]>([])
+  const [newColumn, setNewColumn] = useState<number | null>(null)
+  const [newValue, setNewValue] = useState('')
+  const [newReason, setNewReason] = useState('')
+  const [loadingColumns, setLoadingColumns] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -77,6 +83,48 @@ export function SourceFieldsMaintenance({ recordId, reviewer }: Props) {
       setNotice(`Campo «${field.field_name}» guardado en el historial de mantenimiento.`)
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'No se pudo guardar el campo.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function beginAdd(blockId: string) {
+    setAddingBlockId(blockId)
+    setEmptyColumns([])
+    setNewColumn(null)
+    setNewValue('')
+    setNewReason('')
+    setSaveError('')
+    setNotice('')
+    setLoadingColumns(true)
+    try {
+      const columns = await fetchEmptySourceColumns(recordId, blockId)
+      setEmptyColumns(columns)
+      setNewColumn(columns[0]?.source_column_index ?? null)
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'No se pudieron consultar las celdas vacías.')
+      setAddingBlockId(null)
+    } finally {
+      setLoadingColumns(false)
+    }
+  }
+
+  async function saveEmpty(blockId: string) {
+    if (!reviewer || newColumn === null || !newValue.trim() || !newReason.trim()) return
+    setSaving(true)
+    setSaveError('')
+    try {
+      await createEmptySourceValue(recordId, blockId, {
+        source_column_index: newColumn,
+        value: newValue,
+        actor_id: reviewer.identifier,
+        reason: newReason.trim(),
+      })
+      await load()
+      setAddingBlockId(null)
+      setNotice('La celda vacía quedó completada con historial de mantenimiento.')
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'No se pudo completar la celda.')
     } finally {
       setSaving(false)
     }
@@ -151,6 +199,25 @@ export function SourceFieldsMaintenance({ recordId, reviewer }: Props) {
               )
             })}
           </dl>
+          {addingBlockId === block.id ? (
+            <div className='catalog-source-field__editor'>
+              {loadingColumns ? <p role='status'>Consultando columnas de la hoja…</p> : emptyColumns.length === 0 ? <p className='muted'>No hay columnas vacías disponibles en esta fila.</p> : <>
+                <label className='field'>
+                  <span className='field__label'>Columna vacía</span>
+                  <select aria-label={`Columna vacía de ${block.block_type}`} value={newColumn ?? ''} onChange={(event) => setNewColumn(Number(event.target.value))}>
+                    {emptyColumns.map((column) => <option key={column.source_column_index} value={column.source_column_index}>{column.field_name} · columna {column.source_column_index}</option>)}
+                  </select>
+                </label>
+                <label className='field'><span className='field__label'>Valor de trabajo</span><textarea aria-label='Valor para la celda vacía' value={newValue} rows={2} onChange={(event) => setNewValue(event.target.value)} /></label>
+                <label className='field'><span className='field__label'>Motivo</span><textarea aria-label='Motivo para completar la celda' value={newReason} rows={2} maxLength={2000} onChange={(event) => setNewReason(event.target.value)} /></label>
+                <p className='muted'>El Excel original seguirá vacío; el valor se guardará con procedencia y autoría.</p>
+              </>}
+              <div className='catalog-source-field__actions'>
+                {emptyColumns.length > 0 && <button type='button' className='button button--primary' disabled={saving || !newValue.trim() || !newReason.trim()} onClick={() => void saveEmpty(block.id)}><Save size={16} aria-hidden='true' /> Guardar celda</button>}
+                <button type='button' className='button button--ghost' disabled={saving} onClick={() => setAddingBlockId(null)}><X size={16} aria-hidden='true' /> Cancelar</button>
+              </div>
+            </div>
+          ) : block.values.some((field) => field.source_column_index != null) && <button type='button' className='button button--ghost' disabled={!reviewer || saving} onClick={() => void beginAdd(block.id)}>Completar celda vacía</button>}
         </section>
       ))}
     </section>

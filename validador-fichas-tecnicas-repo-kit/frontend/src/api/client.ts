@@ -17,6 +17,7 @@ import type {
   DecisionWrite,
   FieldMaintenanceEntry,
   FieldMaintenanceWrite,
+  EmptySourceColumn,
   QuarantinedField,
   QuarantinedSourceRowPage,
   ImportDetail,
@@ -269,6 +270,20 @@ export function saveFieldMaintenance(
   })
 }
 
+export function fetchEmptySourceColumns(recordId: string, blockId: string): Promise<EmptySourceColumn[]> {
+  return request<EmptySourceColumn[]>(`/records/${encodeURIComponent(recordId)}/blocks/${encodeURIComponent(blockId)}/empty-source-columns`)
+}
+
+export function createEmptySourceValue(
+  recordId: string,
+  blockId: string,
+  payload: { source_column_index: number; value: string; actor_id: string; reason: string },
+): Promise<EmptySourceColumn & { id: string; maintained_value: string }> {
+  return request(`/records/${encodeURIComponent(recordId)}/blocks/${encodeURIComponent(blockId)}/empty-source-values`, {
+    method: 'POST', body: JSON.stringify(payload),
+  })
+}
+
 export function fetchQuarantinedRows(params: {
   sourceWorkbook?: string
   limit?: number
@@ -290,6 +305,19 @@ export function saveQuarantinedFieldMaintenance(
     `/records/quarantined/${encodeURIComponent(rowId)}/values/${columnIndex}/maintenance`,
     { method: 'POST', body: JSON.stringify(payload) },
   )
+}
+
+export function fetchQuarantinedEmptyColumns(rowId: string): Promise<EmptySourceColumn[]> {
+  return request<EmptySourceColumn[]>(`/records/quarantined/${encodeURIComponent(rowId)}/empty-source-columns`)
+}
+
+export function createQuarantinedEmptyValue(
+  rowId: string,
+  payload: { source_column_index: number; value: string; actor_id: string; reason: string },
+): Promise<QuarantinedField> {
+  return request<QuarantinedField>(`/records/quarantined/${encodeURIComponent(rowId)}/empty-source-values`, {
+    method: 'POST', body: JSON.stringify(payload),
+  })
 }
 
 export function fetchCatalogIdentities(params: {

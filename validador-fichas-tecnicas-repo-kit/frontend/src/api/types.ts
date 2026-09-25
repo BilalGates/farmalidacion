@@ -332,6 +332,11 @@ export interface RealRecordPage {
   offset: number
 }
 
+export interface EmptySourceColumn {
+  source_column_index: number
+  field_name: string
+}
+
 export type CatalogIdentityType =
   | 'commercial_product'
   | 'authorization'

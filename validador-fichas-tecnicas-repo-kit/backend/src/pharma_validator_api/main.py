@@ -16,6 +16,7 @@ from pharma_validator_api.chat_api import router as chat_router
 from pharma_validator_api.config import Settings, get_settings
 from pharma_validator_api.data_origin import DataOrigin, apply_origin_filter
 from pharma_validator_api.database import create_database_engine, create_session_factory
+from pharma_validator_api.empty_source_fields import router as empty_source_fields_router
 from pharma_validator_api.errors import register_error_handlers
 from pharma_validator_api.export_api import audit_router, risk_router
 from pharma_validator_api.export_api import router as export_router
@@ -129,6 +130,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(chat_router)
     application.include_router(catalog_router)
     application.include_router(quarantine_router)
+    application.include_router(empty_source_fields_router)
     application.include_router(records_router)
     application.include_router(insights_router)
     application.include_router(queue_router)

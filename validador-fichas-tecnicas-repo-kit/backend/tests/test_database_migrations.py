@@ -52,6 +52,44 @@ def alembic_config(database_path: Path) -> Config:
     return config
 
 
+def test_source_column_is_unique_within_imported_block(tmp_path: Path) -> None:
+    database_path = tmp_path / "unique-source-column.db"
+    command.upgrade(alembic_config(database_path), "head")
+    engine = create_engine(f"sqlite:///{database_path.as_posix()}")
+    with Session(engine) as session:
+        record = TargetRecord(entity_type="medication")
+        session.add(record)
+        session.flush()
+        block = BlockInstance(target_record_id=record.id, block_type="general", ordinal=1)
+        session.add(block)
+        session.flush()
+        session.add(
+            FieldValue(
+                block_instance_id=block.id,
+                field_name="PRIMERA",
+                source_column_index=2,
+                literal_value="uno",
+                observed_type="text",
+                logical_state="valued",
+            )
+        )
+        session.commit()
+        session.add(
+            FieldValue(
+                block_instance_id=block.id,
+                field_name="SEGUNDA",
+                source_column_index=2,
+                literal_value="dos",
+                observed_type="text",
+                logical_state="valued",
+            )
+        )
+        with pytest.raises(IntegrityError):
+            session.commit()
+        session.rollback()
+    engine.dispose()
+
+
 def test_migration_preserves_repeated_occurrences_and_downgrades(tmp_path: Path) -> None:
     database_path = tmp_path / "migration.db"
     config = alembic_config(database_path)

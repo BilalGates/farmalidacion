@@ -1,5 +1,23 @@
 # Estado del proyecto
 
+## Mantenimiento de celdas vacías de origen (25 de septiembre de 2026)
+
+- El expediente de registros fuente enlazados ofrece las columnas ausentes de
+  cada fila importada, identificadas por cabecera y ordinal. Al completar una,
+  crea `FieldValue` con literal original `null`, procedencia al fragmento exacto
+  y revisión append-only con actor, motivo y valor de trabajo.
+- La API valida libro, hoja, fila y columna contra el lote y la cabecera
+  importados; rechaza celdas ya presentes o mantenidas. Una restricción única
+  impide dos campos para la misma columna y bloque, incluso ante escrituras
+  concurrentes. La migración `f9a0b1c2d3e4` es reversible.
+- Tres pruebas nuevas cubren alta, rechazos y el recorrido API→exportador sobre
+  un XLSX sintético con celda ausente. El libro original conserva su hash.
+- Las filas en cuarentena ofrecen la misma selección por cabecera y guardan una
+  revisión de celda ausente sin modificar `raw_payload`, vincular un padre ni
+  retirar el motivo de cuarentena. La API y el listado reflejan la nueva celda.
+  Vitest, build y revisión visual siguen pendientes: el registro npm rechaza conexión y
+  Docker Desktop no expone el daemon. La descarga productiva permanece apagada.
+
 ## Verificación de exportación de los tres maestros (25 de septiembre de 2026)
 
 - `scripts/verify_real_master_export.py` importa los tres libros productivos en

@@ -9,10 +9,14 @@ from fastapi import APIRouter, Query
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
+from pharma_validator_api.empty_source_fields import EmptySourceColumn, EmptySourceFieldWrite
 from pharma_validator_api.errors import ApplicationError
+from pharma_validator_api.master_workbook_export import MASTER_WORKBOOKS
 from pharma_validator_api.models import (
     ImportBatch,
+    ImportedSourceSheet,
     QuarantinedFieldMaintenanceRevision,
     QuarantinedSourceRow,
 )
@@ -79,6 +83,7 @@ def _row_read(
     row: QuarantinedSourceRow,
     batch: ImportBatch,
     revisions: list[QuarantinedFieldMaintenanceRevision],
+    header_columns: dict[int, str] | None = None,
 ) -> QuarantinedRowRead:
     histories = _field_revision_history(revisions)
     fields = []
@@ -113,6 +118,38 @@ def _row_read(
                 ],
             )
         )
+    source_columns = {field.source_column_index for field in fields}
+    for column, history in histories.items():
+        if column in source_columns:
+            continue
+        name = (header_columns or {}).get(column)
+        if name is None:
+            raise ApplicationError(
+                "La revisión de una celda vacía no tiene cabecera.", status_code=500
+            )
+        fields.append(
+            QuarantinedFieldRead(
+                source_column_index=column,
+                field_name=name,
+                literal_value=None,
+                maintained_value=history[-1].after_value,
+                observed_type="empty",
+                maintenance_sequence=history[-1].sequence,
+                maintenance_history=[
+                    FieldMaintenanceRead(
+                        sequence=revision.sequence,
+                        before_value=revision.before_value,
+                        after_value=revision.after_value,
+                        actor_id=revision.actor_id,
+                        actor_assurance=revision.actor_assurance,
+                        reason=revision.reason,
+                        recorded_at=revision.recorded_at.isoformat(),
+                    )
+                    for revision in history
+                ],
+            )
+        )
+    fields.sort(key=lambda field: field.source_column_index)
     return QuarantinedRowRead(
         id=row.id,
         source_workbook=batch.source_locator,
@@ -121,6 +158,51 @@ def _row_read(
         reason=row.reason,
         fields=fields,
     )
+
+
+def _sheet_headers(session: Session, row: QuarantinedSourceRow) -> dict[int, str]:
+    batch = session.get(ImportBatch, row.import_batch_id)
+    if batch is None or batch.status != "completed" or batch.source_locator not in MASTER_WORKBOOKS:
+        raise ApplicationError(
+            "La fila no pertenece a un maestro importado completo.", status_code=422
+        )
+    if "!" not in row.source_locator:
+        raise ApplicationError("La coordenada de cuarentena no es válida.", status_code=422)
+    sheet_name, row_literal = row.source_locator.rsplit("!", 1)
+    try:
+        row_number = int(row_literal)
+    except ValueError as error:
+        raise ApplicationError(
+            "La coordenada de cuarentena no es válida.", status_code=422
+        ) from error
+    sheets = session.scalars(
+        select(ImportedSourceSheet).where(
+            ImportedSourceSheet.import_batch_id == row.import_batch_id,
+            ImportedSourceSheet.sheet_name == sheet_name,
+        )
+    ).all()
+    if len(sheets) != 1 or row_number <= sheets[0].header_row_number:
+        raise ApplicationError("La hoja o fila de cuarentena no es inequívoca.", status_code=422)
+    try:
+        cells = json.loads(sheets[0].header_payload)
+    except json.JSONDecodeError as error:
+        raise ApplicationError("La cabecera importada no es válida.", status_code=500) from error
+    if not isinstance(cells, list):
+        raise ApplicationError("La cabecera importada no es válida.", status_code=500)
+    headers: dict[int, str] = {}
+    for item in cells:
+        if not isinstance(item, dict) or type(item.get("column")) is not int:
+            raise ApplicationError(
+                "La cabecera importada tiene columnas inválidas.", status_code=500
+            )
+        column = item["column"]
+        name = item.get("literal_value")
+        if column < 1 or column in headers or not isinstance(name, str) or not name:
+            raise ApplicationError(
+                "La cabecera importada tiene columnas ambiguas.", status_code=500
+            )
+        headers[column] = name
+    return headers
 
 
 @router.get("", response_model=QuarantinedRowPage)
@@ -168,9 +250,95 @@ def list_quarantined_rows(
     )
     for revision in revisions:
         revisions_by_row[revision.quarantined_row_id].append(revision)
-    return QuarantinedRowPage(
-        items=[_row_read(row, batch, revisions_by_row[row.id]) for row, batch in page],
-        total=total,
+    items = []
+    for row, batch in page:
+        row_revisions = revisions_by_row[row.id]
+        raw_columns = {item.get("column") for item in _decode_fields(row.raw_payload)}
+        needs_header = any(
+            revision.source_column_index not in raw_columns for revision in row_revisions
+        )
+        headers = _sheet_headers(session, row) if needs_header else None
+        items.append(_row_read(row, batch, row_revisions, headers))
+    return QuarantinedRowPage(items=items, total=total)
+
+
+@router.get("/{row_id}/empty-source-columns", response_model=list[EmptySourceColumn])
+def list_quarantined_empty_columns(
+    row_id: str, session: SessionDependency
+) -> list[EmptySourceColumn]:
+    row = session.get(QuarantinedSourceRow, row_id)
+    if row is None:
+        raise ApplicationError("Fila en cuarentena no encontrada.", status_code=404)
+    headers = _sheet_headers(session, row)
+    used = {item.get("column") for item in _decode_fields(row.raw_payload)}
+    used.update(
+        session.scalars(
+            select(QuarantinedFieldMaintenanceRevision.source_column_index).where(
+                QuarantinedFieldMaintenanceRevision.quarantined_row_id == row_id
+            )
+        ).all()
+    )
+    return [
+        EmptySourceColumn(source_column_index=column, field_name=name)
+        for column, name in sorted(headers.items())
+        if column not in used
+    ]
+
+
+@router.post(
+    "/{row_id}/empty-source-values",
+    response_model=QuarantinedFieldRead,
+    status_code=201,
+)
+def create_quarantined_empty_value(
+    row_id: str,
+    payload: EmptySourceFieldWrite,
+    session: SessionDependency,
+    directory: DirectoryDependency,
+) -> QuarantinedFieldRead:
+    row = session.get(QuarantinedSourceRow, row_id)
+    if row is None:
+        raise ApplicationError("Fila en cuarentena no encontrada.", status_code=404)
+    headers = _sheet_headers(session, row)
+    available = list_quarantined_empty_columns(row_id, session)
+    if payload.source_column_index not in headers:
+        raise ApplicationError("La columna no existe en la hoja de origen.", status_code=422)
+    if not any(item.source_column_index == payload.source_column_index for item in available):
+        raise ApplicationError("La columna ya contiene un valor o una revisión.", status_code=409)
+    if not payload.value.strip():
+        raise ApplicationError("Indique un valor para la celda vacía.", status_code=400)
+    reason = payload.reason.strip()
+    if not reason:
+        raise ApplicationError("Indique el motivo del cambio.", status_code=400)
+    try:
+        actor = directory.resolve(payload.actor_id)
+    except ReviewerIdentityError as error:
+        raise ApplicationError(str(error), status_code=400) from error
+    revision = QuarantinedFieldMaintenanceRevision(
+        quarantined_row_id=row_id,
+        source_column_index=payload.source_column_index,
+        sequence=1,
+        before_value=None,
+        after_value=payload.value,
+        actor_id=actor.identifier,
+        actor_assurance=actor.assurance,
+        reason=reason,
+        recorded_at=datetime.now(UTC),
+    )
+    session.add(revision)
+    try:
+        session.commit()
+    except IntegrityError as error:
+        session.rollback()
+        raise ApplicationError(
+            "La celda se modificó en paralelo. Recargue antes de guardar.", status_code=409
+        ) from error
+    batch = session.get(ImportBatch, row.import_batch_id)
+    assert batch is not None
+    return next(
+        field
+        for field in _row_read(row, batch, [revision], headers).fields
+        if field.source_column_index == payload.source_column_index
     )
 
 

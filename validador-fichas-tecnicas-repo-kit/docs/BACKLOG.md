@@ -23,7 +23,10 @@ código. La verificación real importa los tres maestros en SQLite temporal,
 reconstruye sus 72 partes XLSX sin cambios y comprueba una corrección temporal
 en `General!A2` de cada libro; sólo cambian la hoja correspondiente y la tabla
 de cadenas. Una prueba sintética cubre la exportación de una celda que estaba
-ausente. Sigue pendiente hacerla editable en la interfaz y ampliar el recorrido
+ausente. El expediente ya permite crear esa corrección en filas fuente enlazadas
+con cabecera, coordenada y revisión verificadas; la prueba API→XLSX pasa.
+La pantalla de cuarentena también permite completar columnas ausentes sin
+modificar el payload ni resolver la relación padre. Queda ampliar el recorrido
 diferencial a otras hojas y tipos. La bandera de descarga continúa apagada hasta
 completar esa cobertura, la revisión visual y el gate del modelo canónico.
 BOT PLUS queda como spike externo D-033 y no bloquea el resto.

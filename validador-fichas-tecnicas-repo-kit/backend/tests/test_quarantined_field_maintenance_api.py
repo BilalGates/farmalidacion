@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from pharma_validator_api.config import Settings
 from pharma_validator_api.main import create_app
-from pharma_validator_api.models import ImportBatch, QuarantinedSourceRow
+from pharma_validator_api.models import ImportBatch, ImportedSourceSheet, QuarantinedSourceRow
 
 
 def test_quarantined_values_can_be_maintained_without_linking_or_mutating_source(
@@ -56,6 +56,24 @@ def test_quarantined_values_can_be_maintained_without_linking_or_mutating_source
             )
         )
         session.add(
+            ImportedSourceSheet(
+                id="sheet-1",
+                import_batch_id="batch-1",
+                sheet_name="Excipientes",
+                sheet_ordinal=1,
+                header_row_number=1,
+                header_payload=json.dumps(
+                    [
+                        {"column": 1, "literal_value": "BN_DESCRIPCION"},
+                        {"column": 2, "literal_value": "BN_IDEXTERNO"},
+                        {"column": 3, "literal_value": "BN_CODIGO"},
+                    ]
+                ),
+                data_row_count=1,
+                material_value_count=2,
+            )
+        )
+        session.add(
             QuarantinedSourceRow(
                 id="quarantine-1",
                 import_batch_id="batch-1",
@@ -99,3 +117,32 @@ def test_quarantined_values_can_be_maintained_without_linking_or_mutating_source
         assert stored is not None
         assert stored.raw_payload == source_payload
         assert stored.reason_code == "MISSING_PARENT"
+
+    empty_endpoint = "/records/quarantined/quarantine-1"
+    assert api.get(f"{empty_endpoint}/empty-source-columns").json() == [
+        {"source_column_index": 3, "field_name": "BN_CODIGO"}
+    ]
+    new_value = {
+        "source_column_index": 3,
+        "value": "Nuevo código",
+        "actor_id": "ana",
+        "reason": "Completar columna vacía",
+    }
+    assert (
+        api.post(
+            f"{empty_endpoint}/empty-source-values", json={**new_value, "source_column_index": 9}
+        ).status_code
+        == 422
+    )
+    created = api.post(f"{empty_endpoint}/empty-source-values", json=new_value)
+    assert created.status_code == 201, created.json()
+    assert created.json()["literal_value"] is None
+    assert created.json()["maintained_value"] == "Nuevo código"
+    assert api.post(f"{empty_endpoint}/empty-source-values", json=new_value).status_code == 409
+    updated = api.get("/records/quarantined").json()["items"][0]
+    assert updated["reason_code"] == "MISSING_PARENT"
+    assert updated["fields"][2]["field_name"] == "BN_CODIGO"
+    assert updated["fields"][2]["maintenance_history"][0]["before_value"] is None
+    with api.app.state.session_factory() as session:
+        stored = session.get(QuarantinedSourceRow, "quarantine-1")
+        assert stored is not None and stored.raw_payload == source_payload

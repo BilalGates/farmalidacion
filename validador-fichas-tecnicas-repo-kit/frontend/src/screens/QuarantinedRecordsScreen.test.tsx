@@ -68,3 +68,32 @@ it('permite corregir celdas de cuarentena sin cambiar el motivo ni el literal fu
   })
   expect(mock.mock.calls.some(([url]) => String(url).includes('/decisions'))).toBe(false)
 })
+
+it('completa una columna ausente de una fila en cuarentena', async () => {
+  const mock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input)
+    if (url.endsWith('/empty-source-columns')) return new Response(JSON.stringify([
+      { source_column_index: 3, field_name: 'BN_CODIGO' },
+    ]))
+    if (url.endsWith('/empty-source-values') && init?.method === 'POST') return new Response(JSON.stringify({ source_column_index: 3, field_name: 'BN_CODIGO' }))
+    return new Response(JSON.stringify(page))
+  })
+  vi.stubGlobal('fetch', mock)
+  render(<QuarantinedRecordsScreen reviewer={REVIEWER} />)
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Completar celda vacía' }))
+  await screen.findByRole('option', { name: 'BN_CODIGO · columna 3' })
+  fireEvent.change(screen.getByLabelText('Valor para la celda vacía en cuarentena'), { target: { value: 'Código nuevo' } })
+  fireEvent.change(screen.getByLabelText('Motivo para completar la celda en cuarentena'), { target: { value: 'Completar maestro' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar celda' }))
+
+  await waitFor(() => expect(mock.mock.calls.some(([url, init]) =>
+    String(url).endsWith('/empty-source-values') && init?.method === 'POST',
+  )).toBe(true))
+  const payload = mock.mock.calls.find(([url, init]) =>
+    String(url).endsWith('/empty-source-values') && init?.method === 'POST',
+  )?.[1]?.body
+  expect(JSON.parse(String(payload))).toEqual({
+    source_column_index: 3, value: 'Código nuevo', actor_id: 'ana', reason: 'Completar maestro',
+  })
+})
