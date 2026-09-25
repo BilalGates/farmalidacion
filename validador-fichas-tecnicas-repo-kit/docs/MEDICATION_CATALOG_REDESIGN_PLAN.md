@@ -98,6 +98,12 @@ bandera apagada por defecto y exige configurar la carpeta de origen. Pasó una
 prueba con un libro sintético y una revisión real en la BD ORM; aún faltan la
 prueba diferencial con los tres maestros completos, la edición de celdas que
 eran vacías y la verificación de la interfaz antes de habilitar la función.
+La verificación del 25-09-2026 reconstruye los tres maestros reales sin
+revisiones (72 partes XLSX idénticas) y con una corrección temporal por libro
+(`General!A2`, sólo cambian la hoja y `sharedStrings.xml`). El adaptador también
+crea una celda originalmente ausente en una prueba sintética. Quedan pendientes
+la edición de esas celdas desde la interfaz, cobertura de correcciones de otras
+hojas/tipos y la revisión visual. La descarga permanece apagada.
 
 - Crear, modificar, archivar, sustituir, relacionar y clasificar.
 - Historial append-only de antes/después, actor y motivo.

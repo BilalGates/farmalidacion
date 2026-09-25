@@ -19,9 +19,13 @@ su relación padre. Los editores ya cubren registros fuente enlazados, no
 enlazados y en cuarentena; faltan validar frontend/runtime y conectar la
 exportación hoja por hoja de los tres Excel, además de las pruebas de usabilidad.
 El adaptador de reconstrucción y la descarga conjunta protegida ya están en
-código y pasan una prueba de celda mantenida sobre XLSX sintético. La bandera
-de descarga sigue apagada hasta probar los tres maestros completos, los vacíos
-y el gate del modelo canónico.
+código. La verificación real importa los tres maestros en SQLite temporal,
+reconstruye sus 72 partes XLSX sin cambios y comprueba una corrección temporal
+en `General!A2` de cada libro; sólo cambian la hoja correspondiente y la tabla
+de cadenas. Una prueba sintética cubre la exportación de una celda que estaba
+ausente. Sigue pendiente hacerla editable en la interfaz y ampliar el recorrido
+diferencial a otras hojas y tipos. La bandera de descarga continúa apagada hasta
+completar esa cobertura, la revisión visual y el gate del modelo canónico.
 BOT PLUS queda como spike externo D-033 y no bloquea el resto.
 
 CAT-005 — mejora incremental: el listado muestra el rango de resultados y la

@@ -1,5 +1,26 @@
 # Estado del proyecto
 
+## Verificación de exportación de los tres maestros (25 de septiembre de 2026)
+
+- `scripts/verify_real_master_export.py` importa los tres libros productivos en
+  una SQLite temporal y reconstruye los tres XLSX sin revisiones. Las 25, 26 y
+  21 partes internas, respectivamente, coinciden byte a byte con los originales;
+  no hay celdas cambiadas y sus SHA-256 de origen permanecen iguales. Una segunda
+  exportación aplica una corrección temporal a `General!A2` en cada libro: sólo
+  cambian `sheet1.xml` y `sharedStrings.xml`, y la celda corregida coincide con
+  la revisión. Esta prueba cubre una celda representativa por libro, no todas
+  las celdas ni todas las hojas.
+- La prueba dirigida de exportación comprueba ahora una celda ausente en el XLSX
+  original: el adaptador la crea en la salida sin tocar el libro fuente. Las
+  seis pruebas del exportador pasan, además de Ruff y mypy para el comprobador.
+- La publicación atómica reintenta un bloqueo transitorio de Windows y falla con
+  mensaje explícito si persiste. La prueba del conjunto de tres libros simula
+  ese bloqueo.
+- El editor aún no permite crear un `FieldValue` para una celda originalmente
+  vacía, de modo que esta capacidad del adaptador no está disponible al usuario.
+  La descarga conjunta sigue desactivada y la aceptación del modelo con farmacia
+  sigue pendiente.
+
 ## Adaptador de exportación de maestros (23 de septiembre de 2026)
 
 - El mantenimiento de campos abarca registros enlazados, registros fuente sin

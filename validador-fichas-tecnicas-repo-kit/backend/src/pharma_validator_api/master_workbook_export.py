@@ -9,6 +9,7 @@ import json
 import posixpath
 import re
 import tempfile
+import time
 import zipfile
 from collections import defaultdict
 from dataclasses import dataclass
@@ -603,7 +604,16 @@ def export_master_workbooks(
         )
         # The destination is still required to be absent; rename publishes the
         # three-file set as one complete unit on the same filesystem.
-        staging_directory.rename(destination_directory)
+        for attempt in range(5):
+            try:
+                staging_directory.rename(destination_directory)
+                break
+            except PermissionError as error:
+                if destination_directory.exists() or attempt == 4:
+                    raise MasterWorkbookExportError(
+                        f"No se pudo publicar el conjunto de tres libros: {error}"
+                    ) from error
+                time.sleep(0.2 * (attempt + 1))
     return tuple(
         MasterWorkbookExportResult(
             filename=result.filename,

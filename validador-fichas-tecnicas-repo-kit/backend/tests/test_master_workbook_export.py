@@ -168,6 +168,51 @@ def test_export_fails_closed_when_source_hash_is_not_current(tmp_path: Path) -> 
         export_master_workbook(session, source, tmp_path / "out.xlsx")
 
 
+def test_export_creates_a_previously_absent_cell_without_mutating_source(tmp_path: Path) -> None:
+    source = tmp_path / SOURCE_FILENAME
+    destination = tmp_path / "out.xlsx"
+    make_xlsx(source)
+    original_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+    engine = create_engine(f"sqlite:///{(tmp_path / 'db.sqlite').as_posix()}")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        seed_export(session, source, original_hash)
+        session.add(
+            FieldValue(
+                id="empty-source-cell",
+                block_instance_id="block",
+                field_name="EMPTY_COLUMN",
+                source_column_index=3,
+                literal_value=None,
+                observed_type="vacio",
+                logical_state="empty",
+            )
+        )
+        session.add(
+            FieldMaintenanceRevision(
+                id="empty-source-revision",
+                field_value_id="empty-source-cell",
+                sequence=1,
+                before_value=None,
+                after_value="Nuevo valor",
+                actor_id="ana",
+                actor_assurance="farmaceutico",
+                reason="Completar celda vacía",
+                recorded_at=datetime.now(UTC),
+            )
+        )
+        session.commit()
+        result = export_master_workbook(session, source, destination)
+
+    assert result.changed_cells == 2
+    assert hashlib.sha256(source.read_bytes()).hexdigest() == original_hash
+    with zipfile.ZipFile(destination) as archive:
+        sheet = ET.fromstring(archive.read("xl/worksheets/sheet1.xml"))
+    cell = sheet.find(f".//{{{MAIN}}}c[@r='C1']")
+    assert cell is not None and cell.get("t") == "inlineStr"
+    assert cell.find(f"{{{MAIN}}}is/{{{MAIN}}}t").text == "Nuevo valor"
+
+
 def test_quarantined_cell_revision_is_applied_without_changing_its_raw_row(
     tmp_path: Path,
 ) -> None:
@@ -215,7 +260,9 @@ def test_quarantined_cell_revision_is_applied_without_changing_its_raw_row(
     assert value is not None and strings[int(value.text or "-1")] == "Cuarentena corregida"
 
 
-def test_three_book_export_publishes_only_a_complete_set(tmp_path: Path) -> None:
+def test_three_book_export_publishes_only_a_complete_set(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     source_directory = tmp_path / "source"
     source_directory.mkdir()
     destination = tmp_path / "output"
@@ -235,7 +282,19 @@ def test_three_book_export_publishes_only_a_complete_set(tmp_path: Path) -> None
         third = source_directory / MASTER_WORKBOOKS[2]
         seed_export(session, third, hashlib.sha256(third.read_bytes()).hexdigest(), suffix="2")
         session.commit()
+        original_rename = Path.rename
+        attempts = 0
+
+        def transiently_blocked_rename(path: Path, target: Path) -> Path:
+            nonlocal attempts
+            if path.name == "books" and attempts == 0:
+                attempts += 1
+                raise PermissionError("Archivo temporalmente bloqueado")
+            return original_rename(path, target)
+
+        monkeypatch.setattr(Path, "rename", transiently_blocked_rename)
         results = export_master_workbooks(session, source_directory, destination)
+    assert attempts == 1
     assert {result.filename for result in results} == set(MASTER_WORKBOOKS)
     assert all(result.output.is_file() and result.changed_cells == 1 for result in results)
 
