@@ -109,6 +109,10 @@ especialidades. Sólo cambian las hojas revisadas y `sharedStrings.xml`; los
 originales mantienen su hash. Seis hojas no contienen una celda editable
 enlazada para este recorrido y se informan como cobertura pendiente. Faltan
 otros tipos de celda, reversión y validación frontend.
+La suite sintética del exportador cubre ahora una segunda revisión que restaura
+el libro original byte a byte, números, booleanos, texto inline con espacios y
+rechazo de fórmulas. La validación de esas variantes en los maestros reales
+sigue pendiente.
 El expediente ya permite completar una celda vacía de una fila fuente enlazada:
 selecciona una columna ausente de la cabecera importada, conserva `null` como
 literal y registra procedencia, actor, motivo y valor vigente. La prueba

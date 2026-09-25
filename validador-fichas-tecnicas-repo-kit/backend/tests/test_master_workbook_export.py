@@ -17,6 +17,7 @@ from pharma_validator_api.main import create_app
 from pharma_validator_api.master_workbook_export import (
     MASTER_WORKBOOKS,
     MasterWorkbookExportError,
+    _apply_patches,
     export_master_workbook,
     export_master_workbooks,
 )
@@ -166,6 +167,84 @@ def test_export_fails_closed_when_source_hash_is_not_current(tmp_path: Path) -> 
     Base.metadata.create_all(engine)
     with Session(engine) as session, pytest.raises(MasterWorkbookExportError):
         export_master_workbook(session, source, tmp_path / "out.xlsx")
+
+
+def test_latest_revision_can_restore_original_workbook_parts(tmp_path: Path) -> None:
+    source = tmp_path / SOURCE_FILENAME
+    destination = tmp_path / "restored.xlsx"
+    make_xlsx(source)
+    original_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+    engine = create_engine(f"sqlite:///{(tmp_path / 'db.sqlite').as_posix()}")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        seed_export(session, source, original_hash)
+        session.add(
+            FieldMaintenanceRevision(
+                id="restoration",
+                field_value_id="field",
+                sequence=2,
+                before_value="Corregido",
+                after_value="Anterior",
+                actor_id="ana",
+                actor_assurance="farmaceutico",
+                reason="Revertir corrección de prueba",
+                recorded_at=datetime.now(UTC),
+            )
+        )
+        session.commit()
+        result = export_master_workbook(session, source, destination)
+
+    assert result.changed_cells == 0
+    assert hashlib.sha256(source.read_bytes()).hexdigest() == original_hash
+    with zipfile.ZipFile(source) as original, zipfile.ZipFile(destination) as restored:
+        assert original.namelist() == restored.namelist()
+        assert all(original.read(name) == restored.read(name) for name in original.namelist())
+
+
+def test_typed_cells_preserve_valid_types_and_literal_text() -> None:
+    sheet = f'''<worksheet xmlns="{MAIN}"><sheetData><row r="1">
+      <c r="A1"><v>3</v></c><c r="B1"><v>3</v></c>
+      <c r="C1" t="b"><v>1</v></c>
+      <c r="D1" t="inlineStr"><is><t>Anterior</t></is></c>
+    </row></sheetData></worksheet>'''.encode()
+    output, changed = _apply_patches(
+        "xl/worksheets/sheet1.xml",
+        sheet,
+        {"A1": "4.50", "B1": "texto", "C1": "false", "D1": " con espacios "},
+        [],
+        None,
+        {},
+    )
+    assert changed == 4
+    root = ET.fromstring(output)
+    numeric = root.find(f".//{{{MAIN}}}c[@r='A1']")
+    assert numeric is not None and numeric.get("t") is None
+    assert numeric.find(f"{{{MAIN}}}v").text == "4.50"
+    text = root.find(f".//{{{MAIN}}}c[@r='B1']")
+    assert text is not None and text.get("t") == "inlineStr"
+    assert text.find(f"{{{MAIN}}}is/{{{MAIN}}}t").text == "texto"
+    boolean = root.find(f".//{{{MAIN}}}c[@r='C1']")
+    assert boolean is not None and boolean.get("t") == "b"
+    assert boolean.find(f"{{{MAIN}}}v").text == "0"
+    inline = root.find(f".//{{{MAIN}}}c[@r='D1']")
+    assert inline is not None and inline.get("t") == "inlineStr"
+    inline_text = inline.find(f"{{{MAIN}}}is/{{{MAIN}}}t")
+    assert inline_text is not None and inline_text.text == " con espacios "
+    assert inline_text.get("{http://www.w3.org/XML/1998/namespace}space") == "preserve"
+
+
+@pytest.mark.parametrize(
+    ("cell", "value"),
+    [('<c r="A1" t="b"><v>1</v></c>', "quizás"),
+     ('<c r="A1"><f>1+2</f><v>3</v></c>', "4")],
+)
+def test_export_rejects_invalid_boolean_and_formula_overwrite(cell: str, value: str) -> None:
+    sheet = (
+        f'<worksheet xmlns="{MAIN}"><sheetData><row r="1">'
+        f"{cell}</row></sheetData></worksheet>"
+    ).encode()
+    with pytest.raises(MasterWorkbookExportError):
+        _apply_patches("xl/worksheets/sheet1.xml", sheet, {"A1": value}, [], None, {})
 
 
 def test_export_creates_a_previously_absent_cell_without_mutating_source(tmp_path: Path) -> None:

@@ -1,5 +1,16 @@
 # Estado del proyecto
 
+## Reversión y tipos de celda en la exportación (25 de septiembre de 2026)
+
+- La suite dirigida del exportador pasa de seis a diez pruebas. Una segunda
+  revisión append-only restaura el valor original y produce un XLSX cuyas
+  partes internas son idénticas a las del libro fuente; el hash original no
+  cambia.
+- Se verifican números sin conversión, texto en una celda antes numérica,
+  booleanos, cadenas inline con espacios y el rechazo de booleanos inválidos
+  o intentos de sobrescribir fórmulas. Estas pruebas son sintéticas; aún falta
+  contrastar estos tipos y una reversión con los libros reales. Ruff pasa.
+
 ## Exportación diferencial en hojas reales (25 de septiembre de 2026)
 
 - El comprobador temporal reconstruye los tres libros sin cambios y confirma

@@ -31,6 +31,8 @@ ya cubre ocho hojas reales (1/5/2 por libro) y enumera seis hojas sin celda
 editable enlazada. Quedan otros tipos de celda, reversiones y una vía de prueba
 para esas seis hojas. La bandera de descarga continúa apagada hasta
 completar esa cobertura, la revisión visual y el gate del modelo canónico.
+La suite sintética ya comprueba reversión byte a byte, tipos numérico, booleano
+e inline, y rechazo de fórmulas. Queda repetir esas variantes sobre origen real.
 BOT PLUS queda como spike externo D-033 y no bloquea el resto.
 
 CAT-005 — mejora incremental: el listado muestra el rango de resultados y la
