@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # mypy: disable-error-code=import-untyped
-"""Verify a lossless, unedited export of the three real master workbooks."""
+"""Verify lossless and differential exports of the three real master workbooks."""
 
 from __future__ import annotations
 
@@ -79,9 +79,9 @@ def verify(source_directory: Path) -> dict[str, object]:
                                 raise AssertionError(f"Parte XLSX diferente: {item.filename}:{name}")
                         parts = len(source_zip.namelist())
                     result.append({"filename": item.filename, "parts_identical": parts})
-                selected_cells: dict[str, tuple[str, str, str]] = {}
+                selected_cells: dict[str, dict[str, tuple[str, str]]] = {}
                 for name in MASTER_WORKBOOKS:
-                    selected = session.execute(
+                    candidates = session.execute(
                         select(FieldValue, SourceFragment.locator)
                         .join(BlockInstance, FieldValue.block_instance_id == BlockInstance.id)
                         .join(SourceFragment, BlockInstance.source_fragment_id == SourceFragment.id)
@@ -94,38 +94,60 @@ def verify(source_directory: Path) -> dict[str, object]:
                             SourceDocument.name == name,
                             FieldValue.source_column_index.is_not(None),
                         )
-                        .limit(1)
-                    ).first()
-                    if selected is None:
+                    ).all()
+                    if not candidates:
                         raise AssertionError(f"Sin campo editable importado: {name}")
-                    field, locator = selected
-                    coordinates = json.loads(locator)
-                    sheet = str(coordinates["sheet"])
-                    reference = _reference(int(field.source_column_index), int(coordinates["row"]))
-                    marker = f"PRUEBA EXPORTACION {len(selected_cells) + 1}"
-                    selected_cells[name] = (sheet, reference, marker)
-                    session.add(
-                        FieldMaintenanceRevision(
-                            field_value_id=field.id,
-                            sequence=1,
-                            before_value=field.literal_value,
-                            after_value=marker,
-                            actor_id="verificacion_temporal",
-                            actor_assurance="tecnico",
-                            reason="Comprobar exportación diferencial en base temporal",
-                            recorded_at=datetime.now(UTC),
-                        )
+                    selected_cells[name] = {}
+                    with zipfile.ZipFile(source_directory / name) as source_zip:
+                        sheet_paths = _workbook_sheets(source_zip)
+                        _, _, shared = _shared_strings(source_zip)
+                        sheet_xml = {
+                            sheet: ET.fromstring(source_zip.read(path))
+                            for sheet, path in sheet_paths.items()
+                        }
+                        for field, locator in candidates:
+                            coordinates = json.loads(locator)
+                            sheet = str(coordinates["sheet"])
+                            if sheet in selected_cells[name]:
+                                continue
+                            reference = _reference(
+                                int(field.source_column_index), int(coordinates["row"])
+                            )
+                            cell = sheet_xml[sheet].find(
+                                f".//{{{MAIN_NS}}}c[@r='{reference}']"
+                            )
+                            if cell is None or cell.find(f"{{{MAIN_NS}}}f") is not None:
+                                continue
+                            if _cell_value(cell, shared) != field.literal_value:
+                                raise AssertionError(f"Literal importado distinto: {name}:{sheet}!{reference}")
+                            marker = f"PRUEBA EXPORTACION {len(selected_cells[name]) + 1}"
+                            selected_cells[name][sheet] = (reference, marker)
+                            session.add(
+                                FieldMaintenanceRevision(
+                                    field_value_id=field.id,
+                                    sequence=1,
+                                    before_value=field.literal_value,
+                                    after_value=marker,
+                                    actor_id="verificacion_temporal",
+                                    actor_assurance="tecnico",
+                                    reason="Comprobar exportación diferencial en base temporal",
+                                    recorded_at=datetime.now(UTC),
+                                )
+                            )
+                    match = next(row for row in result if row["filename"] == name)
+                    match["sheets_without_linked_editable_cell"] = sorted(
+                        set(sheet_paths) - set(selected_cells[name])
                     )
                 session.flush()
                 corrected = export_master_workbooks(
                     session, source_directory, Path(temporary) / "corrected"
                 )
                 for item in corrected:
-                    sheet, reference, marker = selected_cells[item.filename]
-                    if item.changed_cells != 1:
+                    selections = selected_cells[item.filename]
+                    if item.changed_cells != len(selections):
                         raise AssertionError(f"Número de cambios inesperado: {item.filename}")
                     with zipfile.ZipFile(source_directory / item.filename) as source_zip, zipfile.ZipFile(item.output) as output_zip:
-                        sheet_path = _workbook_sheets(source_zip)[sheet]
+                        sheet_paths = _workbook_sheets(source_zip)
                         if source_zip.namelist() != output_zip.namelist():
                             raise AssertionError(f"Partes XLSX diferentes: {item.filename}")
                         changed_parts = {
@@ -133,17 +155,23 @@ def verify(source_directory: Path) -> dict[str, object]:
                             for name in source_zip.namelist()
                             if source_zip.read(name) != output_zip.read(name)
                         }
-                        if sheet_path not in changed_parts or changed_parts - {
-                            sheet_path, "xl/sharedStrings.xml"
-                        }:
+                        expected_sheets = {sheet_paths[sheet] for sheet in selections}
+                        if not expected_sheets <= changed_parts or changed_parts - (
+                            expected_sheets | {"xl/sharedStrings.xml"}
+                        ):
                             raise AssertionError(f"Partes inesperadas tras corregir {item.filename}: {changed_parts}")
                         _, _, shared = _shared_strings(output_zip)
-                        xml = ET.fromstring(output_zip.read(sheet_path))
-                        cell = xml.find(f".//{{{MAIN_NS}}}c[@r='{reference}']")
-                        if _cell_value(cell, shared) != marker:
-                            raise AssertionError(f"Corrección no encontrada: {item.filename}:{reference}")
+                        for sheet, (reference, marker) in selections.items():
+                            xml = ET.fromstring(output_zip.read(sheet_paths[sheet]))
+                            cell = xml.find(f".//{{{MAIN_NS}}}c[@r='{reference}']")
+                            if _cell_value(cell, shared) != marker:
+                                raise AssertionError(
+                                    f"Corrección no encontrada: {item.filename}:{sheet}!{reference}"
+                                )
                     match = next(row for row in result if row["filename"] == item.filename)
-                    match["corrected_cell"] = f"{sheet}!{reference}"
+                    match["corrected_cells"] = [
+                        f"{sheet}!{reference}" for sheet, (reference, _) in selections.items()
+                    ]
                     match["changed_parts"] = sorted(changed_parts)
                 if {name: sha256(source_directory / name) for name in MASTER_WORKBOOKS} != originals:
                     raise AssertionError("Cambió el hash de un maestro original.")

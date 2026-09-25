@@ -1,5 +1,22 @@
 # Estado del proyecto
 
+## Exportación diferencial en hojas reales (25 de septiembre de 2026)
+
+- El comprobador temporal reconstruye los tres libros sin cambios y confirma
+  de nuevo sus 72 partes internas idénticas. Después aplica una revisión a una
+  celda enlazada de cada hoja que dispone de ella: 1 hoja de principio activo,
+  5 de medicamento y 2 de especialidades. Las ocho celdas exportadas coinciden
+  con las revisiones; sólo cambian las ocho partes de hoja correspondientes y
+  las tablas de cadenas compartidas. Los hashes de origen permanecen intactos.
+- Seis hojas no ofrecieron una celda editable enlazada para esta prueba:
+  `ConsejosAdministracion`, `DatosAnaliticos`, `Frecuencia` y `Via` de principio
+  activo, y `Frecuencia` y `Prescripcion` de medicamento. El comprobador las
+  informa expresamente; no cuenta como validada una edición en ellas. Quedan
+  pruebas de otros tipos de celda, reversión y mantenimiento de cuarentena en
+  libros reales. La descarga productiva continúa desactivada.
+- Las seis pruebas dirigidas del exportador, Ruff y mypy pasan. La verificación
+  real completa termina con `status: pass` para las ocho hojas cubiertas.
+
 ## Mantenimiento de celdas vacías de origen (25 de septiembre de 2026)
 
 - El expediente de registros fuente enlazados ofrece las columnas ausentes de

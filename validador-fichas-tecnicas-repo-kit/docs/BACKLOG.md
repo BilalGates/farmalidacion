@@ -26,8 +26,10 @@ de cadenas. Una prueba sintética cubre la exportación de una celda que estaba
 ausente. El expediente ya permite crear esa corrección en filas fuente enlazadas
 con cabecera, coordenada y revisión verificadas; la prueba API→XLSX pasa.
 La pantalla de cuarentena también permite completar columnas ausentes sin
-modificar el payload ni resolver la relación padre. Queda ampliar el recorrido
-diferencial a otras hojas y tipos. La bandera de descarga continúa apagada hasta
+modificar el payload ni resolver la relación padre. La verificación diferencial
+ya cubre ocho hojas reales (1/5/2 por libro) y enumera seis hojas sin celda
+editable enlazada. Quedan otros tipos de celda, reversiones y una vía de prueba
+para esas seis hojas. La bandera de descarga continúa apagada hasta
 completar esa cobertura, la revisión visual y el gate del modelo canónico.
 BOT PLUS queda como spike externo D-033 y no bloquea el resto.
 

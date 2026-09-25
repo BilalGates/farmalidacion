@@ -103,6 +103,12 @@ revisiones (72 partes XLSX idénticas) y con una corrección temporal por libro
 (`General!A2`, sólo cambian la hoja y `sharedStrings.xml`). El adaptador también
 crea una celda originalmente ausente en una prueba sintética. Quedan pendientes
 la cobertura de correcciones de otras hojas/tipos y la revisión visual.
+Una ampliación del mismo comprobador valida ocho correcciones distribuidas en
+ocho hojas reales: 1 de principio activo, 5 de medicamento y 2 de
+especialidades. Sólo cambian las hojas revisadas y `sharedStrings.xml`; los
+originales mantienen su hash. Seis hojas no contienen una celda editable
+enlazada para este recorrido y se informan como cobertura pendiente. Faltan
+otros tipos de celda, reversión y validación frontend.
 El expediente ya permite completar una celda vacía de una fila fuente enlazada:
 selecciona una columna ausente de la cabecera importada, conserva `null` como
 literal y registra procedencia, actor, motivo y valor vigente. La prueba
