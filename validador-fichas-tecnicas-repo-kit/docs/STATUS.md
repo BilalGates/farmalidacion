@@ -1,5 +1,16 @@
 # Estado del proyecto
 
+## Reversión comprobada en los tres maestros reales (25 de septiembre de 2026)
+
+- Tras las ocho correcciones temporales en ocho hojas, el comprobador añade
+  ocho segundas revisiones que restauran los literales originales. Una tercera
+  exportación informa cero celdas cambiadas y coteja byte a byte las 25, 26 y
+  21 partes internas de los tres XLSX con los libros fuente. Sus SHA-256 de
+  origen permanecen iguales. Ruff y mypy del comprobador pasan.
+- Permanecen pendientes los otros tipos de celda sobre libros reales, las seis
+  hojas sin celda editable enlazada para esta prueba, la comprobación frontend
+  y la aceptación del modelo. La descarga productiva sigue desactivada.
+
 ## Reversión y tipos de celda en la exportación (25 de septiembre de 2026)
 
 - La suite dirigida del exportador pasa de seis a diez pruebas. Una segunda

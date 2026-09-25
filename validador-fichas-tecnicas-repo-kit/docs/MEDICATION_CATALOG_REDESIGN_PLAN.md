@@ -111,8 +111,12 @@ enlazada para este recorrido y se informan como cobertura pendiente. Faltan
 otros tipos de celda, reversión y validación frontend.
 La suite sintética del exportador cubre ahora una segunda revisión que restaura
 el libro original byte a byte, números, booleanos, texto inline con espacios y
-rechazo de fórmulas. La validación de esas variantes en los maestros reales
+rechazo de fórmulas. La validación de esos tipos en los maestros reales
 sigue pendiente.
+El comprobador real también añade una segunda revisión a las ocho celdas
+corregidas y confirma que los tres XLSX restaurados tienen cero cambios y sus
+72 partes internas vuelven a coincidir byte a byte con el origen. Quedan los
+tipos alternativos reales y las seis hojas sin celda editable enlazada.
 El expediente ya permite completar una celda vacía de una fila fuente enlazada:
 selecciona una columna ausente de la cabecera importada, conserva `null` como
 literal y registra procedencia, actor, motivo y valor vigente. La prueba

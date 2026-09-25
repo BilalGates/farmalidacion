@@ -79,7 +79,7 @@ def verify(source_directory: Path) -> dict[str, object]:
                                 raise AssertionError(f"Parte XLSX diferente: {item.filename}:{name}")
                         parts = len(source_zip.namelist())
                     result.append({"filename": item.filename, "parts_identical": parts})
-                selected_cells: dict[str, dict[str, tuple[str, str]]] = {}
+                selected_cells: dict[str, dict[str, tuple[str, str, str, str | None]]] = {}
                 for name in MASTER_WORKBOOKS:
                     candidates = session.execute(
                         select(FieldValue, SourceFragment.locator)
@@ -121,7 +121,9 @@ def verify(source_directory: Path) -> dict[str, object]:
                             if _cell_value(cell, shared) != field.literal_value:
                                 raise AssertionError(f"Literal importado distinto: {name}:{sheet}!{reference}")
                             marker = f"PRUEBA EXPORTACION {len(selected_cells[name]) + 1}"
-                            selected_cells[name][sheet] = (reference, marker)
+                            selected_cells[name][sheet] = (
+                                reference, marker, field.id, field.literal_value
+                            )
                             session.add(
                                 FieldMaintenanceRevision(
                                     field_value_id=field.id,
@@ -161,7 +163,7 @@ def verify(source_directory: Path) -> dict[str, object]:
                         ):
                             raise AssertionError(f"Partes inesperadas tras corregir {item.filename}: {changed_parts}")
                         _, _, shared = _shared_strings(output_zip)
-                        for sheet, (reference, marker) in selections.items():
+                        for sheet, (reference, marker, _, _) in selections.items():
                             xml = ET.fromstring(output_zip.read(sheet_paths[sheet]))
                             cell = xml.find(f".//{{{MAIN_NS}}}c[@r='{reference}']")
                             if _cell_value(cell, shared) != marker:
@@ -170,9 +172,41 @@ def verify(source_directory: Path) -> dict[str, object]:
                                 )
                     match = next(row for row in result if row["filename"] == item.filename)
                     match["corrected_cells"] = [
-                        f"{sheet}!{reference}" for sheet, (reference, _) in selections.items()
+                        f"{sheet}!{reference}"
+                        for sheet, (reference, _, _, _) in selections.items()
                     ]
                     match["changed_parts"] = sorted(changed_parts)
+                for selections in selected_cells.values():
+                    for _, marker, field_id, original_value in selections.values():
+                        session.add(
+                            FieldMaintenanceRevision(
+                                field_value_id=field_id,
+                                sequence=2,
+                                before_value=marker,
+                                after_value=original_value,
+                                actor_id="verificacion_temporal",
+                                actor_assurance="tecnico",
+                                reason="Comprobar reversión en base temporal",
+                                recorded_at=datetime.now(UTC),
+                            )
+                        )
+                session.flush()
+                restored = export_master_workbooks(
+                    session, source_directory, Path(temporary) / "restored"
+                )
+                for item in restored:
+                    if item.changed_cells != 0:
+                        raise AssertionError(f"La reversión dejó cambios: {item.filename}")
+                    with zipfile.ZipFile(source_directory / item.filename) as source_zip, zipfile.ZipFile(item.output) as output_zip:
+                        if source_zip.namelist() != output_zip.namelist():
+                            raise AssertionError(f"Partes diferentes tras revertir: {item.filename}")
+                        for name in source_zip.namelist():
+                            if source_zip.read(name) != output_zip.read(name):
+                                raise AssertionError(
+                                    f"Parte diferente tras revertir: {item.filename}:{name}"
+                                )
+                    match = next(row for row in result if row["filename"] == item.filename)
+                    match["restored_parts_identical"] = match["parts_identical"]
                 if {name: sha256(source_directory / name) for name in MASTER_WORKBOOKS} != originals:
                     raise AssertionError("Cambió el hash de un maestro original.")
                 return {"status": "pass", "workbooks": result, "original_sha256": originals}
