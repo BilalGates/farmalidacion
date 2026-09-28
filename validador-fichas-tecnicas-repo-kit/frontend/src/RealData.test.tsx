@@ -284,6 +284,8 @@ function route(url: string): unknown {
   if (url.includes('/insights/sources')) return SOURCES
   if (url.includes('/insights/imports')) return IMPORTS
   if (url.includes('/insights/records/')) return RECORD_DETAIL
+  if (url.includes('/maintenance/changes')) return []
+  if (url.includes('/maintenance/runs')) return []
   if (url.includes('/catalog/identities/cat-real/')) return []
   if (url.includes('/catalog/identities/cat-real')) return CATALOG_PAGE.items[0]
   if (url.includes('/catalog/identities')) {
@@ -548,6 +550,23 @@ describe('estado del conjunto de datos', () => {
 })
 
 describe('navegación', () => {
+  it('sitúa Catálogo junto a una descripción sobre la lista y separa Novedades CIMA', async () => {
+    window.location.hash = '#/fichas'
+    const { rerender } = render(<App />)
+
+    expect(await screen.findByRole('heading', { name: 'Catálogo' })).toBeVisible()
+    expect(screen.getByText('Explora medicamentos, presentaciones y principios activos.')).toBeVisible()
+    expect(screen.queryByRole('navigation', { name: 'Páginas de Catálogo' })).toBeNull()
+
+    window.location.hash = '#/novedades'
+    rerender(<App />)
+    expect(await screen.findByRole('heading', { name: 'Novedades CIMA' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Novedades CIMA' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+  })
+
   it('marca "Catálogo" como activo en /#/fichas', async () => {
     window.location.hash = '#/fichas'
     render(<App />)

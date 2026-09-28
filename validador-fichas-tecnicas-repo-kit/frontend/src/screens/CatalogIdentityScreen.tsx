@@ -14,6 +14,7 @@ import { AsyncBoundary } from '../components/AsyncState'
 import { formatDateTime, orDash } from '../domain/format'
 import { navigate } from '../navigation'
 import { SourceFieldsMaintenance } from './CatalogSourceFields'
+import { CatalogCimaDocumentReader } from './CatalogCimaDocument'
 
 const TYPE_LABELS: Record<string, string> = {
   commercial_product: 'Producto comercial', authorization: 'Autorización',
@@ -170,6 +171,8 @@ export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
           </div>
 
           {identity.target_record_id && <SourceFieldsMaintenance recordId={identity.target_record_id} reviewer={reviewer} />}
+
+          <CatalogCimaDocumentReader identityId={identity.id} recordId={identity.target_record_id} reviewerId={reviewer?.identifier ?? ''} />
 
           <section className='panel catalog-relations' aria-labelledby='catalog-relations-title'>
             <div className='panel__head'><div><p className='eyebrow'>Estructura farmacéutica</p><h2 id='catalog-relations-title'><GitBranch size={18} aria-hidden='true' /> Relaciones y composición</h2></div></div>

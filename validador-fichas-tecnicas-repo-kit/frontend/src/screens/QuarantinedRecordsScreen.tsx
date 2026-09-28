@@ -10,6 +10,7 @@ import {
 } from '../api/client'
 import type { EmptySourceColumn, QuarantinedField, QuarantinedSourceRow, Reviewer } from '../api/types'
 import { formatDateTime } from '../domain/format'
+import { FilterWorkspace } from '../components/FilterWorkspace'
 
 const PAGE_SIZE = 50
 const WORKBOOKS: Record<string, string> = {
@@ -160,17 +161,21 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
         <span className='badge badge--warning'><AlertTriangle size={15} aria-hidden='true' /> {total} filas</span>
       </div>
 
-      <section className='panel'>
-        <div className='panel__head'>
-          <div><p className='eyebrow'>Revisión de importación</p><h2>Origen y motivo</h2></div>
-          <label className='field quarantine-screen__filter'>
-            <span className='field__label'>Libro</span>
+      <FilterWorkspace
+        title='Filtros de cuarentena'
+        storageKey='farmalidacion.filters.quarantine.closed'
+        activeCount={Number(Boolean(workbook))}
+        filters={
+          <label className='field'>
+            <span className='field__label'>Libro de origen</span>
             <select value={workbook} onChange={(event) => void load(0, event.target.value, '')}>
               <option value=''>Todos los libros</option>
               {Object.entries(WORKBOOKS).map(([filename, label]) => <option key={filename} value={filename}>{label}</option>)}
             </select>
           </label>
-        </div>
+        }
+      >
+      <section className='panel quarantine-results-panel'>
         {!reviewer && <p className='alert badge--warning'>Seleccione un usuario arriba para mantener campos.</p>}
         {loadError && <p className='alert alert--error' role='alert'>{loadError}<button className='button button--ghost' type='button' onClick={() => void load()}>Reintentar</button></p>}
         {loading && <p role='status'>Cargando filas…</p>}
@@ -250,6 +255,7 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
           </div>
         )}
       </section>
+      </FilterWorkspace>
     </div>
   )
 }

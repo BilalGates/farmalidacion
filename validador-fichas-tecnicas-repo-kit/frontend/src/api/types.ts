@@ -372,6 +372,67 @@ export interface CatalogIdentityPage {
   offset: number
 }
 
+export interface CatalogCimaDocument {
+  document_name: string
+  document_version_id: string
+  source_version: string | null
+  content_hash: string
+  acquired_at: string
+  sections: { locator: string; literal_text: string }[]
+}
+
+export type CatalogCimaComparisonStatus =
+  | 'coincide'
+  | 'difiere'
+  | 'falta_registro'
+  | 'falta_cima'
+  | 'no_comparable'
+  | 'requiere_criterio'
+
+export interface CatalogCimaComparison {
+  field_value_id: string
+  block_type: string
+  occurrence: number
+  field_name: string
+  source_column_index: number | null
+  master_value: string | null
+  catalog_field_id: string | null
+  catalog_classification: string | null
+  document_name: string | null
+  document_version_id: string | null
+  source_version: string | null
+  content_hash: string | null
+  status: CatalogCimaComparisonStatus
+  reason: string
+  section_locators: string[]
+  decision_history: CatalogCimaDecision[]
+}
+
+export interface CatalogCimaDecisionWrite {
+  document_version_id: string
+  section_locator: string
+  action: 'revisado' | 'corregir' | 'descartar' | 'pendiente'
+  corrected_value?: string
+  expected_maintenance_sequence: number
+  actor_id: string
+  reason: string
+}
+
+export interface CatalogCimaDecision {
+  sequence: number
+  field_value_id: string
+  document_version_id: string
+  section_locator: string
+  section_content_hash: string
+  comparison_status: string
+  action: string
+  corrected_value: string | null
+  actor_id: string
+  actor_assurance: string
+  reason: string
+  recorded_at: string
+}
+
 export interface CatalogRevision {
   sequence: number
   action: string

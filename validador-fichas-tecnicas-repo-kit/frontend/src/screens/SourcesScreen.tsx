@@ -4,6 +4,8 @@ import { fetchSource, fetchSources } from '../api/client'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
 import { formatDateTime, orDash, shortHash } from '../domain/format'
+import { openCatalogSource } from '../domain/catalogSourceNavigation'
+import type { CatalogSourceWorkbook } from '../api/types'
 
 /**
  * Fuentes realmente conocidas por el sistema.
@@ -26,8 +28,44 @@ const STATUS_LABELS: Record<string, string> = {
   sin_datos: 'Sin datos',
 }
 
+const WORKBOOK_PREVIEWS: Record<string, {
+  view: CatalogSourceWorkbook
+  title: string
+  description: string
+  action: string
+  sheets: Record<string, string>
+}> = {
+  'Especialidades-CargaMaster190626.xlsx': {
+    view: 'especialidades', title: 'Especialidades y presentaciones',
+    description: 'Cada registro principal identifica una presentación mediante su Código Nacional. Los excipientes se conservan como ocurrencias separadas.',
+    action: 'Explorar presentaciones',
+    sheets: { General: 'Presentaciones y códigos nacionales', Excipientes: 'Excipientes por presentación' },
+  },
+  'Medicamento-cargaMaster25062026.xlsx': {
+    view: 'medicamentos', title: 'Medicamentos',
+    description: 'La ficha del medicamento conserva composición, indicaciones, vías y enlaces en hojas y ocurrencias distintas.',
+    action: 'Explorar medicamentos',
+    sheets: {
+      General: 'Identidad y datos generales', Composicion: 'Componentes y cantidades',
+      Indicacion: 'Indicaciones', Frecuencia: 'Frecuencias', Via: 'Vías de administración',
+      Prescripcion: 'Prescripción', Links: 'Enlaces relacionados',
+    },
+  },
+  'PrincipioActivoCargaMaster-22062026.xlsx': {
+    view: 'principios_activos', title: 'Principios activos',
+    description: 'La identidad del principio activo y sus datos complementarios se consultan por hoja sin mezclarlos con medicamentos o presentaciones.',
+    action: 'Explorar principios activos',
+    sheets: {
+      General: 'Identidad del principio activo', Frecuencia: 'Frecuencias',
+      Via: 'Vías de administración', ConsejosAdministracion: 'Consejos de administración',
+      DatosAnaliticos: 'Datos analíticos',
+    },
+  },
+}
+
 function SourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const { data, error, loading } = useQuery(() => fetchSource(id), [id])
+  const preview = data?.source_type === 'master_excel' ? WORKBOOK_PREVIEWS[data.name] : undefined
   return (
     <section className='panel' aria-label='Detalle de la fuente'>
       <div className='panel__head'>
@@ -45,6 +83,15 @@ function SourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
       >
         {data && (
           <>
+            {preview && <div className={`source-workbook-preview source-workbook-preview--${preview.view}`}>
+              <p className='eyebrow'>Vista del libro maestro</p>
+              <h3>{preview.title}</h3>
+              <p>{preview.description}</p>
+              <p>Abra un registro para consultar todas sus hojas y anotar o corregir valores con revisor y motivo. El Excel original se conserva.</p>
+              <button type='button' className='button button--primary' onClick={() => openCatalogSource(preview.view)}>
+                {preview.action}
+              </button>
+            </div>}
             <dl className='definition'>
               <div>
                 <dt>Nombre</dt>
@@ -83,11 +130,13 @@ function SourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
             </dl>
 
             {data.sheets.length > 0 ? (
+              <div className='table-wrap' role='region' aria-label='Hojas del libro; desplazamiento horizontal disponible' tabIndex={0}>
               <table className='table'>
                 <caption>Hojas importadas</caption>
                 <thead>
                   <tr>
                     <th scope='col'>Hoja</th>
+                    <th scope='col'>Contenido</th>
                     <th scope='col'>Filas de datos</th>
                     <th scope='col'>Valores con contenido</th>
                   </tr>
@@ -96,12 +145,14 @@ function SourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
                   {data.sheets.map((sheet) => (
                     <tr key={sheet.sheet_ordinal}>
                       <th scope='row'>{sheet.sheet_name}</th>
+                      <td>{preview?.sheets[sheet.sheet_name] ?? 'Hoja de origen'}{sheet.data_row_count === 0 ? ' · solo cabecera' : ''}</td>
                       <td>{sheet.data_row_count.toLocaleString('es-ES')}</td>
                       <td>{sheet.material_value_count.toLocaleString('es-ES')}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              </div>
             ) : (
               <p className='muted'>
                 Esta fuente no registra hojas importadas: no procede de un libro Excel.
@@ -142,6 +193,7 @@ export function SourcesScreen() {
         }
       >
         {data && (
+          <div className='table-wrap' role='region' aria-label='Fuentes; desplazamiento horizontal disponible' tabIndex={0}>
           <table className='table'>
             <thead>
               <tr>
@@ -186,6 +238,7 @@ export function SourcesScreen() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </AsyncBoundary>
 

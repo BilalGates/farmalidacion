@@ -352,7 +352,8 @@ describe('Recorrido de la vertical de revisión', () => {
     expect(await screen.findByText('Datos actualizados')).toBeVisible()
     expect(document.querySelector('.mode-chip')).toBeNull()
     expect(screen.getByRole('button', { name: 'Catálogo' })).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Validaciones' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Revisión' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Datos' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Exportaciones' })).toBeVisible()
     // Los módulos sin construir ya no se anuncian: un menú que promete lo que no
     // existe obliga a descubrir a base de clics qué es real.

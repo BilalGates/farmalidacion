@@ -4,6 +4,10 @@ import type {
   BlockEditWrite,
   BlockOccurrence,
   CatalogIdentity,
+  CatalogCimaDocument,
+  CatalogCimaComparison,
+  CatalogCimaDecision,
+  CatalogCimaDecisionWrite,
   CatalogIdentityPage,
   CatalogIdentitySort,
   CatalogIdentityType,
@@ -349,6 +353,25 @@ export function fetchCatalogIdentity(id: string): Promise<CatalogIdentity> {
   return request<CatalogIdentity>(`/catalog/identities/${encodeURIComponent(id)}`)
 }
 
+export function fetchCatalogCimaDocuments(id: string): Promise<CatalogCimaDocument[]> {
+  return request<CatalogCimaDocument[]>(`/catalog/identities/${encodeURIComponent(id)}/cima-documents`)
+}
+
+export function fetchCatalogCimaComparison(id: string): Promise<CatalogCimaComparison[]> {
+  return request<CatalogCimaComparison[]>(`/catalog/identities/${encodeURIComponent(id)}/cima-comparison`)
+}
+
+export function saveCatalogCimaDecision(
+  identityId: string,
+  fieldValueId: string,
+  payload: CatalogCimaDecisionWrite,
+): Promise<CatalogCimaDecision> {
+  return request<CatalogCimaDecision>(
+    `/catalog/identities/${encodeURIComponent(identityId)}/cima-comparisons/${encodeURIComponent(fieldValueId)}/decisions`,
+    { method: 'POST', body: JSON.stringify(payload) },
+  )
+}
+
 export function fetchCatalogHistory(id: string): Promise<CatalogRevision[]> {
   return request<CatalogRevision[]>(`/catalog/identities/${encodeURIComponent(id)}/history`)
 }
@@ -625,6 +648,12 @@ export interface MaintenanceChangeSummary {
   old_version_id: string | null
   new_version_id: string | null
   affected_field_count: number
+  catalog_targets: Array<{
+    identity_id: string
+    display_name: string
+    identity_type: string
+    national_code: string
+  }>
   has_diff: boolean
   recorded_at: string
 }
@@ -666,6 +695,10 @@ export interface MaintenanceRunSummary {
 
 export function fetchMaintenanceRuns(): Promise<MaintenanceRunSummary[]> {
   return request<MaintenanceRunSummary[]>('/maintenance/runs')
+}
+
+export function runCimaMaintenance(): Promise<MaintenanceRunSummary> {
+  return request<MaintenanceRunSummary>('/maintenance/run', { method: 'POST' })
 }
 
 export interface ChatCitation {
