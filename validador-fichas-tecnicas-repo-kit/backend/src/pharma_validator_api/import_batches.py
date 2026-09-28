@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 
 from pharma_validator_api.models import ImportBatch, ImportDiagnostic, QuarantinedSourceRow
 
+CATALOG_DEFINITION_IMPORTER = "catalog_fields"
+
 
 @dataclass(frozen=True)
 class ImportBatchRequest:

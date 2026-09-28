@@ -27,6 +27,7 @@ from pharma_validator_api.data_origin import (
     origins_for_records,
 )
 from pharma_validator_api.errors import ApplicationError
+from pharma_validator_api.import_batches import CATALOG_DEFINITION_IMPORTER
 from pharma_validator_api.models import (
     BlockInstance,
     CatalogFieldDefinition,
@@ -266,7 +267,9 @@ def read_dashboard(session: SessionDependency) -> DashboardRead:
     specialties = real_by_entity.get("specialty", 0)
     documents = _scalar_count(session, SourceDocument)
     document_versions = _scalar_count(session, SourceDocumentVersion)
-    batches = _scalar_count(session, ImportBatch)
+    batches = _scalar_count(
+        session, ImportBatch, ImportBatch.importer_name != CATALOG_DEFINITION_IMPORTER
+    )
     catalog_fields = _scalar_count(session, CatalogFieldDefinition)
     field_values = _scalar_count(session, FieldValue)
     quarantined = _scalar_count(session, QuarantinedSourceRow)
@@ -297,7 +300,10 @@ def read_dashboard(session: SessionDependency) -> DashboardRead:
     ]
 
     last_import = session.scalar(
-        select(ImportBatch.created_at).order_by(ImportBatch.created_at.desc()).limit(1)
+        select(ImportBatch.created_at)
+        .where(ImportBatch.importer_name != CATALOG_DEFINITION_IMPORTER)
+        .order_by(ImportBatch.created_at.desc())
+        .limit(1)
     )
 
     #: Los estados se derivan de la presencia real de datos. Una capacidad
@@ -544,7 +550,11 @@ def _import_payload(session: Session, batch: ImportBatch) -> ImportRead:
 def list_imports(session: SessionDependency) -> ImportListRead:
     """Lotes de importación ya ejecutados, del más reciente al más antiguo."""
     batches = list(
-        session.scalars(select(ImportBatch).order_by(ImportBatch.created_at.desc())).all()
+        session.scalars(
+            select(ImportBatch)
+            .where(ImportBatch.importer_name != CATALOG_DEFINITION_IMPORTER)
+            .order_by(ImportBatch.created_at.desc())
+        ).all()
     )
     items = [_import_payload(session, batch) for batch in batches]
     return ImportListRead(items=items, total=len(items))
@@ -553,7 +563,7 @@ def list_imports(session: SessionDependency) -> ImportListRead:
 @router.get("/imports/{batch_id}", response_model=ImportDetailRead)
 def read_import(batch_id: str, session: SessionDependency) -> ImportDetailRead:
     batch = session.get(ImportBatch, batch_id)
-    if batch is None:
+    if batch is None or batch.importer_name == CATALOG_DEFINITION_IMPORTER:
         raise ApplicationError("Importación no encontrada.", status_code=404)
     base = _import_payload(session, batch)
     sheets = session.scalars(

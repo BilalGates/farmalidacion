@@ -21,6 +21,7 @@ from pharma_validator_api.errors import register_error_handlers
 from pharma_validator_api.export_api import audit_router, risk_router
 from pharma_validator_api.export_api import router as export_router
 from pharma_validator_api.fixtures import load_demo_fixture, load_showcase_fixture
+from pharma_validator_api.import_batches import CATALOG_DEFINITION_IMPORTER
 from pharma_validator_api.insights import router as insights_router
 from pharma_validator_api.logging import configure_logging
 from pharma_validator_api.maintenance_api import router as maintenance_router
@@ -160,7 +161,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 )
                 or 0
             )
-            batches = session.scalar(select(func.count()).select_from(ImportBatch)) or 0
+            batches = (
+                session.scalar(
+                    select(func.count())
+                    .select_from(ImportBatch)
+                    .where(ImportBatch.importer_name != CATALOG_DEFINITION_IMPORTER)
+                )
+                or 0
+            )
         real = total - demo
         # Un modo REAL sin ningún registro real es la avería concreta que se
         # quiere poder ver: la base está migrada pero la ingesta no se ha
