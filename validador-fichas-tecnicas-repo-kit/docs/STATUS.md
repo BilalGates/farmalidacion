@@ -1,5 +1,86 @@
 # Estado del proyecto
 
+## CAT-007 — Comparación campo a campo con CIMA (28 de septiembre de 2026)
+
+- El expediente compara los campos del maestro con fichas tipo 1 enlazadas como
+  `ft`. Consulta el catálogo versionado de 353 definiciones y cruza sólo
+  coincidencias exactas de entidad, bloque y nombre técnico; no inventa aliases.
+- Resultados: coincidencia o diferencia literal para campos declarados directos;
+  falta de valor del maestro; falta de ficha/apartado; no comparable; o requiere
+  criterio farmacéutico. No normaliza, convierte ni resuelve diferencias.
+- La interfaz permite registrar revisión, corregir, descartar o dejar pendiente.
+  El evento append-only queda ligado al valor, versión exacta de CIMA, apartado,
+  hash del texto, revisor y motivo. Las correcciones crean en la misma
+  transacción una revisión de mantenimiento; el Excel original no se modifica.
+- El catálogo `Catalogo_campos_clinicos_medicamentos.xlsx` se importó como
+  configuración (353 definiciones, 7 diagnósticos ya conservados por su
+  importador); no se muestra como uno de los tres maestros de datos.
+- Verificación con documento CIMA real pendiente: la base REAL activa no tiene
+  fichas técnicas enlazadas. También falta la revisión farmacéutica de los
+  cruces candidatos antes de aceptar CAT-007 funcionalmente.
+
+## Integración operativa de novedades CIMA (28 de septiembre de 2026)
+
+- `Novedades CIMA` permite consultar desde la interfaz el último día cerrado;
+  el proceso consulta todas las páginas de `registroCambios`, valida cada
+  registro contra su CN mediante igualdad literal y confirma el par CN–
+  `nregistro` con el endpoint oficial de presentación.
+- La base REAL registra el intento, el hash de respuesta y solo los avisos con
+  coincidencia exacta y única. Cada aviso se enlaza a su expediente de
+  presentación mediante `maintenance_change_event_target`; el enlace y la
+  resolución quedan visibles en la tabla.
+- Consulta viva del 27/09/2026: 9 modificaciones del área `otros`, 9 enlaces
+  exactos a presentaciones del catálogo y 0 cambios de ficha técnica. No se
+  descargaron fichas, reabrieron campos ni modificaron valores de los maestros.
+- Se registró una ejecución fallida por el aislamiento de red del primer
+  backend y el reintento posterior completado; ambos intentos permanecen en el
+  historial operativo.
+- La ejecución diaria local está configurada en el Programador de tareas de
+  Windows para las 08:00, con recuperación de días pendientes. Solo corre con
+  la sesión del usuario iniciada y actualiza `data/local/real-preview.db`.
+- La corrección de campos continúa siendo humana. Para avisos `ft`, el flujo
+  descarga una versión nueva, crea diff, vuelve a enlazar el expediente y
+  presenta la comparación CAT-007. Sigue pendiente validar ese recorrido con
+  un evento vivo `ft` y una ficha anterior enlazada.
+
+## Vista local con los tres maestros reales (28 de septiembre de 2026)
+
+- La instancia de revisión usa `data/local/real-preview.db` en modo REAL, aislada
+  de los Excel originales. Contiene sólo los tres libros de
+  `Catalogo_campos_clinicos_medicamentos/base`: principios activos,
+  medicamentos y especialidades; no aparecen los fixtures DEMO.
+- Se importaron y verificaron las 14 hojas por nombre y orden (5, 7 y 2).
+  Las hojas con sólo cabeceras se muestran con cero filas. Los filtros del
+  catálogo devuelven respectivamente 7.189, 6.342 y 29.850 identidades.
+  Especialidades conserva 275 filas en cuarentena para revisión.
+- La pantalla Fuentes presenta un resumen y una previsualización propios de
+  cada libro, todas sus hojas y un acceso al catálogo filtrado. El importador
+  rechaza un libro cuya lista ordenada de hojas no coincida con la esperada,
+  para impedir omisiones silenciosas en futuras versiones.
+- Las anotaciones y correcciones se hacen sobre los valores de trabajo con
+  revisor y motivo, manteniendo el archivo de origen intacto y la auditoría.
+  La exportación de un Excel modificado sigue su control de seguridad.
+
+## Lector de ficha técnica CIMA en el expediente (28 de septiembre de 2026)
+
+- Primer corte de CAT-007: una identidad con registro destino muestra únicamente
+  las versiones de ficha técnica tipo 1 vinculadas explícitamente como `ft`.
+  La API selecciona la última versión vinculada de cada documento y entrega
+  apartados literales, identificador de versión, fecha y hash.
+- El expediente permite buscar por apartado o texto y navegar por un índice.
+  El contenido se presenta como texto, sin ejecutar HTML de la fuente.
+- El lector permite seleccionar un campo importado (bloque, ocurrencia y columna)
+  y localizar su valor de trabajo por coincidencia literal exacta en cada versión
+  vinculada. Muestra los apartados donde aparece o indica ausencia de aparición;
+  ninguno de esos resultados se trata como equivalencia o discrepancia clínica.
+- La API comprueba el SHA-256 de cada artefacto antes de exponer el texto y
+  rechaza un cuerpo alterado. La prueba cubre también el JSON segmentado
+  archivado como documento completo.
+- La prueba dirigida de API pasa (14/14), las pruebas dirigidas de frontend
+  pasan (6/6), TypeScript, ESLint y Ruff pasan. Quedan la prueba visual con un documento
+  real y la comparación campo a campo con decisión humana de CAT-007. Este checkout
+  no contiene `data/local/real.db`; el corpus CIMA disponible es sintético.
+
 ## Frontend verificado con datos DEMO (25 de septiembre de 2026)
 
 - Se instalaron las dependencias del frontend y pasaron Vitest completo
