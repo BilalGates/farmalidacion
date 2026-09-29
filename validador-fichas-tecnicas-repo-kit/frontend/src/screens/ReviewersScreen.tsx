@@ -10,6 +10,7 @@ import {
 import type { ReviewerRole } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
+import { PageHeader } from '../components/PageHeader'
 
 /**
  * Alta, rol y activación de revisores.
@@ -63,16 +64,7 @@ export function ReviewersScreen() {
 
   return (
     <div className='screen'>
-      <div className='screen__head'>
-        <div>
-          <p className='eyebrow'>Equipo</p>
-          <h1>Revisores</h1>
-          <p className='lede'>
-            Quién puede firmar validaciones y con qué rol. Un revisor retirado se desactiva, no se
-            borra: sus firmas anteriores siguen siendo suyas.
-          </p>
-        </div>
-      </div>
+      <PageHeader eyebrow='Equipo' title='Revisores' description='Quién puede firmar validaciones y con qué rol. Un revisor retirado se desactiva, no se borra: sus firmas anteriores siguen siendo suyas.' />
 
       <form className='panel reviewer-form' onSubmit={submit}>
         <label className='field'>
@@ -123,7 +115,7 @@ export function ReviewersScreen() {
         onRetry={refresh}
       >
         {reviewers.data && (
-          <table className='table'>
+          <div className='table-wrap' role='region' aria-label='Revisores; desplazamiento horizontal disponible' tabIndex={0}><table className='table'>
             <thead>
               <tr>
                 <th scope='col'>Nombre</th>
@@ -178,7 +170,7 @@ export function ReviewersScreen() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </AsyncBoundary>
     </div>
