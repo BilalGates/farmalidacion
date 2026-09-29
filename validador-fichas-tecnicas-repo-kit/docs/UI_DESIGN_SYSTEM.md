@@ -38,3 +38,11 @@ No se añaden `Switch`, `SegmentedControl`, `Tooltip`, `Popover`, `Dropdown`, `M
 ## Regla de migración
 
 Por pantalla: revisar 1440×900, 1920×1080 y 2560×1440, recorrer con teclado, validar carga/error/vacío y mantener rutas, filtros, evidencias, decisiones y resultados. Retirar CSS histórico sólo cuando no tenga consumidores.
+
+## Migración de pantallas principales
+
+Inicio agrupa las 14 métricas originales en catálogo, actividad y calidad, mantiene las cifras y deja el pipeline visible. Catálogo conserva todos sus filtros, orden, tabla y paginación, y muestra los filtros aplicados junto a los resultados. Novedades CIMA conserva su tabla y abre el diff documental en una región desplazable. Cola y segunda revisión conservan asignaciones, estados, doble validación y lectura ciega. Fuentes, importaciones y cuarentena comparten jerarquía y tablas con desplazamiento horizontal. Exportaciones separa claramente aviso contractual, formulario e historial. Revisores mantiene alta, rol y activación en una tabla preparada para más filas. Expediente de revisión e identidad canónica adoptan `PageHeader` y superficies compartidas.
+
+Las pantallas mantienen estados vacíos, loading y error existentes. No se añadieron datos, acciones ni estados de backend para representar cambios CIMA futuros. Los estilos específicos antiguos siguen presentes como compatibilidad; `design-system.css` los sustituye donde se ha migrado cada patrón y es la fuente para nuevos tokens y variantes.
+
+Verificación de esta iteración: pruebas frontend 145/145, lint, typecheck y build. Se abrieron las rutas principales en navegador y se comprobó el foco de teclado en la navegación. El backend no estaba disponible y Docker Desktop no respondía, así que el recorrido visual en vivo sólo cubrió shell y estados de error/vacío; las vistas pobladas se verificaron mediante pruebas de componentes, no con capturas desktop de 1440/1920/2560 px.
