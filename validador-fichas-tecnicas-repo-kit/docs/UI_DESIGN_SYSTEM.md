@@ -1,16 +1,12 @@
-# Base visual de Farmalidación
+# Sistema visual de Farmalidación
 
-Estado: primera implementación. Alcance: tokens, shell, navegación, cabeceras, controles, pestañas, badges y tablas compartidas. Las pantallas conservan su estructura y comportamiento; su migración específica sigue `UI_REDESIGN_PLAN.md`.
+Estado: consolidado tras la migración y la fase de UI polish. La fuente de verdad es `frontend/src/design-system.css`, importada después de `styles.css` desde `main.tsx`. Las reglas históricas con consumidores activos permanecen por compatibilidad.
 
 ## Dirección
 
-Interfaz clínica empresarial para sesiones largas: fondo neutro, texto legible, violeta de marca reservado para navegación activa, acción principal y foco. Éxito, aviso, error e información usan colores independientes y siempre se acompañan de texto. Agrupar mediante espacio, tipografía y líneas discretas antes que añadir tarjetas.
+Interfaz clínica para sesiones largas: fondo neutro, texto legible y morado reservado para navegación activa, acción principal y foco. Éxito, aviso, error e información tienen colores semánticos y etiquetas textuales. La agrupación se resuelve con espacio, tipografía y líneas discretas.
 
-## Fuente de verdad
-
-`frontend/src/design-system.css` se importa después de `styles.css` en `main.tsx`. Es la capa de tokens y patrones vigente mientras se migran reglas históricas. Las clases existentes (`.button`, `.field`, `.table`, `.badge`, `.panel`, `.screen__head`) son el contrato de compatibilidad. `PageHeader` inicia la adopción de componentes reutilizables en Inicio.
-
-## Tokens
+## Tokens vigentes
 
 | Familia | Variables | Uso |
 |---|---|---|
@@ -20,29 +16,33 @@ Interfaz clínica empresarial para sesiones largas: fondo neutro, texto legible,
 | Espacio | `--space-1/2/3/4/5/6/8` | 4, 8, 12, 16, 20, 24, 32 px |
 | Forma | `--radius-small`, `--radius-control`, `--radius`, `--shadow` | Radios 4, 6, 8 px; sombra mínima |
 | Tipo | `--text-xs/sm/base/lg/title`, `--weight-*`, `--line-*` | Metadatos, cuerpo y encabezados |
-| Capas | `--z-sticky`, `--z-popover`, `--z-dialog` | Elementos superpuestos |
+| Capas | `--z-sticky`, `--z-popover` | Cabeceras y menús |
 
-## Patrones
+## Patrones definitivos
 
-- Shell compacto con navegación subrayada, fecha de datos y selector de revisor integrados. Contenedor de hasta 1600 px; el catálogo mantiene su layout de alto completo.
-- Botones y controles de altura mínima 36 px, radio 6 px, foco visible de 2 px y disabled legible. Los controles nativos preservan semántica y teclado.
-- Pestañas de `SectionWorkspace` conservan enlaces y `aria-current` y marcan el activo con línea inferior.
-- Badges, alertas y modo REAL/DEMO mantienen etiquetas textuales; el color sólo complementa.
-- Tablas con números tabulares, filas compactas, hover tenue y cabecera clara. El catálogo conserva sticky header y scroll. El truncado requiere decidir por columna qué puede recortarse y cómo mostrar el literal completo de forma accesible.
-- `AsyncBoundary` sigue siendo el patrón común de carga, error y vacío; `FilterWorkspace` conserva su estado persistente.
+- Shell y navegación compactos en 1280 px; el contenido puede crecer hasta 2200 px en pantallas anchas. En resoluciones intermedias se conserva el acceso a todas las secciones.
+- Controles de altura mínima 36 px y foco visible sólido de 2 px. Los campos de texto sin atributo `type` comparten el mismo borde y fondo que los campos explícitos.
+- Botones con jerarquía primaria, secundaria y discreta. Disabled conserva legibilidad. No se añadieron animaciones decorativas.
+- Filtros del catálogo en dos columnas para las opciones de condición; filtros activos se muestran junto a resultados. Al retirar un filtro activo, el foco vuelve al encabezado de resultados.
+- Tablas con cabeceras sin mayúsculas forzadas, números tabulares alineados a la derecha y filas compactas. El catálogo conserva la cabecera sticky y el desplazamiento horizontal.
+- Carga de resultados con altura estable y superficie neutra para reducir saltos de layout. Vacíos y errores conservan textos útiles y sobrios.
+- `PageHeader`, `SectionWorkspace`, `AsyncBoundary` y `FilterWorkspace` son los patrones compartidos. Los estados semánticos siempre incluyen texto.
 
-## Componentes aplazados
+## Revisión de pantallas
 
-No se añaden `Switch`, `SegmentedControl`, `Tooltip`, `Popover`, `Dropdown`, `Modal`, `Toast`, `Skeleton`, `Drawer` ni `Breadcrumb`: aún no hay un caso compartido que justifique definir su API. `ReviewerSelect` ya cubre su menú específico. Se introducirán cuando una pantalla real los necesite, con contrato de teclado y accesibilidad.
+Se revisaron Inicio, Catálogo, Novedades CIMA, Cola, Segunda revisión, Fuentes, Importaciones, Cuarentena, Exportaciones, Revisores, expediente de revisión e identidad canónica a nivel de estructura y estilos. La Cola se inspeccionó visualmente a 1280×720, 1440×900, 1920×1080 y 2560×1440; se comprobó la navegación y el formulario de alta a 1280 px. Catálogo, Novedades CIMA, Exportaciones y Revisores se inspeccionaron visualmente a 1440×900. Se ajustaron navegación, icono del buscador, densidad de filtros, anchura del formulario de exportación, números y estados de carga. Se retiraron reglas CSS sin consumidores comprobados y dos tokens no utilizados. No se modificaron reglas clínicas ni llamadas de negocio.
 
-## Regla de migración
+El backend no estuvo disponible y Docker Desktop no respondió durante esta revisión. Por ello, las capturas verifican shell y estados de carga/error; las tablas pobladas y los diálogos no pudieron contrastarse visualmente con datos reales a las cuatro resoluciones. Sus flujos se cubren con pruebas de componentes. No se debe interpretar esta limitación como validación visual completa de datos poblados.
 
-Por pantalla: revisar 1440×900, 1920×1080 y 2560×1440, recorrer con teclado, validar carga/error/vacío y mantener rutas, filtros, evidencias, decisiones y resultados. Retirar CSS histórico sólo cuando no tenga consumidores.
+## Incidencias funcionales preexistentes observadas
 
-## Migración de pantallas principales
+Estas incidencias requieren una tarea funcional/accesibilidad separada, pues no se ha acreditado que sean regresiones del rediseño:
 
-Inicio agrupa las 14 métricas originales en catálogo, actividad y calidad, mantiene las cifras y deja el pipeline visible. Catálogo conserva todos sus filtros, orden, tabla y paginación, y muestra los filtros aplicados junto a los resultados. Novedades CIMA conserva su tabla y abre el diff documental en una región desplazable. Cola y segunda revisión conservan asignaciones, estados, doble validación y lectura ciega. Fuentes, importaciones y cuarentena comparten jerarquía y tablas con desplazamiento horizontal. Exportaciones separa claramente aviso contractual, formulario e historial. Revisores mantiene alta, rol y activación en una tabla preparada para más filas. Expediente de revisión e identidad canónica adoptan `PageHeader` y superficies compartidas.
+- `ReviewerSelect` abre con flecha abajo, pero no ofrece navegación completa de opciones con teclado ni restitución del foco al cerrar.
+- Al plegar `FilterWorkspace`, el botón que tiene el foco se desmonta y el foco se pierde.
+- El editor de segunda revisión ciega aparece sin mover el foco al nuevo contexto.
+- El expediente de revisión añade una parada de tabulación por envoltorio de campo; algunos desplegables anuncian expansión sin vincular el contenido con `aria-controls`.
 
-Las pantallas mantienen estados vacíos, loading y error existentes. No se añadieron datos, acciones ni estados de backend para representar cambios CIMA futuros. Los estilos específicos antiguos siguen presentes como compatibilidad; `design-system.css` los sustituye donde se ha migrado cada patrón y es la fuente para nuevos tokens y variantes.
+## Verificación
 
-Verificación de esta iteración: pruebas frontend 145/145, lint, typecheck y build. Se abrieron las rutas principales en navegador y se comprobó el foco de teclado en la navegación. El backend no estaba disponible y Docker Desktop no respondía, así que el recorrido visual en vivo sólo cubrió shell y estados de error/vacío; las vistas pobladas se verificaron mediante pruebas de componentes, no con capturas desktop de 1440/1920/2560 px.
+Pruebas, lint, typecheck y build del frontend ejecutados al cierre de esta fase. El CSS legado con posibles consumidores dinámicos se conserva deliberadamente.

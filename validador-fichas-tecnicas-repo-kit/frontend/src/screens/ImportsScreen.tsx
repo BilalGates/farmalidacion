@@ -170,10 +170,10 @@ export function ImportsScreen() {
                 <th scope='col'>Importador</th>
                 <th scope='col'>Estado</th>
                 <th scope='col'>Fecha</th>
-                <th scope='col'>Procesadas</th>
-                <th scope='col'>Conservados</th>
-                <th scope='col'>Cuarentena</th>
-                <th scope='col'>Errores</th>
+                <th scope='col' className='cell--num'>Procesadas</th>
+                <th scope='col' className='cell--num'>Conservados</th>
+                <th scope='col' className='cell--num'>Cuarentena</th>
+                <th scope='col' className='cell--num'>Errores</th>
                 <th scope='col'>
                   <span className='visually-hidden'>Acciones</span>
                 </th>
@@ -190,10 +190,10 @@ export function ImportsScreen() {
                     </span>
                   </td>
                   <td>{formatDateTime(item.created_at)}</td>
-                  <td>{formatNumber(item.processed_rows)}</td>
-                  <td>{item.retained_records.toLocaleString('es-ES')}</td>
-                  <td>{item.quarantined_rows.toLocaleString('es-ES')}</td>
-                  <td>{item.errors}</td>
+                  <td className='cell--num'>{formatNumber(item.processed_rows)}</td>
+                  <td className='cell--num'>{item.retained_records.toLocaleString('es-ES')}</td>
+                  <td className='cell--num'>{item.quarantined_rows.toLocaleString('es-ES')}</td>
+                  <td className='cell--num'>{item.errors}</td>
                   <td>
                     <button type='button' className='button' onClick={() => setSelected(item.id)}>
                       Ver detalle

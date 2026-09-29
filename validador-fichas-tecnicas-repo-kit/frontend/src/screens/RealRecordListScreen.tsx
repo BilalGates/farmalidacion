@@ -343,7 +343,7 @@ export function RealRecordListScreen() {
       >
       <div ref={resultsRef} tabIndex={-1} aria-label='Resultados del catálogo' className='catalog-results'>
         <PageHeader className='catalog-results__head' title='Catálogo' description='Explora medicamentos, presentaciones y principios activos.' />
-        {activeFilterCount > 0 && <div className='catalog-active-filters' aria-label='Filtros activos'>
+        {activeFilterCount > 0 && <div className='catalog-active-filters' aria-label='Filtros activos' onClickCapture={() => window.requestAnimationFrame(() => resultsRef.current?.focus({ preventScroll: true }))}>
           <span className='catalog-active-filters__label'>Filtros activos</span>
           {query && <button type='button' className='chip' onClick={() => { setQuery(''); setTerm(''); setOffset(0) }}>Búsqueda: {query} ×</button>}
           {sourceWorkbook && <button type='button' className='chip' onClick={() => selectSourceView(null)}>Libro: {SOURCE_LABELS[sourceWorkbook]} ×</button>}

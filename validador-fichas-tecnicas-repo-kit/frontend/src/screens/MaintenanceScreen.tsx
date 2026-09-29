@@ -156,7 +156,7 @@ export function MaintenanceScreen() {
                 <th scope='col'>Tipo</th>
                 <th scope='col'>Áreas</th>
                 <th scope='col'>Registros del catálogo</th>
-                <th scope='col'>Campos reabiertos</th>
+                <th scope='col' className='cell--num'>Campos reabiertos</th>
                 <th scope='col'>Detalle</th>
               </tr>
             </thead>
@@ -177,7 +177,7 @@ export function MaintenanceScreen() {
                       </p>
                     )) : 'Sin coincidencia exacta'}
                   </td>
-                  <td>{item.affected_field_count}</td>
+                  <td className='cell--num'>{item.affected_field_count}</td>
                   <td>
                     <button
                       type='button'

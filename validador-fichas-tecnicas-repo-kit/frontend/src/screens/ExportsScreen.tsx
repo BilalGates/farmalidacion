@@ -189,8 +189,8 @@ export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
                 <th scope='col'>Perfil</th>
                 <th scope='col'>Formato</th>
                 <th scope='col'>Estado</th>
-                <th scope='col'>Entregadas</th>
-                <th scope='col'>Excluidas</th>
+                <th scope='col' className='cell--num'>Entregadas</th>
+                <th scope='col' className='cell--num'>Excluidas</th>
                 <th scope='col'>Hash</th>
                 <th scope='col'>Exclusiones</th>
                 <th scope='col'>Artefacto</th>
@@ -210,8 +210,8 @@ export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
                       {STATUS_LABELS[run.status] ?? run.status}
                     </span>
                   </td>
-                  <td>{formatNumber(run.row_count)}</td>
-                  <td>{formatNumber(run.excluded_count)}</td>
+                  <td className='cell--num'>{formatNumber(run.row_count)}</td>
+                  <td className='cell--num'>{formatNumber(run.excluded_count)}</td>
                   <td title={run.content_hash ?? undefined}>
                     <code>{shortHash(run.content_hash)}</code>
                   </td>

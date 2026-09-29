@@ -158,10 +158,14 @@ it('permite combinar varias condiciones y limpiar todos los filtros', async () =
   expect(fetchMock.mock.calls[3][0]).toContain('condition=huerfano')
   expect(fetchMock.mock.calls[3][0]).toContain('condition=especial_control_medico')
 
-  fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros · 3' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Condición: Huérfano ×' }))
+  await waitFor(() => expect(screen.getByLabelText('Resultados del catálogo')).toHaveFocus())
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(5))
-  expect(fetchMock.mock.calls[4][0]).not.toContain('condition=')
-  expect(fetchMock.mock.calls[4][0]).not.toContain('identity_type=')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros · 2' }))
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(6))
+  expect(fetchMock.mock.calls[5][0]).not.toContain('condition=')
+  expect(fetchMock.mock.calls[5][0]).not.toContain('identity_type=')
 })
 
 it('limpia también una búsqueda escrita pero todavía no aplicada', async () => {

@@ -151,15 +151,6 @@ h2 { font-size: 1.02rem; font-weight: 660; letter-spacing: -0.005em; margin-bott
 }
 .card ul { margin: 0; padding-left: 1.1rem; color: var(--ink-soft); font-size: .9rem; }
 .card li + li { margin-top: .3rem; }
-.card--plain ul.boundary-list { padding-left: 0; }
-
-.boundary-list { display: flex; flex-wrap: wrap; gap: .5rem; list-style: none; }
-.boundary-list li {
-  padding: .35rem .65rem;
-  background: var(--canvas);
-  border: 1px solid var(--line);
-  border-radius: 99px; font-size: .8rem;
-}
 
 .pairs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .9rem; margin: 0; }
 .pairs dt { color: var(--ink-faint); font-size: .76rem; text-transform: uppercase; letter-spacing: .05em; }
@@ -172,7 +163,6 @@ h2 { font-size: 1.02rem; font-weight: 660; letter-spacing: -0.005em; margin-bott
 
 .field { display: grid; gap: .3rem; min-width: 220px; }
 .field--wide { grid-column: 1 / -1; }
-.field--inline { display: flex; align-items: center; gap: .5rem; min-width: 0; }
 .field__label { color: var(--ink-soft); font-size: .78rem; font-weight: 620; }
 .field__hint { display: block; color: var(--ink-faint); font-weight: 400; font-size: .74rem; }
 

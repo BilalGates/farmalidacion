@@ -193,9 +193,9 @@ export function SourcesScreen() {
                 <th scope='col'>Tipo</th>
                 <th scope='col'>Estado</th>
                 <th scope='col'>Versión</th>
-                <th scope='col'>Registros</th>
-                <th scope='col'>Lotes</th>
-                <th scope='col'>Incidencias</th>
+                <th scope='col' className='cell--num'>Registros</th>
+                <th scope='col' className='cell--num'>Lotes</th>
+                <th scope='col' className='cell--num'>Incidencias</th>
                 <th scope='col'>Actualizada</th>
                 <th scope='col'>
                   <span className='visually-hidden'>Acciones</span>
@@ -213,9 +213,9 @@ export function SourcesScreen() {
                     </span>
                   </td>
                   <td>{orDash(item.latest_version)}</td>
-                  <td>{item.records.toLocaleString('es-ES')}</td>
-                  <td>{item.batches}</td>
-                  <td>{item.diagnostics + item.quarantined_rows}</td>
+                  <td className='cell--num'>{item.records.toLocaleString('es-ES')}</td>
+                  <td className='cell--num'>{item.batches}</td>
+                  <td className='cell--num'>{item.diagnostics + item.quarantined_rows}</td>
                   <td>{formatDateTime(item.last_updated_at)}</td>
                   <td>
                     <button
