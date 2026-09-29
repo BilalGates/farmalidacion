@@ -11,6 +11,7 @@ import {
 import type { EmptySourceColumn, QuarantinedField, QuarantinedSourceRow, Reviewer } from '../api/types'
 import { formatDateTime } from '../domain/format'
 import { FilterWorkspace } from '../components/FilterWorkspace'
+import { PageHeader } from '../components/PageHeader'
 
 const PAGE_SIZE = 50
 const WORKBOOKS: Record<string, string> = {
@@ -152,14 +153,7 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
 
   return (
     <div className='screen quarantine-screen'>
-      <div className='screen__head'>
-        <div>
-          <p className='eyebrow'>Datos preservados, relación pendiente</p>
-          <h1>Filas en cuarentena</h1>
-          <p className='lede'>Corrige celdas fuente sin asignar un padre ni cambiar por qué la fila quedó apartada.</p>
-        </div>
-        <span className='badge badge--warning'><AlertTriangle size={15} aria-hidden='true' /> {total} filas</span>
-      </div>
+      <PageHeader eyebrow='Datos preservados, relación pendiente' title='Filas en cuarentena' description='Corrige celdas fuente sin asignar un padre ni cambiar por qué la fila quedó apartada.' actions={<span className='badge badge--warning'><AlertTriangle size={15} aria-hidden='true' /> {total} filas</span>} />
 
       <FilterWorkspace
         title='Filtros de cuarentena'

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { fetchImport, fetchImports } from '../api/client'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
+import { PageHeader } from '../components/PageHeader'
 import { formatDateTime, formatNumber, orDash, shortHash } from '../domain/format'
 
 /**
@@ -149,16 +150,7 @@ export function ImportsScreen() {
 
   return (
     <div className='screen'>
-      <div className='screen__head'>
-        <div>
-          <p className='eyebrow'>Importaciones</p>
-          <h1>Lotes ejecutados</h1>
-          <p className='lede'>
-            Historial de las importaciones registradas. Esta pantalla es de consulta: no permite
-            cargar ficheros desde el navegador.
-          </p>
-        </div>
-      </div>
+      <PageHeader eyebrow='Importaciones' title='Lotes ejecutados' description='Historial de las importaciones registradas. Esta pantalla es de consulta: no permite cargar ficheros desde el navegador.' />
 
       <AsyncBoundary
         loading={loading}
@@ -171,7 +163,7 @@ export function ImportsScreen() {
         }
       >
         {data && (
-          <table className='table'>
+          <div className='table-wrap' role='region' aria-label='Lotes importados; desplazamiento horizontal disponible' tabIndex={0}><table className='table'>
             <thead>
               <tr>
                 <th scope='col'>Fichero</th>
@@ -210,7 +202,7 @@ export function ImportsScreen() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </AsyncBoundary>
 

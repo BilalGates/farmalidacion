@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { fetchSource, fetchSources } from '../api/client'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
+import { PageHeader } from '../components/PageHeader'
 import { formatDateTime, orDash, shortHash } from '../domain/format'
 import { openCatalogSource } from '../domain/catalogSourceNavigation'
 import type { CatalogSourceWorkbook } from '../api/types'
@@ -171,16 +172,7 @@ export function SourcesScreen() {
 
   return (
     <div className='screen'>
-      <div className='screen__head'>
-        <div>
-          <p className='eyebrow'>Fuentes</p>
-          <h1>Fuentes de datos cargadas</h1>
-          <p className='lede'>
-            Cada fila es un documento de origen presente en la base de datos, con su versión y su
-            hash de contenido. Sólo aparece lo que se ha cargado realmente.
-          </p>
-        </div>
-      </div>
+      <PageHeader eyebrow='Fuentes' title='Fuentes de datos cargadas' description='Cada fila es un documento de origen presente en la base de datos, con su versión y su hash de contenido. Sólo aparece lo que se ha cargado realmente.' />
 
       <AsyncBoundary
         loading={loading}

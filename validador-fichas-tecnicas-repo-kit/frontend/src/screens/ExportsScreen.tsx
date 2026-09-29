@@ -4,6 +4,7 @@ import { ApiError, createExport, exportArtifactUrl, fetchExportExclusions, fetch
 import type { ExportExclusionRow, Reviewer } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
+import { PageHeader } from '../components/PageHeader'
 import { formatDateTime, formatNumber, shortHash } from '../domain/format'
 
 /**
@@ -129,18 +130,9 @@ export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
 
   return (
     <div className='screen'>
-      <div className='screen__head'>
-        <div>
-          <p className='eyebrow'>Exportación</p>
-          <h1>Exportaciones</h1>
-          <p className='lede'>
-            Cada ejecución conserva su configuración y su hash, de modo que pueda
-            repetirse y comprobarse.
-          </p>
-        </div>
-      </div>
+      <PageHeader eyebrow='Exportación' title='Exportaciones' description='Cada ejecución conserva su configuración y su hash, de modo que pueda repetirse y comprobarse.' />
 
-      <p className='note'>
+      <p className='note export-contract-note' role='note'>
         Ningún perfil está aceptado por el proveedor: D-011 sigue pendiente. Que un
         fichero se genere correctamente no significa que el destinatario lo acepte.
       </p>
@@ -180,6 +172,8 @@ export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
         </form>
       </section>
 
+      <section className='export-history' aria-label='Historial de exportaciones'>
+      <h2>Historial de ejecuciones</h2>
       <AsyncBoundary
         loading={loading}
         error={error}
@@ -188,7 +182,7 @@ export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
         emptyDetail='Todavía no se ha ejecutado ninguna exportación.'
       >
         {data && data.length > 0 && (
-          <table className='table'>
+          <div className='table-wrap' role='region' aria-label='Historial de exportaciones; desplazamiento horizontal disponible' tabIndex={0}><table className='table'>
             <thead>
               <tr>
                 <th scope='col'>Fecha</th>
@@ -243,9 +237,10 @@ export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </AsyncBoundary>
+      </section>
 
       {openRun !== null && (
         <section className='panel'>
