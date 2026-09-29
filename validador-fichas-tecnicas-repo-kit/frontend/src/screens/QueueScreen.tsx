@@ -12,6 +12,7 @@ import type { Reviewer } from '../api/types'
 import { navigate } from '../navigation'
 import { Check, Plus, RefreshCw, Search } from 'lucide-react'
 import { FilterWorkspace } from '../components/FilterWorkspace'
+import { PageHeader } from '../components/PageHeader'
 
 const labels: Record<string, string> = {
   pendiente: 'Pendiente', asignado: 'Asignado', en_revision: 'En revisión',
@@ -81,16 +82,9 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
   }
 
   return <div className='screen'>
-    <div className='screen__head'>
-      <div>
-        <p className='eyebrow'>Trabajo del equipo</p>
-        <h1>Cola de revisión</h1>
-        <p className='lede'>Asigne, filtre y abra registros desde un único espacio de trabajo.</p>
-      </div>
-      <div className='page-stat' aria-label={`${items.length} registros en la cola`}>
+    <PageHeader eyebrow='Trabajo del equipo' title='Cola de revisión' description='Asigne, filtre y abra registros desde un único espacio de trabajo.' actions={<div className='page-stat' aria-label={`${items.length} registros en la cola`}>
         <strong>{items.length}</strong><span>En cola</span>
-      </div>
-    </div>
+      </div>} />
     {error && <p role='alert' className='alert alert--error'>{error} Recargue para consultar el estado actual.</p>}
     <form className='queue-add panel' onSubmit={(event) => {
           event.preventDefault()
@@ -141,7 +135,7 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
       {!loading && visibleItems.length > 0 && <ul className='queue-list'>
         {visibleItems.map((item) => <li key={item.target_record_id}>
           <input type='checkbox' aria-label={`Seleccionar ${item.target_record_id}`} checked={selected.includes(item.target_record_id)} disabled={!['pendiente', 'asignado', 'en_revision'].includes(item.state)} onChange={(event) => setSelected((current) => event.target.checked ? [...current, item.target_record_id] : current.filter((id) => id !== item.target_record_id))} />
-          <div className='queue-list__identity'><span className='queue-list__icon' aria-hidden='true'>▤</span><span><strong>{item.target_record_id}</strong><small>{item.assignee_id ?? 'Sin asignar'} · {item.review_set ?? 'corpus'}{item.requires_second_review ? ' · doble validación' : ''}</small></span></div>
+          <div className='queue-list__identity'><span className='queue-list__icon' aria-hidden='true'>▤</span><span><strong>{item.target_record_id}</strong><small className='queue-list__meta'><span>{item.assignee_id ? `Asignado a ${item.assignee_id}` : 'Sin asignar'}</span><span>Conjunto {item.review_set ?? 'corpus'}</span>{item.requires_second_review && <span>Doble validación</span>}</small></span></div>
           <span className={`badge badge--${item.state}`}>{labels[item.state] ?? item.state}</span>
           <div className='queue-list__actions'>
           <button className='button' disabled={busy || loading || !reviewer || ['completado', 'bloqueado'].includes(item.state)}

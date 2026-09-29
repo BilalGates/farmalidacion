@@ -8,6 +8,7 @@ import {
 } from '../api/client'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
+import { PageHeader } from '../components/PageHeader'
 import { formatDateTime, shortHash } from '../domain/format'
 
 const CHANGE_LABELS: Record<number, string> = {
@@ -54,7 +55,7 @@ function ChangeDetail({ eventId }: { eventId: string }) {
               {' '}Áreas notificadas: {data.areas.map(areaLabel).join(', ') || 'sin área declarada'}.
             </p>
           ) : (
-            <table className='table'>
+            <div className='table-wrap' role='region' aria-label='Cambios documentales; desplazamiento horizontal disponible' tabIndex={0}><table className='table'>
               <thead>
                 <tr>
                   <th scope='col'>Apartado</th>
@@ -73,7 +74,7 @@ function ChangeDetail({ eventId }: { eventId: string }) {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
         </section>
       )}
@@ -111,13 +112,7 @@ export function MaintenanceScreen() {
 
   return (
     <div className='screen'>
-      <div className='screen__head'>
-        <div>
-          <p className='eyebrow'>Mantenimiento continuo</p>
-          <h1>Novedades CIMA</h1>
-          <p className='lede'>Cambios regulatorios observados y campos que requieren nueva revisión.</p>
-        </div>
-      </div>
+      <PageHeader eyebrow='Mantenimiento continuo' title='Novedades CIMA' description='Cambios regulatorios observados y campos que requieren nueva revisión.' />
       {latestRun?.status === 'failed' && (
         <div className='state state--error' role='alert'>
           <p className='state__title'>La última consulta CIMA falló</p>
@@ -153,7 +148,7 @@ export function MaintenanceScreen() {
         emptyDetail='No se han registrado cambios CIMA.'
       >
         {data && data.length > 0 && (
-          <table className='table'>
+          <div className='table-wrap' role='region' aria-label='Novedades CIMA; desplazamiento horizontal disponible' tabIndex={0}><table className='table'>
             <thead>
               <tr>
                 <th scope='col'>Registrada</th>
@@ -204,7 +199,7 @@ export function MaintenanceScreen() {
                 </Fragment>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </AsyncBoundary>
     </div>

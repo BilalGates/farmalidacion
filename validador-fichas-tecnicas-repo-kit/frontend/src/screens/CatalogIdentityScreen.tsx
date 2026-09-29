@@ -11,6 +11,7 @@ import {
 } from '../api/client'
 import type { CatalogClassification, CatalogIdentity, CatalogRelation, CatalogRevision, Reviewer } from '../api/types'
 import { AsyncBoundary } from '../components/AsyncState'
+import { PageHeader } from '../components/PageHeader'
 import { formatDateTime, orDash } from '../domain/format'
 import { navigate } from '../navigation'
 import { SourceFieldsMaintenance } from './CatalogSourceFields'
@@ -136,16 +137,11 @@ export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
       </button>
       <AsyncBoundary loading={loading} error={error?.message ?? null} empty={!identity} emptyTitle='Expediente no disponible' emptyDetail='La identidad solicitada no existe o ya no está accesible.' onRetry={() => void load()}>
         {identity && <>
-          <header className='catalog-record__head'>
-            <div>
-              <p className='eyebrow'>{TYPE_LABELS[identity.identity_type] ?? identity.identity_type}</p>
-              <h1>{identity.display_name}</h1>
-              <p className='lede'>Código <strong>{orDash(identity.code)}</strong> · versión editable {identity.version}</p>
-            </div>
-            <span className={`badge ${identity.active ? 'badge--validado' : 'badge--descartado'}`}>
+          <PageHeader eyebrow={TYPE_LABELS[identity.identity_type] ?? identity.identity_type} title={identity.display_name}
+            description={<>Código <strong>{orDash(identity.code)}</strong> · versión editable {identity.version}</>}
+            actions={<span className={`badge ${identity.active ? 'badge--validado' : 'badge--descartado'}`}>
               {identity.active ? 'Vigente' : 'Archivado'}
-            </span>
-          </header>
+            </span>} />
 
           {notice && <p className='alert alert--ok' role='status'>{notice}</p>}
           {saveError && <p className='alert alert--error' role='alert'>{saveError}</p>}

@@ -211,6 +211,21 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--accent); }
 .reviewer-form { gap: var(--space-3); padding: var(--space-3) var(--space-4); border-color: var(--line-soft); }
 .reviewer-form .field { flex: 1 1 180px; }
 .reviewer-form .button { align-self: end; }
+.review-screen .screen__head, .catalog-record .screen__head { padding-bottom: var(--space-3); border-bottom: 1px solid var(--line-soft); }
+.review-screen .back, .catalog-record .back { justify-self: start; min-height: 30px; padding-inline: 0; }
+.review-screen .panel, .catalog-record .panel { border-color: var(--line-soft); box-shadow: none; }
+.review-workspace { gap: var(--space-4); }
+.review-evidence { border-color: var(--line-soft); }
+.review-field--active { outline-color: var(--accent); }
+.field-row { padding: var(--space-3) var(--space-4); border-color: var(--line-soft); border-radius: var(--radius-control); background: var(--surface); }
+.field-row--conflict { border-left: 3px solid var(--warn); background: var(--warn-soft); }
+.block-editor__list > li { border-color: var(--line-soft); border-radius: var(--radius-control); }
+.catalog-record__grid { gap: var(--space-4); }
+.catalog-history li, .catalog-source-field { border-color: var(--line-soft); }
+.catalog-relations li button { border-color: var(--line-soft); border-radius: var(--radius-control); background: var(--surface); }
+.catalog-relations li button:hover { border-color: var(--accent); background: var(--accent-soft); }
+.catalog-cima__field-search, .catalog-cima-comparison__detail { border-color: var(--line-soft); border-radius: var(--radius-control); }
+.catalog-cima__sections pre { padding: var(--space-3); border-left: 2px solid var(--line); color: var(--ink); background: var(--canvas); }
 
 @media (max-width: 1100px) {
   .queue-list > li { grid-template-columns: auto minmax(180px, 1fr) auto; }

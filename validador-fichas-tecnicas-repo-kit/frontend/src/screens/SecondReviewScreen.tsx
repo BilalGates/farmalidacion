@@ -8,6 +8,7 @@ import {
 } from '../api/client'
 import type { BlindField, Reviewer, SecondReviewItem } from '../api/types'
 import { ASSIGNABLE_STATES, VALIDATION_STATE_LABELS } from '../domain/vocabulary'
+import { PageHeader } from '../components/PageHeader'
 
 /**
  * Segunda validación ciega y conciliación (DEV-607/608).
@@ -94,12 +95,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
   if (reviewer === null) {
     return (
       <div className='screen'>
-        <div className='screen__head'>
-          <div>
-            <p className='eyebrow'>Segunda validación</p>
-            <h1>Validaciones</h1>
-          </div>
-        </div>
+        <PageHeader eyebrow='Segunda validación' title='Validaciones' />
         <p className='muted'>
           Seleccione un revisor: una segunda lectura exige saber quién la firma.
         </p>
@@ -113,15 +109,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
 
   return (
     <div className='screen'>
-      <div className='screen__head'>
-        <div>
-          <p className='eyebrow'>Segunda validación</p>
-          <h1>Validaciones</h1>
-          <p className='lede'>
-            Las lecturas pendientes se emiten sin ver la decisión del primer revisor.
-          </p>
-        </div>
-      </div>
+      <PageHeader eyebrow='Segunda validación' title='Validaciones' description='Las lecturas pendientes se emiten sin ver la decisión del primer revisor.' />
 
       {notice && (
         <p className='alert alert--ok' role='status'>

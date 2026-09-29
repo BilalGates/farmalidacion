@@ -18,6 +18,7 @@ import type {
 } from '../api/types'
 import { ProvenanceList } from '../components/ProvenanceList'
 import { ContextualChat } from '../components/ContextualChat'
+import { PageHeader } from '../components/PageHeader'
 import { RoadmapNote } from '../components/RoadmapNote'
 import { ROADMAP_NOTES, conflictLabel, sourceLabel } from '../domain/vocabulary'
 import { FocusTracker } from '../domain/focusTracker'
@@ -347,15 +348,7 @@ export function ReviewScreen({
       </button>
 
       {/* Zona A — contexto de la ficha. */}
-      <div className='screen__head'>
-        <div>
-          <p className='eyebrow'>Revisión de ficha</p>
-          <h1>{recordTitle(record)}</h1>
-          <p className='lede'>
-            <code>{record.id}</code> · {RECORD_TYPE_LABELS[record.entity_type] ?? record.entity_type}
-          </p>
-        </div>
-      </div>
+      <PageHeader eyebrow='Revisión de ficha' title={recordTitle(record)} description={<><code>{record.id}</code> · {RECORD_TYPE_LABELS[record.entity_type] ?? record.entity_type}</>} />
 
       {record.external_identifiers.length > 0 && (
         <section className='panel'>
