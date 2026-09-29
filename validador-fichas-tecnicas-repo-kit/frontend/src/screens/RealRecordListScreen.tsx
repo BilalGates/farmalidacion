@@ -5,6 +5,7 @@ import type { CatalogIdentitySort, CatalogIdentityType, CatalogSourceWorkbook } 
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
 import { FilterWorkspace } from '../components/FilterWorkspace'
+import { PageHeader } from '../components/PageHeader'
 import { orDash } from '../domain/format'
 import { CATALOG_LIST_STATE_KEY } from '../domain/catalogSourceNavigation'
 import { navigate } from '../navigation'
@@ -341,10 +342,16 @@ export function RealRecordListScreen() {
         }
       >
       <div ref={resultsRef} tabIndex={-1} aria-label='Resultados del catálogo' className='catalog-results'>
-        <div className='catalog-results__head'>
-          <h1>Catálogo</h1>
-          <p>Explora medicamentos, presentaciones y principios activos.</p>
-        </div>
+        <PageHeader className='catalog-results__head' title='Catálogo' description='Explora medicamentos, presentaciones y principios activos.' />
+        {activeFilterCount > 0 && <div className='catalog-active-filters' aria-label='Filtros activos'>
+          <span className='catalog-active-filters__label'>Filtros activos</span>
+          {query && <button type='button' className='chip' onClick={() => { setQuery(''); setTerm(''); setOffset(0) }}>Búsqueda: {query} ×</button>}
+          {sourceWorkbook && <button type='button' className='chip' onClick={() => selectSourceView(null)}>Libro: {SOURCE_LABELS[sourceWorkbook]} ×</button>}
+          {entityType && !sourceWorkbook && <button type='button' className='chip' onClick={() => selectEntityType(null)}>Nivel: {ENTITY_LABELS[entityType] ?? entityType} ×</button>}
+          {commercialClass && <button type='button' className='chip' onClick={() => { setCommercialClass(null); setOffset(0) }}>Clase: {CLASS_LABELS[commercialClass] ?? commercialClass} ×</button>}
+          {conditions.map((value) => <button key={value} type='button' className='chip' onClick={() => toggleCondition(value)}>Condición: {CONDITION_LABELS[value] ?? value} ×</button>)}
+          {showArchived && <button type='button' className='chip' onClick={() => { setShowArchived(false); setOffset(0) }}>Incluye archivados ×</button>}
+        </div>}
         <AsyncBoundary
         loading={loading}
         error={error}

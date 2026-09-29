@@ -17,6 +17,12 @@ const STATUS_LABELS: Record<string, string> = {
   pendiente: 'Pendiente',
 }
 
+const METRIC_GROUPS = [
+  { title: 'Volumen del catálogo', description: 'Cobertura e información disponible', keys: ['real_records', 'medications', 'active_ingredients', 'specialties', 'catalog_fields', 'field_values', 'demo_records'] },
+  { title: 'Actividad', description: 'Fuentes, importaciones y revisión humana', keys: ['documents', 'document_versions', 'batches', 'reviewed_values', 'decisions'] },
+  { title: 'Calidad e incidencias', description: 'Elementos que requieren atención', keys: ['quarantined', 'diagnostics'] },
+] as const
+
 export function DashboardScreen() {
   const { data, error, loading } = useQuery(() => fetchDashboard(), [])
 
@@ -37,19 +43,32 @@ export function DashboardScreen() {
       >
         {data && (
           <>
-            <section aria-label='Métricas del sistema' className='dashboard-metrics'>
-              <div className='metrics'>
-                {data.metrics.map((metric, index) => (
-                  <article key={metric.key} className='metric'>
-                    <span className='metric__icon' aria-hidden='true'>
-                      {['✓', '▤', '◉', '↺'][index % 4]}
-                    </span>
-                    <p className='metric__value'>{metric.value.toLocaleString('es-ES')}</p>
-                    <p className='metric__label'>{metric.label}</p>
-                  </article>
-                ))}
-              </div>
-            </section>
+            <div className='dashboard-overview' aria-label='Resumen operacional'>
+              {METRIC_GROUPS.map((group) => {
+                const metrics = data.metrics.filter((metric) => (group.keys as readonly string[]).includes(metric.key))
+                return metrics.length > 0 && (
+                  <section key={group.title} className='dashboard-metric-group' aria-label={group.title}>
+                    <div className='dashboard-metric-group__head'><h2>{group.title}</h2><p>{group.description}</p></div>
+                    <div className='metrics'>
+                      {metrics.map((metric) => (
+                        <article key={metric.key} className={`metric${metric.key === 'real_records' || metric.key === 'quarantined' ? ' metric--prominent' : ''}`}>
+                          <p className='metric__value'>{metric.value.toLocaleString('es-ES')}</p>
+                          <p className='metric__label'>{metric.label}</p>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                )
+              })}
+              {data.metrics.some((metric) => !METRIC_GROUPS.some((group) => (group.keys as readonly string[]).includes(metric.key))) && (
+                <section className='dashboard-metric-group' aria-label='Otras métricas'>
+                  <div className='dashboard-metric-group__head'><h2>Otras métricas</h2></div>
+                  <div className='metrics'>{data.metrics.filter((metric) => !METRIC_GROUPS.some((group) => (group.keys as readonly string[]).includes(metric.key))).map((metric) => (
+                    <article key={metric.key} className='metric'><p className='metric__value'>{metric.value.toLocaleString('es-ES')}</p><p className='metric__label'>{metric.label}</p></article>
+                  ))}</div>
+                </section>
+              )}
+            </div>
 
             <section aria-label='Estado de fuentes y proceso' className='panel dashboard-pipeline'>
               <div className='panel__head'>

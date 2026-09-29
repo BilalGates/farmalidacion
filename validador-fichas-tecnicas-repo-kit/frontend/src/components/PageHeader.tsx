@@ -3,13 +3,14 @@ import type { ReactNode } from 'react'
 interface PageHeaderProps {
   eyebrow?: string
   title: string
-  description?: string
+  description?: ReactNode
   actions?: ReactNode
+  className?: string
 }
 
-export function PageHeader({ eyebrow, title, description, actions }: PageHeaderProps) {
+export function PageHeader({ eyebrow, title, description, actions, className = '' }: PageHeaderProps) {
   return (
-    <header className='screen__head page-header'>
+    <header className={`screen__head page-header ${className}`.trim()}>
       <div>
         {eyebrow && <p className='eyebrow'>{eyebrow}</p>}
         <h1>{title}</h1>
