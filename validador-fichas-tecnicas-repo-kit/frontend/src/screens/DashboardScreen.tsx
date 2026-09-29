@@ -1,6 +1,7 @@
 import { fetchDashboard } from '../api/client'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
+import { PageHeader } from '../components/PageHeader'
 
 /**
  * Panel de inicio con cifras reales del sistema.
@@ -21,15 +22,8 @@ export function DashboardScreen() {
 
   return (
     <div className='screen'>
-      <div className='screen__head'>
-        <div>
-          <p className='eyebrow'>Resumen operativo</p>
-          <h1>Estado de la validación</h1>
-          <p className='lede'>
-            Una vista rápida del trabajo almacenado y de la disponibilidad de cada etapa.
-          </p>
-        </div>
-      </div>
+      <PageHeader eyebrow='Resumen operativo' title='Estado de la validación'
+        description='Una vista rápida del trabajo almacenado y de la disponibilidad de cada etapa.' />
 
       <AsyncBoundary
         loading={loading}

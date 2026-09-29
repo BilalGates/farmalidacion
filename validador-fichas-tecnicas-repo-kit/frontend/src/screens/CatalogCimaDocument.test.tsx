@@ -33,6 +33,7 @@ it('muestra la versión vinculada y busca apartados sin ejecutar su HTML', async
 
 it('localiza el literal de un campo sin declarar equivalencia ni diferencia', async () => {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+    if (String(input).includes('/cima-comparison')) return new Response(JSON.stringify([]))
     if (String(input).includes('/records/')) return new Response(JSON.stringify({
       id: 'record-1', entity_type: 'specialty', external_identifiers: [],
       blocks: [{ id: 'block-1', block_type: 'General', ordinal: 1, values: [
