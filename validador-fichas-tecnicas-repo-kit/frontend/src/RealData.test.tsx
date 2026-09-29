@@ -414,8 +414,8 @@ describe('separación entre datos reales y DEMO', () => {
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'inexistente' } })
     fireEvent.click(screen.getByRole('button', { name: 'Buscar' }))
 
-    expect(await screen.findByText(/La búsqueda no devuelve resultados/)).toBeInTheDocument()
-    expect(screen.getByText(/«inexistente»/)).toBeInTheDocument()
+    expect(await screen.findByText(/No hay resultados con estos filtros/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Búsqueda: inexistente/ })).toBeInTheDocument()
   })
 })
 

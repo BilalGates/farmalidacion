@@ -428,6 +428,7 @@ export function ReviewScreen({
                   type='button'
                   className='button button--ghost'
                   aria-expanded={editing === blockType}
+                  aria-controls={editing === blockType ? `block-editor-${record.id}-${blockType}` : undefined}
                   onClick={() => {
                     if (editing === blockType) {
                       setEditing(null)
@@ -448,6 +449,7 @@ export function ReviewScreen({
               </div>
               {editing === blockType && (
                 <BlockEditor
+                  id={`block-editor-${record.id}-${blockType}`}
                   recordId={record.id}
                   blockType={blockType}
                   occurrences={occurrences}
@@ -517,12 +519,13 @@ export function ReviewScreen({
             type='button'
             className='button button--ghost'
             aria-expanded={helpOpen}
+            aria-controls={helpOpen ? 'review-shortcuts-content' : undefined}
             onClick={() => setHelpOpen((open) => !open)}
           >
             Atajos de teclado (Shift + ?)
           </button>
           {helpOpen && (
-            <dl className='shortcuts'>
+            <dl className='shortcuts' id='review-shortcuts-content'>
               {SHORTCUTS.map((shortcut) => (
                 <div key={shortcut.action}>
                   <dt>

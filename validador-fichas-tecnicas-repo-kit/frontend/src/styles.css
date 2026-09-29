@@ -1335,7 +1335,6 @@ input[type='text'], input[type='search'], select, textarea,
   .catalog-filter-workspace .filter-panel__body > .catalog-condition-filter,
   .catalog-filter-workspace .filter-panel__body > .catalog-toggle,
   .catalog-filter-workspace .filter-panel__body > .filter-reset { grid-column: 1 / -1; }
-  .catalog-filter-workspace .filter-panel__body > .filter-group:first-of-type .filter-choice-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .catalog-filter-workspace .filter-panel__body > .filter-group:first-of-type .chip:first-child { grid-column: 1 / -1; }
   .catalog-filter-workspace .catalog-condition-filter__options { grid-template-columns: minmax(0, 1fr); }
   .catalog-filter-workspace .filter-panel__body .catalog-toggle { min-height: 34px; }

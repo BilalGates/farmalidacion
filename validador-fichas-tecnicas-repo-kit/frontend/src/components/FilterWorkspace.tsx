@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { PanelLeftClose, PanelLeftOpen, SlidersHorizontal } from 'lucide-react'
 
 interface FilterWorkspaceProps {
@@ -28,8 +28,18 @@ export function FilterWorkspace({
 }: FilterWorkspaceProps) {
   const [open, setOpen] = useState(() => initialOpen(storageKey))
   const panelId = `${storageKey.replace(/[^a-z0-9_-]/gi, '-')}-panel`
+  const focusAfterToggle = useRef(false)
+  const closeButton = useRef<HTMLButtonElement>(null)
+  const reopenButton = useRef<HTMLButtonElement>(null)
+
+  useLayoutEffect(() => {
+    if (!focusAfterToggle.current) return
+    focusAfterToggle.current = false
+    ;(open ? closeButton : reopenButton).current?.focus()
+  }, [open])
 
   function toggle() {
+    focusAfterToggle.current = true
     setOpen((current) => {
       const next = !current
       try {
@@ -49,6 +59,7 @@ export function FilterWorkspace({
                 <h2>{title}</h2>
               </div>
               <button
+                ref={closeButton}
                 type='button'
                 className='button button--icon filter-panel__toggle'
                 onClick={toggle}
@@ -65,6 +76,7 @@ export function FilterWorkspace({
           </section>
         {!open && (
           <button
+            ref={reopenButton}
             type='button'
             className='button filter-panel__reopen'
             onClick={toggle}

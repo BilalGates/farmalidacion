@@ -356,12 +356,13 @@ export function RealRecordListScreen() {
         loading={loading}
         error={error}
         empty={(data?.total ?? 0) === 0}
-        emptyTitle={query ? 'La búsqueda no devuelve resultados' : 'No hay identidades en este nivel'}
+        emptyTitle={activeFilterCount > 0 ? 'No hay resultados con estos filtros' : 'No hay identidades en el catálogo'}
         emptyDetail={
-          query
-            ? `Ninguna identidad del catálogo contiene «${query}» en su descripción o código.`
-            : 'Este nivel todavía no se ha podido proyectar desde una fuente fiable.'
+          activeFilterCount > 0
+            ? 'Pruebe con otros criterios o limpie los filtros para consultar todo el catálogo.'
+            : 'Todavía no hay identidades disponibles. Consulte el estado de las fuentes de datos.'
         }
+        emptyAction={activeFilterCount > 0 ? <button type='button' className='button button--secondary' onClick={clearFilters}>Limpiar filtros</button> : undefined}
         onRetry={() => setRetryKey((k) => k + 1)}
       >
         {data && (

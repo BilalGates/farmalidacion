@@ -33,6 +33,7 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
   const [reviewSet, setReviewSet] = useState<QueueItem['review_set']>('corpus')
   const [requiresSecondReview, setRequiresSecondReview] = useState(false)
   const [selected, setSelected] = useState<string[]>([])
+  const [appliedFilterCount, setAppliedFilterCount] = useState(0)
 
   const filters = {
     state: filter,
@@ -42,9 +43,11 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
     requires_second_review: secondFilter === '' ? undefined : secondFilter === 'true',
   }
 
+  const activeFilterCount = [filter, entityFilter, blockFilter, setFilter, secondFilter].filter(Boolean).length
+
   async function reload() {
     setLoading(true)
-    try { setItems(await fetchQueue(filters)); setSelected([]); setError('') }
+    try { setItems(await fetchQueue(filters)); setAppliedFilterCount(activeFilterCount); setSelected([]); setError('') }
     catch (cause) { setError(cause instanceof ApiError ? cause.message : 'No se pudo cargar la cola.') }
     finally { setLoading(false) }
   }
@@ -67,8 +70,6 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
   }
 
   const visibleItems = items
-  const activeFilterCount = [filter, entityFilter, blockFilter, setFilter, secondFilter].filter(Boolean).length
-
   async function clearFilters() {
     setStateFilter('')
     setEntityFilter('')
@@ -76,7 +77,7 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
     setReviewSetFilter('')
     setSecondFilter('')
     setLoading(true)
-    try { setItems(await fetchQueue()); setSelected([]); setError('') }
+    try { setItems(await fetchQueue()); setAppliedFilterCount(0); setSelected([]); setError('') }
     catch (cause) { setError(cause instanceof ApiError ? cause.message : 'No se pudo cargar la cola.') }
     finally { setLoading(false) }
   }
@@ -131,7 +132,7 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
         <button className='button button--primary' disabled={busy || !reviewer} onClick={() => void act(() => assignQueueBatch(items.filter((item) => selected.includes(item.target_record_id)), reviewer!.identifier))}>Asignarme lote</button>
       </div>}
       {loading && <div className='empty-state' role='status'><span className='empty-state__icon'>↻</span><h2>Cargando cola…</h2></div>}
-      {!loading && visibleItems.length === 0 && <div className='empty-state queue-empty'><span className='empty-state__icon' aria-hidden='true'><Check size={23} /></span><h2>{items.length === 0 ? 'La cola está al día' : 'No hay resultados'}</h2><p>{items.length === 0 ? 'Cuando se añadan registros aparecerán aquí, listos para asignar.' : 'Pruebe con otro filtro de estado.'}</p></div>}
+      {!loading && !error && visibleItems.length === 0 && <div className='empty-state queue-empty'><span className='empty-state__icon' aria-hidden='true'><Check size={23} /></span><h2>{appliedFilterCount > 0 ? 'No hay resultados' : 'La cola está al día'}</h2><p>{appliedFilterCount > 0 ? 'Ningún registro coincide con los filtros aplicados.' : 'Cuando se añadan registros aparecerán aquí, listos para asignar.'}</p>{appliedFilterCount > 0 && <button type='button' className='button button--secondary' onClick={() => void clearFilters()}>Limpiar filtros</button>}</div>}
       {!loading && visibleItems.length > 0 && <ul className='queue-list'>
         {visibleItems.map((item) => <li key={item.target_record_id}>
           <input type='checkbox' aria-label={`Seleccionar ${item.target_record_id}`} checked={selected.includes(item.target_record_id)} disabled={!['pendiente', 'asignado', 'en_revision'].includes(item.state)} onChange={(event) => setSelected((current) => event.target.checked ? [...current, item.target_record_id] : current.filter((id) => id !== item.target_record_id))} />

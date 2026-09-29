@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 
 
 import type { FieldValue, Reviewer, ValidationState } from '../api/types'
@@ -54,6 +54,7 @@ export function FieldRow({
   )
   const [comment, setComment] = useState(restored?.comment ?? '')
   const [recovered, setRecovered] = useState(restored !== null)
+  const editorId = useId()
 
   const draft = { state, finalValue, comment }
   const dirty = !isEmptyDraft(draft)
@@ -145,6 +146,7 @@ export function FieldRow({
           type='button'
           className='button button--ghost'
           aria-expanded={open}
+          aria-controls={open ? editorId : undefined}
           onClick={() => setOpen((current) => !current)}
         >
           {open ? 'Cerrar' : 'Revisar'}
@@ -156,7 +158,7 @@ export function FieldRow({
       </div>
 
       {open && (
-        <div className='review'>
+        <div className='review' id={editorId}>
           {value.prefill_warning !== null && (
             <p className='field__warning' role='note'>
               {value.prefill_warning}

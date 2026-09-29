@@ -36,11 +36,12 @@ export function ErrorState({
   )
 }
 
-export function EmptyState({ title, detail }: { title: string; detail: string }) {
+export function EmptyState({ title, detail, action }: { title: string; detail: string; action?: ReactNode }) {
   return (
     <div className='state state--empty'>
       <p className='state__title'>{title}</p>
       <p className='state__detail'>{detail}</p>
+      {action}
     </div>
   )
 }
@@ -52,6 +53,7 @@ export function AsyncBoundary({
   empty,
   emptyTitle,
   emptyDetail,
+  emptyAction,
   onRetry,
   children,
 }: {
@@ -60,11 +62,12 @@ export function AsyncBoundary({
   empty: boolean
   emptyTitle: string
   emptyDetail: string
+  emptyAction?: ReactNode
   onRetry?: () => void
   children: ReactNode
 }) {
   if (loading) return <LoadingState />
   if (error) return <ErrorState message={error} onRetry={onRetry} />
-  if (empty) return <EmptyState title={emptyTitle} detail={emptyDetail} />
+  if (empty) return <EmptyState title={emptyTitle} detail={emptyDetail} action={emptyAction} />
   return <>{children}</>
 }

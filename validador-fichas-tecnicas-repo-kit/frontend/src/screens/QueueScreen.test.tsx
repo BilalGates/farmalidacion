@@ -61,7 +61,7 @@ it('no permite asignar sin revisor', async () => {
 })
 
 it('envía los filtros explícitos al servidor', async () => {
-  const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify([])))
+  const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify([])))
   vi.stubGlobal('fetch', fetchMock)
   render(<QueueScreen reviewer={null} />)
   await screen.findByText('La cola está al día')
@@ -74,6 +74,11 @@ it('envía los filtros explícitos al servidor', async () => {
   expect(fetchMock.mock.calls[1][0]).toContain(
     '/queue?entity_type=medicamento&block_type=general&review_set=oro&requires_second_review=true',
   )
+  expect(await screen.findByText('No hay resultados')).toBeInTheDocument()
+  expect(screen.getByText('Ningún registro coincide con los filtros aplicados.')).toBeInTheDocument()
+  fireEvent.click(screen.getByText('No hay resultados').closest('.queue-empty')!.querySelector('button')!)
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+  expect(await screen.findByText('La cola está al día')).toBeInTheDocument()
 })
 
 it('asigna una selección como lote versionado', async () => {

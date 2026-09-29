@@ -1465,3 +1465,21 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
   pantalla «Filas en cuarentena» con filtro por libro, tabla paginada y editor
   contextual. Backend/migración pasan 10 pruebas dirigidas, Ruff y mypy; frontend
   no verificado (dependencias no disponibles) y contenedor no iniciado.
+
+## 2026-09-29 — Cierre de P1 de auditoría UI
+
+Se corrigieron los cinco P1 de `docs/UI_REDESIGN_FINAL_AUDIT.md`: teclado del selector de revisor, foco al plegar filtros y abrir la segunda lectura, y estados vacíos de Cola/Catálogo. Se añadieron pruebas de interacción. Dos P2 recibieron ajustes parciales de accesibilidad/CSS sin modificar el flujo; los demás quedaron aplazados por requerir decisiones funcionales, datos de API o validación visual con backend. No cambiaron reglas clínicas ni exportación.
+
+## 2026-09-29 — Filtros y recarga de la cola
+
+La cola conserva por separado los filtros editados y los aplicados. «Actualizar» y las recargas tras una operación repiten la consulta aplicada; la pantalla anuncia los cambios aún sin aplicar. Si falla una recarga, la lista anterior se identifica como potencialmente desactualizada y se ofrece un reintento. Las siete pruebas dirigidas de Cola y ESLint pasan.
+
+## 2026-09-29 — Identificación de campos en segunda revisión
+
+El listado de segunda revisión incluye el nombre técnico del campo en pendientes, discrepancias y cerradas. El endpoint añade ese dato mediante una unión exacta con `field_value`; mantiene oculta la primera lectura hasta que corresponda revelarla. Pasan cuatro pruebas de API, ocho de interfaz, Ruff, mypy y build de frontend.
+
+## 2026-09-29 — Foco de la tabla del catálogo
+
+La región de resultados sólo se añade a la secuencia de tabulación cuando la tabla desborda horizontalmente. El cálculo se actualiza al cargar resultados y al cambiar el tamaño disponible; el nombre accesible anuncia el desplazamiento únicamente en ese caso. Pasan las 15 pruebas dirigidas del catálogo, ESLint y el build de frontend.
+
+Validación del cierre UI: frontend 149/149, ESLint, TypeScript y build correctos; Ruff, Compose config y migraciones correctos. El gate integral conserva bloqueos ajenos a UI: pytest Python 774 correctas, 1 omitida, 3 fallidas (dos `ChangesClient` sin `medication` y un hash de maestro local diferente); mypy 5 errores backend; ocho referencias locales faltantes. Detalle en `docs/UI_REDESIGN_FINAL_AUDIT.md`.

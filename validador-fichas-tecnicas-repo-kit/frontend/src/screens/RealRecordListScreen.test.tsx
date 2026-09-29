@@ -24,7 +24,7 @@ it('separa los niveles farmacéuticos del catálogo', async () => {
   const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE)))
   vi.stubGlobal('fetch', fetchMock)
   render(<RealRecordListScreen />)
-  await screen.findByText('No hay identidades en este nivel')
+  await screen.findByText('No hay identidades en el catálogo')
 
   fireEvent.click(screen.getByRole('button', { name: 'Presentaciones' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
@@ -98,7 +98,7 @@ it('combina nivel y búsqueda sin descargar el catálogo al navegador', async ()
   const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE)))
   vi.stubGlobal('fetch', fetchMock)
   render(<RealRecordListScreen />)
-  await screen.findByText('No hay identidades en este nivel')
+  await screen.findByText('No hay identidades en el catálogo')
 
   fireEvent.click(screen.getByRole('button', { name: 'Presentaciones' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
@@ -115,7 +115,7 @@ it('ordena el catálogo desde el servidor sin ordenar sólo la página visible',
   const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE)))
   vi.stubGlobal('fetch', fetchMock)
   render(<RealRecordListScreen />)
-  await screen.findByText('No hay identidades en este nivel')
+  await screen.findByText('No hay identidades en el catálogo')
 
   fireEvent.change(screen.getByRole('combobox', { name: 'Ordenar por' }), { target: { value: 'code_desc' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
@@ -129,7 +129,7 @@ it('combina clase comercial y condición como filtros del servidor', async () =>
   const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE)))
   vi.stubGlobal('fetch', fetchMock)
   render(<RealRecordListScreen />)
-  await screen.findByText('No hay identidades en este nivel')
+  await screen.findByText('No hay identidades en el catálogo')
 
   fireEvent.click(screen.getByRole('button', { name: 'Presentaciones' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
@@ -142,12 +142,24 @@ it('combina clase comercial y condición como filtros del servidor', async () =>
   expect(fetchMock.mock.calls[3][0]).toContain('condition=huerfano')
 })
 
+it('explica el vacío provocado por filtros y permite recuperar el catálogo completo', async () => {
+  cleanCatalogState()
+  const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify(PAGE)))
+  vi.stubGlobal('fetch', fetchMock)
+  render(<RealRecordListScreen />)
+  await screen.findByText('No hay identidades en el catálogo')
+  fireEvent.click(screen.getByRole('button', { name: 'Presentaciones' }))
+  expect(await screen.findByText('No hay resultados con estos filtros')).toBeInTheDocument()
+  fireEvent.click(screen.getAllByRole('button', { name: 'Limpiar filtros' }).at(-1)!)
+  expect(await screen.findByText('No hay identidades en el catálogo')).toBeInTheDocument()
+})
+
 it('permite combinar varias condiciones y limpiar todos los filtros', async () => {
   cleanCatalogState()
   const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE)))
   vi.stubGlobal('fetch', fetchMock)
   render(<RealRecordListScreen />)
-  await screen.findByText('No hay identidades en este nivel')
+  await screen.findByText('No hay identidades en el catálogo')
 
   fireEvent.click(screen.getByRole('button', { name: 'Presentaciones' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
@@ -173,7 +185,7 @@ it('limpia también una búsqueda escrita pero todavía no aplicada', async () =
   const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE)))
   vi.stubGlobal('fetch', fetchMock)
   render(<RealRecordListScreen />)
-  await screen.findByText('No hay identidades en este nivel')
+  await screen.findByText('No hay identidades en el catálogo')
 
   fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'texto pendiente' } })
   fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }))
@@ -186,7 +198,7 @@ it('restaura filtros al volver a montar el listado', async () => {
   const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE)))
   vi.stubGlobal('fetch', fetchMock)
   const first = render(<RealRecordListScreen />)
-  await screen.findByText('No hay identidades en este nivel')
+  await screen.findByText('No hay identidades en el catálogo')
   fireEvent.click(screen.getByRole('button', { name: 'Presentaciones' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
   fireEvent.click(screen.getByRole('checkbox', { name: 'Huérfano' }))
@@ -223,7 +235,7 @@ it('al elegir una condición desde Todo el catálogo conserva el contexto de pre
   const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE)))
   vi.stubGlobal('fetch', fetchMock)
   render(<RealRecordListScreen />)
-  await screen.findByText('No hay identidades en este nivel')
+  await screen.findByText('No hay identidades en el catálogo')
 
   fireEvent.click(screen.getByRole('checkbox', { name: 'Huérfano' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
@@ -236,7 +248,7 @@ it('separa las vistas por los tres libros Excel originales', async () => {
   const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE)))
   vi.stubGlobal('fetch', fetchMock)
   render(<RealRecordListScreen />)
-  await screen.findByText('No hay identidades en este nivel')
+  await screen.findByText('No hay identidades en el catálogo')
 
   fireEvent.click(screen.getByRole('button', { name: 'Especialidades · CN' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
@@ -259,7 +271,7 @@ it('retira filtros de presentación cuando se cambia a medicamentos', async () =
   const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE)))
   vi.stubGlobal('fetch', fetchMock)
   render(<RealRecordListScreen />)
-  await screen.findByText('No hay identidades en este nivel')
+  await screen.findByText('No hay identidades en el catálogo')
 
   fireEvent.click(screen.getByRole('button', { name: 'Genérico' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))

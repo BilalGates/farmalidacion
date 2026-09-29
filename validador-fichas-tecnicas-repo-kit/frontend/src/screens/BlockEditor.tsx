@@ -37,12 +37,14 @@ interface PendingOperation {
 }
 
 export function BlockEditor({
+  id,
   recordId,
   blockType,
   occurrences,
   reviewer,
   onChange,
 }: {
+  id?: string
   recordId: string
   blockType: string
   occurrences: BlockOccurrence[]
@@ -128,7 +130,7 @@ export function BlockEditor({
   }
 
   return (
-    <div className='block-editor'>
+    <div className='block-editor' id={id}>
       <div className='block-editor__head'>
         <h3>Ocurrencias de {blockType}</h3>
         <button

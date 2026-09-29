@@ -85,6 +85,17 @@ it('la lectura ciega no muestra la decisión del primer revisor', async () => {
   expect(screen.queryByText(/primera decisión/i)).not.toBeInTheDocument()
   // La decisión arranca vacía: proponer una sesgaría la segunda lectura.
   expect(screen.getByLabelText('Decisión de segunda lectura')).toHaveValue('')
+  expect(screen.getByRole('heading', { name: 'Lectura ciega · DESCRIPCION' })).toHaveFocus()
+})
+
+it('devuelve el foco a la asignación al cancelar', async () => {
+  stub((url) => (url.includes('/blind') ? BLIND : [PENDING]))
+  render(<SecondReviewScreen reviewer={REVIEWER} />)
+  const open = await screen.findByRole('button', { name: 'Revisar a ciegas' })
+  fireEvent.click(open)
+  await screen.findByRole('heading', { name: 'Lectura ciega · DESCRIPCION' })
+  fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+  await waitFor(() => expect(open).toHaveFocus())
 })
 
 it('no registra una lectura sin decisión elegida', async () => {
