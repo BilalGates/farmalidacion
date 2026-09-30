@@ -651,7 +651,7 @@ def identity_cima_comparison(
             document_version_id=item.document_version_id,
             source_version=item.source_version,
             content_hash=item.content_hash,
-            status=item.status,  # type: ignore[arg-type]
+            status=item.status,
             reason=item.reason,
             section_locators=list(item.section_locators),
             decision_history=history_by_field_version.get(

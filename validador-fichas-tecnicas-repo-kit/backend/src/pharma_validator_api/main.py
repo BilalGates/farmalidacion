@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import PurePosixPath
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -173,7 +173,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # Un modo REAL sin ningún registro real es la avería concreta que se
         # quiere poder ver: la base está migrada pero la ingesta no se ha
         # ejecutado. Se declara inconsistente en lugar de responder «ok».
-        consistent = real > 0 if active.data_mode == "real" else demo > 0
+        consistent = (
+            (real > 0 and demo == 0)
+            if active.data_mode == "real"
+            else (demo > 0 and real == 0)
+        )
         return DatabaseInfoResponse(
             mode=active.data_mode,
             backend=make_url(active.database_url).get_backend_name(),
@@ -184,6 +188,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             import_batches=batches,
             consistent=consistent,
         )
+
+    @application.get("/ready", response_model=HealthResponse, tags=["sistema"])
+    def ready() -> HealthResponse:
+        # El healthcheck se repite periódicamente: basta comprobar existencia,
+        # sin contar todo el catálogo en cada consulta.
+        with session_factory() as session:
+            has_real = session.scalar(
+                apply_origin_filter(select(TargetRecord.id), DataOrigin.REAL).limit(1)
+            ) is not None
+            has_demo = session.scalar(
+                apply_origin_filter(select(TargetRecord.id), DataOrigin.DEMO).limit(1)
+            ) is not None
+        consistent = (
+            (has_real and not has_demo)
+            if active.data_mode == "real"
+            else (has_demo and not has_real)
+        )
+        if not consistent:
+            raise HTTPException(
+                status_code=503,
+                detail="La base no contiene exclusivamente registros del modo configurado.",
+            )
+        return HealthResponse(status="ready", service=active.app_name, environment=active.env)
 
     return application
 

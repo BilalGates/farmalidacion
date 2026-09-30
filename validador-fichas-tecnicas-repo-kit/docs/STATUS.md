@@ -1,5 +1,34 @@
 # Estado del proyecto
 
+## Preparación operativa del piloto (30 de septiembre de 2026)
+
+- El arranque documentado distingue los perfiles `demo` y `real` de Compose.
+  El gate comprueba que cada perfil incluya sólo su backend y frontend.
+- `/ready` exige registros del modo configurado y ningún registro del otro
+  modo. Los healthchecks de ambos backends usan esta condición: una base vacía
+  o mezclada ya no se presenta como preparada.
+- La selección reproducible de 20 fichas GOLD ya existe. Elena Tomás ha sido
+  indicada como primera revisora; falta designar la segunda persona independiente,
+  fijar el alcance de unidades GOLD-004 y ejecutar la campaña y conciliación.
+  No se han creado anotaciones ni se ha afirmado aceptación farmacéutica.
+- La identidad del piloto sigue siendo declarada. D-018 se reabrió para
+  preparar Entra ID (Intune administra los dispositivos); falta que el
+  administrador aporte tenant, registros SPA/API y mapeo de roles. El contrato
+  y las pruebas de aceptación están en `docs/ENTRA_ID_INTEGRATION_PLAN.md`.
+- El mantenimiento diario omite consultas de detalle a CIMA cuando la base no
+  contiene ningún CN maestro: no podría existir un enlace exacto y la pasada
+  queda registrada con cero eventos.
+- Verificación dirigida: `test_database_info.py` y `test_second_review_api.py`
+  10/10; mantenimiento y catálogo 16/16; Ruff y mypy sobre los 84 módulos
+  Python sin errores; Vitest 151/151, ESLint y build frontend correctos.
+- El gate integral detectó que el Excel local
+  `Medicamento-cargaMaster25062026.xlsx` tiene SHA-256
+  `9ecb56cc1cd590c4e49d63c7ce7993df059372af341407acd197a818cd1a50dc`,
+  distinto del hash de referencia
+  `4b87aeac96ea220126c090d755fa5bfbaabe7aec304cfccb2e15537bd96cbf1b`.
+  Se interrumpió la suite tras identificar el fallo. El libro original y el
+  hash esperado no se alteraron; hay que verificar cuál versión es la aprobada.
+
 ## CAT-007 — Comparación campo a campo con CIMA (28 de septiembre de 2026)
 
 - El expediente compara los campos del maestro con fichas tipo 1 enlazadas como

@@ -1,6 +1,6 @@
 # Validador asistido de fichas técnicas
 
-Aplicación interna para consolidar y validar datos de medicamentos con procedencia verificable. La Fase 0B está cerrada y el repositorio inicia su scaffold ejecutable en Fase 1.
+Aplicación interna para consolidar y validar datos de medicamentos con procedencia verificable. El piloto técnico permite importar maestros, revisar valores y consultar fuentes; la evaluación clínica del extractor y la aceptación farmacéutica siguen pendientes.
 
 ## Orden de lectura
 
@@ -24,17 +24,27 @@ DEV-101 solo establece estos límites. No instala frameworks ni fija el esquema 
 
 ## Arranque reproducible
 
-La única ruta soportada para levantar la demostración completa es:
+Para levantar la demostración completa:
 
 ```text
-docker compose up --build --detach --wait
+docker compose --profile demo up --build --detach --wait
 ```
 
 Después quedan disponibles la interfaz en `http://localhost:5173`, la API en
 `http://localhost:8000`, su documentación en `http://localhost:8000/docs` y la
 salud en `http://localhost:8000/health`. Compose aplica las migraciones antes de
 arrancar la API y carga de forma idempotente los fixtures DEMO sobre el volumen
-SQLite `app-data`; las decisiones sobreviven a los reinicios.
+SQLite `demo-data`; las decisiones sobreviven a los reinicios mientras se conserve ese volumen.
+
+Para abrir los tres maestros reales ya importados en `data/local/real.db`:
+
+```text
+docker compose --profile real up --build --detach --wait
+```
+
+En Windows, `./scripts/start-demo.ps1` y `./scripts/start-real.ps1` comprueban
+además los endpoints y el modo de la base servida. No se deben levantar ambos
+perfiles a la vez: comparten los puertos 8000 y 5173.
 
 El gate completo del repositorio es `python scripts/verify_project.py`. El resto
 de comandos canónicos se documenta en `docs/COMMANDS.md`. `.env.example` sirve

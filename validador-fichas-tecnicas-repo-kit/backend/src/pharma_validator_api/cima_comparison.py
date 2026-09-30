@@ -205,7 +205,7 @@ def compare_master_fields(
                     elif row_status == "requiere_criterio":
                         row_reason = "Hay texto candidato; requiere criterio farmacéutico."
                     elif row_status == "difiere":
-                        found = any(
+                        found = field.value is not None and any(
                             field.value in available[item].literal_text for item in locators
                         )
                         if found:

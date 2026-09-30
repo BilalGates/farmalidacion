@@ -17,6 +17,28 @@ def run(label: str, command: list[str], *, env: dict[str, str] | None = None) ->
     subprocess.run(command, cwd=ROOT, env=env, check=True)
 
 
+def verify_compose_profiles() -> None:
+    """Comprueba que cada modo levanta exactamente su pareja de aplicación."""
+    for profile, expected in (
+        ('demo', {'backend', 'frontend'}),
+        ('real', {'backend-real', 'frontend-real'}),
+    ):
+        result = subprocess.run(
+            ['docker', 'compose', '--profile', profile, 'config', '--services'],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        services = set(result.stdout.splitlines())
+        if services != expected:
+            raise RuntimeError(
+                f'Perfil {profile}: servicios {sorted(services)}; '
+                f'se esperaban {sorted(expected)}.'
+            )
+        print(f'==> Compose {profile}: {", ".join(sorted(services))}', flush=True)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Verificación integral del repositorio')
     parser.add_argument(
@@ -57,7 +79,7 @@ def main() -> int:
     run('Tests frontend', [NPM, '--prefix', 'frontend', 'run', 'test'])
     run('Lint frontend', [NPM, '--prefix', 'frontend', 'run', 'lint'])
     run('Build frontend', [NPM, '--prefix', 'frontend', 'run', 'build'])
-    run('Configuración Compose', ['docker', 'compose', 'config', '--quiet'])
+    verify_compose_profiles()
     if not args.skip_references:
         run('Hashes de referencias', [sys.executable, 'scripts/verify_reference_files.py'])
 

@@ -21,7 +21,7 @@ Estados: `cerrada`, `propuesta`, `pendiente`, `bloqueada`, `descartada`. Una dec
 | D-015 | Umbrales para `proponer_valor` y degradación | pendiente | Fase 4 | Bandas A/B/C por campo; método de cálculo definido, valores pendientes de métricas reales | ADR-0009 propuesto 2026-09-04 (esqueleto); barrera de evidencia en `docs/EVIDENCE_VERIFICATION_CONTRACT.md` |
 | D-016 | Selección aleatoria o estratificada | cerrada | Fase 2 | Muestra aleatoria, semilla 203, sobre instantánea reproducible | Elección humana al continuar el 28-08-2026; informe real `bb80992258d07a5e49f1beef46e983f3f56a57e7d48ad20d5aef19e3bffa5fe7` |
 | D-017 | Reglas ATC adicionales a `L04` | pendiente | Fase 6 | Decisión exclusiva de farmacia | Especificación v2 |
-| D-018 | Autenticación real | cerrada para piloto | Fase 8 | No en piloto; reevaluar para auditoría formal | Especificación v2 |
+| D-018 | Autenticación real | reabierta; configuración pendiente | Fase 8 | Preparar Entra ID asociado a Intune; conservar la garantía declarada hasta validar integración y roles | Petición del responsable 2026-09-30; `docs/ENTRA_ID_INTEGRATION_PLAN.md` |
 | D-019 | Base de datos del piloto | cerrada | Fase 1 | SQLite con tipos portables y Alembic | Especificación v2 |
 | D-020 | Estrategia de versiones de ficha técnica | cerrada | Fase 2 | Versiones content-addressed inmutables; `source_version` literal y opcional, nunca inferida | ADR-0001 aceptado; DEV-205/208; aceptación humana 31-08-2026 |
 | D-021 | Campos `EX_DESCRIPCION` y `ME_DESCRIPCION` | cerrada | Fase 3 | `CHAR(100)` mediante overrides trazables | Especificación v2 |

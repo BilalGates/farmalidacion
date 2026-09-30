@@ -86,11 +86,12 @@ def _catalog_targets_for_change(
     if not isinstance(presentations, list):
         raise MaintenanceRefreshError(f"{nregistro}: presentaciones CIMA incompatibles.")
 
-    cns = [
-        row.get("cn")
-        for row in presentations
-        if isinstance(row, dict) and isinstance(row.get("cn"), str) and row.get("cn")
-    ]
+    cns: list[str] = []
+    for row in presentations:
+        if isinstance(row, dict):
+            cn = row.get("cn")
+            if isinstance(cn, str) and cn:
+                cns.append(cn)
     targets: set[tuple[str, str]] = set()
     for cn in set(cns):
         master_candidates = master_by_cn.get(cn, ())
@@ -136,16 +137,19 @@ def run_one_day(
         master_by_cn = _master_cn_index(session)
         targets_by_registration: dict[str, tuple[tuple[str, str], ...]] = {}
         relevant_changes = []
-        for change in report.changes:
-            matches = _catalog_targets_for_change(
-                session,
-                client=client,
-                nregistro=change.nregistro,
-                master_by_cn=master_by_cn,
-            )
-            if matches:
-                relevant_changes.append(change)
-                targets_by_registration[change.nregistro] = matches
+        # Sin ningún CN maestro no puede existir un destino exacto. Evita
+        # consultas CIMA adicionales y registra igualmente la pasada del día.
+        if master_by_cn:
+            for change in report.changes:
+                matches = _catalog_targets_for_change(
+                    session,
+                    client=client,
+                    nregistro=change.nregistro,
+                    master_by_cn=master_by_cn,
+                )
+                if matches:
+                    relevant_changes.append(change)
+                    targets_by_registration[change.nregistro] = matches
         report = replace(report, changes=tuple(relevant_changes))
         events = process_change_report(
             session,

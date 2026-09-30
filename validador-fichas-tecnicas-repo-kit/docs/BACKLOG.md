@@ -1,5 +1,18 @@
 # Backlog inicial
 
+## Preparación operativa y aceptación (30 de septiembre de 2026)
+
+- **Arranque DEMO/REAL:** comandos y scripts alineados con los perfiles de
+  Compose. `/ready` y los healthchecks rechazan bases vacías o mezcladas;
+  `verify_project.py` comprueba los servicios de cada perfil.
+- **GOLD-002:** Elena Tomás indicada como primera farmacéutica; segunda persona
+  independiente sin designar. La selección de 20 fichas ya está materializada.
+- **GOLD-004:** sigue pendiente congelar las unidades/campos esperados por ficha.
+  Sin GOLD-002, GOLD-004 y la protección de artefactos humanos no se inicia
+  la campaña ni se declara Fase 4 aceptada.
+- **D-018:** la identidad sigue siendo declarada por decisión del piloto.
+  Autenticación real queda para revisión de alcance antes de auditoría formal.
+
 ## Nuevo camino de producto — catálogo editable (22 de septiembre de 2026)
 
 ADR-0012 redefine el siguiente bloque de trabajo sin invalidar la infraestructura

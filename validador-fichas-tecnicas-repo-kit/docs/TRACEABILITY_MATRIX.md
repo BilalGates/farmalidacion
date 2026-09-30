@@ -1,5 +1,14 @@
 # Matriz inicial de trazabilidad
 
+## Arranque verificable (30 de septiembre de 2026)
+
+| Requisito | Fuente | Evidencia de implementación | Prueba mínima |
+|---|---|---|---|
+| DEMO y REAL usan bases separadas y no se declaran preparados con datos vacíos o mezclados | Separación REAL/DEMO; REAL-001 | `main.py` (`/ready`), `compose.yaml`, `start-demo.ps1`, `start-real.ps1` | `test_database_info.py`: seis casos; `verify_project.py`: servicios por perfil |
+
+La doble anotación de GOLD-002 continúa pendiente de segunda persona; no existe
+una prueba clínica ejecutada que pueda registrarse como aceptación.
+
 ## Integración del 8-09-2026
 
 - DEV-502: inicio y devolución a pendientes desde QueueScreen con expected_version;
