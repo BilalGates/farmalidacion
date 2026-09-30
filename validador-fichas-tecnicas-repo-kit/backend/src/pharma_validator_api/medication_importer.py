@@ -19,6 +19,7 @@ from pharma_validator_api.catalog_importer import (
     Cell,
     _iter_rows,
     _shared_strings,
+    _sheet_names,
     _sheet_path,
     _validate_archive,
 )
@@ -45,7 +46,7 @@ from pharma_validator_api.models import (
 )
 
 SOURCE_FILENAME = "Medicamento-cargaMaster25062026.xlsx"
-SOURCE_HASH = "4b87aeac96ea220126c090d755fa5bfbaabe7aec304cfccb2e15537bd96cbf1b"
+SOURCE_HASH = "9ecb56cc1cd590c4e49d63c7ce7993df059372af341407acd197a818cd1a50dc"
 IMPORTER_NAME = "medication_master"
 IMPORTER_VERSION = "1.0.0"
 SHEETS = (
@@ -91,6 +92,8 @@ def _parse_workbook(path: Path) -> list[ParsedSheet]:
     _validate_archive(path)
     parsed: list[ParsedSheet] = []
     with zipfile.ZipFile(path) as archive:
+        if _sheet_names(archive) != tuple(name for name, _ in SHEETS):
+            raise MedicationImportError("El inventario de hojas no coincide con el libro.")
         strings = _shared_strings(archive)
         for ordinal, (sheet_name, block_type) in enumerate(SHEETS, start=1):
             rows = _iter_rows(archive, _sheet_path(archive, sheet_name), strings)

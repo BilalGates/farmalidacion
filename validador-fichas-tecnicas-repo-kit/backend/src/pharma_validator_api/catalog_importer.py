@@ -123,6 +123,12 @@ def _shared_strings(archive: zipfile.ZipFile) -> list[str]:
     return result
 
 
+def _sheet_names(archive: zipfile.ZipFile) -> tuple[str, ...]:
+    workbook = ET.fromstring(archive.read("xl/workbook.xml"))
+    sheets = workbook.find(tag("sheets"))
+    return tuple(sheet.get("name", "") for sheet in (sheets if sheets is not None else ()))
+
+
 def _sheet_path(archive: zipfile.ZipFile, sheet_name: str) -> str:
     workbook = ET.fromstring(archive.read("xl/workbook.xml"))
     relationships = ET.fromstring(archive.read("xl/_rels/workbook.xml.rels"))

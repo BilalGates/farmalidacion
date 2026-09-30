@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import {
   ApiError,
@@ -8,6 +8,7 @@ import {
 } from '../api/client'
 import type { BlindField, Reviewer, SecondReviewItem } from '../api/types'
 import { ASSIGNABLE_STATES, VALIDATION_STATE_LABELS } from '../domain/vocabulary'
+import { PageHeader } from '../components/PageHeader'
 
 /**
  * Segunda validación ciega y conciliación (DEV-607/608).
@@ -36,6 +37,21 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
   const [state, setState] = useState('')
   const [finalValue, setFinalValue] = useState('')
   const [comment, setComment] = useState('')
+  const editorHeading = useRef<HTMLHeadingElement>(null)
+  const pageHeading = useRef<HTMLHeadingElement>(null)
+  const originButton = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    if (active !== null) editorHeading.current?.focus()
+  }, [active])
+
+  function closeEditor() {
+    setActive(null)
+    window.requestAnimationFrame(() => {
+      if (originButton.current?.isConnected) originButton.current.focus()
+      else pageHeading.current?.focus()
+    })
+  }
 
   const load = useCallback(() => {
     if (reviewer === null) return
@@ -51,8 +67,9 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
 
   useEffect(load, [load])
 
-  function openBlind(item: SecondReviewItem) {
+  function openBlind(item: SecondReviewItem, origin: HTMLButtonElement) {
     if (reviewer === null) return
+    originButton.current = origin
     setError(null)
     setNotice(null)
     setState('')
@@ -83,6 +100,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
       )
       setActive(null)
       load()
+      window.requestAnimationFrame(() => pageHeading.current?.focus())
     } catch (cause: unknown) {
       // El mensaje del backend explica qué barrera se ha aplicado.
       setError(cause instanceof ApiError ? cause.message : 'Error inesperado.')
@@ -94,12 +112,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
   if (reviewer === null) {
     return (
       <div className='screen'>
-        <div className='screen__head'>
-          <div>
-            <p className='eyebrow'>Segunda validación</p>
-            <h1>Validaciones</h1>
-          </div>
-        </div>
+        <PageHeader eyebrow='Segunda validación' title='Validaciones' />
         <p className='muted'>
           Seleccione un revisor: una segunda lectura exige saber quién la firma.
         </p>
@@ -113,15 +126,8 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
 
   return (
     <div className='screen'>
-      <div className='screen__head'>
-        <div>
-          <p className='eyebrow'>Segunda validación</p>
-          <h1>Validaciones</h1>
-          <p className='lede'>
-            Las lecturas pendientes se emiten sin ver la decisión del primer revisor.
-          </p>
-        </div>
-      </div>
+      <PageHeader eyebrow='Segunda validación' title='Validaciones' description='Las lecturas pendientes se emiten sin ver la decisión del primer revisor.' />
+      <h2 className='visually-hidden' ref={pageHeading} tabIndex={-1}>Lista de validaciones</h2>
 
       {notice && (
         <p className='alert alert--ok' role='status'>
@@ -149,12 +155,12 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
           <ul className='conflicts'>
             {open.map((item) => (
               <li key={item.id}>
-                <span className='conflicts__field'>{item.target_record_id}</span>
+                <span className='conflicts__field'>{item.target_record_id}<small>{item.field_name}</small></span>
                 <span className='badge badge--pendiente'>{item.state}</span>
                 <button
                   type='button'
                   className='button button--ghost'
-                  onClick={() => openBlind(item)}
+                  onClick={(event) => openBlind(item, event.currentTarget)}
                 >
                   Revisar a ciegas
                 </button>
@@ -166,7 +172,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
 
       {active !== null && (
         <section className='panel validation-editor'>
-          <h2>Lectura ciega · {active.field_name}</h2>
+          <h2 ref={editorHeading} tabIndex={-1}>Lectura ciega · {active.field_name}</h2>
           <p className='note'>{active.instruction}</p>
           <dl className='pairs'>
             <div>
@@ -228,7 +234,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
               type='button'
               className='button button--ghost'
               disabled={busy}
-              onClick={() => setActive(null)}
+              onClick={closeEditor}
             >
               Cancelar
             </button>
@@ -244,12 +250,12 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
           <ul className='conflicts'>
             {conflicts.map((item) => (
               <li key={item.id}>
-                <span className='conflicts__field'>{item.target_record_id}</span>
+                <span className='conflicts__field'>{item.target_record_id}<small>{item.field_name}</small></span>
                 <span className='badge badge--requiere_revision'>Desacuerdo</span>
                 <button
                   type='button'
                   className='button button--ghost'
-                  onClick={() => openBlind(item)}
+                  onClick={(event) => openBlind(item, event.currentTarget)}
                 >
                   Abrir
                 </button>
@@ -271,7 +277,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
           <ul className='conflicts'>
             {closed.map((item) => (
               <li key={item.id}>
-                <span className='conflicts__field'>{item.target_record_id}</span>
+                <span className='conflicts__field'>{item.target_record_id}<small>{item.field_name}</small></span>
                 <span className='badge badge--confirmado'>{item.state}</span>
               </li>
             ))}

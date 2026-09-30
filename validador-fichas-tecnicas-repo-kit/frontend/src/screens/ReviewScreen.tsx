@@ -629,8 +629,6 @@ export function ReviewScreen({
         </details>
       </section>
 
-      <section className='panel'>
-        <h2>Validación farmacéutica</h2>
       {!compact && <ContextPanel className='panel review-assurance'>
         {compact ? <summary>Validación farmacéutica y trazabilidad</summary> : <h2>Validación farmacéutica</h2>}
         <p className='note'>

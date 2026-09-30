@@ -36,3 +36,18 @@ it('cierra el menú con Escape sin cambiar el revisor', () => {
   expect(screen.queryByRole('listbox')).toBeNull()
   expect(onChange).not.toHaveBeenCalled()
 })
+
+it('permite recorrer y elegir un revisor sólo con teclado', () => {
+  const onChange = vi.fn()
+  render(<ReviewerSelect reviewers={reviewers} value='' onChange={onChange} />)
+  const trigger = screen.getByRole('combobox')
+  trigger.focus()
+  fireEvent.keyDown(trigger, { key: 'ArrowDown' })
+  expect(trigger).toHaveAttribute('aria-expanded', 'true')
+  fireEvent.keyDown(trigger, { key: 'End' })
+  expect(trigger).toHaveAttribute('aria-activedescendant', screen.getByRole('option', { name: /M\. Torres/ }).id)
+  fireEvent.keyDown(trigger, { key: 'Enter' })
+  expect(onChange).toHaveBeenCalledWith('mt')
+  expect(trigger).toHaveFocus()
+  expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+})

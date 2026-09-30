@@ -128,7 +128,7 @@ try {
     # ------------------------------------------------------------ 3. healthchecks
     Write-Step 'Esperando a que los servicios respondan'
 
-    $backendOk = Wait-Endpoint "$BackendUrl/health" 'Backend'
+    $backendOk = Wait-Endpoint "$BackendUrl/ready" 'Backend'
     $frontendOk = Wait-Endpoint $FrontendUrl 'Frontend'
     if (-not ($backendOk -and $frontendOk)) {
         Write-Host ''

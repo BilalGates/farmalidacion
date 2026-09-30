@@ -10,6 +10,7 @@ RUN python -m pip install --no-cache-dir /app/backend \
     && useradd --create-home --uid 10001 appuser \
     && mkdir -p /app/data \
     && chown -R appuser:appuser /app
+COPY --chown=appuser:appuser scripts/run_cima_maintenance.py /app/scripts/run_cima_maintenance.py
 
 USER appuser
 EXPOSE 8000

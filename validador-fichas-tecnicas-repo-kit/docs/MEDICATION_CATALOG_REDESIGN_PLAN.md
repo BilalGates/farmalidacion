@@ -213,6 +213,27 @@ listado sin perder contexto; la auditoría refleja el recorrido.
 
 ### CAT-007 — Lector y comparación CIMA (`P0`)
 
+Estado (28-09-2026): lector y comparación campo a campo integrados en el
+expediente. Consulta exclusivamente fichas tipo 1 enlazadas como `ft`, conserva
+la última versión vinculada por documento, su hash, fecha y apartados literales,
+y permite buscar texto sin ejecutar HTML. La comparación usa las 353
+definiciones del catálogo y sólo empareja entidad, bloque y nombre técnico
+exactos; ambigüedades y campos sin cruce quedan como no comparables. El resultado
+separa coincidencia/diferencia textual, falta de valor, falta de apartado, no
+comparabilidad y necesidad de criterio. No normaliza valores; los campos
+parciales o interpretables requieren criterio farmacéutico.
+
+El revisor puede registrar la revisión, corregir el valor de trabajo, descartar
+la comparación o dejarla pendiente. Cada acción append-only conserva el campo,
+el resultado, la versión documental exacta, el localizador y el hash del
+apartado, revisor y motivo. Una corrección y su decisión se guardan en una misma
+transacción; el libro fuente permanece inmutable.
+
+Pendiente para aceptar CAT-007: probar el flujo con una ficha CIMA real enlazada
+y revisar farmacéuticamente los cruces candidatos. La instancia REAL actual
+contiene los tres maestros y el catálogo de campos, pero no tiene fichas CIMA
+enlazadas; por tanto no se presenta una verificación real del resultado clínico.
+
 - Ficha técnica completa, índice, búsqueda y versión visibles en el expediente.
 - Comparación automática por campo con evidencia literal.
 - Separar coincidencia, diferencia, ausencia y no comparabilidad.

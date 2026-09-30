@@ -1,11 +1,12 @@
-import { Fragment, useState } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
 
 import { fetchSource, fetchSources } from '../api/client'
-import type { SourceSummary } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
+import { PageHeader } from '../components/PageHeader'
 import { formatDateTime, orDash, shortHash } from '../domain/format'
+import { openCatalogSource } from '../domain/catalogSourceNavigation'
+import type { CatalogSourceWorkbook } from '../api/types'
 
 /**
  * Fuentes realmente conocidas por el sistema.
@@ -20,8 +21,6 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
   demo_showcase: 'Conjunto DEMO',
   cima: 'CIMA',
   ficha_tecnica: 'Ficha técnica',
-  cima_document_type_1: 'CIMA · Ficha técnica',
-  cima_document_type_2: 'CIMA · Prospecto',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -30,49 +29,44 @@ const STATUS_LABELS: Record<string, string> = {
   sin_datos: 'Sin datos',
 }
 
-const STATUS_PRIORITY: Record<string, number> = {
-  disponible: 0,
-  sin_datos: 1,
-  con_errores: 2,
-}
-
-interface SourceGroup {
-  sourceType: string
-  label: string
-  items: SourceSummary[]
-  status: string
-  records: number
-  batches: number
-  incidents: number
-  lastUpdatedAt: string | null
-}
-
-export function groupSources(items: SourceSummary[]): SourceGroup[] {
-  const grouped = new Map<string, SourceSummary[]>()
-  items.forEach((item) => grouped.set(item.source_type, [...(grouped.get(item.source_type) ?? []), item]))
-
-  return [...grouped.entries()].map(([sourceType, groupItems]) => ({
-    sourceType,
-    label: SOURCE_TYPE_LABELS[sourceType] ?? sourceType,
-    items: groupItems,
-    status: groupItems.reduce((worst, item) =>
-      (STATUS_PRIORITY[item.status] ?? 1) > (STATUS_PRIORITY[worst] ?? 1) ? item.status : worst,
-    groupItems[0].status),
-    records: groupItems.reduce((total, item) => total + item.records, 0),
-    batches: groupItems.reduce((total, item) => total + item.batches, 0),
-    incidents: groupItems.reduce(
-      (total, item) => total + item.diagnostics + item.quarantined_rows,
-      0,
-    ),
-    lastUpdatedAt: groupItems.reduce<string | null>((latest, item) => {
-      if (!item.last_updated_at) return latest
-      return !latest || item.last_updated_at > latest ? item.last_updated_at : latest
-    }, null),
-  }))
+const WORKBOOK_PREVIEWS: Record<string, {
+  view: CatalogSourceWorkbook
+  title: string
+  description: string
+  action: string
+  sheets: Record<string, string>
+}> = {
+  'Especialidades-CargaMaster190626.xlsx': {
+    view: 'especialidades', title: 'Especialidades y presentaciones',
+    description: 'Cada registro principal identifica una presentación mediante su Código Nacional. Los excipientes se conservan como ocurrencias separadas.',
+    action: 'Explorar presentaciones',
+    sheets: { General: 'Presentaciones y códigos nacionales', Excipientes: 'Excipientes por presentación' },
+  },
+  'Medicamento-cargaMaster25062026.xlsx': {
+    view: 'medicamentos', title: 'Medicamentos',
+    description: 'La ficha del medicamento conserva composición, indicaciones, vías y enlaces en hojas y ocurrencias distintas.',
+    action: 'Explorar medicamentos',
+    sheets: {
+      General: 'Identidad y datos generales', Composicion: 'Componentes y cantidades',
+      Indicacion: 'Indicaciones', Frecuencia: 'Frecuencias', Via: 'Vías de administración',
+      Prescripcion: 'Prescripción', Links: 'Enlaces relacionados',
+    },
+  },
+  'PrincipioActivoCargaMaster-22062026.xlsx': {
+    view: 'principios_activos', title: 'Principios activos',
+    description: 'La identidad del principio activo y sus datos complementarios se consultan por hoja sin mezclarlos con medicamentos o presentaciones.',
+    action: 'Explorar principios activos',
+    sheets: {
+      General: 'Identidad del principio activo', Frecuencia: 'Frecuencias',
+      Via: 'Vías de administración', ConsejosAdministracion: 'Consejos de administración',
+      DatosAnaliticos: 'Datos analíticos',
+    },
+  },
 }
 
 function SourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const { data, error, loading } = useQuery(() => fetchSource(id), [id])
+  const preview = data?.source_type === 'master_excel' ? WORKBOOK_PREVIEWS[data.name] : undefined
   return (
     <section className='panel' aria-label='Detalle de la fuente'>
       <div className='panel__head'>
@@ -90,6 +84,15 @@ function SourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
       >
         {data && (
           <>
+            {preview && <div className={`source-workbook-preview source-workbook-preview--${preview.view}`}>
+              <p className='eyebrow'>Vista del libro maestro</p>
+              <h3>{preview.title}</h3>
+              <p>{preview.description}</p>
+              <p>Abra un registro para consultar todas sus hojas y anotar o corregir valores con revisor y motivo. El Excel original se conserva.</p>
+              <button type='button' className='button button--primary' onClick={() => openCatalogSource(preview.view)}>
+                {preview.action}
+              </button>
+            </div>}
             <dl className='definition'>
               <div>
                 <dt>Nombre</dt>
@@ -128,11 +131,13 @@ function SourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
             </dl>
 
             {data.sheets.length > 0 ? (
+              <div className='table-wrap' role='region' aria-label='Hojas del libro; desplazamiento horizontal disponible' tabIndex={0}>
               <table className='table'>
                 <caption>Hojas importadas</caption>
                 <thead>
                   <tr>
                     <th scope='col'>Hoja</th>
+                    <th scope='col'>Contenido</th>
                     <th scope='col'>Filas de datos</th>
                     <th scope='col'>Valores con contenido</th>
                   </tr>
@@ -141,12 +146,14 @@ function SourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
                   {data.sheets.map((sheet) => (
                     <tr key={sheet.sheet_ordinal}>
                       <th scope='row'>{sheet.sheet_name}</th>
+                      <td>{preview?.sheets[sheet.sheet_name] ?? 'Hoja de origen'}{sheet.data_row_count === 0 ? ' · solo cabecera' : ''}</td>
                       <td>{sheet.data_row_count.toLocaleString('es-ES')}</td>
                       <td>{sheet.material_value_count.toLocaleString('es-ES')}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              </div>
             ) : (
               <p className='muted'>
                 Esta fuente no registra hojas importadas: no procede de un libro Excel.
@@ -161,30 +168,11 @@ function SourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
 
 export function SourcesScreen() {
   const [selected, setSelected] = useState<string | null>(null)
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const { data, error, loading } = useQuery(() => fetchSources(), [])
-
-  const toggleGroup = (sourceType: string) => {
-    setExpanded((current) => {
-      const next = new Set(current)
-      if (next.has(sourceType)) next.delete(sourceType)
-      else next.add(sourceType)
-      return next
-    })
-  }
 
   return (
     <div className='screen'>
-      <div className='screen__head'>
-        <div>
-          <p className='eyebrow'>Fuentes</p>
-          <h1>Fuentes de datos cargadas</h1>
-          <p className='lede'>
-            Los documentos se agrupan por origen. Despliega un grupo para consultar cada documento,
-            su versión y su hash de contenido.
-          </p>
-        </div>
-      </div>
+      <PageHeader eyebrow='Fuentes' title='Fuentes de datos cargadas' description='Cada fila es un documento de origen presente en la base de datos, con su versión y su hash de contenido. Sólo aparece lo que se ha cargado realmente.' />
 
       <AsyncBoundary
         loading={loading}
@@ -197,6 +185,7 @@ export function SourcesScreen() {
         }
       >
         {data && (
+          <div className='table-wrap' role='region' aria-label='Fuentes; desplazamiento horizontal disponible' tabIndex={0}>
           <table className='table'>
             <thead>
               <tr>
@@ -204,9 +193,9 @@ export function SourcesScreen() {
                 <th scope='col'>Tipo</th>
                 <th scope='col'>Estado</th>
                 <th scope='col'>Versión</th>
-                <th scope='col'>Registros</th>
-                <th scope='col'>Lotes</th>
-                <th scope='col'>Incidencias</th>
+                <th scope='col' className='cell--num'>Registros</th>
+                <th scope='col' className='cell--num'>Lotes</th>
+                <th scope='col' className='cell--num'>Incidencias</th>
                 <th scope='col'>Actualizada</th>
                 <th scope='col'>
                   <span className='visually-hidden'>Acciones</span>
@@ -214,58 +203,34 @@ export function SourcesScreen() {
               </tr>
             </thead>
             <tbody>
-              {groupSources(data.items).map((group) => {
-                const isExpanded = expanded.has(group.sourceType)
-                return (
-                  <Fragment key={group.sourceType}>
-                    <tr className='source-group'>
-                      <th scope='row'>
-                        <button
-                          type='button'
-                          className='source-group__toggle'
-                          aria-expanded={isExpanded}
-                          onClick={() => toggleGroup(group.sourceType)}
-                        >
-                          {isExpanded ? <ChevronDown aria-hidden='true' /> : <ChevronRight aria-hidden='true' />}
-                          <span>{group.label}</span>
-                          <span className='source-group__count'>{group.items.length} documentos</span>
-                        </button>
-                      </th>
-                      <td>{group.label}</td>
-                      <td><span className={`badge badge--${group.status}`}>{STATUS_LABELS[group.status] ?? group.status}</span></td>
-                      <td>—</td>
-                      <td>{group.records.toLocaleString('es-ES')}</td>
-                      <td>{group.batches}</td>
-                      <td>{group.incidents}</td>
-                      <td>{formatDateTime(group.lastUpdatedAt)}</td>
-                      <td />
-                    </tr>
-                    {isExpanded && group.items.map((item) => (
-                      <tr key={item.key} className='source-group__child'>
-                        <th scope='row'>{item.name}</th>
-                        <td>{SOURCE_TYPE_LABELS[item.source_type] ?? item.source_type}</td>
-                        <td>
-                          <span className={`badge badge--${item.status}`}>
-                            {STATUS_LABELS[item.status] ?? item.status}
-                          </span>
-                        </td>
-                        <td>{orDash(item.latest_version)}</td>
-                        <td>{item.records.toLocaleString('es-ES')}</td>
-                        <td>{item.batches}</td>
-                        <td>{item.diagnostics + item.quarantined_rows}</td>
-                        <td>{formatDateTime(item.last_updated_at)}</td>
-                        <td>
-                          <button type='button' className='button' onClick={() => setSelected(item.key)}>
-                            Ver detalle
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </Fragment>
-                )
-              })}
+              {data.items.map((item) => (
+                <tr key={item.key}>
+                  <th scope='row'>{item.name}</th>
+                  <td>{SOURCE_TYPE_LABELS[item.source_type] ?? item.source_type}</td>
+                  <td>
+                    <span className={`badge badge--${item.status}`}>
+                      {STATUS_LABELS[item.status] ?? item.status}
+                    </span>
+                  </td>
+                  <td>{orDash(item.latest_version)}</td>
+                  <td className='cell--num'>{item.records.toLocaleString('es-ES')}</td>
+                  <td className='cell--num'>{item.batches}</td>
+                  <td className='cell--num'>{item.diagnostics + item.quarantined_rows}</td>
+                  <td>{formatDateTime(item.last_updated_at)}</td>
+                  <td>
+                    <button
+                      type='button'
+                      className='button'
+                      onClick={() => setSelected(item.key)}
+                    >
+                      Ver detalle
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
+          </div>
         )}
       </AsyncBoundary>
 

@@ -15,6 +15,9 @@ export function ReviewerSelect({
   const root = useRef<HTMLDivElement>(null)
   const listId = useId()
   const selected = reviewers.find((item) => item.identifier === value) ?? null
+  const options = [{ identifier: '', display_name: 'Sin revisor' }, ...reviewers]
+  const [activeIndex, setActiveIndex] = useState(0)
+  const trigger = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -28,11 +31,13 @@ export function ReviewerSelect({
   function choose(identifier: string) {
     onChange(identifier)
     setOpen(false)
+    trigger.current?.focus()
   }
 
   return (
     <div className='reviewer-select' ref={root}>
       <button
+        ref={trigger}
         type='button'
         className='reviewer-select__trigger'
         role='combobox'
@@ -40,13 +45,17 @@ export function ReviewerSelect({
         aria-controls={listId}
         aria-expanded={open}
         aria-haspopup='listbox'
-        onClick={() => setOpen((current) => !current)}
+        aria-activedescendant={open ? `${listId}-option-${activeIndex}` : undefined}
+        onClick={() => { setActiveIndex(Math.max(0, options.findIndex((item) => item.identifier === value))); setOpen((current) => !current) }}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') setOpen(false)
-          if (event.key === 'ArrowDown') {
+          if (event.key === 'Escape' && open) { event.preventDefault(); setOpen(false) }
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
             event.preventDefault()
+            setActiveIndex((current) => open ? (current + (event.key === 'ArrowDown' ? 1 : options.length - 1)) % options.length : Math.max(0, options.findIndex((item) => item.identifier === value)))
             setOpen(true)
           }
+          if (open && (event.key === 'Home' || event.key === 'End')) { event.preventDefault(); setActiveIndex(event.key === 'Home' ? 0 : options.length - 1) }
+          if (open && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); choose(options[activeIndex].identifier) }
         }}
       >
         <span className='reviewer-picker__avatar' aria-hidden='true'>
@@ -60,13 +69,15 @@ export function ReviewerSelect({
       </button>
       {open && (
         <div className='reviewer-select__menu' id={listId} role='listbox' aria-label='Revisores disponibles'>
-          <button type='button' role='option' aria-selected={value === ''} onClick={() => choose('')}>
+          <button id={`${listId}-option-0`} tabIndex={-1} type='button' role='option' aria-selected={value === ''} onClick={() => choose('')}>
             <span className='reviewer-select__option-avatar' aria-hidden='true'>—</span>
             <span><strong>Sin revisor</strong><small>Consultar sin firmar</small></span>
             {value === '' && <span aria-hidden='true'>✓</span>}
           </button>
-          {reviewers.map((item) => (
+          {reviewers.map((item, index) => (
             <button
+              id={`${listId}-option-${index + 1}`}
+              tabIndex={-1}
               type='button'
               role='option'
               aria-selected={value === item.identifier}

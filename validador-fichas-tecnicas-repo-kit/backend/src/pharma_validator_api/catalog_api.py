@@ -1,5 +1,6 @@
 """API del catálogo tipado y editable (CAT-003/CAT-004)."""
 
+import hashlib
 import json
 from datetime import UTC, datetime
 from typing import Annotated, Literal
@@ -17,13 +18,36 @@ from pharma_validator_api.catalog_store import (
     create_identity,
     revise_identity,
 )
+from pharma_validator_api.cima_comparison import (
+    CatalogField as ComparisonCatalogField,
+)
+from pharma_validator_api.cima_comparison import (
+    CimaDocument as ComparisonDocument,
+)
+from pharma_validator_api.cima_comparison import (
+    CimaSection as ComparisonSection,
+)
+from pharma_validator_api.cima_comparison import (
+    MasterField as ComparisonMasterField,
+)
+from pharma_validator_api.cima_comparison import (
+    compare_master_fields,
+)
+from pharma_validator_api.contextual_chat import _sections
 from pharma_validator_api.errors import ApplicationError
 from pharma_validator_api.models import (
+    BlockInstance,
+    CatalogCimaReviewDecision,
+    CatalogFieldDefinition,
+    DocumentRecordLink,
+    FieldMaintenanceRevision,
+    FieldValue,
     MedicationCatalogClassification,
     MedicationCatalogIdentity,
     MedicationCatalogRelation,
     MedicationCatalogRevision,
     SourceDocument,
+    SourceDocumentArtifact,
     SourceDocumentVersion,
     SourceFragment,
     TargetRecord,
@@ -69,6 +93,67 @@ class CatalogIdentityPage(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class CatalogCimaSection(BaseModel):
+    locator: str
+    literal_text: str
+
+
+class CatalogCimaDocument(BaseModel):
+    document_name: str
+    document_version_id: str
+    source_version: str | None
+    content_hash: str
+    acquired_at: str
+    sections: list[CatalogCimaSection]
+
+
+class CatalogCimaDecisionRead(BaseModel):
+    sequence: int
+    field_value_id: str
+    document_version_id: str
+    section_locator: str
+    section_content_hash: str
+    comparison_status: str
+    action: str
+    corrected_value: str | None
+    actor_id: str
+    actor_assurance: str
+    reason: str
+    recorded_at: str
+
+
+class CatalogCimaComparisonRead(BaseModel):
+    field_value_id: str
+    block_type: str
+    occurrence: int
+    field_name: str
+    source_column_index: int | None
+    master_value: str | None
+    catalog_field_id: str | None
+    catalog_classification: str | None
+    document_name: str | None
+    document_version_id: str | None
+    source_version: str | None
+    content_hash: str | None
+    status: Literal[
+        "coincide", "difiere", "falta_registro", "falta_cima", "no_comparable", "requiere_criterio"
+    ]
+    reason: str
+    section_locators: list[str]
+    decision_history: list[CatalogCimaDecisionRead] = Field(default_factory=list)
+
+
+class CatalogCimaDecisionWrite(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    document_version_id: str = Field(min_length=1)
+    section_locator: str = Field(min_length=1)
+    action: Literal["revisado", "corregir", "descartar", "pendiente"]
+    corrected_value: str | None = None
+    expected_maintenance_sequence: int = Field(ge=0)
+    actor_id: str = Field(min_length=1, max_length=80)
+    reason: str = Field(min_length=1)
 
 
 class CatalogIdentityCreate(BaseModel):
@@ -159,9 +244,7 @@ def _read(
     )
 
 
-def _source_workbook_for_identity(
-    session: Session, row: MedicationCatalogIdentity
-) -> str | None:
+def _source_workbook_for_identity(session: Session, row: MedicationCatalogIdentity) -> str | None:
     if not row.source_fragment_id:
         return None
     filename = session.scalar(
@@ -184,6 +267,134 @@ def _reviewer(directory: ReviewerDirectory, actor_id: str) -> Reviewer:
         return directory.resolve(actor_id)
     except ReviewerIdentityError as error:
         raise ApplicationError(str(error), status_code=400) from error
+
+
+def _cima_documents_for_record(
+    session: Session, target_record_id: str
+) -> list[CatalogCimaDocument]:
+    linked = session.execute(
+        select(SourceDocument, SourceDocumentVersion)
+        .join(SourceDocumentVersion, SourceDocumentVersion.document_id == SourceDocument.id)
+        .join(
+            DocumentRecordLink,
+            DocumentRecordLink.document_version_id == SourceDocumentVersion.id,
+        )
+        .where(
+            DocumentRecordLink.target_record_id == target_record_id,
+            DocumentRecordLink.link_type == "ft",
+            SourceDocument.source_type == "cima_document_type_1",
+        )
+        .order_by(
+            SourceDocument.id,
+            SourceDocumentVersion.acquired_at.desc(),
+            SourceDocumentVersion.id.desc(),
+        )
+    ).all()
+    latest: dict[str, tuple[SourceDocument, SourceDocumentVersion]] = {}
+    for document, version in linked:
+        latest.setdefault(document.id, (document, version))
+    result: list[CatalogCimaDocument] = []
+    for document, version in latest.values():
+        artifacts = session.scalars(
+            select(SourceDocumentArtifact)
+            .where(
+                SourceDocumentArtifact.document_version_id == version.id,
+                SourceDocumentArtifact.artifact_role.in_(("section", "full_document")),
+            )
+            .order_by(SourceDocumentArtifact.ordinal, SourceDocumentArtifact.id)
+        ).all()
+        for artifact in artifacts:
+            if hashlib.sha256(artifact.body).hexdigest() != artifact.content_hash:
+                raise ApplicationError(
+                    "La ficha técnica archivada no supera la comprobación de integridad.",
+                    status_code=409,
+                )
+        sections = [
+            CatalogCimaSection(locator=locator, literal_text=literal)
+            for artifact in artifacts
+            for locator, literal in _sections(artifact)
+        ]
+        result.append(
+            CatalogCimaDocument(
+                document_name=document.name,
+                document_version_id=version.id,
+                source_version=version.source_version,
+                content_hash=version.content_hash,
+                acquired_at=version.acquired_at.isoformat(),
+                sections=sections,
+            )
+        )
+    return result
+
+
+def _comparison_inputs(
+    session: Session,
+    target_record_id: str,
+) -> tuple[
+    tuple[ComparisonMasterField, ...],
+    tuple[ComparisonCatalogField, ...],
+    tuple[ComparisonDocument, ...],
+]:
+    rows = session.execute(
+        select(FieldValue, BlockInstance, TargetRecord.entity_type)
+        .join(BlockInstance, BlockInstance.id == FieldValue.block_instance_id)
+        .join(TargetRecord, TargetRecord.id == BlockInstance.target_record_id)
+        .where(BlockInstance.target_record_id == target_record_id)
+        .order_by(BlockInstance.block_type, BlockInstance.ordinal, FieldValue.field_name)
+    ).all()
+    field_ids = [value.id for value, _block, _entity_type in rows]
+    revisions = (
+        session.scalars(
+            select(FieldMaintenanceRevision)
+            .where(FieldMaintenanceRevision.field_value_id.in_(field_ids))
+            .order_by(
+                FieldMaintenanceRevision.field_value_id,
+                FieldMaintenanceRevision.sequence,
+            )
+        ).all()
+        if field_ids
+        else []
+    )
+    latest_values = {item.field_value_id: item.after_value for item in revisions}
+    fields = tuple(
+        ComparisonMasterField(
+            id=value.id,
+            entity_type=entity_type,
+            block_type=block.block_type,
+            ordinal=block.ordinal,
+            source_column_index=value.source_column_index,
+            name=value.field_name,
+            value=latest_values.get(value.id, value.literal_value),
+        )
+        for value, block, entity_type in rows
+    )
+    definitions = tuple(
+        ComparisonCatalogField(
+            id=item.id,
+            entity=item.entity_literal,
+            block=item.block_literal,
+            name=item.field_name_literal,
+            from_ft=item.from_ft_literal,
+            sections=item.ft_section_literal,
+        )
+        for item in session.scalars(
+            select(CatalogFieldDefinition).order_by(CatalogFieldDefinition.source_row_number)
+        ).all()
+    )
+    documents = tuple(
+        ComparisonDocument(
+            document_name=item.document_name,
+            document_version_id=item.document_version_id,
+            source_version=item.source_version,
+            content_hash=item.content_hash,
+            sections=tuple(
+                ComparisonSection(locator=section.locator, literal_text=section.literal_text)
+                for section in item.sections
+            ),
+        )
+        for item in _cima_documents_for_record(session, target_record_id)
+    )
+    return fields, definitions, documents
 
 
 @router.get("/identities", response_model=CatalogIdentityPage)
@@ -239,7 +450,10 @@ def list_identities(
             statement = statement.where(MedicationCatalogIdentity.id.in_(class_query))
         if condition:
             allowed_conditions = {
-                "huerfano", "estupefaciente", "psicotropico", "especial_control_medico",
+                "huerfano",
+                "estupefaciente",
+                "psicotropico",
+                "especial_control_medico",
                 "uso_hospitalario",
             }
             if any(value not in allowed_conditions for value in condition):
@@ -257,17 +471,14 @@ def list_identities(
                     == len(set(condition))
                 )
             )
-            condition_query = select(
-                conditions_query.subquery().c.presentation_identity_id
-            )
+            condition_query = select(conditions_query.subquery().c.presentation_identity_id)
             statement = statement.where(MedicationCatalogIdentity.id.in_(condition_query))
     if q and q.strip():
         query = q.strip()
         needle = f"%{query}%"
-        search_by_name_or_code = (
-            MedicationCatalogIdentity.display_name.like(needle)
-            | MedicationCatalogIdentity.code.like(needle)
-        )
+        search_by_name_or_code = MedicationCatalogIdentity.display_name.like(
+            needle
+        ) | MedicationCatalogIdentity.code.like(needle)
         # Un CN recibido con siete dígitos permite localizar el código de
         # trabajo de seis, pero no valida el control ni crea equivalencias.
         if len(query) == 7 and query.isascii() and query.isdigit():
@@ -368,6 +579,252 @@ def read_identity(identity_id: str, session: SessionDependency) -> CatalogIdenti
     return _read(row, source_workbook=_source_workbook_for_identity(session, row))
 
 
+@router.get(
+    "/identities/{identity_id}/cima-documents",
+    response_model=list[CatalogCimaDocument],
+)
+def identity_cima_documents(
+    identity_id: str, session: SessionDependency
+) -> list[CatalogCimaDocument]:
+    identity = session.get(MedicationCatalogIdentity, identity_id)
+    if identity is None:
+        raise ApplicationError("Identidad de catálogo no encontrada.", status_code=404)
+    if identity.target_record_id is None:
+        return []
+    return _cima_documents_for_record(session, identity.target_record_id)
+
+
+@router.get(
+    "/identities/{identity_id}/cima-comparison",
+    response_model=list[CatalogCimaComparisonRead],
+)
+def identity_cima_comparison(
+    identity_id: str, session: SessionDependency
+) -> list[CatalogCimaComparisonRead]:
+    identity = session.get(MedicationCatalogIdentity, identity_id)
+    if identity is None:
+        raise ApplicationError("Identidad de catálogo no encontrada.", status_code=404)
+    if identity.target_record_id is None:
+        return []
+    fields, definitions, documents = _comparison_inputs(session, identity.target_record_id)
+    comparisons = compare_master_fields(fields, definitions, documents)
+    history_by_field_version: dict[tuple[str, str], list[CatalogCimaDecisionRead]] = {}
+    if fields:
+        history = session.scalars(
+            select(CatalogCimaReviewDecision)
+            .where(CatalogCimaReviewDecision.field_value_id.in_([item.id for item in fields]))
+            .order_by(
+                CatalogCimaReviewDecision.field_value_id,
+                CatalogCimaReviewDecision.sequence,
+            )
+        ).all()
+        for row in history:
+            history_by_field_version.setdefault(
+                (row.field_value_id, row.document_version_id), []
+            ).append(
+                CatalogCimaDecisionRead(
+                    sequence=row.sequence,
+                    field_value_id=row.field_value_id,
+                    document_version_id=row.document_version_id,
+                    section_locator=row.section_locator,
+                    section_content_hash=row.section_content_hash,
+                    comparison_status=row.comparison_status,
+                    action=row.action,
+                    corrected_value=row.corrected_value,
+                    actor_id=row.actor_id,
+                    actor_assurance=row.actor_assurance,
+                    reason=row.reason,
+                    recorded_at=row.recorded_at.isoformat(),
+                )
+            )
+    return [
+        CatalogCimaComparisonRead(
+            field_value_id=item.field_value_id,
+            block_type=item.block_type,
+            occurrence=item.occurrence,
+            field_name=item.field_name,
+            source_column_index=item.source_column_index,
+            master_value=item.master_value,
+            catalog_field_id=item.catalog_field_id,
+            catalog_classification=item.catalog_classification,
+            document_name=item.document_name,
+            document_version_id=item.document_version_id,
+            source_version=item.source_version,
+            content_hash=item.content_hash,
+            status=item.status,
+            reason=item.reason,
+            section_locators=list(item.section_locators),
+            decision_history=history_by_field_version.get(
+                (item.field_value_id, item.document_version_id or ""), []
+            ),
+        )
+        for item in comparisons
+    ]
+
+
+@router.post(
+    "/identities/{identity_id}/cima-comparisons/{field_value_id}/decisions",
+    response_model=CatalogCimaDecisionRead,
+    status_code=201,
+)
+def decide_cima_comparison(
+    identity_id: str,
+    field_value_id: str,
+    payload: CatalogCimaDecisionWrite,
+    session: SessionDependency,
+    directory: DirectoryDependency,
+) -> CatalogCimaDecisionRead:
+    identity = session.get(MedicationCatalogIdentity, identity_id)
+    if identity is None:
+        raise ApplicationError("Identidad de catálogo no encontrada.", status_code=404)
+    if identity.target_record_id is None:
+        raise ApplicationError(
+            "La identidad no tiene registro fuente asociado.",
+            status_code=422,
+        )
+    reviewer = _reviewer(directory, payload.actor_id)
+    reason = payload.reason.strip()
+    if not reason:
+        raise ApplicationError("Indique el motivo de la decisión.", status_code=422)
+
+    fields, definitions, documents = _comparison_inputs(session, identity.target_record_id)
+    comparison_field = next((item for item in fields if item.id == field_value_id), None)
+    if comparison_field is None:
+        raise ApplicationError("El campo no pertenece al registro del expediente.", status_code=404)
+    document = next(
+        (item for item in documents if item.document_version_id == payload.document_version_id),
+        None,
+    )
+    if document is None:
+        raise ApplicationError(
+            "La versión CIMA no está vinculada como ficha técnica a este registro.",
+            status_code=422,
+        )
+    result = next(
+        (
+            item
+            for item in compare_master_fields((comparison_field,), definitions, (document,))
+            if item.document_version_id == payload.document_version_id
+        ),
+        None,
+    )
+    if result is None or result.catalog_field_id is None or result.status == "no_comparable":
+        raise ApplicationError(
+            "El campo no tiene un mapeo unívoco que permita decidir esta comparación.",
+            status_code=422,
+        )
+    if (
+        result.status == "requiere_criterio"
+        and payload.action in {"revisado", "corregir"}
+        and reviewer.role != "farmaceutico"
+    ):
+        raise ApplicationError(
+            "Esta decisión exige un revisor con rol farmacéutico.", status_code=403
+        )
+    if payload.section_locator not in result.section_locators:
+        raise ApplicationError(
+            "El apartado no pertenece a la evidencia candidata de este campo.",
+            status_code=422,
+        )
+    section_rows = [
+        section for section in document.sections if section.locator == payload.section_locator
+    ]
+    if not section_rows:
+        raise ApplicationError(
+            "El apartado citado no está en la versión archivada.",
+            status_code=422,
+        )
+    section_texts = {item.literal_text for item in section_rows}
+    if len(section_texts) != 1:
+        raise ApplicationError(
+            "El apartado está duplicado con contenido distinto en la versión archivada.",
+            status_code=409,
+        )
+    evidence_hash = hashlib.sha256(next(iter(section_texts)).encode("utf-8")).hexdigest()
+
+    if payload.action == "corregir":
+        if payload.corrected_value is None or not payload.corrected_value.strip():
+            raise ApplicationError(
+                "Indique el valor de trabajo que desea guardar.",
+                status_code=422,
+            )
+    elif payload.corrected_value is not None:
+        raise ApplicationError(
+            "El valor corregido solo se admite con la acción corregir.", status_code=422
+        )
+
+    value = session.get(FieldValue, field_value_id)
+    assert value is not None
+    maintenance = session.scalars(
+        select(FieldMaintenanceRevision)
+        .where(FieldMaintenanceRevision.field_value_id == field_value_id)
+        .order_by(FieldMaintenanceRevision.sequence.desc())
+        .limit(1)
+    ).first()
+    current_sequence = maintenance.sequence if maintenance else 0
+    if current_sequence != payload.expected_maintenance_sequence:
+        raise ApplicationError(
+            "El valor de trabajo cambió desde que abrió la comparación. Recargue el expediente.",
+            status_code=409,
+        )
+    current_value = maintenance.after_value if maintenance else value.literal_value
+    next_sequence = session.scalar(
+        select(func.max(CatalogCimaReviewDecision.sequence)).where(
+            CatalogCimaReviewDecision.field_value_id == field_value_id
+        )
+    )
+    decision = CatalogCimaReviewDecision(
+        field_value_id=field_value_id,
+        sequence=(next_sequence or 0) + 1,
+        document_version_id=payload.document_version_id,
+        catalog_field_definition_id=result.catalog_field_id,
+        section_locator=payload.section_locator,
+        section_content_hash=evidence_hash,
+        comparison_status=result.status,
+        action=payload.action,
+        corrected_value=payload.corrected_value,
+        actor_id=reviewer.identifier,
+        actor_assurance=reviewer.assurance,
+        reason=reason,
+        recorded_at=datetime.now(UTC),
+    )
+    session.add(decision)
+    if payload.action == "corregir":
+        session.add(
+            FieldMaintenanceRevision(
+                field_value_id=field_value_id,
+                sequence=current_sequence + 1,
+                before_value=current_value,
+                after_value=payload.corrected_value,
+                actor_id=reviewer.identifier,
+                actor_assurance=reviewer.assurance,
+                reason=reason,
+                recorded_at=decision.recorded_at,
+            )
+        )
+    try:
+        session.commit()
+    except IntegrityError as error:
+        session.rollback()
+        raise ApplicationError(
+            "La comparación cambió en paralelo. Recargue antes de decidir.", status_code=409
+        ) from error
+    return CatalogCimaDecisionRead(
+        sequence=decision.sequence,
+        field_value_id=decision.field_value_id,
+        document_version_id=decision.document_version_id,
+        section_locator=decision.section_locator,
+        section_content_hash=decision.section_content_hash,
+        comparison_status=decision.comparison_status,
+        action=decision.action,
+        corrected_value=decision.corrected_value,
+        actor_id=decision.actor_id,
+        actor_assurance=decision.actor_assurance,
+        reason=decision.reason,
+        recorded_at=decision.recorded_at.isoformat(),
+    )
+
+
 @router.post("/identities", response_model=CatalogIdentityRead, status_code=201)
 def add_identity(
     payload: CatalogIdentityCreate,
@@ -375,9 +832,10 @@ def add_identity(
     directory: DirectoryDependency,
 ) -> CatalogIdentityRead:
     reviewer = _reviewer(directory, payload.actor_id)
-    if payload.target_record_id is not None and session.get(
-        TargetRecord, payload.target_record_id
-    ) is None:
+    if (
+        payload.target_record_id is not None
+        and session.get(TargetRecord, payload.target_record_id) is None
+    ):
         raise ApplicationError("Registro canónico relacionado no encontrado.", status_code=404)
     try:
         row = create_identity(
@@ -440,9 +898,7 @@ def change_identity(
 
 
 @router.get("/identities/{identity_id}/history", response_model=list[CatalogRevisionRead])
-def identity_history(
-    identity_id: str, session: SessionDependency
-) -> list[CatalogRevisionRead]:
+def identity_history(identity_id: str, session: SessionDependency) -> list[CatalogRevisionRead]:
     if session.get(MedicationCatalogIdentity, identity_id) is None:
         raise ApplicationError("Identidad de catálogo no encontrada.", status_code=404)
     rows = session.scalars(
@@ -465,12 +921,8 @@ def identity_history(
     ]
 
 
-@router.get(
-    "/identities/{identity_id}/relations", response_model=list[CatalogRelationRead]
-)
-def identity_relations(
-    identity_id: str, session: SessionDependency
-) -> list[CatalogRelationRead]:
+@router.get("/identities/{identity_id}/relations", response_model=list[CatalogRelationRead])
+def identity_relations(identity_id: str, session: SessionDependency) -> list[CatalogRelationRead]:
     if session.get(MedicationCatalogIdentity, identity_id) is None:
         raise ApplicationError("Identidad de catálogo no encontrada.", status_code=404)
     rows = session.scalars(
@@ -605,13 +1057,19 @@ def set_classification(
             "La clasificación de la ruta no coincide con el contenido.", status_code=422
         )
     if payload.classification_type == "commercial_class" and payload.value not in {
-        "original", "generico", "biosimilar", "sin_clasificar"
+        "original",
+        "generico",
+        "biosimilar",
+        "sin_clasificar",
     }:
         raise ApplicationError(
             "La clase comercial no pertenece al catálogo permitido.", status_code=422
         )
     if payload.classification_type == "condition" and payload.value not in {
-        "huerfano", "estupefaciente", "psicotropico", "especial_control_medico",
+        "huerfano",
+        "estupefaciente",
+        "psicotropico",
+        "especial_control_medico",
         "uso_hospitalario",
     }:
         raise ApplicationError("La condición no pertenece al catálogo permitido.", status_code=422)
@@ -636,8 +1094,7 @@ def set_classification(
         if payload.classification_type == "commercial_class" and payload.active:
             current_classes = list(
                 session.scalars(
-                    select(MedicationCatalogClassification)
-                    .where(
+                    select(MedicationCatalogClassification).where(
                         MedicationCatalogClassification.presentation_identity_id == identity_id,
                         MedicationCatalogClassification.classification_type == "commercial_class",
                         MedicationCatalogClassification.active.is_(True),

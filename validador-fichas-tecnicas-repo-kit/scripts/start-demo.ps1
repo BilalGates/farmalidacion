@@ -63,7 +63,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'docker compose ha fallado.' }
 
     Write-Step 'Esperando a que los servicios respondan'
-    $backendOk = Wait-Endpoint "$BackendUrl/health" 'Backend'
+    $backendOk = Wait-Endpoint "$BackendUrl/ready" 'Backend'
     $frontendOk = Wait-Endpoint $FrontendUrl 'Frontend'
     if (-not ($backendOk -and $frontendOk)) {
         Write-Host ''
@@ -72,6 +72,9 @@ try {
     }
 
     $info = Invoke-RestMethod -Uri "$BackendUrl/database-info" -TimeoutSec 5
+    if (-not $info.consistent) {
+        throw 'La base DEMO no contiene exclusivamente registros de demostracion.'
+    }
     Write-Host ''
     Write-Host "    modo      : $($info.mode)"
     Write-Host "    base      : $($info.database) ($($info.backend))"

@@ -31,9 +31,7 @@ class MaintenanceRefreshError(RuntimeError):
 
 
 class MaintenanceClient(Protocol):
-    def changes(
-        self, *, date: str, nregistros: Sequence[str] = ()
-    ) -> CimaResponse: ...
+    def changes(self, *, date: str, nregistros: Sequence[str] = ()) -> CimaResponse: ...
 
     def medication(
         self,
@@ -42,6 +40,8 @@ class MaintenanceClient(Protocol):
         cn: str | None = None,
         use_cache: bool = True,
     ) -> CimaResponse: ...
+
+    def presentation(self, *, cn: str, use_cache: bool = True) -> CimaResponse: ...
 
     def sections(
         self, *, nregistro: str, document_type: int = 1, use_cache: bool = True
@@ -142,9 +142,7 @@ def _current_version(
     ).first()
 
 
-def _copy_links(
-    session: Session, *, old_version_id: str, new_version_id: str
-) -> None:
+def _copy_links(session: Session, *, old_version_id: str, new_version_id: str) -> None:
     links = session.scalars(
         select(DocumentRecordLink).where(DocumentRecordLink.document_version_id == old_version_id)
     ).all()
@@ -180,7 +178,9 @@ def _affected_values(
             .join(ValueProvenance, ValueProvenance.field_value_id == FieldValue.id)
             .where(ValueProvenance.source_fragment_id.in_(fragment_ids))
             .order_by(FieldValue.id)
-        ).unique().all()
+        )
+        .unique()
+        .all()
     )
 
 
@@ -261,9 +261,7 @@ def refresh_technical_sheet(
             )
         )
         _copy_links(session, old_version_id=old.id, new_version_id=persisted.version_id)
-        values = _affected_values(
-            session, old_version_id=old.id, changed_sections=changed_sections
-        )
+        values = _affected_values(session, old_version_id=old.id, changed_sections=changed_sections)
         marked = _mark_pending(
             session,
             values=values,

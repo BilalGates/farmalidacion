@@ -61,7 +61,7 @@ def test_pending_days_resume_after_last_completed_date(tmp_path: Path) -> None:
             through_date=date(2026, 9, 8),
         )
         assert [run.requested_date for run in runs] == ["07/09/2026", "08/09/2026"]
-        assert next_pending_date(session, start_date=date(2020, 1, 1)) == date(2026, 9, 9)
+        assert next_pending_date(session, start_date=date(2026, 9, 7)) == date(2026, 9, 9)
         assert run_pending_days(
             session,
             client=client,  # type: ignore[arg-type]
@@ -93,3 +93,22 @@ def test_failure_is_visible_and_next_attempt_retries_same_day(tmp_path: Path) ->
         )
         assert recovered.attempt == 2
         assert recovered.status == "completed"
+
+
+def test_pending_days_fill_gap_before_later_completed_day(tmp_path: Path) -> None:
+    session = session_for(tmp_path)
+    with session:
+        run_one_day(
+            session,
+            client=ChangesClient(),  # type: ignore[arg-type]
+            day=date(2026, 9, 9),
+            now=fixed_now,
+        )
+        assert next_pending_date(session, start_date=date(2026, 9, 7)) == date(2026, 9, 7)
+        runs = run_pending_days(
+            session,
+            client=ChangesClient(),  # type: ignore[arg-type]
+            start_date=date(2026, 9, 7),
+            through_date=date(2026, 9, 9),
+        )
+        assert [run.requested_date for run in runs] == ["07/09/2026", "08/09/2026"]

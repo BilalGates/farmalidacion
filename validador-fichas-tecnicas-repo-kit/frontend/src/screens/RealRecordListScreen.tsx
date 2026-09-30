@@ -4,7 +4,10 @@ import { fetchCatalogIdentities } from '../api/client'
 import type { CatalogIdentitySort, CatalogIdentityType, CatalogSourceWorkbook } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
+import { FilterWorkspace } from '../components/FilterWorkspace'
+import { PageHeader } from '../components/PageHeader'
 import { orDash } from '../domain/format'
+import { CATALOG_LIST_STATE_KEY } from '../domain/catalogSourceNavigation'
 import { navigate } from '../navigation'
 
 /**
@@ -78,7 +81,6 @@ const CONDITION_LABELS: Record<string, string> = {
   uso_hospitalario: 'Uso hospitalario',
 }
 
-const LIST_STATE_KEY = 'farmalidacion.catalog-list-state'
 interface CatalogListState {
   term: string
   query: string
@@ -96,7 +98,7 @@ interface CatalogListState {
 
 function readListState(): Partial<CatalogListState> {
   try {
-    const value: unknown = JSON.parse(sessionStorage.getItem(LIST_STATE_KEY) ?? 'null')
+    const value: unknown = JSON.parse(sessionStorage.getItem(CATALOG_LIST_STATE_KEY) ?? 'null')
     if (!value || typeof value !== 'object') return {}
     const saved = value as Partial<CatalogListState>
     const sourceView = SOURCE_VIEWS.find((item) => item.value === saved.sourceWorkbook)
@@ -143,6 +145,8 @@ export function RealRecordListScreen() {
   const [sortBy, setSortBy] = useState<CatalogIdentitySort>(initialState.sortBy ?? 'name_asc')
   const [retryKey, setRetryKey] = useState(0)
   const resultsRef = useRef<HTMLDivElement>(null)
+  const tableScrollRef = useRef<HTMLDivElement>(null)
+  const [tableOverflows, setTableOverflows] = useState(false)
   const requestedOffset = useRef(offset)
   const restoredPosition = useRef(false)
 
@@ -153,7 +157,7 @@ export function RealRecordListScreen() {
       tableScrollLeft: initialState.tableScrollLeft ?? 0,
       windowScrollY: initialState.windowScrollY ?? 0,
     }
-    try { sessionStorage.setItem(LIST_STATE_KEY, JSON.stringify(state)) } catch { /* almacenamiento opcional */ }
+    try { sessionStorage.setItem(CATALOG_LIST_STATE_KEY, JSON.stringify(state)) } catch { /* almacenamiento opcional */ }
   }, [term, query, offset, entityType, sourceWorkbook, showArchived, commercialClass, conditions, sortBy])
 
   function toggleCondition(value: string) {
@@ -217,6 +221,17 @@ export function RealRecordListScreen() {
   )
 
   useEffect(() => {
+    const table = tableScrollRef.current
+    if (!table) return
+    const measure = () => setTableOverflows(table.scrollWidth > table.clientWidth + 1)
+    measure()
+    window.addEventListener('resize', measure)
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    observer?.observe(table)
+    return () => { window.removeEventListener('resize', measure); observer?.disconnect() }
+  }, [data, loading])
+
+  useEffect(() => {
     requestedOffset.current = offset
   }, [offset])
 
@@ -235,8 +250,8 @@ export function RealRecordListScreen() {
   function openIdentity(identityId: string) {
     const table = resultsRef.current?.querySelector<HTMLElement>('.catalog-table-scroll')
     try {
-      const saved = JSON.parse(sessionStorage.getItem(LIST_STATE_KEY) ?? '{}') as Partial<CatalogListState>
-      sessionStorage.setItem(LIST_STATE_KEY, JSON.stringify({
+      const saved = JSON.parse(sessionStorage.getItem(CATALOG_LIST_STATE_KEY) ?? '{}') as Partial<CatalogListState>
+      sessionStorage.setItem(CATALOG_LIST_STATE_KEY, JSON.stringify({
         ...saved,
         tableScrollTop: table?.scrollTop ?? 0,
         tableScrollLeft: table?.scrollLeft ?? 0,
@@ -275,113 +290,97 @@ export function RealRecordListScreen() {
   }, [data, initialState.tableScrollLeft, initialState.tableScrollTop, initialState.windowScrollY, loading])
 
   return (
-    <div className='screen'>
-      <div className='screen__head'>
-        <div>
-          <p className='eyebrow'>Catálogo</p>
-          <h1>Catálogo de medicamentos</h1>
-          <p className='lede'>
-            Elija primero el libro original —Especialidades, Medicamentos o Principios activos—
-            para trabajar en una vista separada. La tabla se pagina en el servidor.
-          </p>
-        </div>
-      </div>
-
-      <p className='origin-notice origin-notice--real'>
-        Estado canónico editable. El valor fuente y su historial se conservan por separado.
-      </p>
-
-      <form className='toolbar' onSubmit={search} role='search'>
-        <label className='field'>
-          <span className='field__label'>Buscar</span>
-          <input
-            type='search'
-            value={term}
-            placeholder='CN, nombre, identificador o principio activo'
-            onChange={(event) => setTerm(event.target.value)}
-          />
-        </label>
-        <button type='submit' className='button button--primary'>
-          Buscar
-        </button>
-        <label className='field catalog-sort-control'>
-          <span className='field__label'>Ordenar por</span>
-          <select value={sortBy} onChange={(event) => { setOffset(0); setSortBy(event.target.value as CatalogIdentitySort) }}>
-            {SORT_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-          </select>
-        </label>
-        <div className='filters catalog-source-views' role='group' aria-label='Libro Excel de origen'>
-          <button type='button' className={`chip${sourceWorkbook === null ? ' chip--active' : ''}`} aria-pressed={sourceWorkbook === null} onClick={() => selectSourceView(null)}>Todo el catálogo</button>
-          {SOURCE_VIEWS.map((item) => (
-            <button
-              key={item.value}
-              type='button'
-              className={`chip${sourceWorkbook === item.value ? ' chip--active' : ''}`}
-              aria-pressed={sourceWorkbook === item.value}
-              onClick={() => selectSourceView(item)}
-            >
-              {item.label}
-            </button>
-          ))}
-          <span className='catalog-source-views__future'>Interacciones · pendiente de incorporar</span>
-        </div>
-        {sourceWorkbook === null ? <div className='filters' role='group' aria-label='Nivel farmacéutico del catálogo'>
-          {ENTITY_FILTERS.map((item) => <button key={item.label} type='button' className={`chip${entityType === item.value ? ' chip--active' : ''}`} aria-pressed={entityType === item.value} onClick={() => selectEntityType(item.value)}>{item.label}</button>)}
-        </div> : <p className='catalog-source-context'>Vista del libro: <strong>{SOURCE_LABELS[sourceWorkbook]}</strong> · tipo de registro: <strong>{ENTITY_LABELS[entityType ?? ''] ?? entityType}</strong></p>}
-        {(entityType === null || entityType === 'presentation') && <>
-          <div className='filters' role='group' aria-label='Clase comercial'>
-            {CLASSIFICATION_FILTERS.map((item) => <button
-              key={item.label}
-              type='button'
-              className={`chip${commercialClass === item.value ? ' chip--active' : ''}`}
-              aria-pressed={commercialClass === item.value}
-              onClick={() => selectCommercialClass(item.value)}
-            >{item.label}</button>)}
-          </div>
-          <fieldset className='catalog-condition-filter'>
-            <legend>Condiciones</legend>
-            <div className='catalog-condition-filter__options'>
-              {CONDITION_FILTERS.map((item) => <label key={item.value}>
-                <input type='checkbox' checked={conditions.includes(item.value)} onChange={() => toggleCondition(item.value)} />
-                {item.label}
-              </label>)}
+    <div className='screen catalog-screen'>
+      <FilterWorkspace
+        title='Filtros del catálogo'
+        storageKey='farmalidacion.filters.catalog.closed'
+        className='catalog-filter-workspace'
+        activeCount={activeFilterCount}
+        filters={
+          <>
+            <form className='toolbar catalog-search-toolbar' onSubmit={search} role='search'>
+              <label className='field'>
+                <span className='field__label'>Buscar</span>
+                <input type='search' value={term} placeholder='CN, nombre o principio activo' onChange={(event) => setTerm(event.target.value)} />
+              </label>
+              <button type='submit' className='button button--primary'>Buscar</button>
+              <label className='field catalog-sort-control'>
+                <span className='field__label'>Ordenar por</span>
+                <select value={sortBy} onChange={(event) => { setOffset(0); setSortBy(event.target.value as CatalogIdentitySort) }}>
+                  {SORT_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                </select>
+              </label>
+            </form>
+            <div className='filter-group'>
+              <span className='field__label'>Libro de origen</span>
+              <div className='filter-choice-list' role='group' aria-label='Libro Excel de origen'>
+                <button type='button' className={`chip${sourceWorkbook === null ? ' chip--active' : ''}`} aria-pressed={sourceWorkbook === null} onClick={() => selectSourceView(null)}>Todo el catálogo</button>
+                {SOURCE_VIEWS.map((item) => <button key={item.value} type='button' className={`chip${sourceWorkbook === item.value ? ' chip--active' : ''}`} aria-pressed={sourceWorkbook === item.value} onClick={() => selectSourceView(item)}>{item.label}</button>)}
+              </div>
             </div>
-            <small className='field__hint'>Al marcar varias, se muestran los registros que cumplen todas.</small>
-          </fieldset>
-        </>}
-        <label className='catalog-toggle'>
-          <input
-            type='checkbox'
-            checked={showArchived}
-            onChange={(event) => { setOffset(0); setShowArchived(event.target.checked) }}
-          />
-          Incluir archivados
-        </label>
-        <button type='button' className='button button--ghost' onClick={clearFilters} disabled={activeFilterCount === 0 && !term}>
-          Limpiar filtros{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
-        </button>
-      </form>
-
+            {sourceWorkbook === null ? (
+              <div className='filter-group'>
+                <span className='field__label'>Nivel farmacéutico</span>
+                <div className='filter-choice-list' role='group' aria-label='Nivel farmacéutico del catálogo'>
+                  {ENTITY_FILTERS.map((item) => <button key={item.label} type='button' className={`chip${entityType === item.value ? ' chip--active' : ''}`} aria-pressed={entityType === item.value} onClick={() => selectEntityType(item.value)}>{item.label}</button>)}
+                </div>
+              </div>
+            ) : <p className='catalog-source-context'>Libro: <strong>{SOURCE_LABELS[sourceWorkbook]}</strong><br />Tipo: <strong>{ENTITY_LABELS[entityType ?? ''] ?? entityType}</strong></p>}
+            {(entityType === null || entityType === 'presentation') && <>
+              <div className='filter-group'>
+                <span className='field__label'>Clase comercial</span>
+                <div className='filter-choice-list' role='group' aria-label='Clase comercial'>
+                  {CLASSIFICATION_FILTERS.map((item) => <button key={item.label} type='button' className={`chip${commercialClass === item.value ? ' chip--active' : ''}`} aria-pressed={commercialClass === item.value} onClick={() => selectCommercialClass(item.value)}>{item.label}</button>)}
+                </div>
+              </div>
+              <fieldset className='filter-group catalog-condition-filter'>
+                <legend>Condiciones</legend>
+                <div className='catalog-condition-filter__options'>
+                  {CONDITION_FILTERS.map((item) => <label key={item.value}>
+                    <input type='checkbox' checked={conditions.includes(item.value)} onChange={() => toggleCondition(item.value)} />
+                    {item.label}
+                  </label>)}
+                </div>
+                <small className='field__hint'>Al marcar varias, se muestran registros que cumplen todas.</small>
+              </fieldset>
+            </>}
+            <label className='catalog-toggle'>
+              <input type='checkbox' checked={showArchived} onChange={(event) => { setOffset(0); setShowArchived(event.target.checked) }} />
+              Incluir archivados
+            </label>
+            <button type='button' className='button button--secondary filter-reset' onClick={clearFilters} disabled={activeFilterCount === 0 && !term}>
+              Limpiar filtros{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
+            </button>
+          </>
+        }
+      >
       <div ref={resultsRef} tabIndex={-1} aria-label='Resultados del catálogo' className='catalog-results'>
+        <PageHeader className='catalog-results__head' title='Catálogo' description='Explora medicamentos, presentaciones y principios activos.' />
+        {activeFilterCount > 0 && <div className='catalog-active-filters' aria-label='Filtros activos' onClickCapture={() => window.requestAnimationFrame(() => resultsRef.current?.focus({ preventScroll: true }))}>
+          <span className='catalog-active-filters__label'>Filtros activos</span>
+          {query && <button type='button' className='chip' onClick={() => { setQuery(''); setTerm(''); setOffset(0) }}>Búsqueda: {query} ×</button>}
+          {sourceWorkbook && <button type='button' className='chip' onClick={() => selectSourceView(null)}>Libro: {SOURCE_LABELS[sourceWorkbook]} ×</button>}
+          {entityType && !sourceWorkbook && <button type='button' className='chip' onClick={() => selectEntityType(null)}>Nivel: {ENTITY_LABELS[entityType] ?? entityType} ×</button>}
+          {commercialClass && <button type='button' className='chip' onClick={() => { setCommercialClass(null); setOffset(0) }}>Clase: {CLASS_LABELS[commercialClass] ?? commercialClass} ×</button>}
+          {conditions.map((value) => <button key={value} type='button' className='chip' onClick={() => toggleCondition(value)}>Condición: {CONDITION_LABELS[value] ?? value} ×</button>)}
+          {showArchived && <button type='button' className='chip' onClick={() => { setShowArchived(false); setOffset(0) }}>Incluye archivados ×</button>}
+        </div>}
         <AsyncBoundary
         loading={loading}
         error={error}
         empty={(data?.total ?? 0) === 0}
-        emptyTitle={query ? 'La búsqueda no devuelve resultados' : 'No hay identidades en este nivel'}
+        emptyTitle={activeFilterCount > 0 ? 'No hay resultados con estos filtros' : 'No hay identidades en el catálogo'}
         emptyDetail={
-          query
-            ? `Ninguna identidad del catálogo contiene «${query}» en su descripción o código.`
-            : 'Este nivel todavía no se ha podido proyectar desde una fuente fiable.'
+          activeFilterCount > 0
+            ? 'Pruebe con otros criterios o limpie los filtros para consultar todo el catálogo.'
+            : 'Todavía no hay identidades disponibles. Consulte el estado de las fuentes de datos.'
         }
+        emptyAction={activeFilterCount > 0 ? <button type='button' className='button button--secondary' onClick={clearFilters}>Limpiar filtros</button> : undefined}
         onRetry={() => setRetryKey((k) => k + 1)}
       >
         {data && (
           <>
-            <p className='muted catalog-list-summary' aria-live='polite' aria-atomic='true'>
-              <span><strong>{data.total.toLocaleString('es-ES')}</strong> registros{activeFilterCount > 0 ? ` · ${activeFilterCount} filtros activos` : ''}</span>
-              <span>Mostrando {firstResult.toLocaleString('es-ES')}–{lastResult.toLocaleString('es-ES')} · página {page} de {pages}</span>
-            </p>
-            <div className='catalog-table-scroll' role='region' aria-label='Tabla de registros; desplazamiento horizontal disponible' tabIndex={0}>
+            <div ref={tableScrollRef} className='catalog-table-scroll' role='region' aria-label={tableOverflows ? 'Tabla de registros; desplazamiento horizontal disponible' : 'Tabla de registros'} tabIndex={tableOverflows ? 0 : undefined}>
               <table className='table'>
                 <caption className='visually-hidden'>Resultados del catálogo de medicamentos</caption>
                 <thead>
@@ -419,7 +418,12 @@ export function RealRecordListScreen() {
               </table>
             </div>
 
-            <div className='pagination'>
+            <div className='catalog-results__footer'>
+              <p className='muted catalog-list-summary' aria-live='polite' aria-atomic='true'>
+                <span><strong>{data.total.toLocaleString('es-ES')}</strong> registros{activeFilterCount > 0 ? ` · ${activeFilterCount} filtros activos` : ''}</span>
+                <span>Mostrando {firstResult.toLocaleString('es-ES')}–{lastResult.toLocaleString('es-ES')} · página {page} de {pages}</span>
+              </p>
+              <div className='pagination'>
               <button
                 type='button'
                 className='button'
@@ -436,12 +440,13 @@ export function RealRecordListScreen() {
               >
                 Siguiente
               </button>
+              </div>
             </div>
           </>
         )}
         </AsyncBoundary>
       </div>
+      </FilterWorkspace>
     </div>
   )
 }
-export { RecordsWorkspace as RealRecordListScreen } from './RecordsWorkspace'

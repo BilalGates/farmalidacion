@@ -15,6 +15,7 @@ from pharma_validator_api.catalog_importer import (
     Cell,
     _iter_rows,
     _shared_strings,
+    _sheet_names,
     _sheet_path,
     _validate_archive,
 )
@@ -107,6 +108,8 @@ def _parse_workbook(path: Path) -> list[ParsedSheet]:
     _validate_archive(path)
     parsed = []
     with zipfile.ZipFile(path) as archive:
+        if _sheet_names(archive) != tuple(name for name, _ in SHEETS):
+            raise ActiveIngredientImportError("El inventario de hojas no coincide con el libro.")
         strings = _shared_strings(archive)
         for ordinal, (sheet_name, block_type) in enumerate(SHEETS, start=1):
             rows = _iter_rows(archive, _sheet_path(archive, sheet_name), strings)

@@ -11,9 +11,11 @@ import {
 } from '../api/client'
 import type { CatalogClassification, CatalogIdentity, CatalogRelation, CatalogRevision, Reviewer } from '../api/types'
 import { AsyncBoundary } from '../components/AsyncState'
+import { PageHeader } from '../components/PageHeader'
 import { formatDateTime, orDash } from '../domain/format'
 import { navigate } from '../navigation'
 import { SourceFieldsMaintenance } from './CatalogSourceFields'
+import { CatalogCimaDocumentReader } from './CatalogCimaDocument'
 
 const TYPE_LABELS: Record<string, string> = {
   commercial_product: 'Producto comercial', authorization: 'Autorización',
@@ -135,16 +137,11 @@ export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
       </button>
       <AsyncBoundary loading={loading} error={error?.message ?? null} empty={!identity} emptyTitle='Expediente no disponible' emptyDetail='La identidad solicitada no existe o ya no está accesible.' onRetry={() => void load()}>
         {identity && <>
-          <header className='catalog-record__head'>
-            <div>
-              <p className='eyebrow'>{TYPE_LABELS[identity.identity_type] ?? identity.identity_type}</p>
-              <h1>{identity.display_name}</h1>
-              <p className='lede'>Código <strong>{orDash(identity.code)}</strong> · versión editable {identity.version}</p>
-            </div>
-            <span className={`badge ${identity.active ? 'badge--validado' : 'badge--descartado'}`}>
+          <PageHeader eyebrow={TYPE_LABELS[identity.identity_type] ?? identity.identity_type} title={identity.display_name}
+            description={<>Código <strong>{orDash(identity.code)}</strong> · versión editable {identity.version}</>}
+            actions={<span className={`badge ${identity.active ? 'badge--validado' : 'badge--descartado'}`}>
               {identity.active ? 'Vigente' : 'Archivado'}
-            </span>
-          </header>
+            </span>} />
 
           {notice && <p className='alert alert--ok' role='status'>{notice}</p>}
           {saveError && <p className='alert alert--error' role='alert'>{saveError}</p>}
@@ -170,6 +167,8 @@ export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
           </div>
 
           {identity.target_record_id && <SourceFieldsMaintenance recordId={identity.target_record_id} reviewer={reviewer} />}
+
+          <CatalogCimaDocumentReader identityId={identity.id} recordId={identity.target_record_id} reviewerId={reviewer?.identifier ?? ''} />
 
           <section className='panel catalog-relations' aria-labelledby='catalog-relations-title'>
             <div className='panel__head'><div><p className='eyebrow'>Estructura farmacéutica</p><h2 id='catalog-relations-title'><GitBranch size={18} aria-hidden='true' /> Relaciones y composición</h2></div></div>

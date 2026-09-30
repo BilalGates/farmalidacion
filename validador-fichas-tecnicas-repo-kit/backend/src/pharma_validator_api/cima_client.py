@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
@@ -334,6 +335,11 @@ class CimaClient:
             "/presentaciones",
             params=[("nregistro", nregistro), ("pagina", str(pagina))],
         )
+
+    def presentation(self, *, cn: str, use_cache: bool = True) -> CimaResponse:
+        if not cn or cn != cn.strip():
+            raise ValueError("El código nacional CIMA debe ser texto no vacío sin espacios.")
+        return self.get(f"/presentacion/{quote(cn, safe='')}", use_cache=use_cache)
 
     def sections(
         self, *, nregistro: str, document_type: int = 1, use_cache: bool = True

@@ -8,7 +8,7 @@ DEV-106 establece una única superficie de verificación para el repositorio.
 | `lint` | estilo estático de Python y TypeScript | Ruff y ESLint incluidos en `verify` |
 | `typecheck` | tipos de backend y frontend | mypy estricto; TypeScript incluido en el build |
 | `verify` | tests, lint, tipos, build, referencias, Compose y migraciones | `python scripts/verify_project.py` |
-| `up` | levantar el entorno local | `docker compose up --build --detach --wait` |
+| `up` | levantar el entorno local | `docker compose --profile demo up --build --detach --wait` o `--profile real` con la base ya importada |
 
 El gate canónico completo es:
 
@@ -17,7 +17,7 @@ python scripts/verify_project.py
 ```
 
 Ejecuta pytest, Ruff, mypy estricto, Vitest, ESLint, build TypeScript/Vite,
-validación de Compose, hashes de las ocho referencias y upgrade/downgrade de
+validación de los perfiles DEMO y REAL de Compose, hashes de las ocho referencias y upgrade/downgrade de
 Alembic sobre una base SQLite temporal.
 
 En CI se usa `python scripts/verify_project.py --skip-references` porque los
@@ -27,10 +27,13 @@ remoto; el resto del gate es idéntico.
 Los comandos operativos de contenedores son:
 
 ```text
-docker compose up --build --detach --wait
-docker compose down
+docker compose --profile demo up --build --detach --wait
+docker compose --profile demo down
 ```
 
+Para trabajar con los tres maestros ya importados, sustituya `demo` por `real`.
+No arranque ambos perfiles a la vez: usan los mismos puertos. Los scripts
+`start-demo.ps1` y `start-real.ps1` añaden comprobaciones de salud y de base.
 No deben crearse convenciones paralelas por componente.
 
 El muestreo CIMA se ejecuta sobre páginas originales ya cacheadas y con una base

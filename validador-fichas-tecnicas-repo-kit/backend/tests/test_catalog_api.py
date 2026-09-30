@@ -1,16 +1,123 @@
-from datetime import UTC, datetime
+import hashlib
+from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
 
 from pharma_validator_api.config import Settings
 from pharma_validator_api.main import create_app
 from pharma_validator_api.models import (
+    DocumentRecordLink,
     MedicationCatalogIdentity,
     MedicationCatalogRelation,
     SourceDocument,
+    SourceDocumentArtifact,
     SourceDocumentVersion,
     SourceFragment,
+    TargetRecord,
 )
+
+
+def test_cima_reader_uses_only_latest_explicitly_linked_version(scratch_db_url: str) -> None:
+    api = client(scratch_db_url)
+    with api.app.state.session_factory() as session:
+        session.add(TargetRecord(id="record-cima", entity_type="specialty"))
+        document = SourceDocument(id="cima-51347", source_type="cima_document_type_1", name="51347")
+        session.add(document)
+        session.flush()
+        for version_id, days, literal, link_type in (
+            ("old-cima", 1, "Texto anterior", "ft"),
+            ("new-cima", 0, "Texto vigente", "ft"),
+            ("unrelated-cima", -1, "No es una ficha enlazada", "metadata"),
+        ):
+            body = literal.encode()
+            session.add(SourceDocumentVersion(
+                id=version_id,
+                document_id=document.id,
+                content_hash=hashlib.sha256(body).hexdigest(),
+                source_version=version_id,
+                source_locator="CIMA",
+                acquired_at=datetime.now(UTC) - timedelta(days=days),
+            ))
+            session.flush()
+            session.add(SourceDocumentArtifact(
+                id=f"artifact-{version_id}", document_version_id=version_id,
+                artifact_role="section", ordinal=1, locator="4.2", source_url="https://cima.example.test",
+                status_code=200, media_type="text/plain", response_headers="[]",
+                content_hash=hashlib.sha256(body).hexdigest(), body=body,
+                fetched_at="2026-09-25T08:00:00Z",
+            ))
+            session.add(DocumentRecordLink(
+                id=f"link-{version_id}", document_version_id=version_id,
+                target_record_id="record-cima", link_type=link_type,
+            ))
+        session.commit()
+    assert api.post("/catalog/identities", json=create_payload(
+        id="presentation-cima", target_record_id="record-cima",
+    )).status_code == 201
+    assert api.post("/catalog/identities", json=create_payload(
+        id="presentation-unlinked", code="123456",
+    )).status_code == 201
+
+    response = api.get("/catalog/identities/presentation-cima/cima-documents")
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["document_version_id"] == "new-cima"
+    assert response.json()[0]["sections"] == [{"locator": "4.2", "literal_text": "Texto vigente"}]
+    assert api.get("/catalog/identities/presentation-unlinked/cima-documents").json() == []
+    assert api.get("/catalog/identities/absent/cima-documents").status_code == 404
+
+    with api.app.state.session_factory() as session:
+        session.connection().exec_driver_sql(
+            "UPDATE source_document_artifact SET body = ? WHERE id = ?",
+            (b"Texto alterado", "artifact-new-cima"),
+        )
+        session.commit()
+    damaged = api.get("/catalog/identities/presentation-cima/cima-documents")
+    assert damaged.status_code == 409
+    assert "integridad" in damaged.json()["detail"]
+
+
+def test_cima_reader_expands_archived_segmented_document(scratch_db_url: str) -> None:
+    api = client(scratch_db_url)
+    body = (
+        b'[{"seccion":"1","contenido":"<p>Composicion literal</p>"},'
+        b'{"seccion":"4.2","contenido":"Posologia literal"}]'
+    )
+    with api.app.state.session_factory() as session:
+        session.add(TargetRecord(id="record-segmented", entity_type="specialty"))
+        session.add(SourceDocument(
+            id="cima-segmented", source_type="cima_document_type_1", name="51347"
+        ))
+        session.flush()
+        session.add(SourceDocumentVersion(
+            id="version-segmented", document_id="cima-segmented",
+            content_hash=hashlib.sha256(body).hexdigest(), source_version=None,
+            source_locator="CIMA", acquired_at=datetime.now(UTC),
+        ))
+        session.flush()
+        session.add(SourceDocumentArtifact(
+            id="artifact-segmented", document_version_id="version-segmented",
+            artifact_role="full_document", ordinal=1, locator="completo",
+            source_url="https://cima.example.test", status_code=200,
+            media_type="application/json", response_headers="[]",
+            content_hash=hashlib.sha256(body).hexdigest(), body=body,
+            fetched_at="2026-09-25T08:00:00Z",
+        ))
+        session.add(DocumentRecordLink(
+            id="link-segmented", document_version_id="version-segmented",
+            target_record_id="record-segmented", link_type="ft",
+        ))
+        session.commit()
+    assert api.post("/catalog/identities", json=create_payload(
+        id="presentation-segmented", target_record_id="record-segmented",
+    )).status_code == 201
+
+    response = api.get("/catalog/identities/presentation-segmented/cima-documents")
+    assert response.status_code == 200
+    assert response.json()[0]["sections"] == [
+        {"locator": "1", "literal_text": "<p>Composicion literal</p>"},
+        {"locator": "4.2", "literal_text": "Posologia literal"},
+    ]
 
 
 def client(scratch_db_url: str) -> TestClient:

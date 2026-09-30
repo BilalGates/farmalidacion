@@ -97,6 +97,20 @@ def _seed(url: str) -> None:
                 source_document_version_id="ver-real",
             )
         )
+        session.add(
+            ImportBatch(
+                id="batch-catalog-definitions",
+                source_system="master_excel",
+                source_locator="Catalogo_campos_clinicos_medicamentos.xlsx",
+                source_version=None,
+                content_hash="d" * 64,
+                importer_name="catalog_fields",
+                importer_version="1.0.0",
+                status="completed",
+                created_at=datetime(2026, 9, 5, 10, 0, tzinfo=UTC),
+                completed_at=datetime(2026, 9, 5, 10, 0, tzinfo=UTC),
+            )
+        )
         session.flush()
         session.add_all(
             [
@@ -215,7 +229,7 @@ def test_dashboard_counts_come_from_stored_data(client: TestClient) -> None:
     assert metrics["quarantined"] == 1
     assert metrics["diagnostics"] == 1
     assert payload["empty"] is False
-    assert payload["last_import_at"] is not None
+    assert payload["last_import_at"] == NOW.replace(tzinfo=None).isoformat()
 
 
 def test_dashboard_reports_empty_system_without_inventing_numbers(tmp_path: Path) -> None:
@@ -277,6 +291,7 @@ def test_import_detail_lists_incidents(client: TestClient) -> None:
     payload = client.get("/insights/imports/batch-real").json()
     assert payload["incidents"][0]["code"] == "ORPHAN_PARENT"
     assert payload["incidents"][0]["occurrence_count"] == 2
+    assert client.get("/insights/imports/batch-catalog-definitions").status_code == 404
     assert client.get("/insights/imports/desconocido").status_code == 404
 
 

@@ -27,6 +27,8 @@ const SOURCE_RECORD = {
 
 it('exige motivo y conserva el actor al modificar', async () => {
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+    if (url.includes('/cima-comparison')) return new Response(JSON.stringify([]))
+    if (url.includes('/cima-documents')) return new Response(JSON.stringify([]))
     if (init?.method === 'PUT') return new Response(JSON.stringify({ ...IDENTITY, display_name: 'Nombre corregido', version: 2 }))
     if (url.includes('/maintenance')) return new Response(JSON.stringify({ sequence: 1 }))
     if (url.includes('/records/record-1')) return new Response(JSON.stringify(SOURCE_RECORD))
@@ -54,6 +56,8 @@ it('exige motivo y conserva el actor al modificar', async () => {
 
 it('edita campos importados sin enviar una decisión farmacéutica', async () => {
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+    if (url.includes('/cima-comparison')) return new Response(JSON.stringify([]))
+    if (url.includes('/cima-documents')) return new Response(JSON.stringify([]))
     if (url.includes('/maintenance') && init?.method === 'POST') return new Response(JSON.stringify({ sequence: 1 }))
     if (url.includes('/records/record-1')) return new Response(JSON.stringify(SOURCE_RECORD))
     if (url.includes('/history')) return new Response(JSON.stringify([]))
@@ -82,6 +86,8 @@ it('edita campos importados sin enviar una decisión farmacéutica', async () =>
 it('consulta clasificaciones solo para una presentación', async () => {
   const presentation = { ...IDENTITY, id: 'presentation-1', identity_type: 'presentation', target_record_id: null }
   const fetchMock = vi.fn(async (url: string) => {
+    if (url.includes('/cima-comparison')) return new Response(JSON.stringify([]))
+    if (url.includes('/cima-documents')) return new Response(JSON.stringify([]))
     if (url.includes('/classifications')) return new Response(JSON.stringify([]))
     if (url.includes('/history') || url.includes('/relations')) return new Response(JSON.stringify([]))
     return new Response(JSON.stringify(presentation))

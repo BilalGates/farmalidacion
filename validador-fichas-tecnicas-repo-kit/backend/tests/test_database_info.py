@@ -92,6 +92,7 @@ def test_real_mode_reports_stored_real_records(tmp_path: Path) -> None:
     assert payload["records_real"] == 3
     assert payload["records_demo"] == 0
     assert payload["consistent"] is True
+    assert client.get("/ready").status_code == 200
 
 
 def test_demo_mode_reports_stored_demo_records(tmp_path: Path) -> None:
@@ -106,6 +107,7 @@ def test_demo_mode_reports_stored_demo_records(tmp_path: Path) -> None:
     assert payload["records_demo"] == 5
     assert payload["records_real"] == 0
     assert payload["consistent"] is True
+    assert client.get("/ready").status_code == 200
 
 
 def test_real_mode_without_imported_records_is_declared_inconsistent(tmp_path: Path) -> None:
@@ -122,6 +124,7 @@ def test_real_mode_without_imported_records_is_declared_inconsistent(tmp_path: P
     assert payload["mode"] == "real"
     assert payload["records_real"] == 0
     assert payload["consistent"] is False
+    assert client.get("/ready").status_code == 503
 
 
 def test_real_mode_does_not_count_demo_records_as_real(tmp_path: Path) -> None:
@@ -136,6 +139,17 @@ def test_real_mode_does_not_count_demo_records_as_real(tmp_path: Path) -> None:
     assert payload["records_demo"] == 6
     assert payload["records_real"] == 0
     assert payload["consistent"] is False
+    assert client.get("/ready").status_code == 503
+
+
+def test_mixed_database_is_not_ready_in_either_mode(tmp_path: Path) -> None:
+    url = _database(tmp_path, "mixed.db")
+    _seed(url, real=1, demo=1)
+
+    for mode in ("real", "demo"):
+        client = TestClient(create_app(Settings(env="test", data_mode=mode, database_url=url)))
+        assert client.get("/database-info").json()["consistent"] is False
+        assert client.get("/ready").status_code == 503
 
 
 def test_diagnostic_never_publishes_the_connection_url(tmp_path: Path) -> None:

@@ -1,5 +1,24 @@
 # Backlog inicial
 
+## Preparación operativa y aceptación (30 de septiembre de 2026)
+
+- **Arranque DEMO/REAL:** comandos y scripts alineados con los perfiles de
+  Compose. `/ready` y los healthchecks rechazan bases vacías o mezcladas;
+  `verify_project.py` comprueba los servicios de cada perfil.
+- **GOLD-002:** Elena Tomás indicada como primera farmacéutica; segunda persona
+  independiente sin designar. La selección de 20 fichas ya está materializada.
+- **GOLD-004:** sigue pendiente congelar las unidades/campos esperados por ficha.
+  Sin GOLD-002, GOLD-004 y la protección de artefactos humanos no se inicia
+  la campaña ni se declara Fase 4 aceptada.
+- **D-018:** la identidad sigue siendo declarada por decisión del piloto.
+  Autenticación real queda para revisión de alcance antes de auditoría formal.
+- **Maestro medicamento:** el XLSX actualizado en Git conserva 509.629 celdas
+  idénticas en tipo, valor y fórmula; su importación real e idempotente pasa.
+  `MEDICATION_WORKBOOK_REVISION_2026-09-28.md` conserva ambos hashes.
+- **Mantenimiento sin sesión Windows:** el perfil `maintenance` de Compose deja
+  listo un ejecutor finito. Falta un host Docker permanente, programarlo allí,
+  verificar alertas y restauración y desactivar la tarea local antigua.
+
 ## Nuevo camino de producto — catálogo editable (22 de septiembre de 2026)
 
 ADR-0012 redefine el siguiente bloque de trabajo sin invalidar la infraestructura
@@ -759,20 +778,27 @@ transaccional. Contrato en `docs/CIMA_MAINTENANCE_REFRESH_CONTRACT.md`.
 
 ### DEV-703 — Panel de novedades y diff (`P1`)
 
-**Estado: cerrado técnicamente (9-09-2026).** Migración aditiva
-`e5f6a7b8c9d0`, registro inmutable/idempotente de novedades, API con lista
-ligera y detalle con diff, y pantalla `Novedades CIMA`. Los cambios no `ft`
-quedan visibles sin fabricar una versión; los `ft` enlazan versiones, diff y
-reaperturas de DEV-702. Contrato en `docs/CIMA_NOVELTY_PANEL_CONTRACT.md`.
+**Estado: ampliado y operativo en la vista REAL local (28-09-2026).** Mantiene
+el registro inmutable/idempotente, API con detalle bajo demanda y pantalla
+`Novedades CIMA`; además, la interfaz puede iniciar una consulta del último día
+cerrado y mostrar su resultado operativo. Cada aviso solo se admite si un CN
+del catálogo coincide literalmente y de forma única, y CIMA confirma que ese
+CN corresponde al `nregistro`. Los avisos enlazan al expediente con una tabla
+append-only. En la consulta viva del 27-09 se registraron nueve cambios `otros`
+y nueve enlaces, sin descargar ni alterar valores maestros. Migración aditiva
+`f3e4d5c6b7a8`; contrato en `docs/CIMA_NOVELTY_PANEL_CONTRACT.md`.
 
 ### DEV-704 — Operación programada y alertas (`P1`)
 
-**Estado: cerrado técnicamente (9-09-2026).** `maintenance_run` conserva cada
-intento; el cursor deriva del último día completado y recupera días pendientes
-en orden. Un fallo queda visible, no adelanta el cursor y el siguiente intento
-repite la fecha. `scripts/run_cima_maintenance.py` ofrece una pasada finita para
-el scheduler de infraestructura; `/maintenance/runs` y `Novedades CIMA`
-muestran el estado operativo. Contrato en
+**Estado: núcleo técnico cerrado y ejecución local programada (28-09-2026).**
+`maintenance_run` conserva cada intento; el cursor deriva del último día
+completado y recupera días pendientes en orden. Un fallo queda visible y el
+siguiente intento repite la fecha. `scripts/run_cima_maintenance.py` continúa
+siendo la pasada finita; `scripts/run_real_preview_cima_maintenance.ps1` la
+conecta a `real-preview.db`. La tarea local
+`Farmalidacion-CIMA-Mantenimiento` está registrada a las 08:00 con recuperación
+de días pendientes y requiere sesión iniciada. El despliegue productivo deberá
+configurar su propio scheduler y base de datos. Contrato en
 `docs/CIMA_MAINTENANCE_OPERATION_CONTRACT.md`.
 
 ### DEV-705 — Chat contextual citado (`P2`)

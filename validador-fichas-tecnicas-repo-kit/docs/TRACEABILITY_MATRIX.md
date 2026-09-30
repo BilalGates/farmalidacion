@@ -1,5 +1,15 @@
 # Matriz inicial de trazabilidad
 
+## Arranque verificable (30 de septiembre de 2026)
+
+| Requisito | Fuente | Evidencia de implementación | Prueba mínima |
+|---|---|---|---|
+| DEMO y REAL usan bases separadas y no se declaran preparados con datos vacíos o mezclados | Separación REAL/DEMO; REAL-001 | `main.py` (`/ready`), `compose.yaml`, `start-demo.ps1`, `start-real.ps1` | `test_database_info.py`: seis casos; `verify_project.py`: servicios por perfil |
+| Maestro de medicamentos actualizado sin cambio de celdas | DEV-304; commit `0fafe34` | `MEDICATION_WORKBOOK_REVISION_2026-09-28.md`; `medication_importer.SOURCE_HASH` | comparación de 509.629 celdas; importación real e idempotente 2/2 |
+| Ejecutar CIMA sin sesión Windows | DEV-704 | perfil `maintenance` de Compose; `CIMA_MAINTENANCE_OPERATION_CONTRACT.md` | configuración del servicio; ejecución programada en host permanente pendiente |
+
+La doble anotación de GOLD-002 continúa pendiente de segunda persona; no existe
+una prueba clínica ejecutada que pueda registrarse como aceptación.
 ## UI-REG-001 — ADR-0012
 
 Especificación §§9–10 y decisión de diseño del 10-09-2026 →
@@ -7,6 +17,7 @@ Especificación §§9–10 y decisión de diseño del 10-09-2026 →
 Cobertura: `RecordsWorkspace.test.tsx`, `ReviewScreen.test.tsx`,
 `ProvenanceList.test.tsx`, `App.test.tsx` y `RealData.test.tsx`.
 Se verifican continuidad, borradores, políticas, contexto de fuente y paginación.
+
 
 ## Integración del 8-09-2026
 
@@ -85,8 +96,8 @@ Se verifican continuidad, borradores, políticas, contexto de fuente y paginaci�
 | Exportación reproducible | Especificación 12.2 | 6 | snapshot de configuración | mismo estado, mismo contenido |
 | Registro de cambios CIMA | Especificación 13; DEV-701 | 7 | `pharma_validator_api.cima_changes`; `docs/CIMA_CHANGE_QUERY_CONTRACT.md` | consulta fresca; tipos y forma validados; Epoch literal; códigos nuevos visibles; pruebas offline deterministas |
 | Revisión selectiva tras cambio FT | Especificación 13; DEV-702 | 7 | `pharma_validator_api.maintenance_refresh`; `docs/CIMA_MAINTENANCE_REFRESH_CONTRACT.md` | descarga sin caché; versión+diff+vínculos+evento append-only en una transacción; selección por procedencia; repetición idempotente |
-| Panel de novedades y diff | Especificación 13; DEV-703 | 7 | `maintenance_change_event`; `/maintenance/changes`; `MaintenanceScreen`; `docs/CIMA_NOVELTY_PANEL_CONTRACT.md` | evento inmutable e idempotente; lista sin cuerpos pesados; detalle bajo demanda; cambios no-FT visibles |
-| Operación diaria y fallos recuperables | Especificación 13; DEV-704 | 7 | `maintenance_run`; `maintenance_job`; `scripts/run_cima_maintenance.py`; `/maintenance/runs` | cursor por último día completado; días en orden; intento fallido visible; reintento de la misma fecha; alerta en panel |
+| Panel de novedades y diff | Especificación 13; DEV-703 | 7 | `maintenance_change_event`; `maintenance_change_event_target`; `/maintenance/changes`; `POST /maintenance/run`; `MaintenanceScreen`; `docs/CIMA_NOVELTY_PANEL_CONTRACT.md` | evento inmutable/idempotente; CN literal único contrastado por CIMA; enlace a expediente; cambios no-FT visibles sin proponer cambio de campo |
+| Operación diaria y fallos recuperables | Especificación 13; DEV-704 | 7 | `maintenance_run`; `maintenance_job`; `scripts/run_cima_maintenance.py`; `scripts/run_real_preview_cima_maintenance.ps1`; `/maintenance/runs` | cursor por último día completado; días en orden; intento fallido visible; reintento de fecha; tarea local diaria 08:00 con recuperación |
 | UI <100 ms por campo | Especificación 14 | 5 | precarga/cache local | prueba de rendimiento |
 | Docker Compose | Especificación 15.9 | 1 en adelante | compose y fixtures | arranque limpio |
 | Operación offline | Especificación 15.10; DEV-207/208 | 2 en adelante | `offline_corpus`; corpus real local; `PHASE_2_GATE_REVIEW.md` | 500 versiones creadas y segunda carga 0 con sockets bloqueados |
@@ -169,6 +180,7 @@ Se verifican continuidad, borradores, políticas, contexto de fuente y paginaci�
 | Navegación por relaciones farmacéuticas | ADR-0012; CAT-003/CAT-006 | rediseño CAT | `/catalog/identities/{id}/relations`; `CatalogIdentityScreen` | relaciones entrantes/salientes ordenadas; composición multicomponente navegable; ausencia de nivel explícita sin inventar enlaces |
 | Fixture navegable del dominio | ADR-0012; CAT-001/CAT-003/CAT-006 | rediseño CAT | `catalog_demo_fixture`; `medication-domain-acceptance.json` | carga sólo DEMO, sintética e idempotente; 11 identidades, 11 relaciones, 6 clasificaciones; dos presentaciones y composición doble |
 | Clasificación comercial y condiciones | ADR-0012; CAT-008 | rediseño CAT | `/catalog/identities/{id}/classifications`; `CatalogIdentityScreen` | clase comercial única; condiciones múltiples; valores controlados; revisor/motivo; cambios append-only en el historial del expediente |
+| Lector, comparación y decisión CIMA | CAT-007; D-020/D-027; prioridad de fuente por campo pendiente | rediseño CAT | `/catalog/identities/{id}/cima-documents`, `/cima-comparison`, `/cima-comparisons/{field_value_id}/decisions`; `CatalogCimaDocumentReader`, `CatalogCimaComparisonPanel`; `CatalogCimaReviewDecision` | última versión de cada FT tipo 1 enlazada como `ft`; artefactos SHA-256 verificados; cruce exacto y unívoco con definiciones del catálogo; seis resultados de comparación sin normalizar; parciales/interpretables exigen criterio; eventos append-only con FK de versión, apartado y hash del texto; corrección y mantenimiento atómicos; falta QA farmacéutico sobre una ficha real enlazada |
 | Filtrado del catálogo por clasificaciones | CAT-005/CAT-008 | rediseño CAT | `/catalog/identities?commercial_class=&condition=`; `RealRecordListScreen` | clase comercial y varias condiciones combinables en servidor; etiquetas por fila en una consulta de página; búsqueda, nivel, vigencia y paginación |
 | Vistas separadas por libro maestro | CAT-005/CAT-006; contratos DEV-303/304/305 | rediseño CAT | `RealRecordListScreen`; `ReviewScreen`; `/catalog/identities?source_workbook=`; `SourceFragment → SourceDocumentVersion → SourceDocument` | Libros filtrados por nombre exacto del Excel; ficha agrupada/rotulada por hoja; no se mezcla ni se infiere procedencia; ocurrencias preservadas |
 | Cobertura estructural de maestros por hoja | Fase 3; CAT-001; `docs/SOURCE_INVENTORY.md` | rediseño CAT | `specialty_importer`; `medication_importer`; `active_ingredient_importer`; `ImportedSourceSheet`; `FieldValue.source_column_index` | 14 hojas identificadas; columna original preservada al importar, backfill aditivo para datos cargados, contrato API y etiqueta D/F sólo ante cabecera duplicada; columnas homónimas no se mezclan al evaluar conflicto |

@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import PurePosixPath
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -21,6 +21,7 @@ from pharma_validator_api.errors import register_error_handlers
 from pharma_validator_api.export_api import audit_router, risk_router
 from pharma_validator_api.export_api import router as export_router
 from pharma_validator_api.fixtures import load_demo_fixture, load_showcase_fixture
+from pharma_validator_api.import_batches import CATALOG_DEFINITION_IMPORTER
 from pharma_validator_api.insights import router as insights_router
 from pharma_validator_api.logging import configure_logging
 from pharma_validator_api.maintenance_api import router as maintenance_router
@@ -160,12 +161,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 )
                 or 0
             )
-            batches = session.scalar(select(func.count()).select_from(ImportBatch)) or 0
+            batches = (
+                session.scalar(
+                    select(func.count())
+                    .select_from(ImportBatch)
+                    .where(ImportBatch.importer_name != CATALOG_DEFINITION_IMPORTER)
+                )
+                or 0
+            )
         real = total - demo
         # Un modo REAL sin ningún registro real es la avería concreta que se
         # quiere poder ver: la base está migrada pero la ingesta no se ha
         # ejecutado. Se declara inconsistente en lugar de responder «ok».
-        consistent = real > 0 if active.data_mode == "real" else demo > 0
+        consistent = (
+            (real > 0 and demo == 0)
+            if active.data_mode == "real"
+            else (demo > 0 and real == 0)
+        )
         return DatabaseInfoResponse(
             mode=active.data_mode,
             backend=make_url(active.database_url).get_backend_name(),
@@ -176,6 +188,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             import_batches=batches,
             consistent=consistent,
         )
+
+    @application.get("/ready", response_model=HealthResponse, tags=["sistema"])
+    def ready() -> HealthResponse:
+        # El healthcheck se repite periódicamente: basta comprobar existencia,
+        # sin contar todo el catálogo en cada consulta.
+        with session_factory() as session:
+            has_real = session.scalar(
+                apply_origin_filter(select(TargetRecord.id), DataOrigin.REAL).limit(1)
+            ) is not None
+            has_demo = session.scalar(
+                apply_origin_filter(select(TargetRecord.id), DataOrigin.DEMO).limit(1)
+            ) is not None
+        consistent = (
+            (has_real and not has_demo)
+            if active.data_mode == "real"
+            else (has_demo and not has_real)
+        )
+        if not consistent:
+            raise HTTPException(
+                status_code=503,
+                detail="La base no contiene exclusivamente registros del modo configurado.",
+            )
+        return HealthResponse(status="ready", service=active.app_name, environment=active.env)
 
     return application
 

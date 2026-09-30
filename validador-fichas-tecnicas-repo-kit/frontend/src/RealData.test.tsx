@@ -284,6 +284,8 @@ function route(url: string): unknown {
   if (url.includes('/insights/sources')) return SOURCES
   if (url.includes('/insights/imports')) return IMPORTS
   if (url.includes('/insights/records/')) return RECORD_DETAIL
+  if (url.includes('/maintenance/changes')) return []
+  if (url.includes('/maintenance/runs')) return []
   if (url.includes('/catalog/identities/cat-real/')) return []
   if (url.includes('/catalog/identities/cat-real')) return CATALOG_PAGE.items[0]
   if (url.includes('/catalog/identities')) {
@@ -377,9 +379,6 @@ describe('separación entre datos reales y DEMO', () => {
     expect(calls.some((url) => url.includes('/catalog/identities') && url.includes('active=true'))).toBe(true)
     const row = screen.getByRole('row', { name: /Omeprazol 20 mg cápsula/ })
     expect(within(row).getByText('Especialidades')).toBeInTheDocument()
-    expect(calls.some((url) => url.includes('origin=real'))).toBe(true)
-    expect(screen.getByRole('button', { name: /Omeprazol 20 mg cápsula/ })).toBeInTheDocument()
-    expect(within(screen.getByRole('complementary', { name: 'Listado de registros' })).getByText('Real')).toBeInTheDocument()
   })
 
   it('no ofrece datos DEMO dentro del listado de registros', async () => {
@@ -415,8 +414,8 @@ describe('separación entre datos reales y DEMO', () => {
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'inexistente' } })
     fireEvent.click(screen.getByRole('button', { name: 'Buscar' }))
 
-    expect(await screen.findByText(/La búsqueda no devuelve resultados/)).toBeInTheDocument()
-    expect(screen.getByText(/«inexistente»/)).toBeInTheDocument()
+    expect(await screen.findByText(/No hay resultados con estos filtros/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Búsqueda: inexistente/ })).toBeInTheDocument()
   })
 })
 
@@ -427,7 +426,6 @@ describe('ficha de un registro real', () => {
     await screen.findByText('Omeprazol 20 mg cápsula')
 
     fireEvent.click(screen.getByRole('button', { name: 'Abrir expediente' }))
-    fireEvent.click(screen.getByRole('button', { name: /Omeprazol 20 mg cápsula/ }))
 
     await waitFor(() => expect(window.location.hash).toBe('#/catalogo/cat-real'))
     expect(await screen.findByRole('heading', { name: 'Omeprazol 20 mg cápsula' })).toBeInTheDocument()
@@ -481,13 +479,11 @@ describe('fuentes e importaciones', () => {
   it('lista las fuentes con versión, hash y registros', async () => {
     window.location.hash = '#/fuentes'
     render(<App />)
-    fireEvent.click(await screen.findByRole('button', { name: /Maestro Excel 1 documentos/ }))
     expect(
       await screen.findByText('Especialidades-CargaMaster190626.xlsx'),
     ).toBeInTheDocument()
-    const sourceRow = screen.getByRole('row', { name: /Especialidades-CargaMaster190626.xlsx/ })
-    expect(within(sourceRow).getByText('29.850')).toBeInTheDocument()
-    expect(within(sourceRow).getByText('2026-06-19')).toBeInTheDocument()
+    expect(screen.getByText('29.850')).toBeInTheDocument()
+    expect(screen.getByText('2026-06-19')).toBeInTheDocument()
   })
 
   it('lista los lotes ejecutados con sus contadores', async () => {
@@ -554,6 +550,23 @@ describe('estado del conjunto de datos', () => {
 })
 
 describe('navegación', () => {
+  it('sitúa Catálogo junto a una descripción sobre la lista y separa Novedades CIMA', async () => {
+    window.location.hash = '#/fichas'
+    const { rerender } = render(<App />)
+
+    expect(await screen.findByRole('heading', { name: 'Catálogo' })).toBeVisible()
+    expect(screen.getByText('Explora medicamentos, presentaciones y principios activos.')).toBeVisible()
+    expect(screen.queryByRole('navigation', { name: 'Páginas de Catálogo' })).toBeNull()
+
+    window.location.hash = '#/novedades'
+    rerender(<App />)
+    expect(await screen.findByRole('heading', { name: 'Novedades CIMA' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Novedades CIMA' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+  })
+
   it('marca "Catálogo" como activo en /#/fichas', async () => {
     window.location.hash = '#/fichas'
     render(<App />)

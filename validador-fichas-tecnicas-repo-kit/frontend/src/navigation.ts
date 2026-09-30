@@ -3,10 +3,8 @@ import { useEffect, useState } from 'react'
 /**
  * Enrutado mínimo sobre `location.hash`.
  *
- * Se resuelve con la plataforma en lugar de añadir una dependencia de routing:
- * la vertical tiene dos rutas reales y el resto son secciones anunciadas. Si el
- * producto crece, sustituir esto por un router es un cambio localizado en este
- * fichero y en `App`.
+ * Se resuelve con la plataforma en lugar de añadir una dependencia. Las rutas
+ * antiguas se traducen a las pestañas internas nuevas para conservar enlaces.
  */
 
 export type Route =
@@ -18,6 +16,13 @@ export type Route =
   | { readonly name: 'importaciones' }
   | { readonly name: 'seccion'; readonly id: string }
 
+const LEGACY_SECTION_PATHS: Record<string, string> = {
+  cola: 'revision/cola',
+  validaciones: 'revision/validaciones',
+  cuarentena: 'datos/cuarentena',
+  novedades: 'catalogo/novedades',
+}
+
 export function parseRoute(hash: string): Route {
   const path = hash.replace(/^#\/?/, '')
   if (path === '' || path === 'inicio') return { name: 'inicio' }
@@ -26,8 +31,13 @@ export function parseRoute(hash: string): Route {
   // repartidos deben seguir abriendo lo que abrían: se resuelven a la ruta que
   // queda en lugar de caer en «sección desconocida».
   if (path === 'registros') return { name: 'fichas' }
-  if (path === 'fuentes') return { name: 'fuentes' }
-  if (path === 'importaciones') return { name: 'importaciones' }
+  if (path === 'fuentes' || path === 'datos/fuentes') return { name: 'fuentes' }
+  if (path === 'importaciones' || path === 'datos/importaciones') return { name: 'importaciones' }
+  const legacySection = LEGACY_SECTION_PATHS[path]
+  if (legacySection) return { name: 'seccion', id: legacySection }
+  if (path.startsWith('revision/') || path === 'datos/cuarentena' || path === 'catalogo/novedades') {
+    return { name: 'seccion', id: path }
+  }
   const record = /^registros\/(.+)$/.exec(path)
   if (record) return { name: 'ficha', id: decodeURIComponent(record[1]) }
   const detail = /^fichas\/(.+)$/.exec(path)

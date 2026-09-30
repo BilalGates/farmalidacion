@@ -114,6 +114,26 @@ class MaintenanceRun(Base):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class MaintenanceChangeEventTarget(Base):
+    """Enlace exacto entre una novedad CIMA y una identidad del catálogo."""
+
+    __tablename__ = "maintenance_change_event_target"
+    __table_args__ = (
+        UniqueConstraint("event_id", "target_record_id", name="uq_maintenance_event_target"),
+        Index("ix_maintenance_event_target_record", "target_record_id"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    event_id: Mapped[str] = mapped_column(ForeignKey("maintenance_change_event.id"), index=True)
+    target_record_id: Mapped[str] = mapped_column(ForeignKey("target_record.id"), index=True)
+    national_code: Mapped[str] = mapped_column(Text)
+
+
+@event.listens_for(MaintenanceChangeEventTarget, "before_update")
+@event.listens_for(MaintenanceChangeEventTarget, "before_delete")
+def _reject_maintenance_event_target_mutation(*_: object) -> None:
+    raise ImmutableHistoryError("Los enlaces de novedades son append-only.")
+
+
 class ImmutableHistoryError(RuntimeError):
     pass
 
@@ -339,6 +359,40 @@ def _reject_field_maintenance_mutation(*_: object) -> None:
     raise ImmutableHistoryError(
         "El historial de mantenimiento es append-only: registre otra revisión."
     )
+
+
+class CatalogCimaReviewDecision(Base):
+    """Decisión humana CAT-007 ligada a campo y versión inmutable de CIMA."""
+
+    __tablename__ = "catalog_cima_review_decision"
+    __table_args__ = (
+        UniqueConstraint("field_value_id", "sequence", name="uq_cima_review_sequence"),
+        Index("ix_cima_review_field_sequence", "field_value_id", "sequence"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    field_value_id: Mapped[str] = mapped_column(ForeignKey("field_value.id"), index=True)
+    sequence: Mapped[int] = mapped_column(Integer)
+    document_version_id: Mapped[str] = mapped_column(
+        ForeignKey("source_document_version.id"), index=True
+    )
+    catalog_field_definition_id: Mapped[str] = mapped_column(
+        ForeignKey("catalog_field_definition.id")
+    )
+    section_locator: Mapped[str] = mapped_column(Text)
+    section_content_hash: Mapped[str] = mapped_column(String(64))
+    comparison_status: Mapped[str] = mapped_column(String(40))
+    action: Mapped[str] = mapped_column(String(40))
+    corrected_value: Mapped[str | None] = mapped_column(Text)
+    actor_id: Mapped[str] = mapped_column(String(80))
+    actor_assurance: Mapped[str] = mapped_column(String(20))
+    reason: Mapped[str] = mapped_column(Text)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+@event.listens_for(CatalogCimaReviewDecision, "before_update")
+@event.listens_for(CatalogCimaReviewDecision, "before_delete")
+def _reject_cima_review_mutation(*_: object) -> None:
+    raise ImmutableHistoryError("Las decisiones CIMA son append-only: registre otra decisión.")
 
 
 class ValueProvenance(Base):

@@ -50,7 +50,7 @@ services:
     ports:
       - '127.0.0.1:8000:8000'
     healthcheck:
-      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=2)"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -101,7 +101,7 @@ services:
     ports:
       - '127.0.0.1:8000:8000'
     healthcheck:
-      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=2)"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -141,6 +141,28 @@ services:
       timeout: 3s
       retries: 10
     restart: unless-stopped
+
+  # Ejecución finita para un planificador de un host siempre encendido.
+  # `docker compose --profile maintenance run --build --rm maintenance-real`
+  # No se incluye en el perfil real para evitar una pasada por cada arranque.
+  maintenance-real:
+    profiles: ['maintenance']
+    build:
+      context: .
+      dockerfile: infra/backend.Dockerfile
+    environment:
+      APP_ENV: production
+      APP_DATA_MODE: real
+      APP_DATABASE_URL: sqlite:////app/data/real.db
+      APP_CIMA_CACHE_DIR: /app/data/cima-cache
+      CIMA_START_DATE: ${CIMA_START_DATE:-27/09/2026}
+    command:
+      - sh
+      - -c
+      - 'python /app/scripts/run_cima_maintenance.py --start-date "$$CIMA_START_DATE"'
+    volumes:
+      - ./data/local:/app/data
+    restart: 'no'
 
   # Sólo para verificar portabilidad del esquema; no participa en el piloto.
   postgres:

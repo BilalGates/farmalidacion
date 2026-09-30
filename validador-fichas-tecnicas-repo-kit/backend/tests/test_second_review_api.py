@@ -147,4 +147,5 @@ def test_the_ordinary_route_is_not_the_blind_route(scratch_db_url):
     # El listado tampoco revela quien firmo la primera mientras no este emitida.
     listing = client.get("/second-reviews?reviewer_id=luis")
     assert listing.status_code == 200
+    assert listing.json()[0]["field_name"] == "DESCRIPCION"
     assert "ana" not in listing.text

@@ -1,36 +1,42 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 
-import { groupSources, SourcesScreen } from './SourcesScreen'
+import { SourcesScreen } from './SourcesScreen'
 
-const ITEMS = [
-  { key: 'doc-1', name: '00134033', source_type: 'cima_document_type_1', status: 'disponible', versions: 1,
-    latest_version: null, latest_content_hash: 'a', last_updated_at: '2026-08-28T10:32:00Z', batches: 0,
-    records: 1, diagnostics: 0, quarantined_rows: 0 },
-  { key: 'doc-2', name: '00150004', source_type: 'cima_document_type_1', status: 'con_errores', versions: 1,
-    latest_version: null, latest_content_hash: 'b', last_updated_at: '2026-08-28T10:33:00Z', batches: 2,
-    records: 3, diagnostics: 1, quarantined_rows: 2 },
-]
-
-afterEach(() => vi.unstubAllGlobals())
-
-it('agrega los documentos del mismo tipo sin perder sus incidencias', () => {
-  expect(groupSources(ITEMS)).toMatchObject([{
-    sourceType: 'cima_document_type_1', label: 'CIMA · Ficha técnica', status: 'con_errores',
-    records: 4, batches: 2, incidents: 3, lastUpdatedAt: '2026-08-28T10:33:00Z',
-  }])
+afterEach(() => {
+  vi.unstubAllGlobals()
+  window.sessionStorage.removeItem('farmalidacion.catalog-list-state')
+  window.location.hash = ''
 })
 
-it('muestra un grupo y permite desplegar sus documentos', async () => {
-  vi.stubGlobal('fetch', vi.fn(async () => ({
-    ok: true, status: 200, json: async () => ({ items: ITEMS, total: ITEMS.length }),
-  }) as Response))
-  render(<SourcesScreen />)
+const workbooks = [
+  { name: 'Especialidades-CargaMaster190626.xlsx', label: 'Especialidades y presentaciones', action: 'Explorar presentaciones', view: 'especialidades', sheets: ['General', 'Excipientes'] },
+  { name: 'Medicamento-cargaMaster25062026.xlsx', label: 'Medicamentos', action: 'Explorar medicamentos', view: 'medicamentos', sheets: ['General', 'Composicion', 'Indicacion', 'Frecuencia', 'Via', 'Prescripcion', 'Links'] },
+  { name: 'PrincipioActivoCargaMaster-22062026.xlsx', label: 'Principios activos', action: 'Explorar principios activos', view: 'principios_activos', sheets: ['General', 'Frecuencia', 'Via', 'ConsejosAdministracion', 'DatosAnaliticos'] },
+] as const
 
-  const toggle = await screen.findByRole('button', { name: /CIMA · Ficha técnica 2 documentos/ })
-  expect(screen.queryByText('00134033')).not.toBeInTheDocument()
-  fireEvent.click(toggle)
-  expect(screen.getByText('00134033')).toBeInTheDocument()
-  expect(screen.getByText('00150004')).toBeInTheDocument()
-  expect(screen.getAllByRole('button', { name: 'Ver detalle' })).toHaveLength(2)
-})
+for (const [index, workbook] of workbooks.entries()) {
+  it(`distingue ${workbook.view} y muestra todas sus hojas`, async () => {
+    const source = {
+      key: `source-${index}`, name: workbook.name, source_type: 'master_excel',
+      status: 'disponible', versions: 1, latest_version: null, latest_content_hash: 'a'.repeat(64),
+      last_updated_at: null, batches: 1, records: 10, diagnostics: 0, quarantined_rows: 0,
+    }
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => new Response(JSON.stringify(
+      String(input).endsWith(`/sources/${source.key}`)
+        ? { ...source, sheets: workbook.sheets.map((sheet_name, sheet_ordinal) => ({
+          sheet_name, sheet_ordinal: sheet_ordinal + 1,
+          data_row_count: sheet_ordinal === 0 ? 10 : 0, material_value_count: sheet_ordinal === 0 ? 20 : 0,
+        })), batch_ids: ['batch-1'] }
+        : { items: [source], total: 1 },
+    ))))
+
+    render(<SourcesScreen />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver detalle' }))
+    expect(await screen.findByRole('heading', { name: workbook.label })).toBeInTheDocument()
+    for (const sheet of workbook.sheets) expect(screen.getByRole('row', { name: new RegExp(sheet) })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: workbook.action }))
+    expect(JSON.parse(sessionStorage.getItem('farmalidacion.catalog-list-state') ?? '{}').sourceWorkbook).toBe(workbook.view)
+    expect(window.location.hash).toBe('#/fichas')
+  })
+}

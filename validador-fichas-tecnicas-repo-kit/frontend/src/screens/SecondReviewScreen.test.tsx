@@ -23,6 +23,7 @@ const REVIEWER = {
 const PENDING = {
   id: 'asg-1',
   field_value_id: 'fv-1',
+  field_name: 'DESCRIPCION',
   target_record_id: 'rec-1',
   state: 'pendiente',
   version: 1,
@@ -69,6 +70,7 @@ it('separa pendientes, discrepancias y cerradas', async () => {
   expect(await screen.findByText(/Pendientes de segunda lectura \(1\)/)).toBeInTheDocument()
   expect(screen.getByText(/Discrepancias por conciliar \(1\)/)).toBeInTheDocument()
   expect(screen.getByText(/Cerradas \(1\)/)).toBeInTheDocument()
+  expect(screen.getAllByText('DESCRIPCION')).toHaveLength(3)
 })
 
 it('la lectura ciega no muestra la decisión del primer revisor', async () => {
@@ -85,6 +87,17 @@ it('la lectura ciega no muestra la decisión del primer revisor', async () => {
   expect(screen.queryByText(/primera decisión/i)).not.toBeInTheDocument()
   // La decisión arranca vacía: proponer una sesgaría la segunda lectura.
   expect(screen.getByLabelText('Decisión de segunda lectura')).toHaveValue('')
+  expect(screen.getByRole('heading', { name: 'Lectura ciega · DESCRIPCION' })).toHaveFocus()
+})
+
+it('devuelve el foco a la asignación al cancelar', async () => {
+  stub((url) => (url.includes('/blind') ? BLIND : [PENDING]))
+  render(<SecondReviewScreen reviewer={REVIEWER} />)
+  const open = await screen.findByRole('button', { name: 'Revisar a ciegas' })
+  fireEvent.click(open)
+  await screen.findByRole('heading', { name: 'Lectura ciega · DESCRIPCION' })
+  fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+  await waitFor(() => expect(open).toHaveFocus())
 })
 
 it('no registra una lectura sin decisión elegida', async () => {
