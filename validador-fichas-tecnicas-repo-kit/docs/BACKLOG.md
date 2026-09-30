@@ -12,6 +12,12 @@
   la campaña ni se declara Fase 4 aceptada.
 - **D-018:** la identidad sigue siendo declarada por decisión del piloto.
   Autenticación real queda para revisión de alcance antes de auditoría formal.
+- **Maestro medicamento:** el XLSX actualizado en Git conserva 509.629 celdas
+  idénticas en tipo, valor y fórmula; su importación real e idempotente pasa.
+  `MEDICATION_WORKBOOK_REVISION_2026-09-28.md` conserva ambos hashes.
+- **Mantenimiento sin sesión Windows:** el perfil `maintenance` de Compose deja
+  listo un ejecutor finito. Falta un host Docker permanente, programarlo allí,
+  verificar alertas y restauración y desactivar la tarea local antigua.
 
 ## Nuevo camino de producto — catálogo editable (22 de septiembre de 2026)
 

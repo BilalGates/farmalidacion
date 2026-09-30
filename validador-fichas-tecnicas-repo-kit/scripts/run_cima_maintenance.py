@@ -4,17 +4,19 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
 
 from pharma_validator_api.cima_client import CimaClient
 from pharma_validator_api.config import Settings
 from pharma_validator_api.database import create_database_engine, create_session_factory
 from pharma_validator_api.maintenance_job import run_pending_days
+from sqlalchemy.engine import make_url
 
 
 def day(value: str) -> date:
     try:
-        return datetime.strptime(value, "%d/%m/%Y").date()
+        return datetime.strptime(value, "%d/%m/%Y").replace(tzinfo=UTC).date()
     except ValueError as error:
         raise argparse.ArgumentTypeError("Use una fecha dd/mm/yyyy.") from error
 
@@ -22,9 +24,20 @@ def day(value: str) -> date:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Mantenimiento incremental diario CIMA")
     parser.add_argument("--start-date", required=True, type=day)
-    parser.add_argument("--through-date", type=day, default=date.today() - timedelta(days=1))
+    yesterday = datetime.now(UTC).date() - timedelta(days=1)
+    parser.add_argument("--through-date", type=day, default=yesterday)
     args = parser.parse_args()
     settings = Settings()
+    if settings.data_mode != "real":
+        parser.error("Configure APP_DATA_MODE=real antes de ejecutar mantenimiento CIMA.")
+    url = make_url(settings.database_url)
+    database_path = url.database
+    if (
+        url.get_backend_name() == "sqlite"
+        and database_path not in (None, ":memory:")
+        and not Path(database_path).is_file()
+    ):
+        parser.error("La base SQLite REAL configurada no existe; cargue los maestros primero.")
     engine = create_database_engine(settings)
     factory = create_session_factory(engine)
     try:

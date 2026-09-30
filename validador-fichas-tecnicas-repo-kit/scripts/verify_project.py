@@ -22,6 +22,7 @@ def verify_compose_profiles() -> None:
     for profile, expected in (
         ('demo', {'backend', 'frontend'}),
         ('real', {'backend-real', 'frontend-real'}),
+        ('maintenance', {'maintenance-real'}),
     ):
         result = subprocess.run(
             ['docker', 'compose', '--profile', profile, 'config', '--services'],
@@ -63,6 +64,8 @@ def main() -> int:
             'backend/tests',
             'backend/migrations',
             'scripts/verify_project.py',
+            'scripts/run_cima_maintenance.py',
+            'tests/test_run_cima_maintenance_cli.py',
         ],
     )
     run(

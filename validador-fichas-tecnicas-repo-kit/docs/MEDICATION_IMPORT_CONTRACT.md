@@ -4,7 +4,11 @@
 - Fase: 3
 - Estado: implementado
 - Fuente: `Medicamento-cargaMaster25062026.xlsx`
-- SHA-256: `4b87aeac96ea220126c090d755fa5bfbaabe7aec304cfccb2e15537bd96cbf1b`
+- SHA-256 de la versión original: `4b87aeac96ea220126c090d755fa5bfbaabe7aec304cfccb2e15537bd96cbf1b`
+- SHA-256 del libro activo desde el 28-09-2026: `9ecb56cc1cd590c4e49d63c7ce7993df059372af341407acd197a818cd1a50dc`
+
+La revisión activa conserva las mismas celdas, tipos y fórmulas de las siete
+hojas. El informe diferencial está en `docs/MEDICATION_WORKBOOK_REVISION_2026-09-28.md`.
 
 ## Alcance reproducible
 
@@ -49,7 +53,7 @@ El lote usa localizador, versión literal opcional, SHA-256 e importador `medica
 
 Dos ejecuciones producen un lote, 6.342 medicamentos, 58.256 ocurrencias, 509.496 valores, 509.496 procedencias y 4.211 vínculos. Hay dos diagnósticos informativos y cero cuarentenas. La prueba real, incluida la carga previa de DEV-303, terminó en 208,47 segundos.
 
-No se convierten tipos, truncan textos, corrigen valores ni aplican contratos de exportación. El original permanece fuera de Git e inalterado. DEV-304 no añade una migración: reutiliza el núcleo canónico y el registro genérico de hojas ya reversible.
+No se convierten tipos, truncan textos, corrigen valores ni aplican contratos de exportación. El importador no modifica el XLSX de entrada; la versión activa está versionada en Git. DEV-304 no añade una migración: reutiliza el núcleo canónico y el registro genérico de hojas ya reversible.
 
 ## Fuera de alcance
 

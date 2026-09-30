@@ -10,6 +10,13 @@ los tres maestros activos: `../Catalogo_campos_clinicos_medicamentos/base/`
 esta tabla; el directorio está fuera de Git. El maestro de interacciones se
 incorporará más adelante y no forma parte de esta ubicación actual.
 
+El maestro de medicamentos de esa ubicación fue sustituido en Git el
+28-09-2026 (commit `0fafe34`) por un XLSX con hash
+`9ecb56cc1cd590c4e49d63c7ce7993df059372af341407acd197a818cd1a50dc`.
+La tabla siguiente conserva los hashes del snapshot histórico de agosto. La
+comparación de celdas de ambas versiones se documenta en
+`docs/MEDICATION_WORKBOOK_REVISION_2026-09-28.md`.
+
 | Fichero | SHA-256 | Papel |
 |---|---|---|
 | `ESPEC_validador_fichas_tecnicas.md` | `d951f0a23787a0355fc9f9f7e1e0c4d2e40441f7f5ef249492b4742fb29173a4` | Especificación funcional y técnica v2 |

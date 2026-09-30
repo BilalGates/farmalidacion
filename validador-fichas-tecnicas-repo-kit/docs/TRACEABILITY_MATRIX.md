@@ -5,6 +5,8 @@
 | Requisito | Fuente | Evidencia de implementación | Prueba mínima |
 |---|---|---|---|
 | DEMO y REAL usan bases separadas y no se declaran preparados con datos vacíos o mezclados | Separación REAL/DEMO; REAL-001 | `main.py` (`/ready`), `compose.yaml`, `start-demo.ps1`, `start-real.ps1` | `test_database_info.py`: seis casos; `verify_project.py`: servicios por perfil |
+| Maestro de medicamentos actualizado sin cambio de celdas | DEV-304; commit `0fafe34` | `MEDICATION_WORKBOOK_REVISION_2026-09-28.md`; `medication_importer.SOURCE_HASH` | comparación de 509.629 celdas; importación real e idempotente 2/2 |
+| Ejecutar CIMA sin sesión Windows | DEV-704 | perfil `maintenance` de Compose; `CIMA_MAINTENANCE_OPERATION_CONTRACT.md` | configuración del servicio; ejecución programada en host permanente pendiente |
 
 La doble anotación de GOLD-002 continúa pendiente de segunda persona; no existe
 una prueba clínica ejecutada que pueda registrarse como aceptación.

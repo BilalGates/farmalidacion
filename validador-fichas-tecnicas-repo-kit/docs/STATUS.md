@@ -21,13 +21,21 @@
 - Verificación dirigida: `test_database_info.py` y `test_second_review_api.py`
   10/10; mantenimiento y catálogo 16/16; Ruff y mypy sobre los 84 módulos
   Python sin errores; Vitest 151/151, ESLint y build frontend correctos.
-- El gate integral detectó que el Excel local
-  `Medicamento-cargaMaster25062026.xlsx` tiene SHA-256
-  `9ecb56cc1cd590c4e49d63c7ce7993df059372af341407acd197a818cd1a50dc`,
-  distinto del hash de referencia
-  `4b87aeac96ea220126c090d755fa5bfbaabe7aec304cfccb2e15537bd96cbf1b`.
-  Se interrumpió la suite tras identificar el fallo. El libro original y el
-  hash esperado no se alteraron; hay que verificar cuál versión es la aprobada.
+- El libro de medicamentos incorporado en Git el 28-09-2026 cambió de hash,
+  pero conserva las 509.629 celdas comparadas (tipo, valor y fórmula) y las
+  cadenas compartidas. Se actualizó la referencia del importador a su hash
+  actual y se conservó el hash previo como histórico. Ver
+  `docs/MEDICATION_WORKBOOK_REVISION_2026-09-28.md`. La prueba real de importación
+  e idempotencia pasa (2/2, 273,24 s). El gate integral avanzó hasta el 92 %
+  de las pruebas Python sin fallos y se interrumpió durante la carga lenta de
+  especialidades, fuera del cambio de medicamento; no se declara completo.
+- El perfil `maintenance` de Compose ofrece una pasada CIMA finita contra
+  `real.db`, con caché persistente y fecha inicial configurable. Se verificó
+  su configuración, se construyó la imagen y su CLI respondió a `--help` dentro
+  del contenedor. Una base inexistente fue rechazada con código 2 sin crearla;
+  dos pruebas CLI cubren también el rechazo del modo DEMO. Falta ejecutar una
+  pasada real y programarlo en un host Docker permanente. La tarea local de
+  Windows sigue siendo la ruta activa.
 
 ## CAT-007 — Comparación campo a campo con CIMA (28 de septiembre de 2026)
 
