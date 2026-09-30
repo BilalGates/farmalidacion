@@ -102,9 +102,11 @@ def listing(
     enabled(settings)
     directory.resolve(reviewer_id)
     return [
-        view(row)
-        for row in session.scalars(
-            select(SecondReviewAssignment).order_by(
+        {**view(row), "field_name": field_name}
+        for row, field_name in session.execute(
+            select(SecondReviewAssignment, FieldValue.field_name)
+            .join(FieldValue, FieldValue.id == SecondReviewAssignment.field_value_id)
+            .order_by(
                 SecondReviewAssignment.created_at, SecondReviewAssignment.id
             )
         )

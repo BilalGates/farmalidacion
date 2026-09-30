@@ -505,6 +505,7 @@ export async function reportFocusSpan(
 export interface SecondReviewItem {
   id: string
   field_value_id: string
+  field_name: string
   target_record_id: string
   state: string
   version: number

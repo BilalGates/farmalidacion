@@ -61,8 +61,26 @@ it('indica el tramo de resultados y permite recorrer la tabla con teclado', asyn
   render(<RealRecordListScreen />)
 
   expect(await screen.findByText('Mostrando 51–51 · página 2 de 2')).toBeInTheDocument()
-  expect(screen.getByRole('region', { name: 'Tabla de registros; desplazamiento horizontal disponible' })).toHaveAttribute('tabindex', '0')
+  const table = screen.getByRole('region', { name: 'Tabla de registros' })
+  Object.defineProperty(table, 'scrollWidth', { configurable: true, value: 900 })
+  Object.defineProperty(table, 'clientWidth', { configurable: true, value: 500 })
+  fireEvent.resize(window)
+  await waitFor(() => expect(screen.getByRole('region', { name: 'Tabla de registros; desplazamiento horizontal disponible' })).toHaveAttribute('tabindex', '0'))
   expect(screen.getByRole('row', { name: /Medicamento de prueba/ })).toBeInTheDocument()
+})
+
+it('evita una parada de teclado cuando la tabla no desborda', async () => {
+  cleanCatalogState()
+  const page = {
+    items: [{ id: 'med-1', identity_type: 'dcp', code: '654789', display_name: 'Medicamento de prueba',
+      target_record_id: null, source_system: 'maestro', source_version: 'v1',
+      source_workbook: 'medicamentos', source_literal: '654789', active: true, version: 1 }],
+    total: 1, limit: 50, offset: 0,
+  }
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(page))))
+  render(<RealRecordListScreen />)
+  const table = await screen.findByRole('region', { name: 'Tabla de registros' })
+  expect(table).not.toHaveAttribute('tabindex')
 })
 
 it('guarda filtros y posición de lectura al abrir un expediente', async () => {
@@ -82,7 +100,7 @@ it('guarda filtros y posición de lectura al abrir un expediente', async () => {
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
   render(<RealRecordListScreen />)
 
-  const table = await screen.findByRole('region', { name: 'Tabla de registros; desplazamiento horizontal disponible' })
+  const table = await screen.findByRole('region', { name: 'Tabla de registros' })
   table.scrollTop = 180
   table.scrollLeft = 42
   fireEvent.click(screen.getByRole('button', { name: 'Abrir expediente' }))

@@ -76,9 +76,32 @@ it('envía los filtros explícitos al servidor', async () => {
   )
   expect(await screen.findByText('No hay resultados')).toBeInTheDocument()
   expect(screen.getByText('Ningún registro coincide con los filtros aplicados.')).toBeInTheDocument()
-  fireEvent.click(screen.getByText('No hay resultados').closest('.queue-empty')!.querySelector('button')!)
+  fireEvent.change(screen.getByLabelText('Entidad'), { target: { value: 'especialidad' } })
+  expect(screen.getByRole('status')).toHaveTextContent('Filtros modificados sin aplicar')
+  fireEvent.click(screen.getByRole('button', { name: 'Actualizar cola' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+  expect(fetchMock.mock.calls[2][0]).toContain('entity_type=medicamento')
+  expect(fetchMock.mock.calls[2][0]).not.toContain('entity_type=especialidad')
+  fireEvent.click(screen.getByText('No hay resultados').closest('.queue-empty')!.querySelector('button')!)
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4))
   expect(await screen.findByText('La cola está al día')).toBeInTheDocument()
+})
+
+it('marca la lista anterior como desactualizada si falla una recarga y permite reintentar', async () => {
+  const item = { target_record_id: 'rec-1', state: 'pendiente', version: 1, assignee_id: null, priority: 0 }
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce(new Response(JSON.stringify([item])))
+    .mockResolvedValueOnce(new Response(JSON.stringify({ detail: 'Fallo temporal' }), { status: 503 }))
+    .mockResolvedValueOnce(new Response(JSON.stringify([item])))
+  vi.stubGlobal('fetch', fetchMock)
+  render(<QueueScreen reviewer={REVIEWER} />)
+  await screen.findByText('rec-1')
+  fireEvent.click(screen.getByRole('button', { name: 'Actualizar cola' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('puede estar desactualizada')
+  expect(screen.getByText('rec-1')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Reintentar carga' }))
+  await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
+  expect(fetchMock).toHaveBeenCalledTimes(3)
 })
 
 it('asigna una selección como lote versionado', async () => {

@@ -145,6 +145,8 @@ export function RealRecordListScreen() {
   const [sortBy, setSortBy] = useState<CatalogIdentitySort>(initialState.sortBy ?? 'name_asc')
   const [retryKey, setRetryKey] = useState(0)
   const resultsRef = useRef<HTMLDivElement>(null)
+  const tableScrollRef = useRef<HTMLDivElement>(null)
+  const [tableOverflows, setTableOverflows] = useState(false)
   const requestedOffset = useRef(offset)
   const restoredPosition = useRef(false)
 
@@ -217,6 +219,17 @@ export function RealRecordListScreen() {
       }),
     [query, entityType, sourceWorkbook, sortBy, showArchived, commercialClass, conditions, offset, retryKey],
   )
+
+  useEffect(() => {
+    const table = tableScrollRef.current
+    if (!table) return
+    const measure = () => setTableOverflows(table.scrollWidth > table.clientWidth + 1)
+    measure()
+    window.addEventListener('resize', measure)
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    observer?.observe(table)
+    return () => { window.removeEventListener('resize', measure); observer?.disconnect() }
+  }, [data, loading])
 
   useEffect(() => {
     requestedOffset.current = offset
@@ -367,7 +380,7 @@ export function RealRecordListScreen() {
       >
         {data && (
           <>
-            <div className='catalog-table-scroll' role='region' aria-label='Tabla de registros; desplazamiento horizontal disponible' tabIndex={0}>
+            <div ref={tableScrollRef} className='catalog-table-scroll' role='region' aria-label={tableOverflows ? 'Tabla de registros; desplazamiento horizontal disponible' : 'Tabla de registros'} tabIndex={tableOverflows ? 0 : undefined}>
               <table className='table'>
                 <caption className='visually-hidden'>Resultados del catálogo de medicamentos</caption>
                 <thead>

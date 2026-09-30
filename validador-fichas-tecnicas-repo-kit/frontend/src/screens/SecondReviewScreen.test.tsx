@@ -23,6 +23,7 @@ const REVIEWER = {
 const PENDING = {
   id: 'asg-1',
   field_value_id: 'fv-1',
+  field_name: 'DESCRIPCION',
   target_record_id: 'rec-1',
   state: 'pendiente',
   version: 1,
@@ -69,6 +70,7 @@ it('separa pendientes, discrepancias y cerradas', async () => {
   expect(await screen.findByText(/Pendientes de segunda lectura \(1\)/)).toBeInTheDocument()
   expect(screen.getByText(/Discrepancias por conciliar \(1\)/)).toBeInTheDocument()
   expect(screen.getByText(/Cerradas \(1\)/)).toBeInTheDocument()
+  expect(screen.getAllByText('DESCRIPCION')).toHaveLength(3)
 })
 
 it('la lectura ciega no muestra la decisión del primer revisor', async () => {

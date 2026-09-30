@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ApiError,
   assignQueue,
@@ -22,6 +22,7 @@ const labels: Record<string, string> = {
 export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
   const [items, setItems] = useState<QueueItem[]>([])
   const [error, setError] = useState('')
+  const [stale, setStale] = useState(false)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [recordId, setRecordId] = useState('')
@@ -34,6 +35,7 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
   const [requiresSecondReview, setRequiresSecondReview] = useState(false)
   const [selected, setSelected] = useState<string[]>([])
   const [appliedFilterCount, setAppliedFilterCount] = useState(0)
+  const appliedFilters = useRef<NonNullable<Parameters<typeof fetchQueue>[0]>>({})
 
   const filters = {
     state: filter,
@@ -44,11 +46,23 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
   }
 
   const activeFilterCount = [filter, entityFilter, blockFilter, setFilter, secondFilter].filter(Boolean).length
+  const filtersChanged = JSON.stringify(filters) !== JSON.stringify(appliedFilters.current)
 
-  async function reload() {
+  async function reload(applyDraft = false) {
+    const requestedFilters = applyDraft ? filters : appliedFilters.current
     setLoading(true)
-    try { setItems(await fetchQueue(filters)); setAppliedFilterCount(activeFilterCount); setSelected([]); setError('') }
-    catch (cause) { setError(cause instanceof ApiError ? cause.message : 'No se pudo cargar la cola.') }
+    try {
+      const result = await fetchQueue(requestedFilters)
+      setItems(result)
+      if (applyDraft) {
+        appliedFilters.current = requestedFilters
+        setAppliedFilterCount(activeFilterCount)
+      }
+      setSelected([])
+      setError('')
+      setStale(false)
+    }
+    catch (cause) { setError(cause instanceof ApiError ? cause.message : 'No se pudo cargar la cola.'); setStale(true) }
     finally { setLoading(false) }
   }
 
@@ -77,8 +91,8 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
     setReviewSetFilter('')
     setSecondFilter('')
     setLoading(true)
-    try { setItems(await fetchQueue()); setAppliedFilterCount(0); setSelected([]); setError('') }
-    catch (cause) { setError(cause instanceof ApiError ? cause.message : 'No se pudo cargar la cola.') }
+    try { setItems(await fetchQueue()); appliedFilters.current = {}; setAppliedFilterCount(0); setSelected([]); setError(''); setStale(false) }
+    catch (cause) { setError(cause instanceof ApiError ? cause.message : 'No se pudo cargar la cola.'); setStale(true) }
     finally { setLoading(false) }
   }
 
@@ -86,7 +100,7 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
     <PageHeader eyebrow='Trabajo del equipo' title='Cola de revisión' description='Asigne, filtre y abra registros desde un único espacio de trabajo.' actions={<div className='page-stat' aria-label={`${items.length} registros en la cola`}>
         <strong>{items.length}</strong><span>En cola</span>
       </div>} />
-    {error && <p role='alert' className='alert alert--error'>{error} Recargue para consultar el estado actual.</p>}
+    {error && <div role='alert' className='alert alert--error'>{error} {stale && items.length > 0 && 'La lista muestra la última carga correcta y puede estar desactualizada.'} <button type='button' className='button button--secondary' disabled={loading || busy} onClick={() => void reload()}>Reintentar carga</button></div>}
     <form className='queue-add panel' onSubmit={(event) => {
           event.preventDefault()
           void act(async () => {
@@ -109,7 +123,7 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
     <FilterWorkspace
       title='Filtros de revisión'
       storageKey='farmalidacion.filters.queue.closed'
-      activeCount={activeFilterCount}
+      activeCount={appliedFilterCount}
       className='queue-workspace'
       filters={
         <>
@@ -119,8 +133,9 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
           <label className='field'><span className='field__label'>Conjunto</span><select aria-label='Filtrar por conjunto' value={setFilter} onChange={(event) => setReviewSetFilter(event.target.value)}><option value=''>Todos</option><option value='oro'>Oro</option><option value='medida'>Medida</option><option value='corpus'>Corpus</option></select></label>
           <label className='field'><span className='field__label'>Doble validación</span><select aria-label='Filtrar doble validación' value={secondFilter} onChange={(event) => setSecondFilter(event.target.value)}><option value=''>Todas</option><option value='true'>Sí</option><option value='false'>No</option></select></label>
           <div className='filter-panel__actions'>
-            <button type='button' className='button button--primary' aria-label='Aplicar filtros' disabled={busy || loading} onClick={() => void reload()}>Aplicar filtros</button>
-            <button type='button' className='button button--secondary' disabled={busy || loading || activeFilterCount === 0} onClick={() => void clearFilters()}>Limpiar filtros</button>
+            {filtersChanged && <span role='status'>Filtros modificados sin aplicar</span>}
+            <button type='button' className='button button--primary' aria-label='Aplicar filtros' disabled={busy || loading} onClick={() => void reload(true)}>Aplicar filtros</button>
+            <button type='button' className='button button--secondary' disabled={busy || loading || (activeFilterCount === 0 && appliedFilterCount === 0)} onClick={() => void clearFilters()}>Limpiar filtros</button>
             <button type='button' className='button button--ghost' aria-label='Actualizar cola' disabled={busy || loading} onClick={() => void reload()}><RefreshCw size={17} aria-hidden='true' /> Actualizar</button>
           </div>
         </>

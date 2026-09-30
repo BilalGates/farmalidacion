@@ -155,7 +155,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
           <ul className='conflicts'>
             {open.map((item) => (
               <li key={item.id}>
-                <span className='conflicts__field'>{item.target_record_id}</span>
+                <span className='conflicts__field'>{item.target_record_id}<small>{item.field_name}</small></span>
                 <span className='badge badge--pendiente'>{item.state}</span>
                 <button
                   type='button'
@@ -250,7 +250,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
           <ul className='conflicts'>
             {conflicts.map((item) => (
               <li key={item.id}>
-                <span className='conflicts__field'>{item.target_record_id}</span>
+                <span className='conflicts__field'>{item.target_record_id}<small>{item.field_name}</small></span>
                 <span className='badge badge--requiere_revision'>Desacuerdo</span>
                 <button
                   type='button'
@@ -277,7 +277,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
           <ul className='conflicts'>
             {closed.map((item) => (
               <li key={item.id}>
-                <span className='conflicts__field'>{item.target_record_id}</span>
+                <span className='conflicts__field'>{item.target_record_id}<small>{item.field_name}</small></span>
                 <span className='badge badge--confirmado'>{item.state}</span>
               </li>
             ))}
