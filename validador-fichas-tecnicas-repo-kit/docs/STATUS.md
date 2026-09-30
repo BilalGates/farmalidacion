@@ -1,5 +1,13 @@
 # Estado del proyecto
 
+## 2026-09-30 — Exclusión de pasadas CIMA simultáneas
+
+El ejecutor diario SQLite mantiene un bloqueo del sistema operativo durante la
+pasada y rechaza con código 2 otra invocación sobre la misma base. El bloqueo se
+libera al salir, también tras un error; la prueba cubre contención, liberación
+y rechazo desde la CLI. El mecanismo requiere que todos los ejecutores compartan
+la misma ruta de base y volumen.
+
 ## Preparación operativa del piloto (30 de septiembre de 2026)
 
 - El arranque documentado distingue los perfiles `demo` y `real` de Compose.

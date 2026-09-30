@@ -49,6 +49,13 @@ python scripts/run_cima_maintenance.py --start-date 09/09/2026
 El comando rechaza el modo DEMO y una ruta SQLite REAL sin fichero, antes de
 abrir una conexión o llamar a CIMA.
 
+Para SQLite, cada pasada toma un bloqueo del sistema operativo en
+`real.db.cima.lock` durante toda la ejecución. Una segunda invocación sobre
+la misma ruta termina con código 2 sin consultar CIMA. El fichero de bloqueo
+puede permanecer tras la ejecución; el bloqueo activo se libera al salir el
+proceso, incluso si termina por error. Todos los ejecutores deben usar la misma
+ruta y el mismo volumen para que esta exclusión sea efectiva.
+
 La programación concreta pertenece a infraestructura y debe invocar este
 comando una vez al día. El comando devuelve código distinto de cero si una
 fecha falla, permitiendo alertas del orquestador además de la alerta interna.
