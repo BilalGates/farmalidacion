@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { expect, it } from 'vitest'
 
 import type { Provenance } from '../api/types'
@@ -24,6 +24,19 @@ function procedencia(literalText: string | null): Provenance[] {
   ]
 }
 
+it('muestra el contexto vecino y permite recuperar la fila completa sin perder vacíos ni fórmulas', () => {
+  const cells = Array.from({ length: 7 }, (_, column) => ({ column, header: `CAMPO_${column}`, literal_value: column === 0 ? null : `valor ${column}`, formula: column === 6 ? 'A1' : null, observed_type: 'text' }))
+  render(<ProvenanceList provenance={procedencia(JSON.stringify(cells))} highlightField='CAMPO_3' contextual />)
+  expect(screen.getAllByRole('row')).toHaveLength(3)
+  expect(screen.queryByRole('row', { name: /CAMPO_0/ })).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /Ver fila completa/ }))
+  expect(screen.getAllByRole('row')).toHaveLength(7)
+  expect(screen.getByRole('row', { name: /CAMPO_0/ })).toHaveTextContent('sin valor')
+  expect(screen.getByRole('row', { name: /CAMPO_6/ })).toHaveTextContent('=A1')
+  fireEvent.click(screen.getByRole('button', { name: /Ver fragmento con contexto/ }))
+  expect(screen.getAllByRole('row')).toHaveLength(3)
+})
+
 it('presenta la fila de origen como campos legibles, no como JSON', () => {
   render(<ProvenanceList provenance={procedencia(FILA)} />)
 
@@ -34,6 +47,14 @@ it('presenta la fila de origen como campos legibles, no como JSON', () => {
   // El JSON sigue existiendo, pero replegado en los detalles técnicos: la vista
   // principal ya no obliga a descifrarlo a ojo.
   expect(screen.getByText(FILA).closest('details')).not.toBeNull()
+})
+
+it('permite ampliar una fila de tres celdas cuando el campo activo está en un extremo', () => {
+  render(<ProvenanceList provenance={procedencia(FILA)} highlightField='BN_IDEXTERNO' contextual />)
+  expect(screen.getAllByRole('row')).toHaveLength(2)
+  fireEvent.click(screen.getByRole('button', { name: /Ver fila completa/ }))
+  expect(screen.getAllByRole('row')).toHaveLength(3)
+  expect(screen.getByRole('button', { name: /Ver fragmento con contexto/ })).toBeInTheDocument()
 })
 
 it('destaca la celda del campo que se revisa', () => {

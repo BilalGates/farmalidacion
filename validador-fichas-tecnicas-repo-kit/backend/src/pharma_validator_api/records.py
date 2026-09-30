@@ -19,6 +19,7 @@ from pharma_validator_api.models import (
     SecondReviewAssignment,
     SourceFragment,
     TargetRecord,
+    ValidationDecisionRecord,
     ValueProvenance,
 )
 from pharma_validator_api.prefill_policy import field_prefill_policy, plan_field_presentation
@@ -635,28 +636,48 @@ def read_record(record_id: str, session: SessionDependency) -> TargetRecordRead:
         .where(BlockInstance.target_record_id == record_id)
         .order_by(BlockInstance.ordinal, BlockInstance.id)
     ).all()
+    block_ids = [block.id for block in blocks]
+    values = session.scalars(
+        select(FieldValue)
+        .where(FieldValue.block_instance_id.in_(block_ids))
+        .order_by(FieldValue.block_instance_id, FieldValue.field_name, FieldValue.id)
+    ).all() if block_ids else []
+    values_by_block: dict[str, list[FieldValue]] = {block.id: [] for block in blocks}
+    for value in values:
+        values_by_block[value.block_instance_id].append(value)
+    value_ids = [value.id for value in values]
+    provenance = provenance_for(session, value_ids)
+    current = current_decisions_for(session, value_ids)
+    history: dict[str, list[ValidationDecisionRecord]] = {}
+    for chunk in chunked(value_ids, BULK_CHUNK):
+        for decision in session.scalars(
+            select(ValidationDecisionRecord)
+            .where(ValidationDecisionRecord.field_value_id.in_(chunk))
+            .order_by(ValidationDecisionRecord.field_value_id, ValidationDecisionRecord.sequence)
+        ).all():
+            history.setdefault(decision.field_value_id, []).append(decision)
+    grouped = _group_by_field(session, values)
     block_payloads = []
     for block in blocks:
-        values = session.scalars(
-            select(FieldValue)
-            .where(FieldValue.block_instance_id == block.id)
-            .order_by(FieldValue.field_name, FieldValue.id)
-        ).all()
-        grouped = _group_by_field(session, values)
+        block_values = values_by_block[block.id]
         block_payloads.append(
             BlockInstanceRead(
                 id=block.id,
                 block_type=block.block_type,
                 ordinal=block.ordinal,
                 values=[
-                    _read_field_value(
+                    _read_field_value_loaded(
                         session,
                         value,
                         record,
                         block,
                         grouped[_field_group_key(value)],
+                        grouped[(value.block_instance_id, value.field_name)],
+                        provenance,
+                        current,
+                        history,
                     )
-                    for value in values
+                    for value in block_values
                 ],
             )
         )
@@ -736,6 +757,61 @@ def maintain_field_value(
         actor_assurance=revision.actor_assurance,
         reason=revision.reason,
         recorded_at=revision.recorded_at.isoformat(),
+def _read_field_value_loaded(
+    session: Session,
+    value: FieldValue,
+    record: TargetRecord,
+    block: BlockInstance,
+    siblings: tuple[FieldValue, ...],
+    provenance: dict[str, tuple[tuple[ValueProvenance, SourceFragment], ...]],
+    current: dict[str, CurrentDecision],
+    history: dict[str, list[ValidationDecisionRecord]],
+) -> FieldValueRead:
+    """Serializa un campo desde datos cargados en bloque, sin consultas por fila."""
+    evaluation = evaluate_field_conflict_from(
+        provenance, siblings, 1, record.entity_type, block.block_type, value.field_name
+    )
+    plan = plan_field_presentation(
+        value.field_name, field_prefill_policy(session, value.field_name)
+    )
+    decision = current.get(value.id)
+    return FieldValueRead(
+        id=value.id,
+        field_name=value.field_name,
+        literal_value=value.literal_value,
+        observed_type=value.observed_type,
+        logical_state=value.logical_state,
+        provenance=[
+            ProvenanceRead(
+                source_fragment_id=fragment.id,
+                document_version_id=fragment.document_version_id,
+                locator_type=fragment.locator_type,
+                locator=fragment.locator,
+                literal_text=fragment.literal_text,
+                provenance_role=row.provenance_role,
+            )
+            for row, fragment in provenance.get(value.id, ())
+        ],
+        validation_state=decision.state if decision else "pendiente",
+        conflict_status=evaluation.status,
+        has_conflict=evaluation.has_conflict,
+        prefill_policy=plan.policy,
+        prefill_presentation=plan.presentation,
+        proposed_value=plan.prefilled_value,
+        prefill_options=list(plan.options),
+        prefill_warning=plan.warning,
+        history=[
+            DecisionRead(
+                sequence=item.sequence,
+                state=item.state,
+                final_value=item.final_value,
+                comment=item.comment,
+                reviewer_id=item.reviewer_id,
+                reviewer_assurance=item.reviewer_assurance,
+                decided_at=item.decided_at.isoformat(),
+            )
+            for item in history.get(value.id, ())
+        ],
     )
 
 

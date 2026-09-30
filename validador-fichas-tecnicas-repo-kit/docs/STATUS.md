@@ -318,6 +318,36 @@
   modificación/archivo e historial. Los contratos rechazan niveles y campos
   desconocidos; los actores se resuelven contra el directorio activo y un
   conflicto de versión responde 409 para que la pantalla pueda recargar.
+## Registros compacto — 10 de septiembre de 2026
+
+Implementación de ADR-0012: listado y ficha integrados, columnas ajustables,
+campos con etiquetas y código, un editor desplegado, filtros por campo/bloque,
+fuente contextual ampliable y avance explícito entre pendientes. Se reutilizan
+las decisiones, borradores, historial y barreras existentes.
+
+Verificación del cierre:
+
+- `npm test -- --reporter=dot`: 20 archivos, 131 pruebas aprobadas.
+- `npm run lint`: aprobado sin advertencias.
+- `npm run build` y build Docker del frontend: aprobados.
+- `docker compose --profile real up -d --no-deps --build frontend-real`:
+  frontend actualizado y saludable en `http://localhost:5173/#/fichas`.
+- Inspección con Edge/Playwright en 1366×768, 1920×1080, 1024×768 y
+  390×844: sin desbordamiento horizontal, avance entre registros operativo,
+  ningún error de página y cero decisiones enviadas durante la inspección.
+- En móvil, las zonas se apilan para conservar su legibilidad.
+
+Ajuste de rendimiento y limpieza visual del 10 de septiembre: la ficha carga
+campos, procedencias, decisiones e historial por lotes en vez de consultar por
+cada campo. En el contenedor real, las ocho primeras fichas (5–69 campos)
+pasaron de 2,8–12,6 s a 2,1–2,3 s. El listado precarga además las dos fichas
+siguientes, por lo que el cambio habitual entre registros reutiliza la petición
+en vuelo o la respuesta reciente. La vista compacta ya no muestra los bloques
+de atajos y trazabilidad/borradores. Conserva «Siguiente pendiente» como una
+acción aislada para mantener el flujo de revisión consecutiva.
+
+Esta verificación técnica no constituye aceptación farmacéutica ni una medida
+de ahorro. Las etiquetas desconocidas mantienen su código original.
 
 ## Integración CIMA REAL operativa (9 de septiembre de 2026)
 
@@ -1388,6 +1418,13 @@ Revisión formal criterio por criterio en `docs/PHASE_4_GATE_REVIEW.md`.
   y cada bloque con el nombre del libro y la hoja original (p. ej., Medicamentos
   · Composicion → «Composición»). Se conserva el agrupamiento actual por bloque
   y sus ocurrencias; los nombres internos técnicos dejan de ser el rótulo visible.
+10 de septiembre de 2026.
+
+## Agrupación visual de fuentes
+
+- La pantalla de fuentes agrupa los documentos por tipo de origen y muestra totales de documentos, registros, lotes e incidencias.
+- Cada grupo se puede desplegar para conservar el acceso al documento, versión, estado y detalle individual; no cambia el contrato de API ni el modelo documental.
+- La agregación y la interacción expandir/contraer quedan cubiertas por Vitest.
 
 ## Reconciliación del estado mostrado en la interfaz
 
@@ -1520,3 +1557,7 @@ El listado de segunda revisión incluye el nombre técnico del campo en pendient
 La región de resultados sólo se añade a la secuencia de tabulación cuando la tabla desborda horizontalmente. El cálculo se actualiza al cargar resultados y al cambiar el tamaño disponible; el nombre accesible anuncia el desplazamiento únicamente en ese caso. Pasan las 15 pruebas dirigidas del catálogo, ESLint y el build de frontend.
 
 Validación del cierre UI: frontend 149/149, ESLint, TypeScript y build correctos; Ruff, Compose config y migraciones correctos. El gate integral conserva bloqueos ajenos a UI: pytest Python 774 correctas, 1 omitida, 3 fallidas (dos `ChangesClient` sin `medication` y un hash de maestro local diferente); mypy 5 errores backend; ocho referencias locales faltantes. Detalle en `docs/UI_REDESIGN_FINAL_AUDIT.md`.
+
+## UI — Novedades CIMA (10-09-2026)
+
+Rediseño del panel de novedades (§13): resumen de eventos cargados por tipo, etiquetas de cambio y reapertura, historial en panel y detalle documental contextual. Conserva fuentes, eventos y consulta bajo demanda. Prueba de pantalla cubre resumen y apertura del diff.
