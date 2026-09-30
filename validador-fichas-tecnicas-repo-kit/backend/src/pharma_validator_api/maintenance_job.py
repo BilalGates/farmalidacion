@@ -31,13 +31,19 @@ def _parse(value: str) -> date:
     return datetime.strptime(value, "%d/%m/%Y").date()
 
 
-def next_pending_date(session: Session, *, start_date: date) -> date:
+def _completed_days(session: Session) -> set[date]:
     completed = session.scalars(
         select(MaintenanceRun.requested_date).where(MaintenanceRun.status == "completed")
     ).all()
-    if not completed:
-        return start_date
-    return max(_parse(item) for item in completed) + timedelta(days=1)
+    return {_parse(item) for item in completed}
+
+
+def next_pending_date(session: Session, *, start_date: date) -> date:
+    completed_days = _completed_days(session)
+    pending = start_date
+    while pending in completed_days:
+        pending += timedelta(days=1)
+    return pending
 
 
 def _attempt(session: Session, requested_date: str) -> int:
@@ -183,11 +189,11 @@ def run_pending_days(
     start_date: date,
     through_date: date,
 ) -> tuple[MaintenanceRun, ...]:
-    pending = next_pending_date(session, start_date=start_date)
-    if through_date < pending:
-        return ()
+    completed_days = _completed_days(session)
+    pending = start_date
     runs: list[MaintenanceRun] = []
     while pending <= through_date:
-        runs.append(run_one_day(session, client=client, day=pending))
+        if pending not in completed_days:
+            runs.append(run_one_day(session, client=client, day=pending))
         pending += timedelta(days=1)
     return tuple(runs)

@@ -13,9 +13,10 @@ consultar como cerrado un día que todavía está creciendo.
 
 ## Cursor y recuperación
 
-El cursor se deriva del último `maintenance_run` completado. Se procesan en
-orden todos los días posteriores hasta la fecha final. Si no hay ejecuciones
-completadas se comienza en la fecha inicial declarada.
+El cursor es el primer día sin `maintenance_run` completado desde la fecha
+inicial. Se procesan en orden los días sin completar hasta la fecha final;
+un día completado posterior a un hueco no hace que se pierda ese hueco ni se
+repite. Si no hay ejecuciones completadas se comienza en la fecha inicial.
 
 Cada día tiene intentos numerados. Un fallo:
 
