@@ -1,4 +1,41 @@
+## UX — Expedientes en modal (2026-10-01)
+
+Implementado: apertura contextual, anterior/siguiente entre páginas, conservación del listado y borradores durante la sesión. Pendiente: aceptación de usabilidad farmacéutica y comprobación visual en navegador.
+
 # Backlog inicial
+
+## Gestión de fuentes (1 de octubre de 2026)
+
+- **FUE-001, en curso:** Fuentes guarda un nombre visible y permite ocultar o
+  recuperar una fuente con responsable, motivo e historial append-only. El
+  siguiente corte necesita perfiles por tipo de maestro, gestión de entrada y
+  activación enlazada al importador; el archivo actual sólo la oculta del
+  listado. Detalle en `docs/SOURCE_MANAGEMENT_PLAN.md`.
+- **FUE-002, en curso:** Fuentes valida y previsualiza los tres XLSX; exige
+  confirmar el mismo hash y registra responsable y motivo. El backend conserva
+  el original y bloquea un segundo contenido distinto tras una carga completada
+  hasta resolver comparación y enlace de identidades.
+- **FUE-003, en curso:** Fuentes ya enlaza con Importaciones y Exportaciones en
+  la misma navegación. La exportación tiene pantalla de generación; la pantalla
+  de Importaciones sigue siendo de consulta y aún no lanza cargas.
+- **FUE-004, en curso:** motor Nomenclátor confirmado como SQL Server;
+  configuración de servidor, puerto, base y usuario con historial, y prueba
+  cifrada de lectura. Faltan datos de acceso, inventario de tablas/vistas,
+  mapeo y carga de una muestra.
+- **FUE-006, pendiente externa:** Fuentes da acceso a BOT PLUS Web; falta
+  confirmar el servicio autorizado de integración y recibir credenciales.
+- **Vista previa REAL de fuentes:** los tres Excel y documentos CIMA se ven en
+  `sources-preview.db`, copia aislada de `real-preview.db`, mediante el perfil
+  Compose `preview` en los puertos 5174/8001.
+- **D-034, pendiente:** regla demostrada y aprobada de reconciliación entre
+  versiones y fuentes. No usar `*_IDEXTERNO`, CN o `nregistro` como equivalentes;
+  el registro fuente debe conservar su sistema, literal y versión.
+- **Siguiente corte FUE:** perfiles de fuente versionados con guardar/probar,
+  configuración como pendiente, estado de conexión y formulario protegido de
+  secretos en servidor; incorporar el estado del mantenimiento CIMA existente.
+  No activar ningún conector hasta validar esquema, permisos y muestra de sólo
+  lectura. Importaciones/exportaciones mostrarán ejecución, actor, hash, perfil,
+  resultado e informe reproducible.
 
 ## Preparación operativa y aceptación (30 de septiembre de 2026)
 

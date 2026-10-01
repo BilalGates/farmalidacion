@@ -1,4 +1,20 @@
+## Extensión UX 2026-10-01
+
+Petición del responsable: expediente en modal y botones anterior/siguiente. Implementación: `RecordDialog`, `RealRecordListScreen`, `CatalogIdentityScreen`. Pruebas: navegación entre páginas, límites, fallo de red, Escape y conservación de ediciones. ADR-0012 ampliado; especificación §10.3–10.4 (contexto y teclado).
+
 # Matriz inicial de trazabilidad
+
+## Gestión de fuentes (1 de octubre de 2026)
+
+| Requisito | Fuente | Evidencia de implementación | Verificación |
+|---|---|---|---|
+| Renombrar y archivar fuentes sin borrar versiones | `docs/SOURCE_MANAGEMENT_PLAN.md`, FUE-001 | `SourceDocument.display_name`/`is_active`, migración `f4a5b6c7d8e9`, PATCH auditado y pantalla Fuentes | TypeScript y Ruff correctos; no se ejecutaron pruebas; migración sin aplicar |
+| Consultar cambios de gestión | Plan FUE-001 | Historial append-only con actor, motivo y estado previo/posterior | `alembic heads` reconoce la migración; Vite limitado por `spawn EPERM` |
+| Previsualizar y confirmar una carga de maestro | Plan FUE-002 | `/imports/master/{tipo}/preview` y `/imports/master/{tipo}`; tamaño/hash, responsable/motivo y XLSX original versionado | Pendiente de ejecutar pruebas de contrato; segundos contenidos distintos se bloquean con 409 para evitar duplicados |
+| Configurar nuevos orígenes con trazabilidad | FUE-001/FUE-004/FUE-006; ADR-0005; D-027/D-033/D-034 | Contrato de etapas, configuración versionada y secretos protegidos en `docs/SOURCE_MANAGEMENT_PLAN.md`; FUE-004/006 permanecen deshabilitados hasta validar acceso y servicio | Pendiente de esquema/diccionario Nomenclátor y contrato BOT PLUS Integración; ninguna credencial recibida ni persistida |
+| Permitir sustitución de maestros sin duplicar ni fusionar identidades incorrectas | FUE-002; D-004/D-027/D-034 | Guardarraíl de hash en API; decisión pendiente en `docs/DECISION_REGISTER.md`; plan exige regla longitudinal aprobada por entidad | Distinto hash se rechaza de forma segura (409); sustitución requiere evidencia/decisión e implementación pendiente |
+| Ver los tres maestros originales y CIMA en Fuentes | FUE-001/FUE-005 | Tarjetas de los tres perfiles con estado derivado de la API; tarjeta CIMA; perfil Compose `preview` contra copia de la base REAL | API: 29.850 especialidades, 6.342 medicamentos, 7.189 principios activos y 51 documentos CIMA; interfaz comprobada en 5174 |
+| Configurar y probar el acceso Nomenclátor SQL Server | FUE-004; confirmación del responsable 2026-10-01 | `source_connection_api`, revisión inmutable, migración `a5b6c7d8e9f0`, formulario de conexión y prueba con `SELECT DB_NAME()` | Ruff/mypy/TypeScript correctos; prueba real pendiente de host y credenciales |
 
 ## Arranque verificable (30 de septiembre de 2026)
 

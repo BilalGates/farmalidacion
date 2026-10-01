@@ -11,6 +11,7 @@ dependencies = [
     'alembic>=1.19,<2',
     'fastapi>=0.115,<1',
     'httpx>=0.28,<1',
+    'mssql-python>=1.7,<2',
     'pydantic-settings>=2.7,<3',
     'sqlalchemy>=2.0.52,<3',
     'uvicorn>=0.34,<1',

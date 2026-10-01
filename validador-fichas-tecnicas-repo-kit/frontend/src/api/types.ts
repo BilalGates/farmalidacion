@@ -247,6 +247,8 @@ export interface Dashboard {
 export interface SourceSummary {
   key: string
   name: string
+  display_name: string | null
+  is_active: boolean
   source_type: string
   status: string
   versions: number
@@ -269,11 +271,68 @@ export interface SourceSheet {
 export interface SourceDetail extends SourceSummary {
   sheets: SourceSheet[]
   batch_ids: string[]
+  management_history: SourceManagementRevision[]
+}
+
+export interface SourceManagementRevision {
+  previous_display_name: string | null
+  display_name: string
+  was_active: boolean
+  is_active: boolean
+  actor_id: string
+  reason: string
+  created_at: string
+}
+
+export interface WorkbookSheetPreview {
+  name: string
+  columns: number
+  data_rows: number
+}
+
+export interface WorkbookPreview {
+  workbook: string
+  sha256: string
+  size_bytes: number
+  sheets: WorkbookSheetPreview[]
+  data_rows: number
+  can_import: boolean
+  blocked_reason: string | null
+}
+
+export interface WorkbookImportResult {
+  batch_id: string
+  created: boolean
+  status: string
+  sha256: string
 }
 
 export interface SourceList {
   items: SourceSummary[]
   total: number
+}
+
+export interface NomenclatorConnection {
+  configured: boolean
+  host: string | null
+  port: number
+  database_name: string | null
+  username: string | null
+  server_password_configured: boolean
+  updated_at: string | null
+}
+
+export interface NomenclatorConnectionFields {
+  host: string
+  port: number
+  database_name: string
+  username: string
+}
+
+export interface NomenclatorConnectionTest {
+  connected: boolean
+  database_name: string
+  message: string
 }
 
 export interface ImportSummary {
@@ -292,6 +351,8 @@ export interface ImportSummary {
   quarantined_rows: number
   diagnostics: number
   errors: number
+  started_by: string | null
+  reason: string | null
 }
 
 export interface Incident {

@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Query, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import ColumnElement, Select, func, select
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -41,6 +41,7 @@ from pharma_validator_api.models import (
     SourceDocument,
     SourceDocumentVersion,
     SourceFragment,
+    SourceManagementRevision,
     TargetRecord,
     ValidationDecisionRecord,
     ValueProvenance,
@@ -104,6 +105,8 @@ class DashboardRead(BaseModel):
 class SourceRead(BaseModel):
     key: str
     name: str
+    display_name: str | None
+    is_active: bool
     source_type: str
     status: str
     versions: int
@@ -123,9 +126,20 @@ class SourceSheetRead(BaseModel):
     material_value_count: int
 
 
+class SourceManagementRevisionRead(BaseModel):
+    previous_display_name: str | None
+    display_name: str
+    was_active: bool
+    is_active: bool
+    actor_id: str
+    reason: str
+    created_at: str
+
+
 class SourceDetailRead(SourceRead):
     sheets: list[SourceSheetRead]
     batch_ids: list[str]
+    management_history: list[SourceManagementRevisionRead]
 
 
 class ImportRead(BaseModel):
@@ -144,6 +158,8 @@ class ImportRead(BaseModel):
     quarantined_rows: int
     diagnostics: int
     errors: int
+    started_by: str | None
+    reason: str | None
 
 
 class IncidentRead(BaseModel):
@@ -167,6 +183,13 @@ class ImportListRead(BaseModel):
 class SourceListRead(BaseModel):
     items: list[SourceRead]
     total: int
+
+
+class SourceManagementWrite(BaseModel):
+    display_name: str = Field(min_length=1, max_length=200)
+    is_active: bool
+    actor_id: str = Field(min_length=1, max_length=80)
+    reason: str = Field(min_length=1, max_length=1000)
 
 
 class RecordRowRead(BaseModel):
@@ -447,6 +470,8 @@ def _source_payload(session: Session, row: SourceRow) -> SourceRead:
     return SourceRead(
         key=document.id,
         name=document.name,
+        display_name=document.display_name,
+        is_active=document.is_active,
         source_type=document.source_type,
         status=status,
         versions=int(versions or 0),
@@ -461,9 +486,13 @@ def _source_payload(session: Session, row: SourceRow) -> SourceRead:
 
 
 @router.get("/sources", response_model=SourceListRead)
-def list_sources(session: SessionDependency) -> SourceListRead:
+def list_sources(session: SessionDependency, include_archived: bool = False) -> SourceListRead:
     """Fuentes realmente conocidas por el sistema, con su estado de carga."""
-    items = [_source_payload(session, row) for row in _source_rows(session)]
+    items = [
+        _source_payload(session, row)
+        for row in _source_rows(session)
+        if include_archived or row[0].is_active
+    ]
     return SourceListRead(items=items, total=len(items))
 
 
@@ -475,6 +504,11 @@ def read_source(source_id: str, session: SessionDependency) -> SourceDetailRead:
     base = _source_payload(session, rows[0])
     batches = _batches_for_document(session, source_id)
     batch_ids = [batch.id for batch in batches]
+    management_history = session.scalars(
+        select(SourceManagementRevision)
+        .where(SourceManagementRevision.source_document_id == source_id)
+        .order_by(SourceManagementRevision.created_at.desc(), SourceManagementRevision.id.desc())
+    ).all()
     sheets = (
         list(
             session.scalars(
@@ -489,6 +523,18 @@ def read_source(source_id: str, session: SessionDependency) -> SourceDetailRead:
     return SourceDetailRead(
         **base.model_dump(),
         batch_ids=batch_ids,
+        management_history=[
+            SourceManagementRevisionRead(
+                previous_display_name=revision.previous_display_name,
+                display_name=revision.display_name,
+                was_active=revision.was_active,
+                is_active=revision.is_active,
+                actor_id=revision.actor_id,
+                reason=revision.reason,
+                created_at=revision.created_at.isoformat(),
+            )
+            for revision in management_history
+        ],
         sheets=[
             SourceSheetRead(
                 sheet_name=sheet.sheet_name,
@@ -543,6 +589,8 @@ def _import_payload(session: Session, batch: ImportBatch) -> ImportRead:
             ImportDiagnostic.import_batch_id == batch.id,
             ImportDiagnostic.severity == "error",
         ),
+        started_by=batch.started_by,
+        reason=batch.reason,
     )
 
 
@@ -558,6 +606,40 @@ def list_imports(session: SessionDependency) -> ImportListRead:
     )
     items = [_import_payload(session, batch) for batch in batches]
     return ImportListRead(items=items, total=len(items))
+
+
+@router.patch("/sources/{source_id}", response_model=SourceRead)
+def manage_source(
+    source_id: str, payload: SourceManagementWrite, session: SessionDependency
+) -> SourceRead:
+    """Cambia el nombre visible o archiva/reactiva una fuente sin borrar su historia."""
+    document = session.get(SourceDocument, source_id)
+    if document is None:
+        raise ApplicationError("Fuente no encontrada.", status_code=404)
+    display_name = payload.display_name.strip()
+    reason = payload.reason.strip()
+    actor_id = payload.actor_id.strip()
+    if not display_name or not reason or not actor_id:
+        raise ApplicationError("Indique nombre, responsable y motivo.", status_code=422)
+    previous_display_name = document.display_name
+    was_active = document.is_active
+    document.display_name = display_name
+    document.is_active = payload.is_active
+    session.add(
+        SourceManagementRevision(
+            source_document_id=document.id,
+            previous_display_name=previous_display_name,
+            display_name=display_name,
+            was_active=was_active,
+            is_active=payload.is_active,
+            actor_id=actor_id,
+            reason=reason,
+            created_at=datetime.now().astimezone(),
+        )
+    )
+    session.commit()
+    rows = [row for row in _source_rows(session) if row[0].id == source_id]
+    return _source_payload(session, rows[0])
 
 
 @router.get("/imports/{batch_id}", response_model=ImportDetailRead)

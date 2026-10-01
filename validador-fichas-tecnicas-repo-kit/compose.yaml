@@ -142,6 +142,60 @@ services:
       retries: 10
     restart: unless-stopped
 
+  # Vista previa aislada de REAL. Se alimenta de una copia local de
+  # real-preview.db: nunca escribe sobre la base de referencia.
+  backend-preview:
+    profiles: ['preview']
+    build:
+      context: .
+      dockerfile: infra/backend.Dockerfile
+    environment:
+      APP_ENV: development
+      APP_LOG_LEVEL: INFO
+      APP_DATA_MODE: real
+      APP_DATABASE_URL: sqlite:////app/data/sources-preview.db
+      APP_LOAD_DEMO_FIXTURE: 'false'
+      APP_LOAD_SHOWCASE_FIXTURE: 'false'
+      APP_CORS_ALLOW_ORIGINS: '["http://localhost:5174","http://127.0.0.1:5174"]'
+      APP_REVIEWERS: '["mtorres:M. Torres","jlopez:J. Lopez"]'
+      APP_ENABLE_EXPORT: 'true'
+      APP_EXPORT_ARTIFACT_DIR: /app/data/exports-preview
+      APP_ENABLE_CIMA_LINK: 'true'
+    command:
+      - sh
+      - -c
+      - python -m alembic -c backend/alembic.ini upgrade head && python -m uvicorn pharma_validator_api.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - ./data/local:/app/data
+    ports:
+      - '127.0.0.1:8001:8000'
+    healthcheck:
+      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  frontend-preview:
+    profiles: ['preview']
+    build:
+      context: .
+      dockerfile: infra/frontend.Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8001
+    depends_on:
+      backend-preview:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:5174:8080'
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://127.0.0.1:8080/healthz']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
   # Ejecución finita para un planificador de un host siempre encendido.
   # `docker compose --profile maintenance run --build --rm maintenance-real`
   # No se incluye en el perfil real para evitar una pasada por cada arranque.

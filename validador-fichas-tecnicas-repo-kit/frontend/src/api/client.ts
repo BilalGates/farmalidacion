@@ -36,7 +36,13 @@ import type {
   Reviewer,
   SourceDetail,
   SourceList,
+  SourceSummary,
+  NomenclatorConnection,
+  NomenclatorConnectionFields,
+  NomenclatorConnectionTest,
   TargetRecord,
+  WorkbookImportResult,
+  WorkbookPreview,
 } from './types'
 
 /**
@@ -192,12 +198,71 @@ export function fetchDashboard(): Promise<Dashboard> {
   return request<Dashboard>('/insights/dashboard')
 }
 
-export function fetchSources(): Promise<SourceList> {
-  return request<SourceList>('/insights/sources')
+export function fetchSources(includeArchived = false): Promise<SourceList> {
+  return request<SourceList>(`/insights/sources${includeArchived ? '?include_archived=true' : ''}`)
+}
+
+export function fetchNomenclatorConnection(): Promise<NomenclatorConnection> {
+  return request<NomenclatorConnection>('/source-connections/nomenclator')
+}
+
+export function saveNomenclatorConnection(payload: NomenclatorConnectionFields & {
+  actor_id: string; reason: string
+}): Promise<NomenclatorConnection> {
+  return request<NomenclatorConnection>('/source-connections/nomenclator', {
+    method: 'PUT', body: JSON.stringify(payload),
+  })
+}
+
+export function testNomenclatorConnection(payload: NomenclatorConnectionFields & {
+  password: string
+}): Promise<NomenclatorConnectionTest> {
+  return request<NomenclatorConnectionTest>('/source-connections/nomenclator/test', {
+    method: 'POST', body: JSON.stringify(payload),
+  })
 }
 
 export function fetchSource(id: string): Promise<SourceDetail> {
   return request<SourceDetail>(`/insights/sources/${encodeURIComponent(id)}`)
+}
+
+export function updateSource(id: string, payload: {
+  display_name: string
+  is_active: boolean
+  actor_id: string
+  reason: string
+}): Promise<SourceSummary> {
+  return request<SourceSummary>(`/insights/sources/${encodeURIComponent(id)}`, {
+    method: 'PATCH', body: JSON.stringify(payload),
+  })
+}
+
+export function previewMasterWorkbook(
+  kind: CatalogSourceWorkbook,
+  file: File,
+): Promise<WorkbookPreview> {
+  return request<WorkbookPreview>(`/imports/master/${kind}/preview`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+    body: file,
+  })
+}
+
+export function importMasterWorkbook(
+  kind: CatalogSourceWorkbook,
+  file: File,
+  payload: { sha256: string; actor_id: string; reason: string },
+): Promise<WorkbookImportResult> {
+  return request<WorkbookImportResult>(`/imports/master/${kind}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'X-Expected-SHA256': payload.sha256,
+      'X-Import-Actor': encodeURIComponent(payload.actor_id),
+      'X-Import-Reason': encodeURIComponent(payload.reason),
+    },
+    body: file,
+  })
 }
 
 export function fetchImports(): Promise<ImportList> {
@@ -331,6 +396,8 @@ export function fetchCatalogIdentities(params: {
   conditions?: string[]
   sourceWorkbook?: CatalogSourceWorkbook
   sortBy?: CatalogIdentitySort
+  reviewScope?: 'all' | 'pending' | 'unassigned' | 'mine' | 'second' | 'completed'
+  reviewerId?: string
   active?: boolean
   limit?: number
   offset?: number
@@ -342,6 +409,8 @@ export function fetchCatalogIdentities(params: {
   params.conditions?.forEach((condition) => search.append('condition', condition))
   if (params.sourceWorkbook) search.set('source_workbook', params.sourceWorkbook)
   if (params.sortBy) search.set('sort_by', params.sortBy)
+  if (params.reviewScope && params.reviewScope !== 'all') search.set('review_scope', params.reviewScope)
+  if (params.reviewerId) search.set('reviewer_id', params.reviewerId)
   if (params.active !== undefined) search.set('active', String(params.active))
   if (params.limit !== undefined) search.set('limit', String(params.limit))
   if (params.offset !== undefined) search.set('offset', String(params.offset))

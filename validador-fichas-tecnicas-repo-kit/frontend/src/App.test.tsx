@@ -222,7 +222,7 @@ function mockFetch() {
     if (detail) return ok(DETAIL)
 
     if (url.includes('/catalog/identities/')) {
-      if (/\/(history|relations|classifications)$/.test(url)) return ok([])
+      if (/\/(history|relations|classifications|cima-documents)$/.test(url)) return ok([])
       const record = listPayload.items.find((item) => url.endsWith(`/catalog/identities/${item.id}`))
       return ok({
         id: record?.id ?? 'rec-1', identity_type: 'dcp', code: record?.primary_identifier ?? null,
@@ -375,6 +375,8 @@ describe('Recorrido de la vertical de revisión', () => {
     )
 
     await click(screen.getAllByRole('button', { name: 'Abrir expediente' })[0])
+    expect(screen.getByRole('dialog', { name: 'Expediente del registro' })).toBeVisible()
+    expect(screen.getByRole('region', { name: 'Tabla de registros' })).toBeInTheDocument()
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Metotrexato 2,5 mg comprimidos' }),
     ).toBeVisible()

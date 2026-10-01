@@ -7,18 +7,12 @@ interface WorkspaceTab {
 }
 
 const WORKSPACES: Record<string, { label: string; tabs: WorkspaceTab[] }> = {
-  review: {
-    label: 'Revisión',
-    tabs: [
-      { id: 'queue', label: 'Cola de revisión', path: '/revision/cola' },
-      { id: 'second-review', label: 'Segunda revisión', path: '/revision/validaciones' },
-    ],
-  },
   data: {
     label: 'Datos',
     tabs: [
       { id: 'sources', label: 'Fuentes', path: '/datos/fuentes' },
       { id: 'imports', label: 'Importaciones', path: '/datos/importaciones' },
+      { id: 'exports', label: 'Exportaciones', path: '/exportaciones' },
       { id: 'quarantine', label: 'Cuarentena', path: '/datos/cuarentena' },
     ],
   },

@@ -1,4 +1,78 @@
+## 2026-10-01 — Expedientes en modal
+
+Validación: `npm run build` y `npm run lint` correctos; `npm test -- RealRecordListScreen.test.tsx CatalogIdentityScreen.test.tsx`: 21 pruebas aprobadas. Comprobado visualmente en la vista previa Docker 5174: modal, selector de revisor y avance del registro 1 al 2. El frontend de esa vista previa se reconstruyó y quedó operativo.
+
+El catálogo abre expedientes sobre el listado, con anterior/siguiente según filtros y orden del servidor, incluidos cambios de página. Los formularios visitados permanecen montados durante la sesión del catálogo para conservar ediciones al cerrar y reabrir. Escape y Cerrar recuperan el foco.
+
 # Estado del proyecto
+
+## 2026-10-01 — Fuentes visibles con los maestros originales
+
+La página prioriza tarjetas para los tres libros Excel conocidos y muestra su
+estado a partir de la base activa, además de CIMA, Nomenclátor y BOT PLUS Web.
+Se creó `sources-preview.db` como copia de `real-preview.db` y el perfil
+Compose `preview` (5174/8001) para enseñar los tres maestros sin modificar la
+base original. `scripts/start-sources-preview.ps1` reproduce el arranque y
+comprueba datos REAL y frontend disponibles. Nomenclátor usa SQL Server según
+confirmó el responsable; el
+formulario conserva servidor, puerto, base y usuario con historial, y permite
+probar una conexión cifrada con contraseña efímera o secreto de servidor. La
+prueba ejecuta sólo `SELECT DB_NAME()`. Todavía faltan host y credenciales para
+probarla contra la base de la organización e inventariar su esquema. BOT PLUS
+Web ofrece acceso de consulta; el adaptador de datos sigue pendiente del
+servicio de integración autorizado. La sustitución de un maestro con distinto
+contenido sigue bloqueada por D-034.
+
+Verificación de la vista previa: frontend y backend saludables; `/ready` y
+`/database-info` confirman modo REAL consistente con 43.381 registros reales,
+cero DEMO y tres lotes. Fuentes muestra 29.850 especialidades, 6.342
+medicamentos, 7.189 principios activos y 51 documentos CIMA. El detalle de
+Especialidades presenta sus hojas `General` y `Excipientes`, nombre editable,
+archivo reversible y carga controlada. Ruff, mypy, TypeScript y build Vite
+correctos; no se ejecutaron pruebas automatizadas en este corte. La migración
+está aplicada sólo a `sources-preview.db`; `real-preview.db` continúa en
+`f3e4d5c6b7a8`.
+El comando `scripts/start-sources-preview.ps1 -SkipBuild` confirmó ambos
+servicios saludables y 43.381 registros REAL sin sobrescribir la copia.
+
+
+## 2026-10-01 — Primer corte de gestión de fuentes
+
+La pantalla Fuentes permite cambiar el nombre visible, archivar/restaurar una
+fuente y consultar el historial con responsable y motivo. El archivo afecta al
+listado habitual; no impide que los importadores actuales sigan leyendo sus
+nombres técnicos. Importaciones y exportaciones comparten ahora la navegación
+del área Datos. Migración aditiva pendiente de aplicar. Verificación: TypeScript,
+Ruff y `alembic heads` correctos; Vite no completó por `spawn EPERM` y la
+generación SQL de todas las migraciones se detuvo en una migración anterior que
+requiere conexión. No se ejecutaron pruebas.
+
+La importación web de los tres maestros tiene vista previa de estructura y hash,
+confirmación ligada al mismo archivo y captura de responsable/motivo. Los XLSX
+se guardan como artefactos inmutables de su versión. Para proteger el catálogo,
+un libro con contenido distinto se bloquea si ya existe una carga completada;
+falta implementar comparación y enlace de registros para permitir sustituciones.
+Verificaciones de este corte: Ruff, mypy y TypeScript correctos; no se ejecutaron
+pruebas. Vite sigue limitado por `spawn EPERM`; migración sin aplicar.
+
+El plan detalla la configuración versionada de fuentes, el alta por etapas,
+historial de ejecuciones y perfiles reproducibles de exportación. Se registró
+D-034 para resolver con evidencia las claves de reconciliación entre versiones
+y fuentes. Nomenclátor se conectará primero en sólo lectura tras recibir su
+esquema/diccionario; BOT PLUS queda pendiente del contrato de BOT PLUS
+Integración y de confirmar permisos; no se automatizará la web ni se guardarán
+credenciales en el código. CIMA conservará su operación y enlaces actuales.
+
+## 2026-10-01 — Arranque de la demo desde el código actual
+
+Se reconstruyeron los contenedores. Se corrigieron un error de sintaxis y la
+lectura de registros con mantenimiento en `records.py`. El origen
+`synthetic_fixture` se reconoce como DEMO, igual que `demo_showcase`, para que
+`/ready` clasifique correctamente el fixture incluido en el arranque.
+Verificación dirigida: 15 pruebas de registros y mantenimiento y 24 pruebas de
+origen y diagnóstico correctas; `/ready`, `/database-info`, `/records` y la
+interfaz respondieron. La demo se ejecuta en el proyecto Compose
+`pharma-validator-fresh`; el volumen anterior se conserva.
 
 ## 2026-09-30 — Exclusión de pasadas CIMA simultáneas
 

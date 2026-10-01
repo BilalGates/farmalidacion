@@ -33,6 +33,8 @@ from pharma_validator_api.queue_api import router as queue_router
 from pharma_validator_api.records import router as records_router
 from pharma_validator_api.reviewer_api import router as reviewer_router
 from pharma_validator_api.second_review_api import router as second_review_router
+from pharma_validator_api.source_connection_api import router as source_connection_router
+from pharma_validator_api.source_import_api import router as source_import_router
 from pharma_validator_api.timing_api import router as timing_router
 
 
@@ -121,8 +123,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         application.add_middleware(
             CORSMiddleware,
             allow_origins=list(active.cors_allow_origins),
-            allow_methods=["GET", "POST", "PUT"],
-            allow_headers=["Content-Type"],
+            allow_methods=["GET", "POST", "PUT", "PATCH"],
+            allow_headers=[
+                "Content-Type",
+                "X-Expected-SHA256",
+                "X-Import-Actor",
+                "X-Import-Reason",
+            ],
         )
     register_error_handlers(application)
     # Las rutas de bloque se registran antes que `records_router`: éste declara
@@ -134,6 +141,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(empty_source_fields_router)
     application.include_router(records_router)
     application.include_router(insights_router)
+    application.include_router(source_import_router)
+    application.include_router(source_connection_router)
     application.include_router(queue_router)
     application.include_router(maturity_router)
     application.include_router(timing_router)

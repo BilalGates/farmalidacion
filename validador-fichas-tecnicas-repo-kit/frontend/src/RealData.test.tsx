@@ -427,7 +427,8 @@ describe('ficha de un registro real', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Abrir expediente' }))
 
-    await waitFor(() => expect(window.location.hash).toBe('#/catalogo/cat-real'))
+    expect(window.location.hash).toBe('#/fichas')
+    expect(screen.getByRole('dialog', { name: 'Expediente del registro' })).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Omeprazol 20 mg cápsula' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Catálogo' })).toHaveAttribute(
       'aria-current',

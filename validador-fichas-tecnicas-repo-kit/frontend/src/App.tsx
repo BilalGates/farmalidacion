@@ -4,7 +4,6 @@ import {
   FileStack,
   History,
   Home,
-  ListChecks,
   Upload,
   Users,
   type LucideIcon,
@@ -25,8 +24,6 @@ import { ReviewersScreen } from './screens/ReviewersScreen'
 import { ReviewScreen } from './screens/ReviewScreen'
 import { SourcesScreen } from './screens/SourcesScreen'
 import { ExportsScreen } from './screens/ExportsScreen'
-import { QueueScreen } from './screens/QueueScreen'
-import { SecondReviewScreen } from './screens/SecondReviewScreen'
 import { MaintenanceScreen } from './screens/MaintenanceScreen'
 import { CatalogIdentityScreen } from './screens/CatalogIdentityScreen'
 import { QuarantinedRecordsScreen } from './screens/QuarantinedRecordsScreen'
@@ -54,7 +51,6 @@ const NAV: readonly NavItem[] = [
   { id: 'inicio', label: 'Inicio', icon: Home, available: true, path: '/' },
   { id: 'fichas', label: 'Catálogo', icon: FileStack, available: true, path: '/fichas' },
   { id: 'novedades', label: 'Novedades CIMA', icon: History, available: true, path: '/novedades' },
-  { id: 'revision', label: 'Revisión', icon: ListChecks, available: true, path: '/revision/cola' },
   { id: 'datos', label: 'Datos', icon: Database, available: true, path: '/datos/fuentes' },
   { id: 'exportaciones', label: 'Exportaciones', icon: Upload, available: true, path: '/exportaciones' },
   { id: 'revisores', label: 'Revisores', icon: Users, available: true, path: '/revisores' },
@@ -64,7 +60,7 @@ function activeNavId(routeName: string, routeId: string | null): string {
   if (routeName === 'ficha' || routeName === 'fichas' || routeName === 'catalogo') return 'fichas'
   if (routeName === 'fuentes' || routeName === 'importaciones') return 'datos'
   if (routeName === 'seccion' && routeId === 'catalogo/novedades') return 'novedades'
-  if (routeName === 'seccion' && routeId?.startsWith('revision/')) return 'revision'
+  if (routeName === 'seccion' && (routeId?.startsWith('revision/') || routeId?.startsWith('catalogo/'))) return 'fichas'
   if (routeName === 'seccion' && routeId?.startsWith('datos/')) return 'datos'
   if (routeName === 'seccion' && routeId) return routeId
   return 'inicio'
@@ -93,6 +89,11 @@ export function App() {
 
   const reviewer = reviewers.find((item) => item.identifier === reviewerId) ?? null
   const active = activeNavId(route.name, route.name === 'seccion' ? route.id : null)
+  const changeReviewer = (identifier: string) => {
+    setReviewerId(identifier)
+    if (identifier) localStorage.setItem('farmalidacion.reviewer', identifier)
+    else localStorage.removeItem('farmalidacion.reviewer')
+  }
 
   return (
     <div className='layout'>
@@ -136,11 +137,7 @@ export function App() {
           <ReviewerSelect
             reviewers={reviewers}
             value={reviewerId}
-            onChange={(identifier) => {
-              setReviewerId(identifier)
-              if (identifier) localStorage.setItem('farmalidacion.reviewer', identifier)
-              else localStorage.removeItem('farmalidacion.reviewer')
-            }}
+            onChange={changeReviewer}
           />
         </div>
       </header>
@@ -150,7 +147,7 @@ export function App() {
           <ModeBanner info={database} />
           {route.name === 'inicio' && <DashboardScreen />}
           {route.name === 'fichas' && (
-            <RealRecordListScreen />
+            <RealRecordListScreen reviewer={reviewer} reviewers={reviewers} onReviewerChange={changeReviewer} />
           )}
           {route.name === 'ficha' && (
             <ReviewScreen key={route.id} recordId={route.id} reviewer={reviewer} />
@@ -167,14 +164,14 @@ export function App() {
           {route.name === 'seccion' && route.id === 'datos/cuarentena' && (
             <SectionWorkspace group='data' active='quarantine'><QuarantinedRecordsScreen reviewer={reviewer} /></SectionWorkspace>
           )}
-          {route.name === 'seccion' && route.id === 'revision/cola' && (
-            <SectionWorkspace group='review' active='queue'><QueueScreen reviewer={reviewer} /></SectionWorkspace>
+          {route.name === 'seccion' && (route.id === 'revision/cola' || route.id === 'catalogo/trabajo') && (
+            <RealRecordListScreen reviewer={reviewer} reviewers={reviewers} onReviewerChange={changeReviewer} initialReviewScope='pending' />
           )}
-          {route.name === 'seccion' && route.id === 'revision/validaciones' && (
-            <SectionWorkspace group='review' active='second-review'><SecondReviewScreen reviewer={reviewer} /></SectionWorkspace>
+          {route.name === 'seccion' && (route.id === 'revision/validaciones' || route.id === 'catalogo/segunda') && (
+            <RealRecordListScreen reviewer={reviewer} reviewers={reviewers} onReviewerChange={changeReviewer} initialSecondReviewOpen />
           )}
           {route.name === 'seccion' && route.id === 'exportaciones' && (
-            <ExportsScreen reviewer={reviewer} />
+            <SectionWorkspace group='data' active='exports'><ExportsScreen reviewer={reviewer} /></SectionWorkspace>
           )}
           {route.name === 'seccion' && route.id === 'catalogo/novedades' && (
             <MaintenanceScreen />

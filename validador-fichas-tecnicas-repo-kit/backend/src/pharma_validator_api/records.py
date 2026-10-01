@@ -649,6 +649,7 @@ def read_record(record_id: str, session: SessionDependency) -> TargetRecordRead:
     provenance = provenance_for(session, value_ids)
     current = current_decisions_for(session, value_ids)
     history: dict[str, list[ValidationDecisionRecord]] = {}
+    maintenance: dict[str, list[FieldMaintenanceRevision]] = {}
     for chunk in chunked(value_ids, BULK_CHUNK):
         for decision in session.scalars(
             select(ValidationDecisionRecord)
@@ -656,6 +657,12 @@ def read_record(record_id: str, session: SessionDependency) -> TargetRecordRead:
             .order_by(ValidationDecisionRecord.field_value_id, ValidationDecisionRecord.sequence)
         ).all():
             history.setdefault(decision.field_value_id, []).append(decision)
+        for revision in session.scalars(
+            select(FieldMaintenanceRevision)
+            .where(FieldMaintenanceRevision.field_value_id.in_(chunk))
+            .order_by(FieldMaintenanceRevision.field_value_id, FieldMaintenanceRevision.sequence)
+        ).all():
+            maintenance.setdefault(revision.field_value_id, []).append(revision)
     grouped = _group_by_field(session, values)
     block_payloads = []
     for block in blocks:
@@ -672,10 +679,10 @@ def read_record(record_id: str, session: SessionDependency) -> TargetRecordRead:
                         record,
                         block,
                         grouped[_field_group_key(value)],
-                        grouped[(value.block_instance_id, value.field_name)],
                         provenance,
                         current,
                         history,
+                        maintenance,
                     )
                     for value in block_values
                 ],
@@ -757,6 +764,9 @@ def maintain_field_value(
         actor_assurance=revision.actor_assurance,
         reason=revision.reason,
         recorded_at=revision.recorded_at.isoformat(),
+    )
+
+
 def _read_field_value_loaded(
     session: Session,
     value: FieldValue,
@@ -766,6 +776,7 @@ def _read_field_value_loaded(
     provenance: dict[str, tuple[tuple[ValueProvenance, SourceFragment], ...]],
     current: dict[str, CurrentDecision],
     history: dict[str, list[ValidationDecisionRecord]],
+    maintenance: dict[str, list[FieldMaintenanceRevision]],
 ) -> FieldValueRead:
     """Serializa un campo desde datos cargados en bloque, sin consultas por fila."""
     evaluation = evaluate_field_conflict_from(
@@ -775,10 +786,29 @@ def _read_field_value_loaded(
         value.field_name, field_prefill_policy(session, value.field_name)
     )
     decision = current.get(value.id)
+    maintenance_history = maintenance.get(value.id, [])
+    latest_maintenance = maintenance_history[-1] if maintenance_history else None
     return FieldValueRead(
         id=value.id,
         field_name=value.field_name,
+        source_column_index=value.source_column_index,
         literal_value=value.literal_value,
+        maintained_value=(
+            latest_maintenance.after_value if latest_maintenance else value.literal_value
+        ),
+        maintenance_sequence=latest_maintenance.sequence if latest_maintenance else 0,
+        maintenance_history=[
+            FieldMaintenanceRead(
+                sequence=item.sequence,
+                before_value=item.before_value,
+                after_value=item.after_value,
+                actor_id=item.actor_id,
+                actor_assurance=item.actor_assurance,
+                reason=item.reason,
+                recorded_at=item.recorded_at.isoformat(),
+            )
+            for item in maintenance_history
+        ],
         observed_type=value.observed_type,
         logical_state=value.logical_state,
         provenance=[

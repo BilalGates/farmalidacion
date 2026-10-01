@@ -1,3 +1,7 @@
+## Extensión de D-029 — Modal de expediente (2026-10-01)
+
+Aceptada por petición explícita del responsable: abrir el expediente sobre el listado y permitir anterior/siguiente en el orden filtrado vigente. Se amplía ADR-0012 de espacio compacto; sin cambios clínicos ni de exportación.
+
 # Registro de decisiones
 
 ## D-029 — Espacio compacto de Registros
@@ -43,6 +47,7 @@ Estados: `cerrada`, `propuesta`, `pendiente`, `bloqueada`, `descartada`. Una dec
 | D-031 | Edición completa del catálogo | cerrada | Antes de CRUD canónico | Fuente inmutable + estado vigente + revisiones append-only; archivar en vez de borrar historia | ADR-0012 aceptado 2026-09-22 |
 | D-032 | Clasificación de medicamentos | cerrada en estructura | Antes de poblar clasificaciones | Original/genérico/biosimilar separado de condiciones no excluyentes | ADR-0012; fuente autoritativa por condición pendiente |
 | D-033 | Integración BOT PLUS | pendiente externo | Antes de implementar el adaptador | Usar BOT PLUS Integración contratado; no automatizar BOT PLUS Web | Confirmar licencia, catálogo de servicios, sandbox, coste y condiciones |
+| D-034 | Claves de reconciliación para versiones de maestros y fuentes nuevas | pendiente de evidencia y aceptación | Antes de habilitar sustitución de maestros o fusión entre Excel/Nomenclátor/BOT PLUS | Identidad canónica separada; claves externas versionadas; ninguna coincidencia por nombre ni `*_IDEXTERNO` asumida estable | ADR-0005 y D-027; falta diccionario/contrato de Nomenclátor y evidencia longitudinal por entidad |
 | GOLD-001 | Semilla del conjunto oro | cerrada | Fase 4 | Semilla reproducible `407` | Aprobación humana 2026-09-02; `docs/GOLD_SET_ANNOTATION_CONTRACT.md` |
 | GOLD-002 | Anotadores farmacéuticos del conjunto oro | pendiente | Fase 4 | Dos anotadores independientes identificados | `docs/GOLD_SET_ANNOTATION_CONTRACT.md`; runbook operativo listo en `docs/GOLD_ANNOTATION_RUNBOOK.md`. Único bloqueo de la anotación |
 | GOLD-003 | Cobertura por estrato ATC del conjunto oro | cerrada | Fase 4 | No estratificar por ATC el conjunto oro inicial: el inventario DEV-208 no contiene ATC; reevaluar solo con nueva evidencia | Aprobación humana 2026-09-02; `docs/GOLD_SET_ANNOTATION_CONTRACT.md` |

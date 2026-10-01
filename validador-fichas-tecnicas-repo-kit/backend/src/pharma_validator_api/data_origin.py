@@ -26,6 +26,7 @@ from pharma_validator_api.models import (
 
 #: `source_type` de los documentos que produce el conjunto de demostración.
 DEMO_SOURCE_TYPE = "demo_showcase"
+DEMO_SOURCE_TYPES = (DEMO_SOURCE_TYPE, "synthetic_fixture")
 
 
 class DataOrigin(StrEnum):
@@ -50,7 +51,7 @@ def _demo_record_ids() -> Select[tuple[str]]:
             DocumentRecordLink.document_version_id == SourceDocumentVersion.id,
         )
         .join(SourceDocument, SourceDocumentVersion.document_id == SourceDocument.id)
-        .where(SourceDocument.source_type == DEMO_SOURCE_TYPE)
+        .where(SourceDocument.source_type.in_(DEMO_SOURCE_TYPES))
     )
 
 

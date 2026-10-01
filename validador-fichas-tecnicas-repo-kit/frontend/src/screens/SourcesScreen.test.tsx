@@ -32,10 +32,10 @@ for (const [index, workbook] of workbooks.entries()) {
     ))))
 
     render(<SourcesScreen />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Ver detalle' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Gestionar y ver versiones' }))
     expect(await screen.findByRole('heading', { name: workbook.label })).toBeInTheDocument()
     for (const sheet of workbook.sheets) expect(screen.getByRole('row', { name: new RegExp(sheet) })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: workbook.action }))
+    fireEvent.click(screen.getAllByRole('button', { name: workbook.action })[0])
     expect(JSON.parse(sessionStorage.getItem('farmalidacion.catalog-list-state') ?? '{}').sourceWorkbook).toBe(workbook.view)
     expect(window.location.hash).toBe('#/fichas')
   })

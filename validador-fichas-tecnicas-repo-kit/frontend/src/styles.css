@@ -1227,6 +1227,24 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .source-workbook-preview--especialidades { border-left-color: #7145a0; }
 .source-workbook-preview--medicamentos { border-left-color: #167a80; }
 .source-workbook-preview--principios_activos { border-left-color: #a56818; }
+
+.source-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1.25rem 0 .75rem; }
+.source-section-heading h2 { margin: .15rem 0; }
+.source-card-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .85rem; }
+.source-master-card { min-width: 0; }
+.source-master-card h3 { margin: .2rem 0 .55rem; }
+.source-filename { overflow-wrap: anywhere; color: var(--muted); font-size: .82rem; }
+.source-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: .75rem 0; }
+.source-connector-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: .85rem; margin: 1.2rem 0; }
+.source-connector-stack { display: grid; gap: .85rem; align-content: start; }
+.source-connection-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem .8rem; }
+.source-upload { max-width: 38rem; }
+@media (max-width: 900px) {
+  .source-card-grid, .source-connector-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .source-connection-grid { grid-template-columns: 1fr; }
+}
 .screen > .table-wrap, .screen > .panel .table-wrap { min-width: 0; max-width: 100%; }
 
 /* Ajustes de legibilidad, marca y filtros */
@@ -1360,6 +1378,8 @@ input[type='text'], input[type='search'], select, textarea,
 .catalog-table-scroll .table thead th { position: sticky; z-index: 1; top: 0; background: #f7f9fd; }
 .field__hint { color: var(--ink-faint); font-size: .78rem; }
 .catalog-row__name { display: block; }
+.catalog-review-cell { min-width: 130px; white-space: nowrap; }
+.catalog-review-cell .button { display: block; width: max-content; min-height: 30px; margin-top: .25rem; padding: .22rem .55rem; white-space: nowrap; }
 .catalog-row__tags { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .35rem; }
 .catalog-row__tag { display: inline-flex; padding: .12rem .38rem; border-radius: 3px; color: var(--accent-strong); background: #f0eafa; font-size: .68rem; font-weight: 650; line-height: 1.4; white-space: nowrap; }
 .catalog-row__tag--condition { color: #70521f; background: #fbf3e7; }
@@ -1421,3 +1441,13 @@ input[type='text'], input[type='search'], select, textarea,
   .catalog-results__head { display: block; }
   .catalog-results__footer { display: grid; gap: .5rem; }
 }
+
+/* Expedientes sobre el listado: el fondo conserva filtros y posición. */
+.record-dialog { width: min(1440px, calc(100vw - 48px)); max-width: none; height: calc(100dvh - 48px); max-height: none; padding: 0; border: 1px solid var(--border, #d8dee5); border-radius: 16px; background: var(--surface, #fff); color: inherit; box-shadow: 0 24px 80px #132b4540; }
+.record-dialog::backdrop { background: #15253680; }
+.record-dialog__header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 16px 24px; background: var(--surface, #fff); border-bottom: 1px solid var(--border, #d8dee5); }
+.record-dialog__header h2 { margin: 0; margin-right: auto; font-size: 18px; }
+.record-dialog__header nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.record-dialog__body { padding: 24px; }
+.record-dialog__body [hidden] { display: none !important; }
+@media (max-width: 720px) { .record-dialog { width: calc(100vw - 16px); height: calc(100dvh - 16px); border-radius: 10px; } .record-dialog__header, .record-dialog__body { padding: 12px; } }

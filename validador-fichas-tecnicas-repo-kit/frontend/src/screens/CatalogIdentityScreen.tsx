@@ -16,6 +16,7 @@ import { formatDateTime, orDash } from '../domain/format'
 import { navigate } from '../navigation'
 import { SourceFieldsMaintenance } from './CatalogSourceFields'
 import { CatalogCimaDocumentReader } from './CatalogCimaDocument'
+import { CatalogReviewPanel } from './CatalogReviewPanel'
 
 const TYPE_LABELS: Record<string, string> = {
   commercial_product: 'Producto comercial', authorization: 'Autorización',
@@ -51,9 +52,12 @@ const CONDITIONS = [
 interface Props {
   readonly identityId: string
   readonly reviewer: Reviewer | null
+  readonly embedded?: boolean
+  readonly onOpenIdentity?: (id: string) => void
+  readonly onOpenRecord?: (id: string) => void
 }
 
-export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
+export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, onOpenIdentity, onOpenRecord }: Props) {
   const [identity, setIdentity] = useState<CatalogIdentity | null>(null)
   const [history, setHistory] = useState<CatalogRevision[]>([])
   const [relations, setRelations] = useState<CatalogRelation[]>([])
@@ -132,9 +136,9 @@ export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
 
   return (
     <div className='screen catalog-record'>
-      <button type='button' className='button button--ghost back' onClick={() => navigate('/fichas')}>
+      {!embedded && <button type='button' className='button button--ghost back' onClick={() => navigate('/fichas')}>
         ← Volver al catálogo
-      </button>
+      </button>}
       <AsyncBoundary loading={loading} error={error?.message ?? null} empty={!identity} emptyTitle='Expediente no disponible' emptyDetail='La identidad solicitada no existe o ya no está accesible.' onRetry={() => void load()}>
         {identity && <>
           <PageHeader eyebrow={TYPE_LABELS[identity.identity_type] ?? identity.identity_type} title={identity.display_name}
@@ -162,17 +166,18 @@ export function CatalogIdentityScreen({ identityId, reviewer }: Props) {
             </section>
 
             <aside className='catalog-record__side'>
-              <section className='panel'><p className='eyebrow'>Procedencia</p><h2>Valor fuente</h2><dl className='definition'>{identity.source_workbook && <div><dt>Libro Excel</dt><dd>{SOURCE_WORKBOOK_LABELS[identity.source_workbook] ?? identity.source_workbook}</dd></div>}<div><dt>Sistema</dt><dd>{identity.source_system}</dd></div><div><dt>Versión</dt><dd>{identity.source_version}</dd></div><div><dt>Literal conservado</dt><dd><code>{orDash(identity.source_literal)}</code></dd></div></dl>{identity.target_record_id && <button type='button' className='button' onClick={() => navigate(`/registros/${encodeURIComponent(identity.target_record_id!)}`)}><ExternalLink size={16} aria-hidden='true' /> Ver datos importados</button>}</section>
+              <section className='panel'><p className='eyebrow'>Procedencia</p><h2>Valor fuente</h2><dl className='definition'>{identity.source_workbook && <div><dt>Libro Excel</dt><dd>{SOURCE_WORKBOOK_LABELS[identity.source_workbook] ?? identity.source_workbook}</dd></div>}<div><dt>Sistema</dt><dd>{identity.source_system}</dd></div><div><dt>Versión</dt><dd>{identity.source_version}</dd></div><div><dt>Literal conservado</dt><dd><code>{orDash(identity.source_literal)}</code></dd></div></dl>{identity.target_record_id && <button type='button' className='button' onClick={() => onOpenRecord ? onOpenRecord(identity.target_record_id!) : navigate(`/registros/${encodeURIComponent(identity.target_record_id!)}`)}><ExternalLink size={16} aria-hidden='true' /> Ver datos importados</button>}</section>
             </aside>
           </div>
 
+          <CatalogReviewPanel recordId={identity.target_record_id} reviewer={reviewer} />
           {identity.target_record_id && <SourceFieldsMaintenance recordId={identity.target_record_id} reviewer={reviewer} />}
 
           <CatalogCimaDocumentReader identityId={identity.id} recordId={identity.target_record_id} reviewerId={reviewer?.identifier ?? ''} />
 
           <section className='panel catalog-relations' aria-labelledby='catalog-relations-title'>
             <div className='panel__head'><div><p className='eyebrow'>Estructura farmacéutica</p><h2 id='catalog-relations-title'><GitBranch size={18} aria-hidden='true' /> Relaciones y composición</h2></div></div>
-            {relations.length === 0 ? <div className='catalog-relations__empty'><strong>Sin relaciones tipadas disponibles</strong><p>{identity.identity_type === 'dcp' ? 'La composición no aparece hasta que el maestro proporcione vínculos inequívocos con sustancias activas.' : 'No se ha identificado todavía el nivel anterior o siguiente sin saltar la jerarquía.'}</p></div> : <ul>{relations.map((relation) => <li key={relation.id}><button type='button' onClick={() => navigate(`/catalogo/${encodeURIComponent(relation.related_identity.id)}`)}><span className='catalog-relations__direction'>{relation.direction === 'outgoing' ? 'Hacia' : 'Desde'}{relation.ordinal ? ` · ${relation.ordinal}` : ''}</span><strong>{relation.related_identity.display_name}</strong><small>{RELATION_LABELS[relation.relation_type] ?? relation.relation_type} · {TYPE_LABELS[relation.related_identity.identity_type] ?? relation.related_identity.identity_type} · {orDash(relation.related_identity.code)}</small></button></li>)}</ul>}
+            {relations.length === 0 ? <div className='catalog-relations__empty'><strong>Sin relaciones tipadas disponibles</strong><p>{identity.identity_type === 'dcp' ? 'La composición no aparece hasta que el maestro proporcione vínculos inequívocos con sustancias activas.' : 'No se ha identificado todavía el nivel anterior o siguiente sin saltar la jerarquía.'}</p></div> : <ul>{relations.map((relation) => <li key={relation.id}><button type='button' onClick={() => onOpenIdentity ? onOpenIdentity(relation.related_identity.id) : navigate(`/catalogo/${encodeURIComponent(relation.related_identity.id)}`)}><span className='catalog-relations__direction'>{relation.direction === 'outgoing' ? 'Hacia' : 'Desde'}{relation.ordinal ? ` · ${relation.ordinal}` : ''}</span><strong>{relation.related_identity.display_name}</strong><small>{RELATION_LABELS[relation.relation_type] ?? relation.relation_type} · {TYPE_LABELS[relation.related_identity.identity_type] ?? relation.related_identity.identity_type} · {orDash(relation.related_identity.code)}</small></button></li>)}</ul>}
           </section>
 
           {identity.identity_type === 'presentation' && <section className='panel catalog-classifications' aria-labelledby='catalog-classifications-title'>
