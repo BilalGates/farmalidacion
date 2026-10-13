@@ -34,7 +34,7 @@ services:
       APP_LOAD_SHOWCASE_FIXTURE: 'true'
       APP_SHOWCASE_FIXTURE_PATH: /app/fixtures/showcase-demo.json
       # El navegador accede al backend directamente durante la demo local.
-      APP_CORS_ALLOW_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173"]'
+      APP_CORS_ALLOW_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173","https://farmalidacion-beta.vercel.app"]'
       APP_REVIEWERS: '["mtorres:M. Torres","jlopez:J. Lopez"]'
       # La demo incluye el flujo técnico completo de doble validación.
       APP_ENABLE_SECOND_REVIEW: 'true'
@@ -82,7 +82,7 @@ services:
       APP_DATABASE_URL: sqlite:////app/data/real.db
       APP_LOAD_DEMO_FIXTURE: 'false'
       APP_LOAD_SHOWCASE_FIXTURE: 'false'
-      APP_CORS_ALLOW_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173"]'
+      APP_CORS_ALLOW_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173","https://farmalidacion-beta.vercel.app"]'
       APP_REVIEWERS: '["mtorres:M. Torres","jlopez:J. Lopez"]'
       # Activa la segunda lectura ciega y la conciliación ya implementadas.
       APP_ENABLE_SECOND_REVIEW: 'true'
