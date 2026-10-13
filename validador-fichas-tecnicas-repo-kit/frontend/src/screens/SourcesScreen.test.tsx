@@ -15,6 +15,29 @@ const workbooks = [
   { name: 'PrincipioActivoCargaMaster-22062026.xlsx', label: 'Principios activos', action: 'Explorar principios activos', view: 'principios_activos', sheets: ['General', 'Frecuencia', 'Via', 'ConsejosAdministracion', 'DatosAnaliticos'] },
 ] as const
 
+it('separa la consulta de BOT PLUS de su integración y pliega la configuración SQL Server', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => new Response(JSON.stringify(
+    String(input).includes('/source-connections/nomenclator')
+      ? { configured: false, host: null, port: 1433, database_name: null, username: null, server_password_configured: false, updated_at: null }
+      : { items: [], total: 0 },
+  ))))
+  render(<SourcesScreen />)
+
+  expect(await screen.findByRole('heading', { name: 'BOT PLUS' })).toBeInTheDocument()
+  const bot = screen.getByRole('region', { name: 'BOT PLUS' })
+  expect(bot).toHaveTextContent('Sin conectar')
+  expect(bot).toHaveTextContent('BOT PLUS Integración')
+  expect(screen.getByRole('link', { name: 'Abrir BOT PLUS Web' })).toHaveAttribute('href', 'https://botplusweb.farmaceuticos.com/')
+  fireEvent.click(screen.getByText('Qué falta para conectar BOT PLUS Integración'))
+  expect(bot).toHaveTextContent('Configurar después las credenciales mediante un secreto del servidor.')
+
+  const toggle = screen.getByRole('button', { name: 'Configurar conexión' })
+  expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  fireEvent.click(toggle)
+  expect(screen.getByRole('button', { name: 'Ocultar configuración' })).toHaveAttribute('aria-expanded', 'true')
+  expect(screen.getByRole('textbox', { name: 'Servidor' })).toBeInTheDocument()
+})
+
 for (const [index, workbook] of workbooks.entries()) {
   it(`distingue ${workbook.view} y muestra todas sus hojas`, async () => {
     const source = {
@@ -32,10 +55,10 @@ for (const [index, workbook] of workbooks.entries()) {
     ))))
 
     render(<SourcesScreen />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Ver detalle' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Gestionar y ver versiones' }))
     expect(await screen.findByRole('heading', { name: workbook.label })).toBeInTheDocument()
     for (const sheet of workbook.sheets) expect(screen.getByRole('row', { name: new RegExp(sheet) })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: workbook.action }))
+    fireEvent.click(screen.getAllByRole('button', { name: workbook.action })[0])
     expect(JSON.parse(sessionStorage.getItem('farmalidacion.catalog-list-state') ?? '{}').sourceWorkbook).toBe(workbook.view)
     expect(window.location.hash).toBe('#/fichas')
   })

@@ -1,4 +1,5 @@
 import { appConfig } from '../config'
+import { authenticatedFetch, SessionError } from '../auth/transport'
 import type {
   BlockEditRecord,
   BlockEditWrite,
@@ -16,6 +17,8 @@ import type {
   CatalogRelation,
   CatalogClassification,
   Dashboard,
+  DashboardExplore,
+  DashboardCasePage,
   DatabaseInfo,
   DataOrigin,
   DecisionWrite,
@@ -36,7 +39,13 @@ import type {
   Reviewer,
   SourceDetail,
   SourceList,
+  SourceSummary,
+  NomenclatorConnection,
+  NomenclatorConnectionFields,
+  NomenclatorConnectionTest,
   TargetRecord,
+  WorkbookImportResult,
+  WorkbookPreview,
 } from './types'
 
 /**
@@ -56,17 +65,18 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, init?: RequestInit, publicRequest = false): Promise<T> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 30_000)
   let response: Response
   try {
-    response = await fetch(`${appConfig.apiBaseUrl}${path}`, {
+    response = await (publicRequest ? fetch : authenticatedFetch)(`${appConfig.apiBaseUrl}${path}`, {
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
       ...init,
     })
-  } catch {
+  } catch (error) {
+    if (error instanceof SessionError) throw new ApiError(error.message, 401)
     if (controller.signal.aborted) {
       throw new ApiError('La solicitud ha tardado demasiado. Inténtelo de nuevo.', 0)
     }
@@ -192,12 +202,85 @@ export function fetchDashboard(): Promise<Dashboard> {
   return request<Dashboard>('/insights/dashboard')
 }
 
-export function fetchSources(): Promise<SourceList> {
-  return request<SourceList>('/insights/sources')
+export function fetchDashboardExplore(filters: { entityType?: string; sourceType?: string } = {}): Promise<DashboardExplore> {
+  const search = new URLSearchParams()
+  if (filters.entityType) search.set('entity_type', filters.entityType)
+  if (filters.sourceType) search.set('source_type', filters.sourceType)
+  return request<DashboardExplore>(`/insights/dashboard/explore?${search}`)
+}
+
+export function fetchDashboardCases(filters: { segment: string; entityType?: string; sourceType?: string; offset?: number }): Promise<DashboardCasePage> {
+  const search = new URLSearchParams({ segment: filters.segment, offset: String(filters.offset ?? 0) })
+  if (filters.entityType) search.set('entity_type', filters.entityType)
+  if (filters.sourceType) search.set('source_type', filters.sourceType)
+  return request<DashboardCasePage>(`/insights/dashboard/cases?${search}`)
+}
+
+export function fetchSources(includeArchived = false): Promise<SourceList> {
+  return request<SourceList>(`/insights/sources${includeArchived ? '?include_archived=true' : ''}`)
+}
+
+export function fetchNomenclatorConnection(): Promise<NomenclatorConnection> {
+  return request<NomenclatorConnection>('/source-connections/nomenclator')
+}
+
+export function saveNomenclatorConnection(payload: NomenclatorConnectionFields & {
+  actor_id: string; reason: string
+}): Promise<NomenclatorConnection> {
+  return request<NomenclatorConnection>('/source-connections/nomenclator', {
+    method: 'PUT', body: JSON.stringify(payload),
+  })
+}
+
+export function testNomenclatorConnection(payload: NomenclatorConnectionFields & {
+  password: string
+}): Promise<NomenclatorConnectionTest> {
+  return request<NomenclatorConnectionTest>('/source-connections/nomenclator/test', {
+    method: 'POST', body: JSON.stringify(payload),
+  })
 }
 
 export function fetchSource(id: string): Promise<SourceDetail> {
   return request<SourceDetail>(`/insights/sources/${encodeURIComponent(id)}`)
+}
+
+export function updateSource(id: string, payload: {
+  display_name: string
+  is_active: boolean
+  actor_id: string
+  reason: string
+}): Promise<SourceSummary> {
+  return request<SourceSummary>(`/insights/sources/${encodeURIComponent(id)}`, {
+    method: 'PATCH', body: JSON.stringify(payload),
+  })
+}
+
+export function previewMasterWorkbook(
+  kind: CatalogSourceWorkbook,
+  file: File,
+): Promise<WorkbookPreview> {
+  return request<WorkbookPreview>(`/imports/master/${kind}/preview`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+    body: file,
+  })
+}
+
+export function importMasterWorkbook(
+  kind: CatalogSourceWorkbook,
+  file: File,
+  payload: { sha256: string; actor_id: string; reason: string },
+): Promise<WorkbookImportResult> {
+  return request<WorkbookImportResult>(`/imports/master/${kind}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'X-Expected-SHA256': payload.sha256,
+      'X-Import-Actor': encodeURIComponent(payload.actor_id),
+      'X-Import-Reason': encodeURIComponent(payload.reason),
+    },
+    body: file,
+  })
 }
 
 export function fetchImports(): Promise<ImportList> {
@@ -331,6 +414,8 @@ export function fetchCatalogIdentities(params: {
   conditions?: string[]
   sourceWorkbook?: CatalogSourceWorkbook
   sortBy?: CatalogIdentitySort
+  reviewScope?: 'all' | 'pending' | 'unassigned' | 'mine' | 'second' | 'completed'
+  reviewerId?: string
   active?: boolean
   limit?: number
   offset?: number
@@ -342,6 +427,8 @@ export function fetchCatalogIdentities(params: {
   params.conditions?.forEach((condition) => search.append('condition', condition))
   if (params.sourceWorkbook) search.set('source_workbook', params.sourceWorkbook)
   if (params.sortBy) search.set('sort_by', params.sortBy)
+  if (params.reviewScope && params.reviewScope !== 'all') search.set('review_scope', params.reviewScope)
+  if (params.reviewerId) search.set('reviewer_id', params.reviewerId)
   if (params.active !== undefined) search.set('active', String(params.active))
   if (params.limit !== undefined) search.set('limit', String(params.limit))
   if (params.offset !== undefined) search.set('offset', String(params.offset))
@@ -622,9 +709,32 @@ export function fetchExportExclusions(runId: string): Promise<ExportExclusionRow
   )
 }
 
-export function exportArtifactUrl(runId: string): string {
-  return `${appConfig.apiBaseUrl}/exports/${encodeURIComponent(runId)}/artifact`
+export async function downloadExport(runId: string): Promise<void> {
+  const response = await authenticatedFetch(`${appConfig.apiBaseUrl}/exports/${encodeURIComponent(runId)}/artifact`)
+  if (!response.ok) throw new ApiError('No se pudo descargar la exportación.', response.status)
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `exportacion-${runId}`
+  link.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
+
+export interface AuthConfig {
+  mode: 'pilot' | 'entra'
+  configured: boolean
+  tenant_id: string | null
+  spa_client_id: string | null
+  scope: string | null
+}
+export function fetchAuthConfig() { return request<AuthConfig>('/auth/config', undefined, true) }
+export function fetchSession() { return request<{ subject_id: string; reviewer: Reviewer; capabilities: string[] }>('/auth/me') }
+export interface AccessOverview {
+  roles: { name: string; capabilities: string[] }[]
+  accounts: { object_id: string; reviewer_identifier: string; display_name: string; active: boolean; linked: boolean }[]
+}
+export function fetchAccessOverview() { return request<AccessOverview>('/auth/access') }
 
 export interface HistoryEntry {
   occurred_at: string

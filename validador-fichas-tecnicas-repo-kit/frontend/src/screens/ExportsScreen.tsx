@@ -1,11 +1,12 @@
 import { useState } from 'react'
 
-import { ApiError, createExport, exportArtifactUrl, fetchExportExclusions, fetchExports } from '../api/client'
+import { ApiError, createExport, downloadExport, fetchExportExclusions, fetchExports } from '../api/client'
 import type { ExportExclusionRow, Reviewer } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
 import { PageHeader } from '../components/PageHeader'
 import { formatDateTime, formatNumber, shortHash } from '../domain/format'
+import { useCapability } from '../auth/SessionContext'
 
 /**
  * Exportaciones archivadas y sus exclusiones (DEV-604/605).
@@ -86,6 +87,7 @@ function parseColumns(value: string) {
 }
 
 export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
+  const canExport = useCapability('export.create')
   const [openRun, setOpenRun] = useState<string | null>(null)
   const [revision, setRevision] = useState(0)
   const [profileName, setProfileName] = useState('perfil-tecnico')
@@ -130,14 +132,14 @@ export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
 
   return (
     <div className='screen'>
-      <PageHeader eyebrow='Exportación' title='Exportaciones' description='Cada ejecución conserva su configuración y su hash, de modo que pueda repetirse y comprobarse.' />
+      <PageHeader eyebrow='Exportación' title='Exportaciones' description='Revise las exclusiones antes de descargar. Cada ejecución conserva su configuración y su hash para poder comprobarla.' />
 
       <p className='note export-contract-note' role='note'>
         Ningún perfil está aceptado por el proveedor: D-011 sigue pendiente. Que un
         fichero se genere correctamente no significa que el destinatario lo acepte.
       </p>
 
-      <section className='panel'>
+      {canExport && <section className='panel'>
         <h2>Nueva exportación técnica</h2>
         <p className='muted'>
           Declare el perfil usado en esta ejecución. Las columnas no se consideran un
@@ -166,11 +168,12 @@ export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
           <button className='button button--primary' disabled={submitting || !reviewer || !profileName.trim()}>
             {submitting ? 'Generando…' : 'Generar exportación'}
           </button>
-          {!reviewer && <p className='alert alert--error'>Seleccione un revisor en la cabecera para firmar la ejecución.</p>}
+          {!reviewer && <p className='alert alert--error'>Identifícate en Equipo y preferencias para firmar la ejecución.</p>}
           {submitError && <p role='alert' className='alert alert--error'>{submitError}</p>}
           {submitMessage && <p role='status' className='alert alert--ok'>{submitMessage}</p>}
         </form>
-      </section>
+      </section>}
+      {!canExport && submitError && <p role='alert'>{submitError}</p>}
 
       <section className='export-history' aria-label='Historial de exportaciones'>
       <h2>Historial de ejecuciones</h2>
@@ -229,9 +232,9 @@ export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
                   </td>
                   <td>
                     {run.content_hash ? (
-                      <a className='button button--ghost' href={exportArtifactUrl(run.run_id)} download>
+                      <button type='button' className='button button--ghost' onClick={() => void downloadExport(run.run_id).catch(cause => setSubmitError(cause instanceof Error ? cause.message : 'No se pudo descargar la exportación.'))}>
                         Descargar
-                      </a>
+                      </button>
                     ) : '—'}
                   </td>
                 </tr>

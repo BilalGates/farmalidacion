@@ -50,10 +50,12 @@ from pharma_validator_api.models import (
     ExportExclusion,
     ExportRun,
     FieldValue,
+    ReconciliationRecord,
+    SecondReviewAssignment,
     TargetRecord,
 )
 from pharma_validator_api.provenance_conflicts import LogicalState
-from pharma_validator_api.review import current_decision
+from pharma_validator_api.review import current_decision, current_decisions_for
 
 #: Estados de validación cuyo valor puede entregarse.
 #:
@@ -150,6 +152,67 @@ def _cell_for(
     return ExportCell(logical_state=logical, literal_value=text), None
 
 
+def _double_review_exclusions(session: Session, record_id: str) -> list[Exclusion]:
+    """Una lectura abierta o modificada después del cierre no es entregable."""
+    entries = session.execute(
+        select(
+            SecondReviewAssignment,
+            FieldValue.field_name,
+            ReconciliationRecord.resulting_sequence,
+        )
+        .select_from(SecondReviewAssignment)
+        .join(FieldValue, FieldValue.id == SecondReviewAssignment.field_value_id)
+        .outerjoin(
+            ReconciliationRecord,
+            ReconciliationRecord.assignment_id == SecondReviewAssignment.id,
+        )
+        .where(SecondReviewAssignment.target_record_id == record_id)
+        .order_by(FieldValue.field_name, SecondReviewAssignment.id)
+    ).all()
+    latest = current_decisions_for(session, [entry[0].field_value_id for entry in entries])
+    problems: list[Exclusion] = []
+    for assignment, field_name, reconciliation_sequence in entries:
+        rule = ""
+        if assignment.state in {"pendiente", "en_revision"}:
+            rule = "segunda_revision_pendiente"
+        elif assignment.state == "desacuerdo":
+            rule = "discrepancia_doble_validacion"
+        elif assignment.state not in {"acuerdo", "conciliado"}:
+            rule = "doble_validacion_invalida"
+        else:
+            expected = (
+                assignment.second_decision_sequence
+                if assignment.state == "acuerdo"
+                else reconciliation_sequence
+            )
+            decision = latest.get(assignment.field_value_id)
+            if (
+                not assignment.second_reviewer_id
+                or assignment.second_reviewer_id == assignment.first_reviewer_id
+                or assignment.second_decision_sequence is None
+                or expected is None
+                or decision is None
+            ):
+                rule = "doble_validacion_invalida"
+            elif decision.sequence != expected:
+                rule = "doble_validacion_obsoleta"
+        if rule:
+            problems.append(
+                Exclusion(
+                    target_record_id=record_id,
+                    field_name=field_name,
+                    severity="bloqueante",
+                    rule=rule,
+                    detail=(
+                        f"{field_name}: la doble validación está {assignment.state}; "
+                        "se requiere un cierre independiente sobre la decisión vigente."
+                    ),
+                    observed_state=assignment.state,
+                )
+            )
+    return problems
+
+
 def collect_rows(
     session: Session,
     profile: ExportProfile,
@@ -170,6 +233,10 @@ def collect_rows(
     needed = {column.source_field for column in profile.columns}
 
     for record in session.scalars(query):
+        double_review_problems = _double_review_exclusions(session, record.id)
+        if double_review_problems:
+            exclusions.extend(double_review_problems)
+            continue
         blocks = session.scalars(
             select(BlockInstance)
             .where(BlockInstance.target_record_id == record.id)
@@ -360,7 +427,6 @@ def _snapshot(profile: ExportProfile) -> str:
     return json.dumps(
         {
             "name": profile.name,
-
             "format": profile.fmt,
             "encoding": profile.encoding,
             "delimiter": profile.delimiter,
@@ -401,6 +467,4 @@ def exclusion_report(session: Session, run_id: str) -> list[ExportExclusion]:
 
 def archived_runs(session: Session) -> list[ExportRun]:
     """Ejecuciones archivadas, de la más reciente a la más antigua."""
-    return list(
-        session.scalars(select(ExportRun).order_by(ExportRun.created_at.desc()))
-    )
+    return list(session.scalars(select(ExportRun).order_by(ExportRun.created_at.desc())))

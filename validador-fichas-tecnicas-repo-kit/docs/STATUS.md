@@ -1,4 +1,283 @@
+## 2026-10-07 — Vista previa HTTPS por VPN Fortinet
+
+Publicación temporal autorizada por el responsable en
+`https://10.212.134.116:5443/`, ligada sólo a la interfaz VPN. La web y la API
+se sirven bajo el mismo origen; Entra Web tiene la segunda URI SPA
+`https://10.212.134.116:5443/auth-redirect.html`. Certificado de prueba con SAN
+IP, válido hasta el 6 de noviembre de 2026; autoridad instalada sólo en el
+almacén del usuario local. La clave privada y certificados están ignorados por
+Git. Nginx, web y API responden; la ruta de revisores sin sesión devuelve 401.
+El responsable confirma que Edge muestra Farmalidación y que ha iniciado sesión
+con su cuenta por esa URL. Elena Tomás Guillén tiene el app role `DataScientist`
+y su Object ID está vinculado en la configuración al revisor activo
+`elena.tomas`, por confirmación del responsable; aún no ha sellado el vínculo
+con un primer acceso. Desde su equipo informa que la web no conecta. La
+comprobación de firewall/perfil de red quedó sin ejecutar porque la revisión
+automática del workspace informó que no quedan créditos. La
+publicación alcanza a los clientes de la VPN mientras esté activa; detener
+`vpn-gateway` al terminar la prueba.
+
+## 2026-10-07 — Vista previa local con Entra
+
+La vista previa local (5174/8001) sirve la web y API recompiladas con
+`APP_AUTH_MODE=entra`; `/auth/config` indica configuración completa y una ruta
+protegida sin sesión responde 401. Se preparó la matriz `Reader`,
+`Administrator`, `Pharmacist` y `DataScientist`. Sólo está confirmado el vínculo
+de Bilal El Arbi con `bilal.elarbi`; faltan crear y asignar los tres nuevos
+app roles en Entra, además de la prueba de acceso real y una segunda cuenta.
+
+## 2026-10-06 — Activación de Entra aplazada
+
+El responsable deja la activación corporativa para otro momento. El código de
+inicio de sesión, permisos y vista administrativa permanece preparado, pero
+`APP_AUTH_MODE` sigue en `pilot` y la identificación es declarada. Para retomar:
+datos del tenant y registros SPA/API, URLs HTTPS, scope, app roles y asignaciones,
+vínculos Object ID → revisor, migraciones y prueba E2E con dos cuentas reales.
+Detalle en `docs/ENTRA_ID_INTEGRATION_PLAN.md` y EST-12.
+
+## 2026-10-06 — Fuentes y conexiones externas
+
+Fuentes presenta los tres maestros con recuento, versiones y acciones prioritarias;
+agrupa CIMA, Nomenclátor y BOT PLUS con estados que distinguen datos disponibles,
+parámetros guardados y servicio sin conectar. El formulario SQL Server se despliega
+a demanda y explica el alcance limitado de la prueba. BOT PLUS separa la consulta
+web de la futura integración oficial y expone los requisitos de contrato,
+documentación, permisos y secretos de servidor. No se solicitan credenciales web
+ni se anuncia una importación inexistente. Pruebas enfocadas 4/4 y suite completa
+187/187; ESLint y build Vite correctos. La conexión real sigue supeditada a D-033 y a documentación del
+servicio autorizado; falta comprobación visual local por el bloqueo del navegador.
+
+## 2026-10-06 — Ajuste del catálogo en pantalla
+
+La celda de revisión agrupa estado, nombre visible del responsable y acción con
+alineación común. Se elimina el prefijo redundante «Responsable:». En escritorio,
+el catálogo ocupa el alto de la ventana: la lista y, al abrirlos, los filtros
+conservan desplazamiento interno; la página no añade un segundo scroll vertical.
+En pantallas estrechas permanece el desplazamiento de página para no recortar
+controles. Pruebas del catálogo 22/22, ESLint, TypeScript y build Vite correctos.
+Pendiente la inspección visual local, bloqueada por el control del navegador en
+esta sesión.
+
+## 2026-10-06 — Controles de escritura según permisos
+
+En la continuación de ADR-0015, la ficha de revisión ya no presenta firma ni
+edición de estructura a una cuenta con sólo lectura, ni abre medición de tiempos
+para ella. El técnico puede revisar, pero «No consta» y «No aplica» aparecen
+deshabilitados según la regla de dominio; el actor y rol enviados salen del
+revisor activo, mientras el servidor conserva la comprobación decisiva.
+Mantenimiento de campos importados e Incidencias conservan valores e historial
+consultables sin mostrar edición a cuentas sin `catalog.maintain`. Los textos de
+consulta distinguen ese estado. La ficha corporativa explica que las decisiones
+nuevas se atribuyen a la sesión autenticada y que la garantía histórica persiste.
+
+Pruebas enfocadas de revisión, mantenimiento y cuarentena: 25/25. La suite
+completa: 186/186 en 28 archivos (82,84 s). Tres casos de App buscaban la
+etiqueta duplicada eliminada; al ajustar esa búsqueda pasaron 15/15 y después
+toda la suite. ESLint, TypeScript, build Vite y `git diff --check` correctos.
+Los avisos `ECONNREFUSED` provienen de fixtures al restaurar mocks y no fallan.
+
+Docker estaba detenido y el servicio no se pudo iniciar con los permisos de esta
+sesión. Se levantó una vista previa local: API 8001 y Vite 5174 responden; la
+API confirma 43.381 registros REAL en `sources-preview`. El control del navegador
+bloqueó abrir localhost en esta sesión, por lo que la inspección visual anterior
+no certifica los controles recién ajustados. Continúa pendiente la activación
+Entra y su prueba con cuentas designadas.
+
+## 2026-10-05 — Sesión corporativa y autorización por operación
+
+Continuación de ADR-0014 mediante ADR-0015. Implementados entrada/salida con MSAL,
+validación del access token Entra en servidor y capacidades explícitas para cada
+operación. Actor vinculado a tenant/object ID y revisor activo; vínculo sellado
+sin reasignación ni reescritura de firmas históricas. No basta seleccionar una
+persona ni enviar su identificador. Descargas autenticadas y borradores/caché
+aislados por cuenta; respuestas tardías no recuperan una sesión cerrada.
+
+Configuración incompleta en modo Entra bloquea el acceso. La vista previa continúa
+en modo piloto declarado: faltan tenant, registros SPA/API, scope, matriz de roles
+y vínculos autorizados para activar y probar cuentas corporativas. No se han
+inventado permisos ni activado Entra en la organización. Configuración operativa
+documentada en `ENTRA_ID_INTEGRATION_PLAN.md` y override Compose de ejemplo.
+
+Validación: 183/183 pruebas frontend en 28 archivos (195,12 s); reejecución de
+Catálogo/Segunda lectura tras sus últimos ajustes, 11/11 (22,46 s); tras el ajuste
+final de ancho de Tipo y singular de filtros, catálogo/datos/estilos 46/46
+(17,11 s). ESLint y
+TypeScript correctos. Autenticación: 27/27 (63,69 s), con firmas RSA reales,
+rotación de JWKS simulada, suplantación, permisos, vínculos e historial. Conjuntos
+backend previos de 64/64 y 43/43, incluyendo migraciones e identidad, también
+correctos; son subconjuntos solapados, no pruebas adicionales únicas. Ruff de los
+archivos de autenticación/modificados y mypy selectivo correctos. La suite UI
+emite avisos `ECONNREFUSED` de fixtures tras restaurar mocks; no falla. Ruff amplio
+detectó cuatro E501 preexistentes en `catalog_api.py`; no se ejecutó `make verify`.
+
+Frontend/backend de vista previa reconstruidos y saludables (5174/8001).
+`/database-info`: 43.381 REAL, cero DEMO y tres importaciones en `sources-preview`.
+Migración aditiva del vínculo aplicada a esa copia; maestros originales intactos.
+Catálogo cargado sin el error de servidor del arranque previo en frío. Inspección
+visual de Catálogo, Cola e Incidencias con filtros integrados; expediente abierto
+desde nombre y responsable visible como «J. Lopez», separado del estado.
+Claro/Cómoda y Oscuro/Compacta/Cómoda comprobados. A 1280 px el documento no
+desborda, 32 resultados ABACAVIR cargados y ninguna alerta. Capturas guardadas
+fuera del repositorio; tamaño temporal del navegador retirado. La inspección no
+cubre todos los estados de todas las rutas ni cuentas Entra reales. El corte
+anterior conserva el estado histórico antes de desarrollar la integración.
+
+## 2026-10-05 — Corrección de catálogo, filtros y preferencias
+
+ADR-0014: expediente desde nombre completo, seis columnas con `colgroup`, estado
+y responsable separados y nombre visible por ID. Sin botón/columna de apertura.
+Tema y densidad en Equipo y preferencias; cabecera y expediente sin selector de
+persona. Filtros comunes en columna para Catálogo, Cola e Incidencias, plegado
+temporal de navegación que no sobrescribe su preferencia, y transiciones con
+respeto a movimiento reducido. Segunda lectura del modal no carga hasta el
+primer acceso y conserva el formulario después.
+
+Validación: suite Linux sin red, 172/172 pruebas en 26 archivos, 100,73 s con
+`--maxWorkers=1 --testTimeout=15000`. Tras el ajuste final de nombres accesibles
+en navegación plegada, App 14/14, 13,52 s. ESLint y TypeScript/Vite correctos.
+La primera pasada detectó etiquetas que incluían su texto de ayuda; corregidas
+sin debilitar las pruebas. No se ejecutó la verificación integral ni se cambió
+backend en este corte. La suite emite dos mensajes `ECONNREFUSED` de fixtures
+sin servidor tras restaurar el mock; no causan fallos ni acceso a datos reales.
+
+Entra sigue pendiente de configuración y desarrollo (D-018, EST-09). Se han
+solicitado proveedor/configuración al responsable y preparado perímetro y matriz
+de capacidades. La identificación confirmada/finalizada de Equipo sigue siendo
+declarada, no autenticación ni barrera de permisos. Firmas históricas intactas.
+
+## 2026-10-05 — Estudio integrado en la vista previa
+
+Primer corte de ADR-0013: Catálogo/Trabajo/Datos, Resumen y Equipo secundarios,
+expediente con pestañas y edición explícita. Densidades Cómoda/Compacta y temas
+Claro/Oscuro/Sistema persistentes e independientes; aplicación antes del pintado.
+El sistema activo reúne las capas anteriores en `studio.css` y conserva los
+estilos estructurales que aún tienen consumidores.
+
+La exportación excluye el registro completo si tiene segunda lectura pendiente,
+desacuerdo, cierre inválido o decisión posterior al cierre. Incluye campos fuera
+de las columnas del perfil. Se conserva el contrato de archivo con cabecera
+cuando no hay filas entregables y el informe explica cada exclusión.
+
+Validación: TypeScript/Vite y ESLint correctos; Ruff y mypy del cambio correctos;
+`git diff --check` correcto. Suite Linux: 167/169 en 26 archivos; las dos faltantes
+agotaron 5 segundos. Reejecución de `App.test.tsx` con margen de 15 segundos:
+12/12, incluyendo ambas; quedan comprobados los 169 casos. Python: primera
+pasada 58/64; seis aserciones sobre archivo vacío requerían respetar el contrato
+existente; las ocho regresiones de doble validación reejecutadas pasan (8/8).
+No se ejecutó la verificación integral del repositorio.
+
+Frontend y backend de la copia de vista previa reconstruidos en 5174/8001;
+`/ready` responde correctamente. Comprobados catálogo con 43.381 registros,
+densidades, temas, expediente e historial. A 720 px no desborda el documento;
+a 1280 px la tabla muestra acciones y nombres completos. Las pruebas visuales
+no cubren todos los estados de todas las rutas. El arranque en frío tras
+reconstruir mostró solicitudes que agotaron 30 segundos; el reintento cargó los
+50 registros. Rendimiento en frío queda registrado para una entrega específica.
+
+## 2026-10-02 — Primer corte del rediseño global
+
+Modo oscuro RD-09 implementado: selector global claro/oscuro/según el sistema,
+preferencia persistente y aplicación antes del primer pintado; tokens oscuros y
+cobertura de componentes históricos. Catálogo poblado, filtros, expediente y
+destinos principales inspeccionados visualmente; a 720 px no hay desbordamiento
+horizontal del documento. `npm run lint`, `npm run build` y 167 pruebas de 26
+archivos pasan. Sigue pendiente QA exhaustiva de contraste y estados poco
+frecuentes en todas las rutas.
+
+Se inició la implementación autorizada en `docs/GLOBAL_REDESIGN_2026_PLAN.md`.
+La navegación principal pasa a una barra lateral plegable con estado conservado;
+la cabecera indica la sección y mantiene el selector de revisor. El catálogo
+sitúa búsqueda y orden sobre los resultados y despliega los filtros avanzados
+encima de la tabla para conservar ancho útil. Las columnas tienen proporciones
+estables y los nombres extensos se ajustan a varias líneas. El expediente modal
+y su recorrido siguen intactos. Validado con 43.381 registros reales en la vista
+previa Docker (5174), también en tamaños de 720, 1280, 1440 y 1920 px; `npm run
+build`, `npm run lint` y la suite secuencial (165 pruebas) pasaron. Pendiente la
+adaptación visual de detalle, revisión y demás módulos.
+
+## 2026-10-01 — Expedientes en modal
+
+Validación: `npm run build` y `npm run lint` correctos; `npm test -- RealRecordListScreen.test.tsx CatalogIdentityScreen.test.tsx`: 21 pruebas aprobadas. Comprobado visualmente en la vista previa Docker 5174: modal, selector de revisor y avance del registro 1 al 2. El frontend de esa vista previa se reconstruyó y quedó operativo.
+
+El catálogo abre expedientes sobre el listado, con anterior/siguiente según filtros y orden del servidor, incluidos cambios de página. Los formularios visitados permanecen montados durante la sesión del catálogo para conservar ediciones al cerrar y reabrir. Escape y Cerrar recuperan el foco.
+
 # Estado del proyecto
+
+## 2026-10-01 — Fuentes visibles con los maestros originales
+
+La página prioriza tarjetas para los tres libros Excel conocidos y muestra su
+estado a partir de la base activa, además de CIMA, Nomenclátor y BOT PLUS Web.
+Se creó `sources-preview.db` como copia de `real-preview.db` y el perfil
+Compose `preview` (5174/8001) para enseñar los tres maestros sin modificar la
+base original. `scripts/start-sources-preview.ps1` reproduce el arranque y
+comprueba datos REAL y frontend disponibles. Nomenclátor usa SQL Server según
+confirmó el responsable; el
+formulario conserva servidor, puerto, base y usuario con historial, y permite
+probar una conexión cifrada con contraseña efímera o secreto de servidor. La
+prueba ejecuta sólo `SELECT DB_NAME()`. Todavía faltan host y credenciales para
+probarla contra la base de la organización e inventariar su esquema. BOT PLUS
+Web ofrece acceso de consulta; el adaptador de datos sigue pendiente del
+servicio de integración autorizado. La sustitución de un maestro con distinto
+contenido sigue bloqueada por D-034.
+
+Verificación de la vista previa: frontend y backend saludables; `/ready` y
+`/database-info` confirman modo REAL consistente con 43.381 registros reales,
+cero DEMO y tres lotes. Fuentes muestra 29.850 especialidades, 6.342
+medicamentos, 7.189 principios activos y 51 documentos CIMA. El detalle de
+Especialidades presenta sus hojas `General` y `Excipientes`, nombre editable,
+archivo reversible y carga controlada. Ruff, mypy, TypeScript y build Vite
+correctos; no se ejecutaron pruebas automatizadas en este corte. La migración
+está aplicada sólo a `sources-preview.db`; `real-preview.db` continúa en
+`f3e4d5c6b7a8`.
+El comando `scripts/start-sources-preview.ps1 -SkipBuild` confirmó ambos
+servicios saludables y 43.381 registros REAL sin sobrescribir la copia.
+
+
+## 2026-10-01 — Primer corte de gestión de fuentes
+
+La pantalla Fuentes permite cambiar el nombre visible, archivar/restaurar una
+fuente y consultar el historial con responsable y motivo. El archivo afecta al
+listado habitual; no impide que los importadores actuales sigan leyendo sus
+nombres técnicos. Importaciones y exportaciones comparten ahora la navegación
+del área Datos. Migración aditiva pendiente de aplicar. Verificación: TypeScript,
+Ruff y `alembic heads` correctos; Vite no completó por `spawn EPERM` y la
+generación SQL de todas las migraciones se detuvo en una migración anterior que
+requiere conexión. No se ejecutaron pruebas.
+
+La importación web de los tres maestros tiene vista previa de estructura y hash,
+confirmación ligada al mismo archivo y captura de responsable/motivo. Los XLSX
+se guardan como artefactos inmutables de su versión. Para proteger el catálogo,
+un libro con contenido distinto se bloquea si ya existe una carga completada;
+falta implementar comparación y enlace de registros para permitir sustituciones.
+Verificaciones de este corte: Ruff, mypy y TypeScript correctos; no se ejecutaron
+pruebas. Vite sigue limitado por `spawn EPERM`; migración sin aplicar.
+
+El plan detalla la configuración versionada de fuentes, el alta por etapas,
+historial de ejecuciones y perfiles reproducibles de exportación. Se registró
+D-034 para resolver con evidencia las claves de reconciliación entre versiones
+y fuentes. Nomenclátor se conectará primero en sólo lectura tras recibir su
+esquema/diccionario; BOT PLUS queda pendiente del contrato de BOT PLUS
+Integración y de confirmar permisos; no se automatizará la web ni se guardarán
+credenciales en el código. CIMA conservará su operación y enlaces actuales.
+
+## 2026-10-01 — Arranque de la demo desde el código actual
+
+Se reconstruyeron los contenedores. Se corrigieron un error de sintaxis y la
+lectura de registros con mantenimiento en `records.py`. El origen
+`synthetic_fixture` se reconoce como DEMO, igual que `demo_showcase`, para que
+`/ready` clasifique correctamente el fixture incluido en el arranque.
+Verificación dirigida: 15 pruebas de registros y mantenimiento y 24 pruebas de
+origen y diagnóstico correctas; `/ready`, `/database-info`, `/records` y la
+interfaz respondieron. La demo se ejecuta en el proyecto Compose
+`pharma-validator-fresh`; el volumen anterior se conserva.
+
+## 2026-09-30 — Exclusión de pasadas CIMA simultáneas
+
+El ejecutor diario SQLite mantiene un bloqueo del sistema operativo durante la
+pasada y rechaza con código 2 otra invocación sobre la misma base. El bloqueo se
+libera al salir, también tras un error; la prueba cubre contención, liberación
+y rechazo desde la CLI. El mecanismo requiere que todos los ejecutores compartan
+la misma ruta de base y volumen.
 
 ## Preparación operativa del piloto (30 de septiembre de 2026)
 
@@ -1561,3 +1840,44 @@ Validación del cierre UI: frontend 149/149, ESLint, TypeScript y build correcto
 ## UI — Novedades CIMA (10-09-2026)
 
 Rediseño del panel de novedades (§13): resumen de eventos cargados por tipo, etiquetas de cambio y reapertura, historial en panel y detalle documental contextual. Conserva fuentes, eventos y consulta bajo demanda. Prueba de pantalla cubre resumen y apertura del diff.
+## 2026-10-06 — Equipo y preferencias
+
+Reorganizada la página en una cabecera clara, dos tarjetas de preferencias e
+identidad y una zona de revisores con listado y alta separados. Se conserva la
+distinción entre identidad declarada del piloto y sesión corporativa. La gestión
+de revisores confirma los cambios, bloquea el alta hasta cargar los roles y
+permite reintentar cuando fallan. Pruebas enfocadas 25/25, ESLint y build correctos.
+Comprobación visual local realizada en tema oscuro, vista normal y 800 px.
+Pendiente la aceptación de uso del equipo.
+
+## 2026-10-06 — Resumen explorable
+
+Inicio muestra prioridades de trabajo y desgloses de cobertura por entidad, fuente y estado de cola. Los segmentos abren un listado paginado de registros reales; cuarentena y diagnósticos enlazan a sus pantallas de datos. La API agrega con filtros REAL/DEMO y conserva separadas las unidades de registros, filas y diagnósticos. La guía larga sale de Inicio y sus indicaciones principales se sitúan en Cola, Validaciones y Exportaciones. TypeScript, ESLint dirigido, Ruff, 22 pruebas de frontend y 19 pruebas Python de insights pasan. La comprobación directa sobre 43.381 registros confirma las sumas y la paginación. El 6 de octubre se reinició la API local de vista previa en 8001 tras detectar que el frontend nuevo consultaba una ruta ausente en el proceso antiguo; la ruta y la base `sources-preview` quedaron verificadas.
+## 2026-10-06 — Administración visible del acceso Entra
+
+Equipo presenta, sólo a quien tiene `team.manage`, los vínculos de cuenta
+configurados, su estado efectivo y la matriz de capacidades por rol corporativo.
+La vista diferencia vínculo configurado, primer acceso verificado, revisor activo
+y rol asignado en Entra; no afirma poder gestionar contraseñas ni asignaciones
+del directorio desde la aplicación. La API protege `/auth/access` con la misma
+capacidad y no entrega tokens. Backend de autenticación: 28/28 pruebas; frontend
+de acceso y equipo: 12/12; ESLint, Ruff y build correctos. Continúan pendientes
+los identificadores y asignaciones reales del tenant y la prueba E2E corporativa.
+# Visibilidad de cuarentena en catálogo (2026-10-06)
+
+El catálogo muestra una vista de las filas de excipientes preservadas en
+cuarentena, con recuento, motivo y valores originales/de trabajo en detalle.
+No crea identidades canónicas ni habilita revisión para filas sin especialidad
+padre. El mantenimiento continúa en Datos → Incidencias. El listado canónico
+y sus filtros permanecen independientes de esta vista. TypeScript compila;
+la prueba del listado del catálogo pasa (23/23) y `npm run build` termina
+correctamente al ejecutarlos con el permiso requerido por el entorno.
+## 2026-10-07 — Arranque sin recuento completo del Resumen
+
+La barra lateral obtiene la fecha de última importación de `/database-info`, que
+ya se consultaba al iniciar. `App` deja de pedir `/insights/dashboard` en todas
+las rutas: el recuento completo se reserva para el Resumen. Sobre una copia REAL
+de sólo lectura, el `count(*)` de `field_value` tardó 5,99 s en la primera
+petición medida; `/database-info` con la fecha añadida respondió en 0,36 s.
+Son medidas locales individuales, no un benchmark de usuarios concurrentes.
+Pruebas enfocadas: backend 7/7, frontend 36/36; build Vite correcto.

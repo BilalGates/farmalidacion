@@ -2,13 +2,13 @@ import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
-const styles = readFileSync('src/design-system.css', 'utf8')
+const styles = readFileSync('src/studio.css', 'utf8')
 const entry = readFileSync('src/main.tsx', 'utf8')
 
 describe('tipografia global', () => {
   it('usa tipografia del sistema y evita fabricar grosores borrosos', () => {
     expect(styles).toContain("--font-ui: 'Segoe UI Variable', 'Segoe UI', Inter, system-ui, sans-serif")
-    expect(entry.indexOf("import './design-system.css'")).toBeGreaterThan(entry.indexOf("import './styles.css'"))
+    expect(entry.indexOf("import './studio.css'")).toBeGreaterThan(entry.indexOf("import './styles.css'"))
   })
 })
 
@@ -25,5 +25,24 @@ describe('sistema visual profesional', () => {
     expect(styles).toContain('--radius: 8px')
     expect(styles).toContain(':focus-visible')
     expect(styles).toContain('@media (prefers-reduced-motion: reduce)')
+  })
+})
+
+describe('desplegables', () => {
+  it('da estilo al panel de opciones y conserva un fallback nativo', () => {
+    expect(styles).toContain('select option { color: var(--ink); background: var(--surface); }')
+    expect(styles).toContain('@supports (appearance: base-select)')
+    expect(styles).toContain('select::picker(select)')
+    expect(styles).toContain('select option:disabled')
+  })
+})
+
+describe('barras de desplazamiento', () => {
+  it('estiliza ambos ejes y adapta el color al tema oscuro', () => {
+    expect(styles).toContain('scrollbar-width: thin')
+    expect(styles).toContain('scrollbar-color: var(--scrollbar-thumb) transparent')
+    expect(styles).toContain('::-webkit-scrollbar { width: 10px; height: 10px; }')
+    expect(styles).toContain('::-webkit-scrollbar-thumb:hover')
+    expect(styles).toContain('--scrollbar-thumb: #777080')
   })
 })

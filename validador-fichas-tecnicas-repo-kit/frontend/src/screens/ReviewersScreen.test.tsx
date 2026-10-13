@@ -76,6 +76,26 @@ it('da de alta un revisor con su rol', async () => {
   await waitFor(() => expect(writes).toHaveLength(1))
   expect(writes[0]).toContain('"identifier":"carlos"')
   expect(writes[0]).toContain('"role":"cientifico_datos"')
+  expect(await screen.findByText('Revisor añadido al equipo.')).toBeVisible()
+})
+
+it('mantiene el alta bloqueada y permite reintentar si fallan los roles', async () => {
+  let roleRequests = 0
+  vi.stubGlobal('fetch', vi.fn(async (input: string | URL | Request) => {
+    const url = String(input)
+    if (url.includes('/reviewers/roles')) {
+      roleRequests += 1
+      if (roleRequests === 1) return new Response(JSON.stringify({ detail: 'Sin roles' }), { status: 503, headers: { 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify(ROLES), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    }
+    return new Response(JSON.stringify(REVIEWERS), { status: 200, headers: { 'Content-Type': 'application/json' } })
+  }))
+  render(<ReviewersScreen />)
+
+  expect(await screen.findByText('No se pudieron cargar los roles.')).toBeVisible()
+  expect(screen.getByRole('button', { name: 'Añadir revisor' })).toBeDisabled()
+  fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Añadir revisor' })).toBeEnabled())
 })
 
 it('muestra el motivo cuando el backend rechaza la operación', async () => {

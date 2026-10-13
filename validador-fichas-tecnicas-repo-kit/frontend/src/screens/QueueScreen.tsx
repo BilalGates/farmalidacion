@@ -13,6 +13,7 @@ import { navigate } from '../navigation'
 import { Check, Plus, RefreshCw, Search } from 'lucide-react'
 import { FilterWorkspace } from '../components/FilterWorkspace'
 import { PageHeader } from '../components/PageHeader'
+import { useCapability } from '../auth/SessionContext'
 
 const labels: Record<string, string> = {
   pendiente: 'Pendiente', asignado: 'Asignado', en_revision: 'En revisión',
@@ -20,6 +21,7 @@ const labels: Record<string, string> = {
 }
 
 export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
+  const canReview = useCapability('review.write')
   const [items, setItems] = useState<QueueItem[]>([])
   const [error, setError] = useState('')
   const [stale, setStale] = useState(false)
@@ -97,7 +99,7 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
   }
 
   return <div className='screen'>
-    <PageHeader eyebrow='Trabajo del equipo' title='Cola de revisión' description='Asigne, filtre y abra registros desde un único espacio de trabajo.' actions={<div className='page-stat' aria-label={`${items.length} registros en la cola`}>
+    <PageHeader eyebrow='Trabajo del equipo' title='Cola de revisión' description='Filtre los registros pendientes, selecciónelos y asígnese un lote antes de abrir cada ficha.' actions={<div className='page-stat' aria-label={`${items.length} registros en la cola`}>
         <strong>{items.length}</strong><span>En cola</span>
       </div>} />
     {error && <div role='alert' className='alert alert--error'>{error} {stale && items.length > 0 && 'La lista muestra la última carga correcta y puede estar desactualizada.'} <button type='button' className='button button--secondary' disabled={loading || busy} onClick={() => void reload()}>Reintentar carga</button></div>}
@@ -118,7 +120,7 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
             </select>
           </label>
           <label className='queue-check'><input type='checkbox' checked={requiresSecondReview} onChange={(event) => setRequiresSecondReview(event.target.checked)} /> Doble validación</label>
-          <button className='button button--primary' disabled={busy || !recordId.trim()}><Plus size={16} aria-hidden='true' />Añadir</button>
+          <button className='button button--primary' disabled={!canReview || busy || !recordId.trim()}><Plus size={16} aria-hidden='true' />Añadir</button>
     </form>
     <FilterWorkspace
       title='Filtros de revisión'
@@ -144,7 +146,7 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
     <section className='panel queue-panel'>
       {selected.length > 0 && <div className='queue-batch'>
         <span>{selected.length} seleccionados</span>
-        <button className='button button--primary' disabled={busy || !reviewer} onClick={() => void act(() => assignQueueBatch(items.filter((item) => selected.includes(item.target_record_id)), reviewer!.identifier))}>Asignarme lote</button>
+        <button className='button button--primary' disabled={!canReview || busy || !reviewer} onClick={() => void act(() => assignQueueBatch(items.filter((item) => selected.includes(item.target_record_id)), reviewer!.identifier))}>Asignarme lote</button>
       </div>}
       {loading && <div className='empty-state' role='status'><span className='empty-state__icon'>↻</span><h2>Cargando cola…</h2></div>}
       {!loading && !error && visibleItems.length === 0 && <div className='empty-state queue-empty'><span className='empty-state__icon' aria-hidden='true'><Check size={23} /></span><h2>{appliedFilterCount > 0 ? 'No hay resultados' : 'La cola está al día'}</h2><p>{appliedFilterCount > 0 ? 'Ningún registro coincide con los filtros aplicados.' : 'Cuando se añadan registros aparecerán aquí, listos para asignar.'}</p>{appliedFilterCount > 0 && <button type='button' className='button button--secondary' onClick={() => void clearFilters()}>Limpiar filtros</button>}</div>}
@@ -154,11 +156,11 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
           <div className='queue-list__identity'><span className='queue-list__icon' aria-hidden='true'>▤</span><span><strong>{item.target_record_id}</strong><small className='queue-list__meta'><span>{item.assignee_id ? `Asignado a ${item.assignee_id}` : 'Sin asignar'}</span><span>Conjunto {item.review_set ?? 'corpus'}</span>{item.requires_second_review && <span>Doble validación</span>}</small></span></div>
           <span className={`badge badge--${item.state}`}>{labels[item.state] ?? item.state}</span>
           <div className='queue-list__actions'>
-          <button className='button' disabled={busy || loading || !reviewer || ['completado', 'bloqueado'].includes(item.state)}
+          <button className='button' disabled={!canReview || busy || loading || !reviewer || ['completado', 'bloqueado'].includes(item.state)}
             onClick={() => void act(() => assignQueue(item.target_record_id, reviewer!.identifier))}>
             Asignarme
           </button>
-          {item.assignee_id === reviewer?.identifier && ['asignado', 'en_revision'].includes(item.state) && <>
+          {canReview && item.assignee_id === reviewer?.identifier && ['asignado', 'en_revision'].includes(item.state) && <>
             {item.state === 'asignado' && <button className='button' disabled={busy || loading}
               onClick={() => void act(() => transitionQueue(item, reviewer.identifier, 'en_revision'))}>
               Iniciar revisión

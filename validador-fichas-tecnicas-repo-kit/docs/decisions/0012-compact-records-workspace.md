@@ -23,3 +23,7 @@ Pruebas de selección, continuidad de filtros, cambio de ficha con carga tardía
 ## Extensión
 
 Los estilos quedan limitados a Registros. Aplicar posteriormente la misma jerarquía y componentes a otras pantallas según su función; esta decisión no impone tres columnas a todos los módulos.
+
+## Ampliación aceptada — 2026-10-01
+
+Por petición explícita del responsable, el catálogo vigente abre el expediente en un modal amplio sobre el listado. Anterior/siguiente respeta filtros, orden del servidor y límites de paginación. Las relaciones se abren en el mismo modal; los datos importados pueden consultarse dentro de él. El listado conserva montaje y posición; los expedientes visitados conservan sus formularios durante la sesión del catálogo, incluso al cerrar y reabrir el modal. Salir del módulo o recargar no conserva estas ediciones canónicas sin guardar. Escape cierra y devuelve el foco; no se cierra al pulsar accidentalmente el fondo. La navegación fallida conserva el expediente actual.

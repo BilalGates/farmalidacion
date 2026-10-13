@@ -12,6 +12,7 @@ import type { EmptySourceColumn, QuarantinedField, QuarantinedSourceRow, Reviewe
 import { formatDateTime } from '../domain/format'
 import { FilterWorkspace } from '../components/FilterWorkspace'
 import { PageHeader } from '../components/PageHeader'
+import { useCapability } from '../auth/SessionContext'
 
 const PAGE_SIZE = 50
 const WORKBOOKS: Record<string, string> = {
@@ -27,6 +28,7 @@ function valueLabel(value: string | null): string {
 }
 
 export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | null }) {
+  const canMaintain = useCapability('catalog.maintain')
   const [rows, setRows] = useState<QuarantinedSourceRow[]>([])
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
@@ -84,7 +86,7 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
   }
 
   async function save(field: QuarantinedField) {
-    if (!selected || !reviewer || !reason.trim()) return
+    if (!selected || !reviewer || !canMaintain || !reason.trim()) return
     setSaving(true)
     setSaveError('')
     setNotice('')
@@ -128,7 +130,7 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
   }
 
   async function saveEmpty() {
-    if (!selected || !reviewer || emptyColumn === null || !emptyValue.trim() || !emptyReason.trim()) return
+    if (!selected || !reviewer || !canMaintain || emptyColumn === null || !emptyValue.trim() || !emptyReason.trim()) return
     setSaving(true)
     setSaveError('')
     try {
@@ -153,7 +155,7 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
 
   return (
     <div className='screen quarantine-screen'>
-      <PageHeader eyebrow='Datos preservados, relación pendiente' title='Filas en cuarentena' description='Corrige celdas fuente sin asignar un padre ni cambiar por qué la fila quedó apartada.' actions={<span className='badge badge--warning'><AlertTriangle size={15} aria-hidden='true' /> {total} filas</span>} />
+      <PageHeader eyebrow='Datos preservados, relación pendiente' title='Filas en cuarentena' description={canMaintain ? 'Corrige celdas fuente sin asignar un padre ni cambiar por qué la fila quedó apartada.' : 'Consulta las filas apartadas, su motivo y los valores originales y de trabajo.'} actions={<span className='badge badge--warning'><AlertTriangle size={15} aria-hidden='true' /> {total} filas</span>} />
 
       <FilterWorkspace
         title='Filtros de cuarentena'
@@ -170,7 +172,8 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
         }
       >
       <section className='panel quarantine-results-panel'>
-        {!reviewer && <p className='alert badge--warning'>Seleccione un usuario arriba para mantener campos.</p>}
+        {!reviewer && <p className='alert badge--warning'>Identifícate en Equipo y preferencias para mantener campos.</p>}
+        {reviewer && !canMaintain && <p className='note'>Esta cuenta puede consultar las incidencias; no tiene permiso para modificar campos.</p>}
         {loadError && <p className='alert alert--error' role='alert'>{loadError}<button className='button button--ghost' type='button' onClick={() => void load()}>Reintentar</button></p>}
         {loading && <p role='status'>Cargando filas…</p>}
         {!loading && !loadError && rows.length === 0 && <p className='muted'>No hay filas en cuarentena para este filtro.</p>}
@@ -202,11 +205,11 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
                 <p className='eyebrow'>{WORKBOOKS[selected.source_workbook] ?? selected.source_workbook} · {selected.source_locator}</p>
                 <h2>{selected.reason_code}</h2>
                 <p>{selected.reason}</p>
-                <p className='note'>Los cambios de abajo actualizan únicamente el valor de trabajo. La fila no se vincula automáticamente y seguirá apareciendo aquí hasta resolver el motivo.</p>
+                <p className='note'>{canMaintain ? 'Los cambios de abajo actualizan únicamente el valor de trabajo. La fila no se vincula automáticamente y seguirá apareciendo aquí hasta resolver el motivo.' : 'La fila seguirá apartada hasta resolver el motivo. El literal original se conserva junto al valor de trabajo.'}</p>
                 {notice && <p className='alert alert--ok' role='status'>{notice}</p>}
                 {saveError && <p className='alert alert--error' role='alert'>{saveError}</p>}
                 <dl className='quarantine-fields'>{selected.fields.map((field) => {
-                  const editing = editingColumn === field.source_column_index
+                  const editing = canMaintain && editingColumn === field.source_column_index
                   return (
                     <div className='quarantine-field' key={field.source_column_index}>
                       <dt><strong>{field.field_name}</strong><small>Columna Excel {field.source_column_index}</small></dt>
@@ -224,7 +227,7 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
                           </div>
                         ) : (
                           <div className='catalog-source-field__actions'>
-                            <button type='button' className='button button--ghost' disabled={!reviewer || saving} onClick={() => beginEdit(field)}><Pencil size={16} aria-hidden='true' /> Editar campo</button>
+                            {canMaintain && <button type='button' className='button button--ghost' disabled={!reviewer || saving} onClick={() => beginEdit(field)}><Pencil size={16} aria-hidden='true' /> Editar campo</button>}
                             {field.maintenance_history.length > 0 && <details className='catalog-source-field__history'><summary>Historial ({field.maintenance_history.length})</summary><ol>{field.maintenance_history.map((entry) => <li key={entry.sequence}><strong>v{entry.sequence}: {valueLabel(entry.before_value)} → {valueLabel(entry.after_value)}</strong><span>{entry.reason}</span><small>{entry.actor_id} · {formatDateTime(entry.recorded_at)}</small></li>)}</ol></details>}
                           </div>
                         )}
@@ -232,7 +235,7 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
                     </div>
                   )
                 })}</dl>
-                {addingEmpty ? <div className='quarantine-field__editor'>
+                {canMaintain && addingEmpty ? <div className='quarantine-field__editor'>
                   {loadingColumns ? <p role='status'>Consultando columnas de la hoja…</p> : emptyColumns.length === 0 ? <p className='muted'>No hay columnas vacías disponibles en esta fila.</p> : <>
                     <label className='field'><span className='field__label'>Columna vacía</span><select aria-label='Columna vacía de la fila en cuarentena' value={emptyColumn ?? ''} onChange={(event) => setEmptyColumn(Number(event.target.value))}>{emptyColumns.map((column) => <option key={column.source_column_index} value={column.source_column_index}>{column.field_name} · columna {column.source_column_index}</option>)}</select></label>
                     <label className='field'><span className='field__label'>Valor de trabajo</span><textarea aria-label='Valor para la celda vacía en cuarentena' rows={2} value={emptyValue} onChange={(event) => setEmptyValue(event.target.value)} /></label>
@@ -243,7 +246,7 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
                     {emptyColumns.length > 0 && <button type='button' className='button button--primary' disabled={saving || !emptyValue.trim() || !emptyReason.trim()} onClick={() => void saveEmpty()}><Save size={16} aria-hidden='true' /> Guardar celda</button>}
                     <button type='button' className='button button--ghost' disabled={saving} onClick={() => setAddingEmpty(false)}><X size={16} aria-hidden='true' /> Cancelar</button>
                   </div>
-                </div> : <button type='button' className='button button--ghost' disabled={!reviewer || saving} onClick={() => void beginAddEmpty()}>Completar celda vacía</button>}
+                </div> : canMaintain && <button type='button' className='button button--ghost' disabled={!reviewer || saving} onClick={() => void beginAddEmpty()}>Completar celda vacía</button>}
               </section>
             )}
           </div>

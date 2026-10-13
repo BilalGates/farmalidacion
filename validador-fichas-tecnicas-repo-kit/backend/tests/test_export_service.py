@@ -23,6 +23,7 @@ from conftest import seed_reviewable_record
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+from pharma_validator_api.double_review import Reconciliation
 from pharma_validator_api.export_engine import ColumnSpec, ExportProfile
 from pharma_validator_api.export_manifest import verify
 from pharma_validator_api.export_service import (
@@ -33,6 +34,12 @@ from pharma_validator_api.export_service import (
 from pharma_validator_api.models import ExportRun
 from pharma_validator_api.review import record_decision
 from pharma_validator_api.reviewer_identity import ReviewerDirectory
+from pharma_validator_api.second_review_store import (
+    claim_second_review,
+    open_second_review,
+    reconcile,
+    submit_second_review,
+)
 from pharma_validator_api.validation_states import ValidationDecision
 
 DIRECTORY = ReviewerDirectory.from_configuration(("ana:Ana",))
@@ -88,6 +95,85 @@ def decide_all(session: Session) -> None:
     decide(session, "fv-rec-1-1-1", value="N", field_name="ACTIVO")
 
 
+@pytest.mark.parametrize("claimed", [False, True])
+def test_an_open_second_review_blocks_the_whole_record(session: Session, claimed: bool) -> None:
+    decide_all(session)
+    assignment = open_second_review(session, field_value_id="fv-rec-1-1-1", actor_id="ana")
+    if claimed:
+        claim_second_review(session, assignment_id=assignment.id, reviewer_id="luis")
+    session.commit()
+    # ACTIVO no está en este perfil; el bloqueo protege el registro completo.
+    narrow = ExportProfile(
+        name="solo-descripcion",
+        fmt="csv",
+        columns=(ColumnSpec("Descripcion", "DESCRIPCION", required=True),),
+    )
+    outcome = run_export(session, narrow, actor_id="ana")
+    assert outcome.delivered_rows == 0
+    assert outcome.result is not None
+    assert outcome.result.row_count == 0
+    assert outcome.blocking_exclusions[0].rule == "segunda_revision_pendiente"
+    report = exclusion_report(session, outcome.run_id)
+    assert report[0].field_name == "ACTIVO"
+
+
+@pytest.mark.parametrize("close", ["acuerdo", "desacuerdo", "conciliado"])
+@pytest.mark.parametrize("later_decision", [False, True])
+def test_export_requires_a_current_closed_double_review(
+    session: Session, close: str, later_decision: bool
+) -> None:
+    decide_all(session)
+    directory = ReviewerDirectory.from_configuration(("ana:Ana", "luis:Luis", "eva:Eva"))
+    assignment = open_second_review(session, field_value_id="fv-rec-1-1-0", actor_id="ana")
+    session.commit()
+    submit_second_review(
+        session,
+        assignment_id=assignment.id,
+        decision=ValidationDecision(
+            field_name="DESCRIPCION",
+            state="confirmado",
+            final_value="acido nicotinico" if close == "acuerdo" else "Lectura B",
+            reviewer_id="luis",
+            reviewer_role="farmaceutico",
+        ),
+        directory=directory,
+    )
+    if close == "conciliado":
+        reconcile(
+            session,
+            assignment_id=assignment.id,
+            reconciliation=Reconciliation(
+                field_name="DESCRIPCION",
+                choice="valor_nuevo",
+                resolved_by="eva",
+                comment="Se verifica el documento de origen.",
+                final_value="Valor conciliado",
+            ),
+            directory=directory,
+        )
+    if later_decision:
+        decide(session, "fv-rec-1-1-0", value="Decisión posterior")
+    session.commit()
+    outcome = run_export(session, profile(), actor_id="ana")
+    if close == "desacuerdo" or later_decision:
+        assert outcome.delivered_rows == 0
+        assert outcome.result is not None
+        assert outcome.result.row_count == 0
+        assert "Lectura B" not in outcome.result.content.decode("utf-8")
+        expected = (
+            "discrepancia_doble_validacion"
+            if close == "desacuerdo"
+            else "doble_validacion_obsoleta"
+        )
+        assert outcome.blocking_exclusions[0].rule == expected
+    else:
+        assert outcome.delivered_rows == 1
+        assert outcome.blocking_exclusions == ()
+        assert outcome.result is not None
+        expected_value = "Valor conciliado" if close == "conciliado" else "acido nicotinico"
+        assert expected_value in outcome.result.content.decode("utf-8")
+
+
 def test_an_unvalidated_field_is_excluded_with_its_reason(session: Session) -> None:
     # Ninguna decisión registrada: no se entrega nada de ese registro.
     outcome = run_export(session, profile(), actor_id="ana")
@@ -95,9 +181,7 @@ def test_an_unvalidated_field_is_excluded_with_its_reason(session: Session) -> N
     assert outcome.delivered_rows == 0
     reasons = {item.rule for item in outcome.exclusions}
     assert "campo_sin_validar" in reasons
-    excluded = next(
-        item for item in outcome.exclusions if item.rule == "campo_sin_validar"
-    )
+    excluded = next(item for item in outcome.exclusions if item.rule == "campo_sin_validar")
     assert excluded.target_record_id == "rec-1"
     assert excluded.severity == "bloqueante"
     assert excluded.observed_state == "pendiente"
@@ -194,9 +278,7 @@ def test_an_undeclared_logical_state_fails_closed(session: Session) -> None:
 
     assert outcome.delivered_rows == 0
     reason = next(
-        item
-        for item in outcome.exclusions
-        if item.rule == "estado_logico_no_serializable"
+        item for item in outcome.exclusions if item.rule == "estado_logico_no_serializable"
     )
     # No se aplana a vacío: se excluye y se explica.
     assert "no declara cómo escribir" in reason.detail
@@ -268,9 +350,7 @@ def test_the_artifact_is_written_to_disk_and_matches_its_manifest(
     session: Session, tmp_path: Path
 ) -> None:
     decide_all(session)
-    outcome = run_export(
-        session, profile(), actor_id="ana", artifact_dir=tmp_path / "exports"
-    )
+    outcome = run_export(session, profile(), actor_id="ana", artifact_dir=tmp_path / "exports")
 
     stored = session.get(ExportRun, outcome.run_id)
     assert stored is not None and stored.artifact_path is not None
@@ -281,13 +361,9 @@ def test_the_artifact_is_written_to_disk_and_matches_its_manifest(
     verify(outcome.manifest, written)
 
 
-def test_a_tampered_artifact_fails_verification(
-    session: Session, tmp_path: Path
-) -> None:
+def test_a_tampered_artifact_fails_verification(session: Session, tmp_path: Path) -> None:
     decide_all(session)
-    outcome = run_export(
-        session, profile(), actor_id="ana", artifact_dir=tmp_path / "exports"
-    )
+    outcome = run_export(session, profile(), actor_id="ana", artifact_dir=tmp_path / "exports")
     assert outcome.manifest is not None
 
     # El motivo concreto importa: un fallo por otra razón haría pasar la prueba
@@ -372,9 +448,7 @@ def test_only_the_requested_records_are_exported(session: Session) -> None:
     seed_reviewable_record(session, record_id="rec-2")
     session.commit()
 
-    outcome = run_export(
-        session, profile(), actor_id="ana", record_ids=("rec-1",)
-    )
+    outcome = run_export(session, profile(), actor_id="ana", record_ids=("rec-1",))
     # `rec-2` no aparece ni entregado ni excluido: no estaba en el alcance.
     assert outcome.delivered_rows == 1
     assert all(item.target_record_id != "rec-2" for item in outcome.exclusions)

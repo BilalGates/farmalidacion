@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 
 import type { QuarantinedSourceRowPage, Reviewer } from '../api/types'
 import { QuarantinedRecordsScreen } from './QuarantinedRecordsScreen'
+import { SessionContext } from '../auth/SessionContext'
 
 const REVIEWER: Reviewer = {
   identifier: 'ana',
@@ -34,6 +35,24 @@ const page: QuarantinedSourceRowPage = {
 }
 
 afterEach(() => vi.unstubAllGlobals())
+
+it('permite consultar cuarentena sin mostrar controles de mantenimiento a la cuenta lectora', async () => {
+  const mock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    if (init?.method === 'POST' || !String(input).includes('/records/quarantined')) throw new Error('Consulta inesperada')
+    return new Response(JSON.stringify(page))
+  })
+  vi.stubGlobal('fetch', mock)
+  render(
+    <SessionContext.Provider value={{ subject_id: 'entra:reader', reviewer: REVIEWER, capabilities: ['sources.read'], logout: vi.fn() }}>
+      <QuarantinedRecordsScreen reviewer={REVIEWER} />
+    </SessionContext.Provider>,
+  )
+  await screen.findByText('No existe una especialidad padre inequívoca.')
+  expect(screen.getAllByText('Excipiente')).toHaveLength(2)
+  expect(screen.queryByRole('button', { name: 'Editar campo' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Completar celda vacía' })).not.toBeInTheDocument()
+  expect(mock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false)
+})
 
 it('permite corregir celdas de cuarentena sin cambiar el motivo ni el literal fuente', async () => {
   const mock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {

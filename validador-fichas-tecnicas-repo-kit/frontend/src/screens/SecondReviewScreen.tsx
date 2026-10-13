@@ -9,6 +9,7 @@ import {
 import type { BlindField, Reviewer, SecondReviewItem } from '../api/types'
 import { ASSIGNABLE_STATES, VALIDATION_STATE_LABELS } from '../domain/vocabulary'
 import { PageHeader } from '../components/PageHeader'
+import { useCapability } from '../auth/SessionContext'
 
 /**
  * Segunda validación ciega y conciliación (DEV-607/608).
@@ -28,6 +29,8 @@ import { PageHeader } from '../components/PageHeader'
 const OPEN_STATES = ['pendiente', 'en_revision']
 
 export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) {
+  const canReview = useCapability('review.write')
+  const canReconcile = useCapability('review.reconcile')
   const [items, setItems] = useState<SecondReviewItem[]>([])
   const [active, setActive] = useState<BlindField | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -84,7 +87,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
   }
 
   async function submit(operation: 'claim' | 'decisions' | 'reconcile') {
-    if (reviewer === null || active === null) return
+    if (reviewer === null || active === null || (operation === 'reconcile' ? !canReconcile : !canReview)) return
     setBusy(true)
     setError(null)
     try {
@@ -126,7 +129,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
 
   return (
     <div className='screen'>
-      <PageHeader eyebrow='Segunda validación' title='Validaciones' description='Las lecturas pendientes se emiten sin ver la decisión del primer revisor.' />
+      <PageHeader eyebrow='Segunda validación' title='Validaciones' description='Emita una segunda lectura sin ver la primera. Las discrepancias requieren conciliación explícita antes de exportar.' />
       <h2 className='visually-hidden' ref={pageHeading} tabIndex={-1}>Lista de validaciones</h2>
 
       {notice && (
@@ -225,7 +228,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
             <button
               type='button'
               className='button button--primary'
-              disabled={busy || state === ''}
+              disabled={!canReview || busy || state === ''}
               onClick={() => void submit('decisions')}
             >
               {busy ? 'Registrando…' : 'Registrar lectura'}

@@ -42,10 +42,16 @@ it('exige motivo y conserva el actor al modificar', async () => {
 
   await screen.findByRole('heading', { name: 'Medicamento ejemplo' })
   expect(fetchMock.mock.calls.some(([url]) => url.includes('/classifications'))).toBe(false)
+  fireEvent.click(screen.getByRole('button', { name: 'Editar datos' }))
   const save = screen.getByRole('button', { name: 'Guardar cambios' })
   expect(save).toBeDisabled()
   fireEvent.change(screen.getByLabelText('Nombre visible'), { target: { value: 'Nombre corregido' } })
   fireEvent.change(screen.getByLabelText('Motivo del cambio'), { target: { value: 'Corrección revisada.' } })
+  fireEvent.click(screen.getByRole('tab', { name: 'Historial' }))
+  expect(screen.getByRole('heading', { name: 'Historial de cambios' })).toBeVisible()
+  fireEvent.keyDown(screen.getByRole('tab', { name: 'Historial' }), { key: 'Home' })
+  expect(screen.getByRole('tab', { name: 'Resumen' })).toHaveFocus()
+  expect(screen.getByLabelText('Motivo del cambio')).toHaveValue('Corrección revisada.')
   fireEvent.click(save)
 
   await waitFor(() => expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(true))
@@ -68,6 +74,8 @@ it('edita campos importados sin enviar una decisión farmacéutica', async () =>
   vi.stubGlobal('fetch', fetchMock)
   render(<CatalogIdentityScreen identityId='dcp-1' reviewer={REVIEWER} />)
 
+  await screen.findByRole('tab', { name: 'Fuentes' })
+  fireEvent.click(screen.getByRole('tab', { name: 'Fuentes' }))
   await screen.findByRole('heading', { name: 'Campos importados' })
   expect(await screen.findAllByText('Nombre original')).toHaveLength(2)
   fireEvent.click(screen.getByRole('button', { name: 'Editar campo' }))

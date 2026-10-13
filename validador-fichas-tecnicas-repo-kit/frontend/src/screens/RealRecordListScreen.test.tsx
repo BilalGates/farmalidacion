@@ -1,7 +1,17 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 import { RealRecordListScreen } from './RealRecordListScreen'
+
+vi.mock('./CatalogIdentityScreen', () => ({
+  CatalogIdentityScreen: ({ identityId }: { identityId: string }) => <label>Edición {identityId}<input defaultValue={identityId} /></label>,
+}))
+beforeEach(() => {
+  // Estas pruebas ejercitan filtros concretos; la vista por defecto los pliega.
+  localStorage.setItem('farmalidacion.filters.catalog.closed', 'open')
+  vi.spyOn(HTMLDialogElement.prototype, 'showModal').mockImplementation(function (this: HTMLDialogElement) { this.setAttribute('open', '') })
+  vi.spyOn(HTMLDialogElement.prototype, 'close').mockImplementation(function (this: HTMLDialogElement) { this.removeAttribute('open') })
+})
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -12,12 +22,107 @@ function cleanCatalogState() {
   window.sessionStorage.removeItem('farmalidacion.catalog-list-state')
 }
 
+it('mantiene la búsqueda visible al plegar filtros y recupera el foco al reabrirlos', async () => {
+  cleanCatalogState()
+  localStorage.setItem('farmalidacion.filters.catalog.closed', 'closed')
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE))))
+  render(<RealRecordListScreen />)
+  await screen.findByText('No hay identidades en el catálogo')
+
+  expect(screen.getByRole('searchbox', { name: 'Buscar en el catálogo' })).toBeVisible()
+  const reopen = screen.getByRole('button', { name: 'Mostrar filtros' })
+  fireEvent.click(reopen)
+  expect(screen.getByRole('button', { name: 'Ocultar filtros' })).toHaveFocus()
+  expect(screen.getByRole('combobox', { name: 'Nivel farmacéutico' })).toBeVisible()
+})
+
+it('añade a revisión desde una identidad vinculada sin escribir su identificador', async () => {
+  cleanCatalogState()
+  const page = {
+    items: [{ id: 'identity-1', identity_type: 'dcp', code: '123', display_name: 'Medicamento vinculado',
+      target_record_id: 'record-1', source_system: 'maestro', source_version: 'v1',
+      source_workbook: 'medicamentos', source_literal: '123', active: true, version: 1 }],
+    total: 1, limit: 50, offset: 0,
+  }
+  const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input)
+    if (url.includes('/catalog/identities')) return Promise.resolve(new Response(JSON.stringify(page)))
+    if (url.endsWith('/queue') && init?.method === 'POST') return Promise.resolve(new Response(JSON.stringify({
+      target_record_id: 'record-1', state: 'pendiente', version: 1, assignee_id: null,
+      priority: 0, review_set: 'corpus', requires_second_review: false,
+    })))
+    return Promise.resolve(new Response(JSON.stringify([])))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  render(<RealRecordListScreen />)
+  fireEvent.click(await screen.findByRole('button', { name: '+ Revisar' }))
+  await screen.findByText('Pendiente')
+  expect(fetchMock.mock.calls.some(([url, init]) => String(url).endsWith('/queue') && init?.method === 'POST')).toBe(true)
+})
+
+it('muestra el nombre del responsable y sólo permite iniciar la asignación propia', async () => {
+  cleanCatalogState()
+  const person = { identifier: 'ana', display_name: 'Ana Ruiz', role: 'farmaceutico', role_label: 'Farmacéutico', assurance: 'declarada', may_sign_pharmacist_states: true } as const
+  const page = { items: [{ id: 'identity-1', identity_type: 'dcp', code: '123', display_name: 'Nombre extenso del medicamento', target_record_id: 'record-1', active: true }], total: 1, limit: 50, offset: 0 }
+  vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => Promise.resolve(new Response(JSON.stringify(String(input).endsWith('/queue') ? [{ target_record_id: 'record-1', state: 'asignado', assignee_id: 'ana', version: 1 }] : page)))))
+  const first = render(<RealRecordListScreen reviewer={person} reviewers={[person]} />)
+  const assignment = (await screen.findByText('Ana Ruiz')).closest('.catalog-review-cell__assignment')
+  expect(assignment).toHaveTextContent('Asignado Ana Ruiz')
+  expect(screen.queryByText('Responsable: Ana Ruiz')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Iniciar' })).toBeVisible()
+  first.unmount()
+  render(<RealRecordListScreen reviewer={{ ...person, identifier: 'bea', display_name: 'Bea Gil' }} reviewers={[person]} />)
+  expect(await screen.findByText('Ana Ruiz')).toBeVisible()
+  expect(screen.queryByRole('button', { name: 'Iniciar' })).not.toBeInTheDocument()
+})
+
+it('filtra trabajo de revisión en el servidor sin cambiar de página', async () => {
+  cleanCatalogState()
+  const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE)))
+  vi.stubGlobal('fetch', fetchMock)
+  const originalHash = window.location.hash
+  render(<RealRecordListScreen />)
+  await screen.findByText('No hay identidades en el catálogo')
+  fireEvent.change(screen.getByRole('combobox', { name: 'Trabajo de revisión' }), { target: { value: 'pending' } })
+  await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes('review_scope=pending'))).toBe(true))
+  expect(window.location.hash).toBe(originalHash)
+})
+
+it('abre segundas validaciones sobre el catálogo sin subpáginas', async () => {
+  cleanCatalogState()
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE))))
+  render(<RealRecordListScreen />)
+  await screen.findByText('No hay identidades en el catálogo')
+  expect(screen.queryByRole('navigation', { name: 'Vistas del catálogo' })).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Segundas validaciones' }))
+  expect(screen.getByRole('dialog', { name: 'Segundas validaciones' })).toBeInTheDocument()
+})
+
 const PAGE = {
   items: [],
   total: 0,
   limit: 50,
   offset: 0,
 }
+
+it('muestra las filas en cuarentena dentro del catálogo con su motivo y valores preservados', async () => {
+  cleanCatalogState()
+  vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => Promise.resolve(new Response(JSON.stringify(
+    String(input).includes('/records/quarantined') ? {
+      items: [{ id: 'q-1', source_workbook: 'Especialidades-CargaMaster190626.xlsx', source_locator: 'Excipientes!11864', reason_code: 'MISSING_PARENT', reason: 'No existe una especialidad padre.', fields: [
+        { source_column_index: 1, field_name: 'BN_IDEXTERNO', literal_value: '724855', maintained_value: '724855', observed_type: 'string', maintenance_sequence: 0, maintenance_history: [] },
+        { source_column_index: 4, field_name: 'DESCRIPCION_PRESCRIPCION', literal_value: 'Excipiente de prueba', maintained_value: 'Excipiente de prueba', observed_type: 'string', maintenance_sequence: 0, maintenance_history: [] },
+      ] }], total: 1,
+    } : PAGE,
+  )))))
+  render(<RealRecordListScreen />)
+  fireEvent.click(await screen.findByRole('button', { name: /Filas en cuarentena/ }))
+  expect(await screen.findByRole('button', { name: 'Excipiente de prueba' })).toBeVisible()
+  expect(screen.getByText('En cuarentena')).toBeVisible()
+  fireEvent.click(screen.getByRole('button', { name: 'Excipiente de prueba' }))
+  expect(screen.getByText(/MISSING_PARENT:/)).toBeVisible()
+  expect(screen.getAllByText('Literal original').length).toBeGreaterThan(0)
+})
 
 it('separa los niveles farmacéuticos del catálogo', async () => {
   cleanCatalogState()
@@ -26,15 +131,15 @@ it('separa los niveles farmacéuticos del catálogo', async () => {
   render(<RealRecordListScreen />)
   await screen.findByText('No hay identidades en el catálogo')
 
-  fireEvent.click(screen.getByRole('button', { name: 'Presentaciones' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Nivel farmacéutico' }), { target: { value: 'presentation' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
   expect(fetchMock.mock.calls[1][0]).toContain('identity_type=presentation')
 
-  fireEvent.click(screen.getByRole('button', { name: 'DCP' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Nivel farmacéutico' }), { target: { value: 'dcp' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
   expect(fetchMock.mock.calls[2][0]).toContain('identity_type=dcp')
 
-  fireEvent.click(screen.getByRole('button', { name: 'Sustancias activas' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Nivel farmacéutico' }), { target: { value: 'active_ingredient' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4))
   expect(fetchMock.mock.calls[3][0]).toContain('identity_type=active_ingredient')
 })
@@ -103,12 +208,19 @@ it('guarda filtros y posición de lectura al abrir un expediente', async () => {
   const table = await screen.findByRole('region', { name: 'Tabla de registros' })
   table.scrollTop = 180
   table.scrollLeft = 42
-  fireEvent.click(screen.getByRole('button', { name: 'Abrir expediente' }))
+  const name = screen.getByRole('button', { name: 'Medicamento de prueba' })
+  name.focus()
+  fireEvent.click(name)
 
-  expect(window.location.hash).toBe('#/catalogo/med-1')
+  expect(screen.getByRole('dialog', { name: 'Expediente del registro' })).toBeInTheDocument()
+  expect(screen.getByRole('region', { name: 'Tabla de registros' })).toBeInTheDocument()
   expect(JSON.parse(window.sessionStorage.getItem('farmalidacion.catalog-list-state') ?? '{}')).toMatchObject({
     entityType: null, offset: 0, tableScrollTop: 180, tableScrollLeft: 42,
   })
+  expect(screen.queryByRole('button', { name: 'Abrir expediente' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('columnheader', { name: 'Acciones' })).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }))
+  expect(name).toHaveFocus()
 })
 
 it('combina nivel y búsqueda sin descargar el catálogo al navegador', async () => {
@@ -118,7 +230,7 @@ it('combina nivel y búsqueda sin descargar el catálogo al navegador', async ()
   render(<RealRecordListScreen />)
   await screen.findByText('No hay identidades en el catálogo')
 
-  fireEvent.click(screen.getByRole('button', { name: 'Presentaciones' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Nivel farmacéutico' }), { target: { value: 'presentation' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
   fireEvent.change(screen.getByRole('searchbox'), { target: { value: '654789' } })
   fireEvent.click(screen.getByRole('button', { name: 'Buscar' }))
@@ -149,9 +261,9 @@ it('combina clase comercial y condición como filtros del servidor', async () =>
   render(<RealRecordListScreen />)
   await screen.findByText('No hay identidades en el catálogo')
 
-  fireEvent.click(screen.getByRole('button', { name: 'Presentaciones' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Nivel farmacéutico' }), { target: { value: 'presentation' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
-  fireEvent.click(screen.getByRole('button', { name: 'Genérico' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Clase comercial' }), { target: { value: 'generico' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
   fireEvent.click(screen.getByRole('checkbox', { name: 'Huérfano' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4))
@@ -166,7 +278,7 @@ it('explica el vacío provocado por filtros y permite recuperar el catálogo com
   vi.stubGlobal('fetch', fetchMock)
   render(<RealRecordListScreen />)
   await screen.findByText('No hay identidades en el catálogo')
-  fireEvent.click(screen.getByRole('button', { name: 'Presentaciones' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Nivel farmacéutico' }), { target: { value: 'presentation' } })
   expect(await screen.findByText('No hay resultados con estos filtros')).toBeInTheDocument()
   fireEvent.click(screen.getAllByRole('button', { name: 'Limpiar filtros' }).at(-1)!)
   expect(await screen.findByText('No hay identidades en el catálogo')).toBeInTheDocument()
@@ -179,7 +291,7 @@ it('permite combinar varias condiciones y limpiar todos los filtros', async () =
   render(<RealRecordListScreen />)
   await screen.findByText('No hay identidades en el catálogo')
 
-  fireEvent.click(screen.getByRole('button', { name: 'Presentaciones' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Nivel farmacéutico' }), { target: { value: 'presentation' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
   fireEvent.click(screen.getByRole('checkbox', { name: 'Huérfano' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
@@ -217,7 +329,7 @@ it('restaura filtros al volver a montar el listado', async () => {
   vi.stubGlobal('fetch', fetchMock)
   const first = render(<RealRecordListScreen />)
   await screen.findByText('No hay identidades en el catálogo')
-  fireEvent.click(screen.getByRole('button', { name: 'Presentaciones' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Nivel farmacéutico' }), { target: { value: 'presentation' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
   fireEvent.click(screen.getByRole('checkbox', { name: 'Huérfano' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
@@ -258,7 +370,7 @@ it('al elegir una condición desde Todo el catálogo conserva el contexto de pre
   fireEvent.click(screen.getByRole('checkbox', { name: 'Huérfano' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
   expect(fetchMock.mock.calls[1][0]).toContain('identity_type=presentation')
-  expect(screen.getByRole('group', { name: 'Clase comercial' })).toBeInTheDocument()
+  expect(screen.getByRole('combobox', { name: 'Clase comercial' })).toBeInTheDocument()
 })
 
 it('separa las vistas por los tres libros Excel originales', async () => {
@@ -268,17 +380,17 @@ it('separa las vistas por los tres libros Excel originales', async () => {
   render(<RealRecordListScreen />)
   await screen.findByText('No hay identidades en el catálogo')
 
-  fireEvent.click(screen.getByRole('button', { name: 'Especialidades · CN' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Libro de origen' }), { target: { value: 'especialidades' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
   expect(fetchMock.mock.calls[1][0]).toContain('source_workbook=especialidades')
   expect(fetchMock.mock.calls[1][0]).toContain('identity_type=presentation')
 
-  fireEvent.click(screen.getByRole('button', { name: 'Medicamentos · DCP' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Libro de origen' }), { target: { value: 'medicamentos' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
   expect(fetchMock.mock.calls[2][0]).toContain('source_workbook=medicamentos')
   expect(fetchMock.mock.calls[2][0]).toContain('identity_type=dcp')
 
-  fireEvent.click(screen.getByRole('button', { name: 'Principios activos · PA' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Libro de origen' }), { target: { value: 'principios_activos' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4))
   expect(fetchMock.mock.calls[3][0]).toContain('source_workbook=principios_activos')
   expect(fetchMock.mock.calls[3][0]).toContain('identity_type=active_ingredient')
@@ -291,10 +403,48 @@ it('retira filtros de presentación cuando se cambia a medicamentos', async () =
   render(<RealRecordListScreen />)
   await screen.findByText('No hay identidades en el catálogo')
 
-  fireEvent.click(screen.getByRole('button', { name: 'Genérico' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Clase comercial' }), { target: { value: 'generico' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
-  fireEvent.click(screen.getByRole('button', { name: 'DCP' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Nivel farmacéutico' }), { target: { value: 'dcp' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
   expect(fetchMock.mock.calls[2][0]).toContain('identity_type=dcp')
   expect(fetchMock.mock.calls[2][0]).not.toContain('commercial_class=')
+})
+
+
+it('recorre registros entre páginas, conserva filtros y recupera ediciones al volver', async () => {
+  cleanCatalogState()
+  const item = (id: string) => ({ id, identity_type: 'dcp', code: id, display_name: id,
+    target_record_id: null, source_system: 'maestro', source_version: 'v1', active: true, version: 1 })
+  const first = { items: Array.from({ length: 50 }, (_, i) => item(`med-${i}`)), total: 51, limit: 50, offset: 0 }
+  const last = { items: [item('med-50')], total: 51, limit: 50, offset: 50 }
+  const fetchMock = vi.fn().mockImplementation((url: string) => Promise.resolve(new Response(JSON.stringify(url.includes('offset=50') ? last : first))))
+  vi.stubGlobal('fetch', fetchMock)
+  render(<RealRecordListScreen />)
+  await screen.findByText('med-49', { selector: '.catalog-row__name' })
+  fireEvent.click(screen.getByRole('button', { name: 'med-49' }))
+  fireEvent.change(screen.getByRole('textbox', { name: 'Edición med-49' }), { target: { value: 'Borrador conservado' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Siguiente registro →' }))
+  expect(await screen.findByRole('textbox', { name: 'Edición med-50' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Siguiente registro →' })).toBeDisabled()
+  expect(fetchMock.mock.calls.some(([url]) => url.includes('offset=50') && url.includes('sort_by=name_asc'))).toBe(true)
+  fireEvent.click(screen.getByRole('button', { name: '← Anterior registro' }))
+  await waitFor(() => expect(screen.getByRole('textbox', { name: 'Edición med-49' })).toHaveValue('Borrador conservado'))
+  fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'med-49' }))
+  expect(screen.getByRole('textbox', { name: 'Edición med-49' })).toHaveValue('Borrador conservado')
+})
+
+it('mantiene el expediente abierto si falla el avance y permite cerrar con Escape', async () => {
+  cleanCatalogState()
+  const page = { items: [{ id: 'med-1', identity_type: 'dcp', code: '1', display_name: 'Prueba', target_record_id: null, active: true }], total: 51, limit: 50, offset: 0 }
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response(JSON.stringify(page))).mockRejectedValue(new Error('Sin conexión')))
+  render(<RealRecordListScreen />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Prueba' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Siguiente registro →' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('No se ha podido contactar con el servidor.')
+  expect(screen.getByRole('textbox', { name: 'Edición med-1' })).toBeInTheDocument()
+  fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })

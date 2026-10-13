@@ -29,6 +29,10 @@ it('muestra la versión vinculada y busca apartados sin ejecutar su HTML', async
   expect(screen.getByText('Posología literal')).toBeInTheDocument()
   expect(screen.queryByText(/window.bad/)).toBeNull()
   expect(fetchMock).toHaveBeenCalledTimes(1)
+  const previousHash = window.location.hash
+  fireEvent.click(screen.getByRole('link', { name: 'Apartado 4.2' }))
+  expect(window.location.hash).toBe(previousHash)
+  expect(document.querySelector('[data-cima-anchor="cima-version-2-1"]')).toHaveFocus()
 })
 
 it('localiza el literal de un campo sin declarar equivalencia ni diferencia', async () => {

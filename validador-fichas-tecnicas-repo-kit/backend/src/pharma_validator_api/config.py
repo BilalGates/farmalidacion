@@ -40,6 +40,18 @@ class Settings(BaseSettings):
     # 10.1: lista configurable de revisores, formato `identificador:Nombre`.
     # Sin entradas no se puede firmar ninguna validación.
     reviewers: tuple[str, ...] = ()
+    # El piloto es explícito. Entra nunca vuelve a identidad declarada si falla.
+    auth_mode: Literal["pilot", "entra"] = "pilot"
+    entra_tenant_id: str = ""
+    entra_api_client_id: str = ""
+    entra_spa_client_id: str = ""
+    entra_required_scope: str = "access_as_user"
+    entra_spa_scope: str = ""
+    # App roles de la API -> capacidades autorizadas; sin matriz no hay acceso.
+    entra_role_capabilities: dict[str, tuple[str, ...]] = Field(default_factory=dict)
+    # object ID -> handle histórico, asignado expresamente por el administrador.
+    # El primer acceso verificado sella el vínculo; no se puede reasignar.
+    entra_reviewer_bindings: dict[str, str] = Field(default_factory=dict)
 
     # --- Banderas de funcionalidad -------------------------------------------
     # Separan lo que está IMPLEMENTADO de lo que está VALIDADO CLÍNICAMENTE.

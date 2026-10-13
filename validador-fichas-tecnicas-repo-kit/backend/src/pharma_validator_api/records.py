@@ -53,7 +53,9 @@ from pharma_validator_api.validation_states import (
 router = APIRouter(prefix="/records", tags=["registros"])
 
 
-def _open_required_second_reviews(session: Session, *, target_record_id: str, actor_id: str) -> int:
+def _open_required_second_reviews(
+    session: Session, *, target_record_id: str, actor_id: str, actor_assurance: str = "declarada"
+) -> int:
     """Abre la segunda lectura de todos los campos ya decididos de un L04."""
     values = list(
         session.scalars(
@@ -83,7 +85,9 @@ def _open_required_second_reviews(session: Session, *, target_record_id: str, ac
     for item in values:
         if item.id not in decisions or item.id in existing:
             continue
-        open_second_review(session, field_value_id=item.id, actor_id=actor_id)
+        open_second_review(
+            session, field_value_id=item.id, actor_id=actor_id, actor_assurance=actor_assurance
+        )
         opened += 1
     session.execute(
         update(ReviewQueueEntry)
@@ -247,10 +251,19 @@ def get_reviewer_directory(request: Request, session: SessionDependency) -> Revi
     porque la tabla esté vacía. En cuanto hay uno dado de alta, manda la base.
     """
     from_database = directory_from_database(session)
-    if from_database.reviewers:
-        return from_database
     settings = cast(Settings, getattr(request.app.state, "settings", None) or get_settings())
-    return ReviewerDirectory.from_configuration(settings.reviewers)
+    directory = from_database if from_database.reviewers else ReviewerDirectory.from_configuration(
+        settings.reviewers
+    )
+    principal = getattr(request.state, "principal", None)
+    if principal is not None:
+        # Sólo la cuenta de esta petición tiene garantía verificada. La lista
+        # y los actores del pasado no se elevan de garantía por autenticarse otro.
+        directory = ReviewerDirectory(tuple(
+            principal.reviewer if item.identifier == principal.reviewer.identifier else item
+            for item in directory.reviewers
+        ))
+    return directory
 
 
 DirectoryDependency = Annotated[ReviewerDirectory, Depends(get_reviewer_directory)]
@@ -649,6 +662,7 @@ def read_record(record_id: str, session: SessionDependency) -> TargetRecordRead:
     provenance = provenance_for(session, value_ids)
     current = current_decisions_for(session, value_ids)
     history: dict[str, list[ValidationDecisionRecord]] = {}
+    maintenance: dict[str, list[FieldMaintenanceRevision]] = {}
     for chunk in chunked(value_ids, BULK_CHUNK):
         for decision in session.scalars(
             select(ValidationDecisionRecord)
@@ -656,6 +670,12 @@ def read_record(record_id: str, session: SessionDependency) -> TargetRecordRead:
             .order_by(ValidationDecisionRecord.field_value_id, ValidationDecisionRecord.sequence)
         ).all():
             history.setdefault(decision.field_value_id, []).append(decision)
+        for revision in session.scalars(
+            select(FieldMaintenanceRevision)
+            .where(FieldMaintenanceRevision.field_value_id.in_(chunk))
+            .order_by(FieldMaintenanceRevision.field_value_id, FieldMaintenanceRevision.sequence)
+        ).all():
+            maintenance.setdefault(revision.field_value_id, []).append(revision)
     grouped = _group_by_field(session, values)
     block_payloads = []
     for block in blocks:
@@ -672,10 +692,10 @@ def read_record(record_id: str, session: SessionDependency) -> TargetRecordRead:
                         record,
                         block,
                         grouped[_field_group_key(value)],
-                        grouped[(value.block_instance_id, value.field_name)],
                         provenance,
                         current,
                         history,
+                        maintenance,
                     )
                     for value in block_values
                 ],
@@ -757,6 +777,9 @@ def maintain_field_value(
         actor_assurance=revision.actor_assurance,
         reason=revision.reason,
         recorded_at=revision.recorded_at.isoformat(),
+    )
+
+
 def _read_field_value_loaded(
     session: Session,
     value: FieldValue,
@@ -766,6 +789,7 @@ def _read_field_value_loaded(
     provenance: dict[str, tuple[tuple[ValueProvenance, SourceFragment], ...]],
     current: dict[str, CurrentDecision],
     history: dict[str, list[ValidationDecisionRecord]],
+    maintenance: dict[str, list[FieldMaintenanceRevision]],
 ) -> FieldValueRead:
     """Serializa un campo desde datos cargados en bloque, sin consultas por fila."""
     evaluation = evaluate_field_conflict_from(
@@ -775,10 +799,29 @@ def _read_field_value_loaded(
         value.field_name, field_prefill_policy(session, value.field_name)
     )
     decision = current.get(value.id)
+    maintenance_history = maintenance.get(value.id, [])
+    latest_maintenance = maintenance_history[-1] if maintenance_history else None
     return FieldValueRead(
         id=value.id,
         field_name=value.field_name,
+        source_column_index=value.source_column_index,
         literal_value=value.literal_value,
+        maintained_value=(
+            latest_maintenance.after_value if latest_maintenance else value.literal_value
+        ),
+        maintenance_sequence=latest_maintenance.sequence if latest_maintenance else 0,
+        maintenance_history=[
+            FieldMaintenanceRead(
+                sequence=item.sequence,
+                before_value=item.before_value,
+                after_value=item.after_value,
+                actor_id=item.actor_id,
+                actor_assurance=item.actor_assurance,
+                reason=item.reason,
+                recorded_at=item.recorded_at.isoformat(),
+            )
+            for item in maintenance_history
+        ],
         observed_type=value.observed_type,
         logical_state=value.logical_state,
         provenance=[
@@ -962,6 +1005,7 @@ def save_decision(
                 session,
                 target_record_id=block.target_record_id,
                 actor_id=signer.identifier,
+                actor_assurance=signer.assurance,
             )
         session.commit()
     except (ValidationStateError, ReviewerIdentityError, ValueError) as error:

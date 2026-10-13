@@ -221,6 +221,7 @@ export interface DatabaseInfo {
   readonly records_real: number
   readonly records_demo: number
   readonly import_batches: number
+  readonly last_import_at: string | null
   readonly consistent: boolean
 }
 
@@ -247,6 +248,8 @@ export interface Dashboard {
 export interface SourceSummary {
   key: string
   name: string
+  display_name: string | null
+  is_active: boolean
   source_type: string
   status: string
   versions: number
@@ -269,11 +272,93 @@ export interface SourceSheet {
 export interface SourceDetail extends SourceSummary {
   sheets: SourceSheet[]
   batch_ids: string[]
+  management_history: SourceManagementRevision[]
+}
+
+export interface DashboardSegment {
+  key: string
+  label: string
+  count: number
+}
+
+export interface DashboardExplore {
+  total_records: number
+  entity_types: DashboardSegment[]
+  sources: DashboardSegment[]
+  review: DashboardSegment[]
+  coverage: DashboardSegment[]
+  pending: number
+  second_review: number
+  quarantined: number
+  diagnostics: number
+}
+
+export interface DashboardCasePage {
+  items: { id: string; label: string; detail: string; kind: 'record' }[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface SourceManagementRevision {
+  previous_display_name: string | null
+  display_name: string
+  was_active: boolean
+  is_active: boolean
+  actor_id: string
+  reason: string
+  created_at: string
+}
+
+export interface WorkbookSheetPreview {
+  name: string
+  columns: number
+  data_rows: number
+}
+
+export interface WorkbookPreview {
+  workbook: string
+  sha256: string
+  size_bytes: number
+  sheets: WorkbookSheetPreview[]
+  data_rows: number
+  can_import: boolean
+  blocked_reason: string | null
+}
+
+export interface WorkbookImportResult {
+  batch_id: string
+  created: boolean
+  status: string
+  sha256: string
 }
 
 export interface SourceList {
   items: SourceSummary[]
   total: number
+}
+
+export interface NomenclatorConnection {
+  configured: boolean
+  host: string | null
+  port: number
+  database_name: string | null
+  username: string | null
+  server_password_configured: boolean
+  updated_at: string | null
+}
+
+export interface NomenclatorConnectionFields {
+  host: string
+  port: number
+  database_name: string
+  username: string
+}
+
+export interface NomenclatorConnectionTest {
+  connected: boolean
+  database_name: string
+  message: string
 }
 
 export interface ImportSummary {
@@ -292,6 +377,8 @@ export interface ImportSummary {
   quarantined_rows: number
   diagnostics: number
   errors: number
+  started_by: string | null
+  reason: string | null
 }
 
 export interface Incident {

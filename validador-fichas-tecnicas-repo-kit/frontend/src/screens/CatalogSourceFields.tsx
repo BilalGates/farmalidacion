@@ -4,6 +4,7 @@ import { History, Pencil, Save, X } from 'lucide-react'
 import { createEmptySourceValue, fetchEmptySourceColumns, fetchRecord, saveFieldMaintenance } from '../api/client'
 import type { EmptySourceColumn, FieldValue, Reviewer, TargetRecord } from '../api/types'
 import { formatDateTime } from '../domain/format'
+import { useCapability } from '../auth/SessionContext'
 
 interface Props {
   readonly recordId: string
@@ -21,6 +22,7 @@ function displayValue(value: string | null): string {
 }
 
 export function SourceFieldsMaintenance({ recordId, reviewer }: Props) {
+  const canMaintain = useCapability('catalog.maintain')
   const [record, setRecord] = useState<TargetRecord | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -66,7 +68,7 @@ export function SourceFieldsMaintenance({ recordId, reviewer }: Props) {
   }
 
   async function save(field: FieldValue) {
-    if (!record || !reviewer || !reason.trim()) return
+    if (!record || !reviewer || !canMaintain || !reason.trim()) return
     setSaving(true)
     setSaveError('')
     setNotice('')
@@ -110,7 +112,7 @@ export function SourceFieldsMaintenance({ recordId, reviewer }: Props) {
   }
 
   async function saveEmpty(blockId: string) {
-    if (!reviewer || newColumn === null || !newValue.trim() || !newReason.trim()) return
+    if (!reviewer || !canMaintain || newColumn === null || !newValue.trim() || !newReason.trim()) return
     setSaving(true)
     setSaveError('')
     try {
@@ -140,9 +142,12 @@ export function SourceFieldsMaintenance({ recordId, reviewer }: Props) {
         {record && <span className='badge'>{record.blocks.reduce((total, block) => total + block.values.length, 0)} campos</span>}
       </div>
       <p className='catalog-source-fields__intro'>
-        El literal del Excel se conserva. Aquí se corrige el valor de trabajo; cada cambio queda en un historial independiente de la revisión farmacéutica.
+        {canMaintain
+          ? 'El literal del Excel se conserva. Aquí se corrige el valor de trabajo; cada cambio queda en un historial independiente de la revisión farmacéutica.'
+          : 'Consulta el valor de trabajo, el literal original y el historial de mantenimiento de cada campo.'}
       </p>
-      {!reviewer && <p className='alert badge--warning'>Seleccione un usuario en la barra superior para editar campos.</p>}
+      {!reviewer && <p className='alert badge--warning'>Identifícate en Equipo y preferencias para editar campos.</p>}
+      {reviewer && !canMaintain && <p className='note'>Esta cuenta puede consultar los campos; no tiene permiso para modificarlos.</p>}
       {loading && <p role='status'>Cargando campos del libro…</p>}
       {!loading && loadError && <div className='alert alert--error' role='alert'>{loadError}<button type='button' className='button button--ghost' onClick={() => void load()}>Reintentar</button></div>}
       {!loading && record && record.blocks.length === 0 && <p className='muted'>Este registro no contiene campos importados.</p>}
@@ -154,7 +159,7 @@ export function SourceFieldsMaintenance({ recordId, reviewer }: Props) {
           <dl className='catalog-source-fields__list'>
             {block.values.map((field) => {
               const value = currentValue(field)
-              const isEditing = editingId === field.id
+              const isEditing = canMaintain && editingId === field.id
               return (
                 <div className='catalog-source-field' key={field.id}>
                   <dt>
@@ -183,7 +188,7 @@ export function SourceFieldsMaintenance({ recordId, reviewer }: Props) {
                       </div>
                     ) : (
                       <div className='catalog-source-field__actions'>
-                        <button type='button' className='button button--ghost' disabled={!reviewer || saving} onClick={() => beginEdit(field)}><Pencil size={16} aria-hidden='true' /> Editar campo</button>
+                        {canMaintain && <button type='button' className='button button--ghost' disabled={!reviewer || saving} onClick={() => beginEdit(field)}><Pencil size={16} aria-hidden='true' /> Editar campo</button>}
                         {(field.maintenance_history?.length ?? 0) > 0 && <details className='catalog-source-field__history'>
                           <summary><History size={15} aria-hidden='true' /> Historial ({field.maintenance_history?.length})</summary>
                           <ol>{field.maintenance_history?.map((entry) => <li key={entry.sequence}>
@@ -199,7 +204,7 @@ export function SourceFieldsMaintenance({ recordId, reviewer }: Props) {
               )
             })}
           </dl>
-          {addingBlockId === block.id ? (
+          {canMaintain && addingBlockId === block.id ? (
             <div className='catalog-source-field__editor'>
               {loadingColumns ? <p role='status'>Consultando columnas de la hoja…</p> : emptyColumns.length === 0 ? <p className='muted'>No hay columnas vacías disponibles en esta fila.</p> : <>
                 <label className='field'>
@@ -217,7 +222,7 @@ export function SourceFieldsMaintenance({ recordId, reviewer }: Props) {
                 <button type='button' className='button button--ghost' disabled={saving} onClick={() => setAddingBlockId(null)}><X size={16} aria-hidden='true' /> Cancelar</button>
               </div>
             </div>
-          ) : block.values.some((field) => field.source_column_index != null) && <button type='button' className='button button--ghost' disabled={!reviewer || saving} onClick={() => void beginAdd(block.id)}>Completar celda vacía</button>}
+          ) : canMaintain && block.values.some((field) => field.source_column_index != null) && <button type='button' className='button button--ghost' disabled={!reviewer || saving} onClick={() => void beginAdd(block.id)}>Completar celda vacía</button>}
         </section>
       ))}
     </section>

@@ -35,7 +35,7 @@ export function parseRoute(hash: string): Route {
   if (path === 'importaciones' || path === 'datos/importaciones') return { name: 'importaciones' }
   const legacySection = LEGACY_SECTION_PATHS[path]
   if (legacySection) return { name: 'seccion', id: legacySection }
-  if (path.startsWith('revision/') || path === 'datos/cuarentena' || path === 'catalogo/novedades') {
+  if (path.startsWith('revision/') || path === 'datos/cuarentena' || path === 'catalogo/novedades' || path === 'catalogo/trabajo' || path === 'catalogo/segunda') {
     return { name: 'seccion', id: path }
   }
   const record = /^registros\/(.+)$/.exec(path)

@@ -30,6 +30,48 @@ class SourceDocument(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     source_type: Mapped[str] = mapped_column(String(80))
     name: Mapped[str] = mapped_column(Text)
+    display_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class SourceManagementRevision(Base):
+    """Historial inmutable de cambios de presentación y archivo de una fuente."""
+
+    __tablename__ = "source_management_revision"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    source_document_id: Mapped[str] = mapped_column(
+        ForeignKey("source_document.id"), index=True
+    )
+    previous_display_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    display_name: Mapped[str] = mapped_column(Text)
+    was_active: Mapped[bool] = mapped_column(Boolean)
+    is_active: Mapped[bool] = mapped_column(Boolean)
+    actor_id: Mapped[str] = mapped_column(String(80))
+    reason: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class SourceConnectionConfig(Base):
+    """Configuración no secreta de una fuente externa."""
+
+    __tablename__ = "source_connection_config"
+    source_key: Mapped[str] = mapped_column(String(40), primary_key=True)
+    host: Mapped[str] = mapped_column(Text)
+    port: Mapped[int] = mapped_column(Integer)
+    database_name: Mapped[str] = mapped_column(Text)
+    username: Mapped[str] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class SourceConnectionRevision(Base):
+    __tablename__ = "source_connection_revision"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    source_key: Mapped[str] = mapped_column(String(40), index=True)
+    before_config: Mapped[str | None] = mapped_column(Text)
+    after_config: Mapped[str] = mapped_column(Text)
+    actor_id: Mapped[str] = mapped_column(String(80))
+    reason: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class SourceDocumentVersion(Base):
@@ -144,6 +186,10 @@ class ImmutableHistoryError(RuntimeError):
 @event.listens_for(SourceDocumentArtifact, "before_delete")
 @event.listens_for(MaintenanceChangeEvent, "before_update")
 @event.listens_for(MaintenanceChangeEvent, "before_delete")
+@event.listens_for(SourceManagementRevision, "before_update")
+@event.listens_for(SourceManagementRevision, "before_delete")
+@event.listens_for(SourceConnectionRevision, "before_update")
+@event.listens_for(SourceConnectionRevision, "before_delete")
 def _reject_historical_mutation(*_: object) -> None:
     raise ImmutableHistoryError("Las versiones y artefactos documentales son inmutables.")
 
@@ -426,6 +472,8 @@ class ImportBatch(Base):
     status: Mapped[str] = mapped_column(String(20))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    started_by: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_document_version_id: Mapped[str | None] = mapped_column(
         ForeignKey("source_document_version.id")
     )
@@ -599,6 +647,27 @@ class ReviewerRecord(Base):
     role: Mapped[str] = mapped_column(String(40))
     active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class AuthIdentityBinding(Base):
+    """Vínculo permanente de cuenta Entra a actor histórico; sin edición por API."""
+
+    __tablename__ = "auth_identity_binding"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "object_id", name="uq_auth_subject"),
+        UniqueConstraint("reviewer_identifier", name="uq_auth_reviewer"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    tenant_id: Mapped[str] = mapped_column(String(36))
+    object_id: Mapped[str] = mapped_column(String(36))
+    reviewer_identifier: Mapped[str] = mapped_column(String(80))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+@event.listens_for(AuthIdentityBinding, "before_update")
+@event.listens_for(AuthIdentityBinding, "before_delete")
+def _reject_auth_binding_mutation(*_: object) -> None:
+    raise ImmutableHistoryError("El vínculo de identidad es permanente y no puede reasignarse.")
 
 
 class ReviewQueueEntry(Base):

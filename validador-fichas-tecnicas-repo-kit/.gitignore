@@ -36,6 +36,7 @@ data/local/cima-composition-*/
 data/local/gold-set-*/
 # Anotaciones y ejecuciones del conjunto oro
 data/local/gold-run-*/
+data/local/vpn-tls/
 
 # Reference source files are local inputs, not repository content
 data/reference/raw/*

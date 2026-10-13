@@ -45,6 +45,14 @@ function ImportDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 </dd>
               </div>
               <div>
+                <dt>Ejecutada por</dt>
+                <dd>{orDash(data.started_by)}</dd>
+              </div>
+              <div>
+                <dt>Motivo de la carga</dt>
+                <dd>{orDash(data.reason)}</dd>
+              </div>
+              <div>
                 <dt>Lote</dt>
                 <dd title={data.id}>
                   <code>{shortHash(data.id)}</code>

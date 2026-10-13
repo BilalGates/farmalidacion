@@ -1,4 +1,30 @@
+## Extensión de D-029 — Modal de expediente (2026-10-01)
+
+Aceptada por petición explícita del responsable: abrir el expediente sobre el listado y permitir anterior/siguiente en el orden filtrado vigente. Se amplía ADR-0012 de espacio compacto; sin cambios clínicos ni de exportación.
+
 # Registro de decisiones
+
+## D-037 — Sesión corporativa y perímetro de permisos (2026-10-05)
+
+Implementación aceptada por petición explícita de iniciar/cerrar sesión y
+autorizar operaciones; continúa Entra de D-018. ADR-0015. Código y pruebas
+sintéticas implementados; activación, matriz corporativa y vínculos reales
+pendientes del administrador. El piloto conserva su garantía declarada.
+
+## D-036 — Correcciones del espacio Estudio (2026-10-05)
+
+Aceptadas por petición explícita: apertura desde nombre, seis columnas,
+responsable legible, apariencia en Equipo, filtros en columna con plegado
+temporal y movimiento reducido. ADR-0014. Sesiones y permisos reales reafirma
+D-018; falta configuración corporativa. La identificación declarada del piloto
+no se presenta como autenticación.
+
+## D-035 — Estudio, navegación y preferencias de lectura (2026-10-05)
+
+Cerrada por aceptación del responsable de la propuesta renovada y petición de
+dos densidades y modo oscuro. ADR-0013: Catálogo/Trabajo/Datos, expediente con
+pestañas, edición explícita y preferencias independientes persistentes. Amplía
+D-029 sin retirar el modal ni la conservación de borradores de ADR-0012.
 
 ## D-029 — Espacio compacto de Registros
 
@@ -28,7 +54,7 @@ Estados: `cerrada`, `propuesta`, `pendiente`, `bloqueada`, `descartada`. Una dec
 | D-015 | Umbrales para `proponer_valor` y degradación | pendiente | Fase 4 | Bandas A/B/C por campo; método de cálculo definido, valores pendientes de métricas reales | ADR-0009 propuesto 2026-09-04 (esqueleto); barrera de evidencia en `docs/EVIDENCE_VERIFICATION_CONTRACT.md` |
 | D-016 | Selección aleatoria o estratificada | cerrada | Fase 2 | Muestra aleatoria, semilla 203, sobre instantánea reproducible | Elección humana al continuar el 28-08-2026; informe real `bb80992258d07a5e49f1beef46e983f3f56a57e7d48ad20d5aef19e3bffa5fe7` |
 | D-017 | Reglas ATC adicionales a `L04` | pendiente | Fase 6 | Decisión exclusiva de farmacia | Especificación v2 |
-| D-018 | Autenticación real | reabierta; configuración pendiente | Fase 8 | Preparar Entra ID asociado a Intune; conservar la garantía declarada hasta validar integración y roles | Petición del responsable 2026-09-30; `docs/ENTRA_ID_INTEGRATION_PLAN.md` |
+| D-018 | Autenticación real | reabierta; activación aplazada el 2026-10-06 | Fase 8 | Preparar Entra ID asociado a Intune; conservar la garantía declarada hasta validar integración y roles | Petición del responsable 2026-09-30; aplazamiento explícito 2026-10-06; `docs/ENTRA_ID_INTEGRATION_PLAN.md` |
 | D-019 | Base de datos del piloto | cerrada | Fase 1 | SQLite con tipos portables y Alembic | Especificación v2 |
 | D-020 | Estrategia de versiones de ficha técnica | cerrada | Fase 2 | Versiones content-addressed inmutables; `source_version` literal y opcional, nunca inferida | ADR-0001 aceptado; DEV-205/208; aceptación humana 31-08-2026 |
 | D-021 | Campos `EX_DESCRIPCION` y `ME_DESCRIPCION` | cerrada | Fase 3 | `CHAR(100)` mediante overrides trazables | Especificación v2 |
@@ -43,6 +69,7 @@ Estados: `cerrada`, `propuesta`, `pendiente`, `bloqueada`, `descartada`. Una dec
 | D-031 | Edición completa del catálogo | cerrada | Antes de CRUD canónico | Fuente inmutable + estado vigente + revisiones append-only; archivar en vez de borrar historia | ADR-0012 aceptado 2026-09-22 |
 | D-032 | Clasificación de medicamentos | cerrada en estructura | Antes de poblar clasificaciones | Original/genérico/biosimilar separado de condiciones no excluyentes | ADR-0012; fuente autoritativa por condición pendiente |
 | D-033 | Integración BOT PLUS | pendiente externo | Antes de implementar el adaptador | Usar BOT PLUS Integración contratado; no automatizar BOT PLUS Web | Confirmar licencia, catálogo de servicios, sandbox, coste y condiciones |
+| D-034 | Claves de reconciliación para versiones de maestros y fuentes nuevas | pendiente de evidencia y aceptación | Antes de habilitar sustitución de maestros o fusión entre Excel/Nomenclátor/BOT PLUS | Identidad canónica separada; claves externas versionadas; ninguna coincidencia por nombre ni `*_IDEXTERNO` asumida estable | ADR-0005 y D-027; falta diccionario/contrato de Nomenclátor y evidencia longitudinal por entidad |
 | GOLD-001 | Semilla del conjunto oro | cerrada | Fase 4 | Semilla reproducible `407` | Aprobación humana 2026-09-02; `docs/GOLD_SET_ANNOTATION_CONTRACT.md` |
 | GOLD-002 | Anotadores farmacéuticos del conjunto oro | pendiente | Fase 4 | Dos anotadores independientes identificados | `docs/GOLD_SET_ANNOTATION_CONTRACT.md`; runbook operativo listo en `docs/GOLD_ANNOTATION_RUNBOOK.md`. Único bloqueo de la anotación |
 | GOLD-003 | Cobertura por estrato ATC del conjunto oro | cerrada | Fase 4 | No estratificar por ATC el conjunto oro inicial: el inventario DEV-208 no contiene ATC; reevaluar solo con nueva evidencia | Aprobación humana 2026-09-02; `docs/GOLD_SET_ANNOTATION_CONTRACT.md` |

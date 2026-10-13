@@ -46,6 +46,7 @@ from pharma_validator_api.models import (
     MedicationCatalogIdentity,
     MedicationCatalogRelation,
     MedicationCatalogRevision,
+    ReviewQueueEntry,
     SourceDocument,
     SourceDocumentArtifact,
     SourceDocumentVersion,
@@ -70,6 +71,7 @@ SOURCE_WORKBOOKS = {
 WORKBOOK_BY_FILENAME = {filename: source for source, filename in SOURCE_WORKBOOKS.items()}
 CatalogSourceWorkbook = Literal["especialidades", "medicamentos", "principios_activos"]
 CatalogSort = Literal["name_asc", "name_desc", "code_asc", "code_desc"]
+CatalogReviewScope = Literal["all", "pending", "unassigned", "mine", "second", "completed"]
 
 
 class CatalogIdentityRead(BaseModel):
@@ -405,12 +407,29 @@ def list_identities(
     condition: Annotated[list[str] | None, Query()] = None,
     source_workbook: CatalogSourceWorkbook | None = None,
     sort_by: CatalogSort = "name_asc",
+    review_scope: CatalogReviewScope = "all",
+    reviewer_id: str | None = None,
     q: str | None = None,
     active: bool | None = True,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> CatalogIdentityPage:
     statement = select(MedicationCatalogIdentity)
+    if review_scope != "all":
+        queue = select(ReviewQueueEntry.target_record_id)
+        if review_scope == "pending":
+            queue = queue.where(ReviewQueueEntry.state.in_(("pendiente", "asignado", "en_revision", "requiere_segunda_revision")))
+        elif review_scope == "unassigned":
+            queue = queue.where(ReviewQueueEntry.assignee_id.is_(None), ReviewQueueEntry.state == "pendiente")
+        elif review_scope == "mine":
+            if not reviewer_id:
+                raise ApplicationError("Seleccione un revisor para consultar sus tareas.", status_code=422)
+            queue = queue.where(ReviewQueueEntry.assignee_id == reviewer_id, ReviewQueueEntry.state.in_(("asignado", "en_revision", "requiere_segunda_revision")))
+        elif review_scope == "second":
+            queue = queue.where(ReviewQueueEntry.requires_second_review.is_(True))
+        elif review_scope == "completed":
+            queue = queue.where(ReviewQueueEntry.state == "completado")
+        statement = statement.where(MedicationCatalogIdentity.target_record_id.in_(queue))
     if source_workbook is not None:
         filename = SOURCE_WORKBOOKS[source_workbook]
         source_fragment_ids = (

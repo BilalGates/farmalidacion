@@ -34,6 +34,7 @@ const MAX_ENTRIES = 20
 
 const entries = new Map<string, Entry>()
 const inFlight = new Map<string, Promise<TargetRecord>>()
+let generation = 0
 
 function fresh(entry: Entry | undefined): entry is Entry {
   return entry !== undefined && Date.now() - entry.storedAt < MAX_AGE_MS
@@ -63,13 +64,14 @@ export function loadRecord(recordId: string): Promise<TargetRecord> {
   const pending = inFlight.get(recordId)
   if (pending !== undefined) return pending
 
+  const current = generation
   const request = fetchRecord(recordId)
     .then((record) => {
-      store(recordId, record)
+      if (current === generation) store(recordId, record)
       return record
     })
     .finally(() => {
-      inFlight.delete(recordId)
+      if (current === generation) inFlight.delete(recordId)
     })
   inFlight.set(recordId, request)
   return request
@@ -93,6 +95,7 @@ export function invalidateRecord(recordId: string): void {
 
 /** Vacía la caché. Para las pruebas y para un cambio de revisor. */
 export function clearRecordCache(): void {
+  generation += 1
   entries.clear()
   inFlight.clear()
 }

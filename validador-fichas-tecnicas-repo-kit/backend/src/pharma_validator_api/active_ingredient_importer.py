@@ -36,6 +36,7 @@ from pharma_validator_api.models import (
     ImportedSourceSheet,
     QuarantinedSourceRow,
     SourceDocument,
+    SourceDocumentArtifact,
     SourceDocumentVersion,
     SourceFragment,
     TargetRecord,
@@ -164,6 +165,24 @@ def _ensure_document_version(
             acquired_at=datetime.now(UTC),
         )
         session.add(version)
+    artifact_id = _stable_uuid(version_id, "source_workbook", 1)
+    if session.get(SourceDocumentArtifact, artifact_id) is None:
+        session.add(
+            SourceDocumentArtifact(
+                id=artifact_id,
+                document_version_id=version_id,
+                artifact_role="source_workbook",
+                ordinal=1,
+                locator=source_path.name,
+                source_url=f"master_excel:{source_path.name}",
+                status_code=200,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                response_headers="{}",
+                content_hash=content_hash,
+                body=source_path.read_bytes(),
+                fetched_at=datetime.now(UTC).isoformat(),
+            )
+        )
     batch = session.get(ImportBatch, batch_id)
     assert batch is not None
     batch.source_document_version_id = version.id

@@ -167,6 +167,32 @@ def test_create_list_read_and_history(scratch_db_url: str) -> None:
     assert history.json()[0]["actor_assurance"] == "declarada"
 
 
+def test_review_filters_apply_before_catalog_pagination(scratch_db_url: str) -> None:
+    api = client(scratch_db_url)
+    with api.app.state.session_factory() as session:
+        session.add_all([
+            TargetRecord(id="record-a", entity_type="specialty"),
+            TargetRecord(id="record-b", entity_type="specialty"),
+        ])
+        session.commit()
+    for identity_id, record_id in (("identity-a", "record-a"), ("identity-b", "record-b")):
+        assert api.post("/catalog/identities", json=create_payload(
+            id=identity_id, code=record_id, target_record_id=record_id,
+        )).status_code == 201
+    assert api.post("/queue", json={
+        "target_record_id": "record-b", "requires_second_review": True,
+    }).status_code == 201
+
+    for scope in ("pending", "unassigned", "second"):
+        page = api.get("/catalog/identities", params={"review_scope": scope, "limit": 1}).json()
+        assert page["total"] == 1
+        assert [item["id"] for item in page["items"]] == ["identity-b"]
+    assert api.get("/catalog/identities", params={"review_scope": "mine"}).status_code == 422
+    assert api.post("/queue/record-b/assign", json={"reviewer_id": "ana"}).status_code == 200
+    assert api.get("/catalog/identities", params={"review_scope": "unassigned"}).json()["total"] == 0
+    assert api.get("/catalog/identities", params={"review_scope": "mine", "reviewer_id": "ana"}).json()["total"] == 1
+
+
 def test_catalog_sort_is_server_side_and_stable(scratch_db_url: str) -> None:
     api = client(scratch_db_url)
     for identity_id, name, code in (

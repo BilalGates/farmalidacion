@@ -1,20 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 
-import { fetchSource, fetchSources } from '../api/client'
+import { fetchDatabaseInfo, fetchNomenclatorConnection, fetchSource, fetchSources, importMasterWorkbook, previewMasterWorkbook, saveNomenclatorConnection, testNomenclatorConnection, updateSource } from '../api/client'
 import { useQuery } from '../api/useQuery'
+import { useCorporateSession, useCapability } from '../auth/SessionContext'
 import { AsyncBoundary } from '../components/AsyncState'
 import { PageHeader } from '../components/PageHeader'
 import { formatDateTime, orDash, shortHash } from '../domain/format'
 import { openCatalogSource } from '../domain/catalogSourceNavigation'
-import type { CatalogSourceWorkbook } from '../api/types'
+import type { CatalogSourceWorkbook, NomenclatorConnectionFields } from '../api/types'
 
-/**
- * Fuentes realmente conocidas por el sistema.
- *
- * No se enumeran las fuentes previstas por el producto, sino los documentos que
- * existen en la base de datos. Una fuente que el proyecto contempla pero que
- * nunca se ha cargado no aparece aquí: aparecería como «disponible» sin serlo.
- */
+/** Perfiles de los tres libros de origen; el estado cargado procede de la API. */
 
 const SOURCE_TYPE_LABELS: Record<string, string> = {
   master_excel: 'Maestro Excel',
@@ -64,9 +59,197 @@ const WORKBOOK_PREVIEWS: Record<string, {
   },
 }
 
-function SourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
-  const { data, error, loading } = useQuery(() => fetchSource(id), [id])
+function MasterUpload({ kind, onImported }: { kind: CatalogSourceWorkbook; onImported: () => void }) {
+  const account = useCorporateSession()
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<Awaited<ReturnType<typeof previewMasterWorkbook>> | null>(null)
+  const [actor, setActor] = useState(account?.reviewer.identifier ?? '')
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+
+  async function analyze() {
+    if (!file) return
+    setBusy(true); setError(''); setMessage('')
+    try { setPreview(await previewMasterWorkbook(kind, file)) }
+    catch (cause) { setPreview(null); setError(cause instanceof Error ? cause.message : 'No se pudo analizar el Excel.') }
+    finally { setBusy(false) }
+  }
+
+  async function importFile() {
+    if (!file || !preview) return
+    setBusy(true); setError(''); setMessage('')
+    try {
+      const result = await importMasterWorkbook(kind, file, { sha256: preview.sha256, actor_id: actor, reason })
+      setMessage(result.created ? 'Libro importado. Consulte el lote en Importaciones.' : 'El mismo contenido ya estaba importado.')
+      setFile(null); setPreview(null); setReason(''); onImported()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'No se pudo importar el Excel.') }
+    finally { setBusy(false) }
+  }
+
+  return <div className='source-upload'>
+    <label className='field'><span>Archivo XLSX</span><input type='file' accept='.xlsx' onChange={(event) => {
+      setFile(event.target.files?.[0] ?? null); setPreview(null); setError(''); setMessage('')
+    }} /></label>
+    <button className='button' type='button' disabled={!file || busy} onClick={() => void analyze()}>{busy ? 'Analizando…' : 'Analizar archivo'}</button>
+    {preview && <>
+      <p>{preview.data_rows.toLocaleString('es-ES')} filas · {preview.sheets.length} hojas · SHA-256 <code>{shortHash(preview.sha256)}</code></p>
+      {preview.blocked_reason && <p role='note'>{preview.blocked_reason}</p>}
+      <label className='field'><span>Responsable</span><input readOnly={Boolean(account)} maxLength={80} value={actor} onChange={(event) => setActor(event.target.value)} /></label>
+      <label className='field'><span>Motivo</span><input maxLength={1000} value={reason} onChange={(event) => setReason(event.target.value)} /></label>
+      <button className='button button--primary' type='button' disabled={busy || !preview.can_import || !actor.trim() || !reason.trim()} onClick={() => void importFile()}>Confirmar importación</button>
+    </>}
+    {error && <p role='alert'>{error}</p>}{message && <p role='status'>{message}</p>}
+  </div>
+}
+
+function NomenclatorConnection() {
+  const account = useCorporateSession()
+  const [expanded, setExpanded] = useState(false)
+  const [refresh, setRefresh] = useState(0)
+  const { data, error, loading } = useQuery(fetchNomenclatorConnection, [refresh])
+  const [fields, setFields] = useState<NomenclatorConnectionFields>({ host: '', port: 1433, database_name: '', username: '' })
+  const [password, setPassword] = useState('')
+  const [actor, setActor] = useState(account?.reviewer.identifier ?? '')
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [feedback, setFeedback] = useState('')
+  const [failure, setFailure] = useState('')
+
+  useEffect(() => { if (data?.configured) setFields({
+    host: data.host ?? '', port: data.port, database_name: data.database_name ?? '', username: data.username ?? '',
+  }) }, [data])
+  function field<K extends keyof NomenclatorConnectionFields>(key: K, value: NomenclatorConnectionFields[K]) {
+    setFields((current) => ({ ...current, [key]: value }))
+  }
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setBusy(true); setFailure(''); setFeedback('')
+    try {
+      await saveNomenclatorConnection({ ...fields, actor_id: actor, reason })
+      setReason(''); setFeedback('Configuración guardada. La contraseña no se ha almacenado.'); setRefresh((value) => value + 1)
+    } catch (cause) { setFailure(cause instanceof Error ? cause.message : 'No se pudo guardar la configuración.') }
+    finally { setBusy(false) }
+  }
+  async function probe() {
+    setBusy(true); setFailure(''); setFeedback('')
+    try {
+      const result = await testNomenclatorConnection({ ...fields, password })
+      setFeedback(`${result.message} Base: ${result.database_name}.`)
+    } catch (cause) { setFailure(cause instanceof Error ? cause.message : 'No se pudo probar la conexión.') }
+    finally { setPassword(''); setBusy(false) }
+  }
+
+  return <section className='panel source-connector source-connector--nomenclator' aria-label='Conexión con Nomenclátor'>
+    <div className='panel__head'><div><p className='eyebrow'>Base de datos · SQL Server</p><h2>Nomenclátor</h2></div><span className='badge'>{data?.configured ? 'Parámetros guardados' : 'Sin configurar'}</span></div>
+    <p className='source-connector__description'>Prepara una conexión de sólo lectura. La prueba consulta el nombre de la base; la importación de datos requiere revisar antes su esquema y sus claves.</p>
+    {data?.configured && <p className='source-connector__meta'><strong>{data.database_name}</strong> · {data.host}:{data.port}{data.updated_at ? ` · Actualizado ${formatDateTime(data.updated_at)}` : ''}</p>}
+    {loading && <p role='status'>Cargando configuración…</p>}{error && <p role='alert'>{error}</p>}
+    <button type='button' className='button button--secondary source-connector__toggle' aria-expanded={expanded} aria-controls='nomenclator-configuration' onClick={() => setExpanded(value => !value)}>{expanded ? 'Ocultar configuración' : data?.configured ? 'Revisar configuración' : 'Configurar conexión'}</button>
+    {expanded && <form id='nomenclator-configuration' className='source-connector__form' onSubmit={(event) => void save(event)}>
+      <p className='muted'>Guarda servidor, base y usuario. La contraseña se usa sólo para la prueba y se descarta después.</p>
+      <div className='source-connection-grid'>
+        <label className='field'><span>Servidor</span><input required value={fields.host} onChange={(event) => field('host', event.target.value)} placeholder='servidor o IP' /></label>
+        <label className='field'><span>Puerto</span><input required type='number' min={1} max={65535} value={fields.port} onChange={(event) => field('port', Number(event.target.value))} /></label>
+        <label className='field'><span>Base de datos</span><input required value={fields.database_name} onChange={(event) => field('database_name', event.target.value)} /></label>
+        <label className='field'><span>Usuario SQL Server</span><input required autoComplete='username' value={fields.username} onChange={(event) => field('username', event.target.value)} /></label>
+      </div>
+      <label className='field'><span>Contraseña para probar la conexión</span><input type='password' autoComplete='off' value={password} onChange={(event) => setPassword(event.target.value)} placeholder={data?.server_password_configured ? 'Secreto disponible en el servidor' : 'No se guarda'} /></label>
+      <div className='source-actions'><button type='button' className='button' disabled={busy || !fields.host || !fields.database_name || !fields.username || (!password && !data?.server_password_configured)} onClick={() => void probe()}>Probar conexión</button></div>
+      <label className='field'><span>Responsable del cambio</span><input readOnly={Boolean(account)} required maxLength={80} value={actor} onChange={(event) => setActor(event.target.value)} /></label>
+      <label className='field'><span>Motivo</span><input required maxLength={1000} value={reason} onChange={(event) => setReason(event.target.value)} /></label>
+      <button type='submit' className='button button--primary' disabled={busy}>Guardar configuración</button>
+    </form>}
+    {feedback && <p role='status'>{feedback}</p>}{failure && <p role='alert'>{failure}</p>}
+  </section>
+}
+
+function SourceDetail({ id, onClose, onSaved }: { id: string; onClose: () => void; onSaved: () => void }) {
+  const account = useCorporateSession()
+  const canManage = useCapability('sources.manage')
+  const [displayName, setDisplayName] = useState('')
+  const [actorId, setActorId] = useState(account?.reviewer.identifier ?? '')
+  const [reason, setReason] = useState('')
+  const [active, setActive] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [saved, setSaved] = useState(false)
+  const [detailRefresh, setDetailRefresh] = useState(0)
+  const [workbookFile, setWorkbookFile] = useState<File | null>(null)
+  const [workbookPreview, setWorkbookPreview] = useState<Awaited<ReturnType<typeof previewMasterWorkbook>> | null>(null)
+  const [uploadActor, setUploadActor] = useState(account?.reviewer.identifier ?? '')
+  const [uploadReason, setUploadReason] = useState('')
+  const [uploadBusy, setUploadBusy] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const [uploadMessage, setUploadMessage] = useState('')
+  const { data, error, loading } = useQuery(() => fetchSource(id), [id, detailRefresh])
   const preview = data?.source_type === 'master_excel' ? WORKBOOK_PREVIEWS[data.name] : undefined
+
+  useEffect(() => {
+    if (!data) return
+    setDisplayName(data.display_name ?? data.name)
+    setActive(data.is_active ?? true)
+  }, [data])
+
+  async function saveManagement(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSaving(true)
+    setSaveError('')
+    setSaved(false)
+    try {
+      await updateSource(id, { display_name: displayName, is_active: active, actor_id: actorId, reason })
+      setReason('')
+      setSaved(true)
+      setDetailRefresh((value) => value + 1)
+      onSaved()
+    } catch (cause) {
+      setSaveError(cause instanceof Error ? cause.message : 'No se ha podido guardar la fuente.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function previewUpload() {
+    if (!preview || !workbookFile) return
+    setUploadBusy(true)
+    setUploadError('')
+    setUploadMessage('')
+    try {
+      setWorkbookPreview(await previewMasterWorkbook(preview.view, workbookFile))
+    } catch (cause) {
+      setUploadError(cause instanceof Error ? cause.message : 'No se ha podido validar el Excel.')
+      setWorkbookPreview(null)
+    } finally {
+      setUploadBusy(false)
+    }
+  }
+
+  async function confirmUpload() {
+    if (!preview || !workbookFile || !workbookPreview) return
+    setUploadBusy(true)
+    setUploadError('')
+    setUploadMessage('')
+    try {
+      const result = await importMasterWorkbook(preview.view, workbookFile, {
+        sha256: workbookPreview.sha256,
+        actor_id: uploadActor,
+        reason: uploadReason,
+      })
+      setUploadMessage(result.created
+        ? `Lote ${result.status === 'completed' ? 'completado' : 'creado con incidencias'}: ${result.batch_id}`
+        : `Este contenido ya se había importado. Lote existente: ${result.batch_id}`)
+      setWorkbookFile(null)
+      setWorkbookPreview(null)
+      setUploadReason('')
+      setDetailRefresh((value) => value + 1)
+      onSaved()
+    } catch (cause) {
+      setUploadError(cause instanceof Error ? cause.message : 'No se ha podido importar el Excel.')
+    } finally {
+      setUploadBusy(false)
+    }
+  }
+
   return (
     <section className='panel' aria-label='Detalle de la fuente'>
       <div className='panel__head'>
@@ -84,6 +267,39 @@ function SourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
       >
         {data && (
           <>
+            {canManage && <form className='panel' onSubmit={(event) => void saveManagement(event)} aria-label='Gestionar fuente'>
+              <h3>Gestionar fuente</h3>
+              <p>El nombre visible se puede cambiar sin modificar el archivo original ni su historial.</p>
+              <label className='field'>
+                <span>Nombre visible</span>
+                <input required maxLength={200} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+              </label>
+              <label className='field'>
+                <span>Responsable del cambio</span>
+                <input readOnly={Boolean(account)} required maxLength={80} value={actorId} onChange={(event) => setActorId(event.target.value)} />
+              </label>
+              <label className='field'>
+                <span>Motivo</span>
+                <input required maxLength={1000} value={reason} onChange={(event) => setReason(event.target.value)} />
+              </label>
+              <label className='field field--inline'>
+                <input type='checkbox' checked={active} onChange={(event) => setActive(event.target.checked)} />
+                <span>Mostrar en el listado habitual de fuentes</span>
+              </label>
+              {saveError && <p role='alert'>{saveError}</p>}
+              {saved && <p role='status'>Cambios guardados.</p>}
+              <button className='button button--primary' type='submit' disabled={saving}>
+                {saving ? 'Guardando…' : 'Guardar cambios'}
+              </button>
+            </form>}
+            {(data.management_history?.length ?? 0) > 0 && <section className='panel' aria-label='Historial de gestión de la fuente'>
+              <h3>Historial de gestión</h3>
+              <ul>{data.management_history.map((revision, index) => <li key={`${revision.created_at}-${index}`}>
+                {formatDateTime(revision.created_at)} · {revision.actor_id} · {revision.is_active ? 'Fuente visible' : 'Fuente archivada'}
+                <p>Nombre: {revision.previous_display_name ?? data.name} → {revision.display_name}</p>
+                <p>{revision.reason}</p>
+              </li>)}</ul>
+            </section>}
             {preview && <div className={`source-workbook-preview source-workbook-preview--${preview.view}`}>
               <p className='eyebrow'>Vista del libro maestro</p>
               <h3>{preview.title}</h3>
@@ -93,6 +309,50 @@ function SourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 {preview.action}
               </button>
             </div>}
+            {preview && canManage && <section className='panel' aria-label='Actualizar libro maestro'>
+              <h3>Importar una nueva versión</h3>
+              <p>Selecciona un Excel con la misma estructura. La vista previa no modifica los datos; la importación se confirma después.</p>
+              <label className='field'>
+                <span>Libro Excel</span>
+                <input
+                  type='file'
+                  accept='.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                  onChange={(event) => {
+                    setWorkbookFile(event.target.files?.[0] ?? null)
+                    setWorkbookPreview(null)
+                    setUploadError('')
+                    setUploadMessage('')
+                  }}
+                />
+              </label>
+              <button type='button' className='button' disabled={!workbookFile || uploadBusy} onClick={() => void previewUpload()}>
+                {uploadBusy && !workbookPreview ? 'Validando…' : 'Ver vista previa'}
+              </button>
+              {workbookPreview && <>
+                <p>{workbookPreview.workbook} · {(workbookPreview.size_bytes / (1024 * 1024)).toLocaleString('es-ES', { maximumFractionDigits: 1 })} MiB · {workbookPreview.data_rows.toLocaleString('es-ES')} filas · SHA-256 <code>{shortHash(workbookPreview.sha256)}</code></p>
+                <table className='table'>
+                  <caption>Contenido detectado</caption>
+                  <thead><tr><th>Hoja</th><th>Columnas</th><th>Filas de datos</th></tr></thead>
+                  <tbody>{workbookPreview.sheets.map((sheet) => <tr key={sheet.name}>
+                    <th scope='row'>{sheet.name}</th><td>{sheet.columns}</td><td>{sheet.data_rows.toLocaleString('es-ES')}</td>
+                  </tr>)}</tbody>
+                </table>
+                {workbookPreview.blocked_reason && <p role='note'>{workbookPreview.blocked_reason}</p>}
+                <label className='field'>
+                  <span>Responsable de la importación</span>
+                  <input readOnly={Boolean(account)} required maxLength={80} value={uploadActor} onChange={(event) => setUploadActor(event.target.value)} />
+                </label>
+                <label className='field'>
+                  <span>Motivo</span>
+                  <input required maxLength={1000} value={uploadReason} onChange={(event) => setUploadReason(event.target.value)} />
+                </label>
+                <button type='button' className='button button--primary' disabled={uploadBusy || !workbookPreview.can_import || !uploadActor.trim() || !uploadReason.trim()} onClick={() => void confirmUpload()}>
+                  {uploadBusy ? 'Importando…' : 'Confirmar importación'}
+                </button>
+              </>}
+              {uploadError && <p role='alert'>{uploadError}</p>}
+              {uploadMessage && <p role='status'>{uploadMessage}</p>}
+            </section>}
             <dl className='definition'>
               <div>
                 <dt>Nombre</dt>
@@ -167,12 +427,75 @@ function SourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
 }
 
 export function SourcesScreen() {
+  const canManage = useCapability('sources.manage')
   const [selected, setSelected] = useState<string | null>(null)
-  const { data, error, loading } = useQuery(() => fetchSources(), [])
+  const [selectedUpload, setSelectedUpload] = useState<CatalogSourceWorkbook | null>(null)
+  const [includeArchived, setIncludeArchived] = useState(false)
+  const [showDocuments, setShowDocuments] = useState(false)
+  const [refresh, setRefresh] = useState(0)
+  const { data, error, loading } = useQuery(() => fetchSources(includeArchived), [includeArchived, refresh])
+  const { data: databaseInfo } = useQuery(fetchDatabaseInfo, [])
+  const cimaDocuments = data?.items.filter((item) => item.source_type.startsWith('cima')).length ?? 0
 
   return (
-    <div className='screen'>
-      <PageHeader eyebrow='Fuentes' title='Fuentes de datos cargadas' description='Cada fila es un documento de origen presente en la base de datos, con su versión y su hash de contenido. Sólo aparece lo que se ha cargado realmente.' />
+    <div className='screen sources-screen'>
+      <PageHeader eyebrow='Datos' title='Fuentes de datos' description='Consulta los datos disponibles y prepara nuevas conexiones desde un único lugar.' />
+
+      <section aria-label='Maestros Excel'>
+        <div className='source-section-heading'><div><p className='eyebrow'>Archivos principales</p><h2>Maestros Excel</h2></div><span className='badge'>{databaseInfo?.mode === 'demo' ? 'Entorno DEMO' : 'Entorno REAL'}</span></div>
+        <div className='source-card-grid'>
+          {Object.entries(WORKBOOK_PREVIEWS).map(([filename, profile]) => {
+            const source = data?.items.find((item) => item.source_type === 'master_excel' && item.name === filename)
+            return <article className='panel source-master-card' key={filename}>
+              <p className='eyebrow'>Libro maestro</p>
+              <h3>{profile.title}</h3>
+              <p className='source-master-card__count'>{source ? source.records.toLocaleString('es-ES') : '—'} <span>registros</span></p>
+              <p className='source-master-card__meta'>{source ? `${source.versions} ${source.versions === 1 ? 'versión' : 'versiones'} disponible${source.versions === 1 ? '' : 's'}` : 'Sin datos cargados en este entorno'}</p>
+              <p className='source-filename' title={filename}>{filename}</p>
+              <div className='source-actions'>
+                {source && <button type='button' className='button button--primary' onClick={() => openCatalogSource(profile.view)}>{profile.action}</button>}
+                {source && <button type='button' className='button' onClick={() => { setSelected(source.key); setSelectedUpload(null) }}>Gestionar y ver versiones</button>}
+                {!source && canManage && databaseInfo?.mode === 'real' && <button type='button' className='button button--primary' onClick={() => { setSelectedUpload(profile.view); setSelected(null) }}>Cargar primer Excel</button>}
+              </div>
+            </article>
+          })}
+        </div>
+        {databaseInfo?.mode === 'demo' && <p className='muted'>Esta base DEMO contiene datos sintéticos. Los tres maestros originales están en la vista previa REAL.</p>}
+        {selectedUpload && <section className='panel' aria-label='Cargar maestro Excel'>
+          <div className='panel__head'><h3>Cargar {selectedUpload.replace('_', ' ')}</h3><button type='button' className='button' onClick={() => setSelectedUpload(null)}>Cerrar</button></div>
+          <MasterUpload kind={selectedUpload} onImported={() => { setSelectedUpload(null); setRefresh((value) => value + 1) }} />
+        </section>}
+      </section>
+
+      <section aria-label='Conexiones y servicios'>
+        <div className='source-section-heading'><div><p className='eyebrow'>Origen y acceso</p><h2>Conexiones y servicios</h2></div></div>
+        <div className='source-connector-grid'>
+        {canManage ? <NomenclatorConnection /> : <section className='panel source-connector' aria-label='Conexión con Nomenclátor'><div className='panel__head'><div><p className='eyebrow'>Base de datos · SQL Server</p><h2>Nomenclátor</h2></div><span className='badge'>Acceso restringido</span></div><p className='source-connector__description'>La configuración está reservada a las personas autorizadas para gestionar fuentes.</p></section>}
+        <div className='source-connector-stack'>
+          <section className='panel source-connector' aria-label='CIMA'>
+            <div className='panel__head'><div><p className='eyebrow'>Fuente documental · AEMPS</p><h2>CIMA</h2></div><span className='badge'>{cimaDocuments ? 'Con datos' : 'Sin documentos'}</span></div>
+            <p className='source-connector__description'><strong>{cimaDocuments.toLocaleString('es-ES')}</strong> documentos registrados en esta base. Consulta las novedades y su mantenimiento.</p>
+            <a className='button' href='#/novedades'>Ver novedades CIMA</a>
+          </section>
+          <section className='panel source-connector source-connector--bot' aria-label='BOT PLUS'>
+            <div className='panel__head'><div><p className='eyebrow'>Servicio externo</p><h2>BOT PLUS</h2></div><span className='badge'>Sin conectar</span></div>
+            <p className='source-connector__description'>La consulta web está disponible. Para incorporar datos al catálogo se necesita el servicio oficial BOT PLUS Integración y autorización para los usos previstos.</p>
+            <div className='source-actions'><a className='button' href='https://botplusweb.farmaceuticos.com/' target='_blank' rel='noopener noreferrer'>Abrir BOT PLUS Web</a></div>
+            <details className='source-connector__requirements'><summary>Qué falta para conectar BOT PLUS Integración</summary><ul><li>Confirmar la modalidad contratada y el contacto técnico.</li><li>Recibir la documentación del servicio y un entorno de pruebas.</li><li>Acordar campos, frecuencia, conservación local y permisos de exportación.</li><li>Configurar después las credenciales mediante un secreto del servidor.</li></ul></details>
+          </section>
+        </div>
+        </div>
+      </section>
+
+      <section className='panel' aria-label='Documentos registrados'>
+        <div className='panel__head'><div><p className='eyebrow'>Inventario</p><h2>Documentos registrados</h2></div><button type='button' className='button' onClick={() => setShowDocuments((value) => !value)}>{showDocuments ? 'Ocultar documentos' : 'Mostrar documentos'}</button></div>
+        <p>Consulta los documentos individuales, incluidos los de CIMA y los conjuntos de demostración.</p>
+      {showDocuments && <>
+
+      <label className='field field--inline'>
+        <input type='checkbox' checked={includeArchived} onChange={(event) => setIncludeArchived(event.target.checked)} />
+        <span>Mostrar fuentes archivadas</span>
+      </label>
 
       <AsyncBoundary
         loading={loading}
@@ -205,7 +528,7 @@ export function SourcesScreen() {
             <tbody>
               {data.items.map((item) => (
                 <tr key={item.key}>
-                  <th scope='row'>{item.name}</th>
+                  <th scope='row'>{item.display_name || item.name}{item.is_active === false && ' · Archivada'}</th>
                   <td>{SOURCE_TYPE_LABELS[item.source_type] ?? item.source_type}</td>
                   <td>
                     <span className={`badge badge--${item.status}`}>
@@ -233,8 +556,10 @@ export function SourcesScreen() {
           </div>
         )}
       </AsyncBoundary>
+      </>}
+      </section>
 
-      {selected && <SourceDetail id={selected} onClose={() => setSelected(null)} />}
+      {selected && <SourceDetail id={selected} onClose={() => setSelected(null)} onSaved={() => setRefresh((value) => value + 1)} />}
     </div>
   )
 }

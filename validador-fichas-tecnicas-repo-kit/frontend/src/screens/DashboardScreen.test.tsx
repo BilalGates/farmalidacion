@@ -1,25 +1,26 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { DashboardScreen } from './DashboardScreen'
 
 afterEach(() => vi.unstubAllGlobals())
 
-it('muestra en Inicio la guía de uso y sus accesos principales', async () => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
-    metrics: [],
-    pipeline: [],
-    last_import_at: null,
-    empty: false,
-  }))))
+it('permite pasar de un indicador al registro real que lo explica', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => Promise.resolve(new Response(JSON.stringify(
+    url.includes('/cases')
+      ? { items: [{ id: 'real-1', label: 'OMEPRAZOL', detail: '123', kind: 'record' }], total: 1, limit: 25, offset: 0 }
+      : {
+        total_records: 1,
+        entity_types: [{ key: 'medication', label: 'Medicamento', count: 1 }],
+        sources: [{ key: 'master_excel', label: 'Maestro', count: 1 }],
+        review: [{ key: 'pendiente', label: 'Pendiente', count: 1 }],
+        coverage: [{ key: 'master_excel:present', label: 'Maestro', count: 1 }],
+        pending: 1, second_review: 0, quarantined: 0, diagnostics: 0,
+      },
+  )))))
 
   render(<DashboardScreen />)
-
-  expect(await screen.findByRole('heading', { name: 'Cómo trabajar con Farmalidación' })).toBeInTheDocument()
-  expect(screen.getByText(/no procesa datos de pacientes/i)).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Ir a la cola de revisión' })).not.toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Buscar un registro' })).not.toBeInTheDocument()
-  expect(screen.getByText('Qué significa cada decisión')).toBeInTheDocument()
-  expect(screen.getByText('Funciones principales de cada apartado')).toBeInTheDocument()
-  expect(screen.getByText('Fuentes y proceso').closest('details')).not.toHaveAttribute('open')
-  expect(screen.queryByText('Alcance técnico y activación pendiente')).not.toBeInTheDocument()
+  expect(await screen.findByText('Cobertura y calidad')).toBeInTheDocument()
+  expect(screen.queryByText('Cómo trabajar con Farmalidación')).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Pendiente: 1 de 1 registros. Ver casos' }))
+  expect(await screen.findByRole('link', { name: 'OMEPRAZOL' })).toHaveAttribute('href', '#/fichas/real-1')
 })

@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { clearRecordCache } from './api/recordCache'
+import { SessionContext } from './auth/SessionContext'
 
 import { App } from './App'
 import type { RecordList, Reviewer, TargetRecord } from './api/types'
@@ -175,6 +176,8 @@ function mockFetch() {
       })
 
     if (url.includes('/records/reviewers')) return ok(REVIEWERS)
+    if (url.includes('/reviewers/roles')) return ok([{ value: 'farmaceutico', label: 'Farmacéutico' }])
+    if (url.endsWith('/reviewers')) return ok(REVIEWERS.map(item => ({ ...item, active: true })))
 
     // El aviso de datos DEMO ya no está escrito en la interfaz: lo declara el
     // backend según la base que esté sirviendo. Esta suite ejercita la vertical
@@ -188,9 +191,12 @@ function mockFetch() {
         records_real: 0,
         records_demo: 2,
         import_batches: 0,
+        last_import_at: null,
         consistent: true,
       })
     }
+
+    if (url.includes('/second-reviews')) return ok([])
 
     // La medición de tiempos también escribe: contarla como decisión haría que
     // estas pruebas dejasen de comprobar lo que dicen comprobar.
@@ -222,7 +228,7 @@ function mockFetch() {
     if (detail) return ok(DETAIL)
 
     if (url.includes('/catalog/identities/')) {
-      if (/\/(history|relations|classifications)$/.test(url)) return ok([])
+      if (/\/(history|relations|classifications|cima-documents)$/.test(url)) return ok([])
       const record = listPayload.items.find((item) => url.endsWith(`/catalog/identities/${item.id}`))
       return ok({
         id: record?.id ?? 'rec-1', identity_type: 'dcp', code: record?.primary_identifier ?? null,
@@ -289,7 +295,8 @@ function reviewButtonFor(fieldName: string): HTMLElement {
   const rows = [...document.querySelectorAll('.field-row')] as HTMLElement[]
   const row = rows.find(
     (candidate) =>
-      candidate.querySelector('.field-row__name')?.textContent === fieldName,
+      candidate.querySelector('.field-row__code')?.textContent === fieldName
+      || candidate.querySelector('.field-row__name')?.textContent === fieldName,
   )
   if (!row) throw new Error(`No se encontró la fila del campo ${fieldName}`)
   return within(row).getByRole('button', { name: 'Revisar' })
@@ -301,12 +308,15 @@ function reviewButtonFor(fieldName: string): HTMLElement {
  * silencio, dejando la firma sin revisor.
  */
 async function selectReviewer(identifier: string) {
-  const select = await screen.findByRole('combobox', {
-    name: 'Revisor que firma las decisiones',
-  })
-  await click(select)
-  const reviewerName = identifier === 'ana' ? /Ana Ruiz/ : /Sin revisor/
-  await click(await screen.findByRole('option', { name: reviewerName }))
+  const original = window.location.hash.replace('#', '')
+  await goTo('/revisores')
+  if (screen.queryByRole('button', { name: 'Finalizar identificación' })) await click(screen.getByRole('button', { name: 'Finalizar identificación' }))
+  if (identifier) {
+    await waitFor(() => expect(screen.getByRole('option', { name: /Ana Ruiz/ })).toBeInTheDocument())
+    await selectOption(screen.getByRole('combobox', { name: 'Revisor del piloto' }), identifier)
+    await click(screen.getByRole('button', { name: 'Identificarse en el piloto' }))
+  }
+  await goTo(original)
 }
 
 async function click(element: HTMLElement) {
@@ -346,15 +356,123 @@ afterEach(() => {
 })
 
 describe('Recorrido de la vertical de revisión', () => {
-  it('muestra la actualización de datos y los módulos previstos en la navegación', async () => {
+  it('da acceso a Datos y Exportaciones a quien sólo tiene permiso de exportación', async () => {
+    const fetch = mockFetch()
+    vi.stubGlobal('fetch', (input: string | URL | Request, init?: RequestInit) => String(input).endsWith('/exports') ? Promise.resolve(new Response('[]')) : fetch(input, init))
+    window.location.hash = '#/revisores'
+    render(<SessionContext.Provider value={{ subject_id: 'entra:test:ana', reviewer: REVIEWERS[0], capabilities: ['export.read', 'export.create'], logout: vi.fn() }}><App /></SessionContext.Provider>)
+    expect(screen.queryByRole('button', { name: 'Catálogo' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Trabajo' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Revisores' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeEnabled()
+    await click(screen.getByRole('button', { name: 'Datos' }))
+    expect(await screen.findByRole('heading', { name: 'Exportaciones' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Exportaciones' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Fuentes' })).not.toBeInTheDocument()
+  })
+  it('ofrece apariencia sólo en preferencias y recupera la navegación al cerrar filtros', async () => {
+    localStorage.setItem('farmalidacion.sidebar.collapsed', 'false')
+    render(<App />)
+    await screen.findByText('Metotrexato 2,5 mg comprimidos')
+    expect(screen.queryByRole('combobox', { name: 'Tema visual' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'Densidad de lectura' })).not.toBeInTheDocument()
+    await click(screen.getByRole('button', { name: 'Mostrar filtros' }))
+    expect(screen.getByRole('button', { name: 'Expandir navegación' })).toHaveAttribute('aria-expanded', 'false')
+    expect(localStorage.getItem('farmalidacion.sidebar.collapsed')).toBe('false')
+    expect(screen.getByRole('button', { name: 'Equipo y preferencias' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Resumen' })).toBeInTheDocument()
+    await click(screen.getByRole('button', { name: 'Ocultar filtros' }))
+    expect(screen.getByRole('button', { name: 'Plegar navegación' })).toHaveAttribute('aria-expanded', 'true')
+    await goTo('/revisores')
+    expect(screen.getByRole('combobox', { name: 'Tema visual' })).toBeVisible()
+    expect(screen.getByRole('combobox', { name: 'Densidad de lectura' })).toBeVisible()
+  })
+
+  it('finaliza la identificación declarada sin permitir cambios de identidad en cabecera', async () => {
+    localStorage.setItem('farmalidacion.reviewer', 'ana')
+    render(<App />)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Identidad y acceso' })).toHaveTextContent('Ana Ruiz'))
+    expect(screen.queryByRole('combobox', { name: 'Revisor que firma las decisiones' })).not.toBeInTheDocument()
+    await goTo('/revisores')
+    expect(screen.queryByRole('combobox', { name: 'Revisor del piloto' })).not.toBeInTheDocument()
+    await click(screen.getByRole('button', { name: 'Finalizar identificación' }))
+    expect(localStorage.getItem('farmalidacion.reviewer')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Identidad y acceso' })).toHaveTextContent('Sin identificar')
+    expect(screen.getByRole('combobox', { name: 'Revisor del piloto' })).toBeVisible()
+  })
+  it('conserva ambas densidades sin modificar la elección de tema', async () => {
+    window.location.hash = '#/revisores'
+    const first = render(<App />)
+    await selectOption(screen.getByRole('combobox', { name: 'Tema visual' }), 'dark')
+    await selectOption(screen.getByRole('combobox', { name: 'Densidad de lectura' }), 'compact')
+    expect(document.documentElement.dataset.density).toBe('compact')
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    first.unmount()
+    render(<App />)
+    expect(screen.getByRole('combobox', { name: 'Densidad de lectura' })).toHaveValue('compact')
+    expect(screen.getByRole('combobox', { name: 'Tema visual' })).toHaveValue('dark')
+    await selectOption(screen.getByRole('combobox', { name: 'Densidad de lectura' }), 'comfortable')
+    expect(document.documentElement.dataset.density).toBe('comfortable')
+    expect(localStorage.getItem('farmalidacion.density')).toBe('comfortable')
+    expect(localStorage.getItem('farmalidacion.theme')).toBe('dark')
+  })
+
+  it('recupera preferencias válidas cuando las guardadas son desconocidas', () => {
+    window.location.hash = '#/revisores'
+    localStorage.setItem('farmalidacion.density', 'unknown')
+    localStorage.setItem('farmalidacion.theme', 'unknown')
+    render(<App />)
+    expect(screen.getByRole('combobox', { name: 'Densidad de lectura' })).toHaveValue('comfortable')
+    expect(screen.getByRole('combobox', { name: 'Tema visual' })).toHaveValue('system')
+  })
+  it('permite escoger y conservar el modo oscuro', async () => {
+    window.location.hash = '#/revisores'
+    const first = render(<App />)
+    await selectOption(screen.getByRole('combobox', { name: 'Tema visual' }), 'dark')
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    expect(localStorage.getItem('farmalidacion.theme')).toBe('dark')
+    first.unmount()
+
+    render(<App />)
+    expect(screen.getByRole('combobox', { name: 'Tema visual' })).toHaveValue('dark')
+    await selectOption(screen.getByRole('combobox', { name: 'Tema visual' }), 'light')
+    expect(document.documentElement.dataset.theme).toBe('light')
+  })
+
+  it('sigue los cambios de preferencia del sistema cuando se selecciona automático', async () => {
+    let changed: (() => void) | undefined
+    let dark = false
+    vi.stubGlobal('matchMedia', () => ({
+      get matches() { return dark },
+      addEventListener: (_: string, listener: () => void) => { changed = listener },
+      removeEventListener: () => {},
+    }))
+    render(<App />)
+    expect(document.documentElement.dataset.theme).toBe('light')
+    dark = true
+    act(() => changed?.())
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    await goTo('/revisores')
+    await selectOption(screen.getByRole('combobox', { name: 'Tema visual' }), 'light')
+    expect(document.documentElement.dataset.theme).toBe('light')
+  })
+
+  it('muestra la navegación lateral y permite plegarla sin perder los destinos', async () => {
+    localStorage.setItem('farmalidacion.sidebar.collapsed', 'true')
     render(<App />)
 
-    expect(await screen.findByText('Datos actualizados')).toBeVisible()
-    expect(document.querySelector('.mode-chip')).toBeNull()
+    expect(await screen.findByText('Última importación')).toBeVisible()
+    expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).includes('/insights/dashboard'))).toBe(false)
+    expect(await screen.findByLabelText('Base de datos de demostración')).toBeVisible()
     expect(screen.getByRole('button', { name: 'Catálogo' })).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Revisión' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Datos' })).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Exportaciones' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Trabajo' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Exportaciones' })).not.toBeInTheDocument()
+    const navigation = screen.getByRole('navigation', { name: 'Navegación principal' })
+    expect(within(navigation).getByRole('button', { name: 'Catálogo' })).toHaveAttribute('aria-current', 'page')
+    await click(screen.getByRole('button', { name: 'Expandir navegación' }))
+    expect(screen.getByRole('button', { name: 'Plegar navegación' })).toHaveAttribute('aria-expanded', 'true')
+    expect(localStorage.getItem('farmalidacion.sidebar.collapsed')).toBe('false')
     // Los módulos sin construir ya no se anuncian: un menú que promete lo que no
     // existe obliga a descubrir a base de clics qué es real.
     expect(screen.queryByRole('button', { name: /Historial \/ Auditoría/ })).toBeNull()
@@ -374,7 +492,9 @@ describe('Recorrido de la vertical de revisión', () => {
       expect(screen.queryByText('Omeprazol 20 mg cápsulas duras')).not.toBeInTheDocument(),
     )
 
-    await click(screen.getAllByRole('button', { name: 'Abrir expediente' })[0])
+    await click(screen.getByRole('button', { name: 'Metotrexato 2,5 mg comprimidos' }))
+    expect(screen.getByRole('dialog', { name: 'Expediente del registro' })).toBeVisible()
+    expect(screen.getByRole('region', { name: 'Tabla de registros' })).toBeInTheDocument()
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Metotrexato 2,5 mg comprimidos' }),
     ).toBeVisible()
@@ -479,9 +599,6 @@ describe('Recorrido de la vertical de revisión', () => {
     first.unmount()
 
     render(<App />)
-    const select = await screen.findByRole('combobox', {
-      name: 'Revisor que firma las decisiones',
-    })
-    await waitFor(() => expect(select).toHaveTextContent('Ana Ruiz'))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Identidad y acceso' })).toHaveTextContent('Ana Ruiz'))
   })
 })

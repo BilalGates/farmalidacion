@@ -71,10 +71,7 @@ it('no presenta ningun perfil como aceptado por el proveedor', async () => {
   stub(() => [RUN])
   render(<ExportsScreen reviewer={REVIEWER} />)
   expect(await screen.findByText(/D-011 sigue pendiente/)).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: 'Descargar' })).toHaveAttribute(
-    'href',
-    'http://localhost:8000/exports/run-1/artifact',
-  )
+  expect(screen.getByRole('button', { name: 'Descargar' })).toBeEnabled()
 })
 
 it('explica el caso vacio en lugar de mostrar una tabla en blanco', async () => {
@@ -120,5 +117,5 @@ it('bloquea la firma cuando no hay revisor', async () => {
   stub(() => [])
   render(<ExportsScreen reviewer={null} />)
   expect(await screen.findByRole('button', { name: 'Generar exportación' })).toBeDisabled()
-  expect(screen.getByText(/Seleccione un revisor en la cabecera/)).toBeInTheDocument()
+  expect(screen.getByText(/Identifícate en Equipo y preferencias/)).toBeInTheDocument()
 })

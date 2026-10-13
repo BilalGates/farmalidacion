@@ -16,11 +16,12 @@ from datetime import datetime
 from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Query, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import ColumnElement, Select, func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from pharma_validator_api.data_origin import (
+    DEMO_SOURCE_TYPES,
     DataOrigin,
     apply_origin_filter,
     origin_for_record,
@@ -38,9 +39,11 @@ from pharma_validator_api.models import (
     ImportDiagnostic,
     ImportedSourceSheet,
     QuarantinedSourceRow,
+    ReviewQueueEntry,
     SourceDocument,
     SourceDocumentVersion,
     SourceFragment,
+    SourceManagementRevision,
     TargetRecord,
     ValidationDecisionRecord,
     ValueProvenance,
@@ -101,9 +104,43 @@ class DashboardRead(BaseModel):
     empty: bool
 
 
+class DashboardSegmentRead(BaseModel):
+    key: str
+    label: str
+    count: int
+
+
+class DashboardExploreRead(BaseModel):
+    total_records: int
+    entity_types: list[DashboardSegmentRead]
+    sources: list[DashboardSegmentRead]
+    review: list[DashboardSegmentRead]
+    coverage: list[DashboardSegmentRead]
+    pending: int
+    second_review: int
+    quarantined: int
+    diagnostics: int
+
+
+class DashboardCaseRead(BaseModel):
+    id: str
+    label: str
+    detail: str
+    kind: str
+
+
+class DashboardCasePageRead(BaseModel):
+    items: list[DashboardCaseRead]
+    total: int
+    limit: int
+    offset: int
+
+
 class SourceRead(BaseModel):
     key: str
     name: str
+    display_name: str | None
+    is_active: bool
     source_type: str
     status: str
     versions: int
@@ -123,9 +160,20 @@ class SourceSheetRead(BaseModel):
     material_value_count: int
 
 
+class SourceManagementRevisionRead(BaseModel):
+    previous_display_name: str | None
+    display_name: str
+    was_active: bool
+    is_active: bool
+    actor_id: str
+    reason: str
+    created_at: str
+
+
 class SourceDetailRead(SourceRead):
     sheets: list[SourceSheetRead]
     batch_ids: list[str]
+    management_history: list[SourceManagementRevisionRead]
 
 
 class ImportRead(BaseModel):
@@ -144,6 +192,8 @@ class ImportRead(BaseModel):
     quarantined_rows: int
     diagnostics: int
     errors: int
+    started_by: str | None
+    reason: str | None
 
 
 class IncidentRead(BaseModel):
@@ -167,6 +217,13 @@ class ImportListRead(BaseModel):
 class SourceListRead(BaseModel):
     items: list[SourceRead]
     total: int
+
+
+class SourceManagementWrite(BaseModel):
+    display_name: str = Field(min_length=1, max_length=200)
+    is_active: bool
+    actor_id: str = Field(min_length=1, max_length=80)
+    reason: str = Field(min_length=1, max_length=1000)
 
 
 class RecordRowRead(BaseModel):
@@ -379,6 +436,210 @@ def read_dashboard(session: SessionDependency) -> DashboardRead:
     )
 
 
+def _linked_source(source_type: str) -> ColumnElement[bool]:
+    source_condition = (
+        SourceDocument.source_type.like("cima%")
+        if source_type == "cima"
+        else SourceDocument.source_type.in_(("ficha_tecnica", "cima_document_type_1"))
+        if source_type == "ficha_tecnica"
+        else SourceDocument.source_type == source_type
+    )
+    return (
+        select(DocumentRecordLink.id)
+        .join(
+            SourceDocumentVersion,
+            DocumentRecordLink.document_version_id == SourceDocumentVersion.id,
+        )
+        .join(SourceDocument, SourceDocumentVersion.document_id == SourceDocument.id)
+        .where(
+            DocumentRecordLink.target_record_id == TargetRecord.id,
+            source_condition,
+        )
+        .exists()
+    )
+
+
+def _explore_records(entity_type: str | None, source_type: str | None) -> Select[tuple[str]]:
+    statement = apply_origin_filter(select(TargetRecord.id), DataOrigin.REAL)
+    if entity_type:
+        statement = statement.where(TargetRecord.entity_type == entity_type)
+    if source_type:
+        statement = statement.where(_linked_source(source_type))
+    return statement
+
+
+def _review_condition(segment: str) -> ColumnElement[bool]:
+    queue = (
+        select(ReviewQueueEntry.id)
+        .where(ReviewQueueEntry.target_record_id == TargetRecord.id)
+    )
+    if segment == "sin_cola":
+        return ~queue.exists()
+    if segment == "segunda_revision":
+        return queue.where(
+            ReviewQueueEntry.requires_second_review.is_(True),
+            ReviewQueueEntry.state != "completado",
+        ).exists()
+    return queue.where(ReviewQueueEntry.state == segment).exists()
+
+
+def _segment(key: str, label: str, count: int) -> DashboardSegmentRead:
+    return DashboardSegmentRead(key=key, label=label, count=count)
+
+
+@router.get("/dashboard/explore", response_model=DashboardExploreRead)
+def explore_dashboard(
+    session: SessionDependency,
+    entity_type: str | None = None,
+    source_type: str | None = None,
+) -> DashboardExploreRead:
+    """Desgloses exactos de registros REAL; incidencias conservan su propia unidad."""
+    base = _explore_records(entity_type, source_type)
+    total = _count(session, base)
+    entity_keys = [key for (key,) in session.execute(
+        select(TargetRecord.entity_type).distinct().order_by(TargetRecord.entity_type)
+    ).all()]
+    source_keys = [key for (key,) in session.execute(
+        select(SourceDocument.source_type).distinct()
+        .where(SourceDocument.source_type.not_in(DEMO_SOURCE_TYPES))
+        .order_by(SourceDocument.source_type)
+    ).all()]
+    entity_segments = [
+        _segment(key, {
+            "medication": "Medicamentos",
+            "active_ingredient": "Principios activos",
+            "specialty": "Especialidades",
+        }.get(key, key.replace("_", " ").capitalize()),
+                 _count(session, base.where(TargetRecord.entity_type == key)))
+        for key in entity_keys
+    ]
+    source_segments = [
+        _segment(key, {
+            "master_excel": "Maestros Excel",
+            "cima_document_type_1": "Fichas técnicas CIMA",
+            "cima": "CIMA",
+            "ficha_tecnica": "Fichas técnicas",
+        }.get(key, key.replace("_", " ").capitalize()),
+                 _count(session, base.where(_linked_source(key))))
+        for key in source_keys
+    ]
+    review_states = (
+        ("sin_cola", "Sin incluir en cola"),
+        ("pendiente", "Pendiente"),
+        ("asignado", "Asignado"),
+        ("en_revision", "En revisión"),
+        ("requiere_segunda_revision", "Segunda revisión"),
+        ("bloqueado", "Bloqueado"),
+        ("completado", "Completado"),
+    )
+    review = [
+        _segment(key, label, _count(session, base.where(_review_condition(key))))
+        for key, label in review_states
+    ]
+    coverage = [
+        _segment(f"{key}:present", label, _count(session, base.where(_linked_source(key))))
+        for key, label in (
+            ("master_excel", "Maestro"),
+            ("cima", "CIMA"),
+            ("ficha_tecnica", "Ficha técnica"),
+        )
+    ]
+    # Las incidencias pertenecen a lotes, no a registros. No se filtran por
+    # entidad: hacerlo sugeriría una relación que el modelo no conserva.
+    batch_ids = select(ImportBatch.id).where(ImportBatch.source_system.not_in(DEMO_SOURCE_TYPES))
+    if source_type:
+        batch_ids = (
+            batch_ids.join(
+                SourceDocumentVersion,
+                ImportBatch.source_document_version_id == SourceDocumentVersion.id,
+            )
+            .join(SourceDocument, SourceDocumentVersion.document_id == SourceDocument.id)
+            .where(SourceDocument.source_type == source_type)
+        )
+    return DashboardExploreRead(
+        total_records=total,
+        entity_types=entity_segments,
+        sources=source_segments,
+        review=review,
+        coverage=coverage,
+        pending=sum(
+            item.count
+            for item in review
+            if item.key in {"pendiente", "asignado", "en_revision", "bloqueado"}
+        ),
+        second_review=_count(session, base.where(_review_condition("segunda_revision"))),
+        quarantined=_scalar_count(
+            session, QuarantinedSourceRow, QuarantinedSourceRow.import_batch_id.in_(batch_ids)
+        ),
+        diagnostics=_scalar_count(
+            session, ImportDiagnostic, ImportDiagnostic.import_batch_id.in_(batch_ids)
+        ),
+    )
+
+
+@router.get("/dashboard/cases", response_model=DashboardCasePageRead)
+def dashboard_cases(
+    session: SessionDependency,
+    segment: str,
+    entity_type: str | None = None,
+    source_type: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> DashboardCasePageRead:
+    """Registros detrás de un segmento; el cliente pide sólo una página."""
+    base = _explore_records(entity_type, source_type)
+    if segment.startswith("entity:"):
+        base = base.where(TargetRecord.entity_type == segment.removeprefix("entity:"))
+    elif segment.startswith("source:"):
+        base = base.where(_linked_source(segment.removeprefix("source:")))
+    elif segment.startswith("coverage:"):
+        parts = segment.split(":")
+        if (
+            len(parts) != 3
+            or parts[1] not in {"master_excel", "cima", "ficha_tecnica"}
+            or parts[2] not in {"present", "missing"}
+        ):
+            raise ApplicationError("Segmento no reconocido.", status_code=400)
+        condition = _linked_source(parts[1])
+        base = base.where(condition if parts[2] == "present" else ~condition)
+    elif segment.startswith("review:"):
+        key = segment.removeprefix("review:")
+        if key not in {
+            "sin_cola", "pendiente", "asignado", "en_revision",
+            "requiere_segunda_revision", "bloqueado", "completado", "segunda_revision",
+        }:
+            raise ApplicationError("Segmento no reconocido.", status_code=400)
+        base = base.where(_review_condition(key))
+    elif segment == "pending":
+        base = base.where(
+            _review_condition("pendiente")
+            | _review_condition("asignado")
+            | _review_condition("en_revision")
+            | _review_condition("bloqueado")
+        )
+    elif segment == "second_review":
+        base = base.where(_review_condition("segunda_revision"))
+    else:
+        raise ApplicationError("Segmento no reconocido.", status_code=400)
+    total = _count(session, base)
+    ids = list(session.scalars(base.order_by(TargetRecord.id).limit(limit).offset(offset)).all())
+    names, identifiers, _, _ = _identity_by_record(session, ids)
+    return DashboardCasePageRead(
+        items=[
+            DashboardCaseRead(
+                id=record_id,
+                label=names.get(record_id) or identifiers.get(record_id) or record_id,
+                detail=identifiers.get(record_id) or "Sin identificador externo",
+                kind="record",
+            )
+            for record_id in ids
+        ],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
+
 SourceRow = tuple[SourceDocument, int, int, datetime | None, str | None, str | None]
 
 
@@ -447,6 +708,8 @@ def _source_payload(session: Session, row: SourceRow) -> SourceRead:
     return SourceRead(
         key=document.id,
         name=document.name,
+        display_name=document.display_name,
+        is_active=document.is_active,
         source_type=document.source_type,
         status=status,
         versions=int(versions or 0),
@@ -461,9 +724,13 @@ def _source_payload(session: Session, row: SourceRow) -> SourceRead:
 
 
 @router.get("/sources", response_model=SourceListRead)
-def list_sources(session: SessionDependency) -> SourceListRead:
+def list_sources(session: SessionDependency, include_archived: bool = False) -> SourceListRead:
     """Fuentes realmente conocidas por el sistema, con su estado de carga."""
-    items = [_source_payload(session, row) for row in _source_rows(session)]
+    items = [
+        _source_payload(session, row)
+        for row in _source_rows(session)
+        if include_archived or row[0].is_active
+    ]
     return SourceListRead(items=items, total=len(items))
 
 
@@ -475,6 +742,11 @@ def read_source(source_id: str, session: SessionDependency) -> SourceDetailRead:
     base = _source_payload(session, rows[0])
     batches = _batches_for_document(session, source_id)
     batch_ids = [batch.id for batch in batches]
+    management_history = session.scalars(
+        select(SourceManagementRevision)
+        .where(SourceManagementRevision.source_document_id == source_id)
+        .order_by(SourceManagementRevision.created_at.desc(), SourceManagementRevision.id.desc())
+    ).all()
     sheets = (
         list(
             session.scalars(
@@ -489,6 +761,18 @@ def read_source(source_id: str, session: SessionDependency) -> SourceDetailRead:
     return SourceDetailRead(
         **base.model_dump(),
         batch_ids=batch_ids,
+        management_history=[
+            SourceManagementRevisionRead(
+                previous_display_name=revision.previous_display_name,
+                display_name=revision.display_name,
+                was_active=revision.was_active,
+                is_active=revision.is_active,
+                actor_id=revision.actor_id,
+                reason=revision.reason,
+                created_at=revision.created_at.isoformat(),
+            )
+            for revision in management_history
+        ],
         sheets=[
             SourceSheetRead(
                 sheet_name=sheet.sheet_name,
@@ -543,6 +827,8 @@ def _import_payload(session: Session, batch: ImportBatch) -> ImportRead:
             ImportDiagnostic.import_batch_id == batch.id,
             ImportDiagnostic.severity == "error",
         ),
+        started_by=batch.started_by,
+        reason=batch.reason,
     )
 
 
@@ -558,6 +844,40 @@ def list_imports(session: SessionDependency) -> ImportListRead:
     )
     items = [_import_payload(session, batch) for batch in batches]
     return ImportListRead(items=items, total=len(items))
+
+
+@router.patch("/sources/{source_id}", response_model=SourceRead)
+def manage_source(
+    source_id: str, payload: SourceManagementWrite, session: SessionDependency
+) -> SourceRead:
+    """Cambia el nombre visible o archiva/reactiva una fuente sin borrar su historia."""
+    document = session.get(SourceDocument, source_id)
+    if document is None:
+        raise ApplicationError("Fuente no encontrada.", status_code=404)
+    display_name = payload.display_name.strip()
+    reason = payload.reason.strip()
+    actor_id = payload.actor_id.strip()
+    if not display_name or not reason or not actor_id:
+        raise ApplicationError("Indique nombre, responsable y motivo.", status_code=422)
+    previous_display_name = document.display_name
+    was_active = document.is_active
+    document.display_name = display_name
+    document.is_active = payload.is_active
+    session.add(
+        SourceManagementRevision(
+            source_document_id=document.id,
+            previous_display_name=previous_display_name,
+            display_name=display_name,
+            was_active=was_active,
+            is_active=payload.is_active,
+            actor_id=actor_id,
+            reason=reason,
+            created_at=datetime.now().astimezone(),
+        )
+    )
+    session.commit()
+    rows = [row for row in _source_rows(session) if row[0].id == source_id]
+    return _source_payload(session, rows[0])
 
 
 @router.get("/imports/{batch_id}", response_model=ImportDetailRead)

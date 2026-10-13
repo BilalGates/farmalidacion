@@ -21,7 +21,7 @@ from typing import Literal, cast
 
 from pharma_validator_api.validation_states import ReviewerRole
 
-AssuranceLevel = Literal["declarada"]
+AssuranceLevel = Literal["declarada", "verificada_entra"]
 
 #: Etiqueta visible de cada rol. Vive aquí y no en la interfaz para que backend
 #: y pantalla no puedan discrepar sobre lo que significa un rol.
@@ -41,9 +41,9 @@ class ReviewerIdentityError(RuntimeError):
 class Reviewer:
     """Revisor elegido de la lista configurable.
 
-    `assurance` es siempre `declarada` en el piloto. El campo existe para que
-    una futura autenticación real (D-018, reevaluable en Fase 8) sea un cambio
-    de valor y no una reinterpretación silenciosa de lo que significa la firma.
+    `assurance` es `declarada` en el piloto. Sólo el principal autenticado por
+    Entra de la petición actual recibe `verificada_entra`. Las otras personas
+    del directorio y las firmas históricas conservan su garantía original.
     """
 
     identifier: str

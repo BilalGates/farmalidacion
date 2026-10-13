@@ -173,7 +173,7 @@ export function CatalogCimaComparisonPanel({
                 <button className='button button--ghost' type='button' disabled={!canDecide || saving} onClick={() => void decide('descartar')}>Descartar comparación</button>
                 <button className='button button--ghost' type='button' disabled={!canDecide || saving} onClick={() => void decide('pendiente')}>Dejar pendiente</button>
               </div>
-              {!reviewerId && <p className='muted'>Seleccione un revisor en la cabecera para registrar decisiones.</p>}
+              {!reviewerId && <p className='muted'>Identifícate en Equipo y preferencias para registrar decisiones.</p>}
             </div>}
           </> : <p className='muted'>No hay un apartado candidato que se pueda abrir para este campo.</p>}
           {selected.decision_history.length > 0 && <div className='catalog-cima-comparison__history'>

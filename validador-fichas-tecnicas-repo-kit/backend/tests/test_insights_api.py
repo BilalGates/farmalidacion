@@ -28,6 +28,7 @@ from pharma_validator_api.models import (
     ImportDiagnostic,
     ImportedSourceSheet,
     QuarantinedSourceRow,
+    ReviewQueueEntry,
     SourceDocument,
     SourceDocumentVersion,
     SourceFragment,
@@ -230,6 +231,58 @@ def test_dashboard_counts_come_from_stored_data(client: TestClient) -> None:
     assert metrics["diagnostics"] == 1
     assert payload["empty"] is False
     assert payload["last_import_at"] == NOW.replace(tzinfo=None).isoformat()
+
+
+def test_dashboard_explorer_counts_real_records_and_pages_cases(client: TestClient) -> None:
+    app = client.app
+    with app.state.session_factory() as session:
+        session.add(TargetRecord(id="rec-without-source", entity_type="medication"))
+        session.add(SourceDocumentVersion(
+            id="ver-real-second", document_id="doc-real", content_hash="e" * 64,
+            source_version="2026-06-26", source_locator="Medicamento-cargaMaster.xlsx",
+            acquired_at=NOW,
+        ))
+        session.flush()
+        session.add(DocumentRecordLink(
+            id="link-real-second", document_version_id="ver-real-second",
+            target_record_id="rec-real", link_type="master_baseline",
+        ))
+        session.add(ReviewQueueEntry(
+            id="queue-real", target_record_id="rec-real", state="pendiente",
+            version=1, assignee_id=None, priority=0, review_set="corpus",
+            requires_second_review=True, created_at=NOW, updated_at=NOW,
+        ))
+        session.add(ReviewQueueEntry(
+            id="queue-demo", target_record_id="rec-demo", state="pendiente",
+            version=1, assignee_id=None, priority=0, review_set="corpus",
+            requires_second_review=True, created_at=NOW, updated_at=NOW,
+        ))
+        session.commit()
+
+    result = client.get("/insights/dashboard/explore").json()
+    assert result["total_records"] == 2
+    assert sum(item["count"] for item in result["entity_types"]) == 2
+    assert sum(item["count"] for item in result["review"]) == 2
+    assert result["pending"] == result["second_review"] == 1
+    assert result["quarantined"] == result["diagnostics"] == 1
+    coverage = {item["key"]: item["count"] for item in result["coverage"]}
+    assert coverage["master_excel:present"] == 1
+    assert coverage["cima:present"] == 0
+
+    missing = client.get("/insights/dashboard/cases", params={
+        "segment": "coverage:master_excel:missing", "limit": 1,
+    }).json()
+    assert missing["total"] == 1
+    assert [item["id"] for item in missing["items"]] == ["rec-without-source"]
+    assert client.get("/insights/dashboard/cases", params={
+        "segment": "pending",
+    }).json()["items"][0]["id"] == "rec-real"
+    assert client.get("/insights/dashboard/cases", params={
+        "segment": "entity:medication", "limit": 1, "offset": 1,
+    }).json()["total"] == 2
+    assert client.get("/insights/dashboard/cases", params={
+        "segment": "unknown",
+    }).status_code == 400
 
 
 def test_dashboard_reports_empty_system_without_inventing_numbers(tmp_path: Path) -> None:

@@ -5,6 +5,7 @@ import { clearRecordCache } from '../api/recordCache'
 
 import type { TargetRecord } from '../api/types'
 import { ReviewScreen } from './ReviewScreen'
+import { SessionContext } from '../auth/SessionContext'
 
 /**
  * Pruebas de la pantalla canónica de revisión (DEV-503 / DEV-504).
@@ -150,6 +151,41 @@ afterEach(() => {
   clearRecordCache()
   vi.unstubAllGlobals()
   window.localStorage.clear()
+})
+
+it('deja leer el expediente sin ofrecer firmas ni edición cuando la cuenta sólo consulta', async () => {
+  const mock = routeFetch({})
+  render(
+    <SessionContext.Provider value={{ subject_id: 'entra:reader', reviewer: REVIEWER, capabilities: ['catalog.read'], logout: vi.fn() }}>
+      <ReviewScreen recordId='rec-1' reviewer={REVIEWER} compact />
+    </SessionContext.Provider>,
+  )
+  await screen.findByRole('heading', { name: 'Omeprazol 20 mg' })
+  expect(screen.getByText('Texto literal del maestro.')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Revisar' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Editar estructura' })).not.toBeInTheDocument()
+  expect(screen.getByText('Mantenimiento del libro original · consultar datos importados')).toBeInTheDocument()
+  fireEvent.click(screen.getByText('Mantenimiento del libro original · consultar datos importados'))
+  await screen.findByRole('heading', { name: 'Campos importados' })
+  expect(screen.queryByRole('button', { name: 'Editar campo' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Completar celda vacía' })).not.toBeInTheDocument()
+  expect(mock.mock.calls.some(([url]) => String(url).includes('/timing/'))).toBe(false)
+  expect(mock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false)
+})
+
+it('ofrece al técnico sólo las decisiones de revisión que puede firmar', async () => {
+  const technician = { ...REVIEWER, role: 'tecnico' as const, role_label: 'Técnico', may_sign_pharmacist_states: false }
+  routeFetch({})
+  render(
+    <SessionContext.Provider value={{ subject_id: 'entra:tech', reviewer: technician, capabilities: ['catalog.read', 'review.write'], logout: vi.fn() }}>
+      <ReviewScreen recordId='rec-1' reviewer={technician} compact />
+    </SessionContext.Provider>,
+  )
+  await screen.findByRole('heading', { name: 'Omeprazol 20 mg' })
+  fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
+  expect(screen.getByRole('option', { name: 'No consta' })).toBeDisabled()
+  expect(screen.getByRole('option', { name: 'No aplica' })).toBeDisabled()
+  expect(screen.getByRole('option', { name: 'Corregido' })).toBeEnabled()
 })
 
 it('en compacto abre un solo editor y conserva borradores al filtrar', async () => {

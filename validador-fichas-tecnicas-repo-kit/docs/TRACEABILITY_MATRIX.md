@@ -1,4 +1,41 @@
+## Extensión UX 2026-10-01
+
+Petición del responsable: expediente en modal y botones anterior/siguiente. Implementación: `RecordDialog`, `RealRecordListScreen`, `CatalogIdentityScreen`. Pruebas: navegación entre páginas, límites, fallo de red, Escape y conservación de ediciones. ADR-0012 ampliado; especificación §10.3–10.4 (contexto y teclado).
+
 # Matriz inicial de trazabilidad
+
+## Estudio — 2026-10-05
+
+| Corrección del responsable | Fuente | Implementación | Verificación |
+|---|---|---|---|
+| Abrir expediente por nombre y evitar desbordamiento | Capturas; ADR-0014 | Nombre botón, seis columnas `colgroup`, ajuste de texto | Prueba modal/foco, ausencia de acción redundante; geometría con ABACAVIR real |
+| Estado y responsable de revisión legibles | ADR-0014 | Líneas separadas; nombre por ID con fallback | Prueba nombre y operación sólo en asignación propia |
+| Preferencias en Equipo | Petición; ADR-0014 | `AppearancePreferences`; sin controles en cabecera | Persistencia, independencia y ubicación en App |
+| Filtros homogéneos y plegado temporal | Petición; ADR-0014 | `FilterWorkspace`, `FilterLayoutContext`, CSS común | Foco, plegado/restauración, preferencia manual intacta |
+| Movimiento breve y reducible | Petición; ADR-0014 | `studio.css` | Comprobación visual y media query de movimiento reducido |
+| Sesiones y permisos reales | D-018, ADR-0015 | MSAL/AccessGate, JWT, manifiesto de capacidades, actor/propietario y vínculo permanente; vista administrativa de vínculos y capacidades protegida por `team.manage`; lectura sin controles de escritura, estados clínicos reservados según rol | Tokens firmados sintéticos, React y pruebas enfocadas de permisos; activación/E2E corporativo pendientes |
+| Borradores y caché por cuenta | ADR-0015 | Namespace del sujeto, generación de peticiones y vaciado al salir | Aislamiento de propietarios y respuestas anteriores ignoradas |
+| Garantía histórica intacta | ADR-0015 | Vínculo aditivo, directorio de petición y auditoría explícita | Reasignación rechazada; sólo actor actual recibe garantía nueva |
+
+| Requisito | Fuente | Implementación | Verificación |
+|---|---|---|---|
+| Dos densidades y tema oscuro independientes | Responsable; ADR-0013 | `appearance.ts`, `App.tsx`, inicio antes del pintado, `studio.css` | `App.test.tsx`: persistencia, independencia, valores inválidos y tema del sistema |
+| Separar lectura, fuentes, estructura y auditoría | ADR-0013, especificación §10 | `WorkspaceTabs`, `CatalogIdentityScreen` | Teclado y conservación del motivo al cambiar de pestaña |
+| Tres áreas con rutas compatibles | ADR-0013 | `App`, `SectionWorkspace` | Pruebas App/RealData y compilación TypeScript |
+| Los enlaces CIMA no cambian la ruta de la aplicación | Especificación §10.3–10.4 | Lector con navegación local y anclas únicas por instancia | `CatalogCimaDocument.test.tsx`: conserva hash y foco |
+| No exportar discrepancias ni segundas lecturas abiertas | AGENTS, especificación; DEV-607/608 | `_double_review_exclusions` antes de construir filas | Casos pendiente, asignada, desacuerdo, acuerdo, conciliación y decisión posterior; exclusión fuera de columnas del perfil |
+
+## Gestión de fuentes (1 de octubre de 2026)
+
+| Requisito | Fuente | Evidencia de implementación | Verificación |
+|---|---|---|---|
+| Renombrar y archivar fuentes sin borrar versiones | `docs/SOURCE_MANAGEMENT_PLAN.md`, FUE-001 | `SourceDocument.display_name`/`is_active`, migración `f4a5b6c7d8e9`, PATCH auditado y pantalla Fuentes | TypeScript y Ruff correctos; no se ejecutaron pruebas; migración sin aplicar |
+| Consultar cambios de gestión | Plan FUE-001 | Historial append-only con actor, motivo y estado previo/posterior | `alembic heads` reconoce la migración; Vite limitado por `spawn EPERM` |
+| Previsualizar y confirmar una carga de maestro | Plan FUE-002 | `/imports/master/{tipo}/preview` y `/imports/master/{tipo}`; tamaño/hash, responsable/motivo y XLSX original versionado | Pendiente de ejecutar pruebas de contrato; segundos contenidos distintos se bloquean con 409 para evitar duplicados |
+| Configurar nuevos orígenes con trazabilidad | FUE-001/FUE-004/FUE-006; ADR-0005; D-027/D-033/D-034 | Contrato de etapas, configuración versionada y secretos protegidos en `docs/SOURCE_MANAGEMENT_PLAN.md`; FUE-004/006 permanecen deshabilitados hasta validar acceso y servicio | Pendiente de esquema/diccionario Nomenclátor y contrato BOT PLUS Integración; ninguna credencial recibida ni persistida |
+| Permitir sustitución de maestros sin duplicar ni fusionar identidades incorrectas | FUE-002; D-004/D-027/D-034 | Guardarraíl de hash en API; decisión pendiente en `docs/DECISION_REGISTER.md`; plan exige regla longitudinal aprobada por entidad | Distinto hash se rechaza de forma segura (409); sustitución requiere evidencia/decisión e implementación pendiente |
+| Ver los tres maestros originales y CIMA en Fuentes | FUE-001/FUE-005 | Tarjetas de los tres perfiles con estado derivado de la API; tarjeta CIMA; perfil Compose `preview` contra copia de la base REAL | API: 29.850 especialidades, 6.342 medicamentos, 7.189 principios activos y 51 documentos CIMA; interfaz comprobada en 5174 |
+| Configurar y probar el acceso Nomenclátor SQL Server | FUE-004; confirmación del responsable 2026-10-01 | `source_connection_api`, revisión inmutable, migración `a5b6c7d8e9f0`, formulario de conexión y prueba con `SELECT DB_NAME()` | Ruff/mypy/TypeScript correctos; prueba real pendiente de host y credenciales |
 
 ## Arranque verificable (30 de septiembre de 2026)
 
@@ -166,7 +203,7 @@ Se verifican continuidad, borradores, políticas, contexto de fuente y paginaci�
 | Código Nacional canónico sin pérdida | Revisión con farmacia 2026-09-22; D-030 | rediseño CAT | `national_code`; `catalog_api.list_identities`; ADR-0012; CAT-002 | parser conserva literal y declara control sin validar; búsqueda de siete dígitos encuentra CN canónico de seis; sin cambio de identidad ni enlace |
 | Catálogo completamente editable | Revisión con farmacia 2026-09-22; D-031 | rediseño CAT | ADR-0012; CAT-004/CAT-006 | fuente inmutable; estado vigente; revisión append-only; conflicto atómico |
 | Clasificaciones independientes | Revisión con farmacia 2026-09-22; D-032 | rediseño CAT | ADR-0012; CAT-008 | original/genérico/biosimilar no excluye huérfano o condiciones de control |
-| Integración BOT PLUS autorizada | Revisión con farmacia 2026-09-22; D-033 | rediseño CAT | CAT-009 | contrato/sandbox oficial; ninguna automatización de BOT PLUS Web |
+| Integración BOT PLUS autorizada | Revisión con farmacia 2026-09-22; D-033 | rediseño CAT | CAT-009; `SourcesScreen` distingue consulta web y requisitos de integración | contrato/sandbox oficial pendientes; ninguna automatización de BOT PLUS Web; prueba de pantalla de Fuentes 4/4 |
 | Grafo tipado del catálogo | ADR-0012; CAT-003 | rediseño CAT | `catalog_domain` | relaciones por nivel, composición múltiple, clasificaciones sólo de presentación, duplicados y ciclos rechazados |
 | Exploración por nivel | Revisión con farmacia 2026-09-22; CAT-005 | rediseño CAT | `RealRecordListScreen`; `/insights/records?entity_type=` | selector explícito de presentación/medicamento/principio activo combinado con búsqueda server-side |
 | Persistencia aditiva del catálogo tipado | ADR-0012; CAT-003 | rediseño CAT | migración `b8c9d0e1f2a3`; tablas `medication_catalog_*` | upgrade añade cuatro tablas sin transformar existentes; downgrade vuelve al esquema anterior |
@@ -191,3 +228,23 @@ Se verifican continuidad, borradores, políticas, contexto de fuente y paginaci�
 ## UI — Novedades CIMA (10-09-2026)
 
 Rediseño del panel de novedades (§13): resumen de eventos cargados por tipo, etiquetas de cambio y reapertura, historial en panel y detalle documental contextual. Conserva fuentes, eventos y consulta bajo demanda. Prueba de pantalla cubre resumen y apertura del diff.
+## Rediseño global (2 de octubre de 2026)
+
+| Requisito | Fuente | Evidencia de implementación | Verificación |
+|---|---|---|---|
+| Navegación lateral plegable con destinos y revisor disponibles | `GLOBAL_REDESIGN_2026_PLAN.md`; autorización del responsable 2026-10-02 | `App.tsx`, `redesign-shell.css` | `App.test.tsx`; comprobación visual con datos reales |
+| Catálogo con búsqueda visible, filtros plegables y lista desplazable dentro de la ventana | `GLOBAL_REDESIGN_2026_PLAN.md`; ADR-0012/0014; ajustes del responsable 2026-10-06 | `RealRecordListScreen.tsx`, `FilterWorkspace.tsx`, `studio.css` | `RealRecordListScreen.test.tsx` 22/22; build, lint y TypeScript; comprobación visual final pendiente |
+| Tema claro, oscuro y automático con elección persistente | `GLOBAL_REDESIGN_2026_PLAN.md` RD-09; autorización del responsable 2026-10-02 | `index.html`, `App.tsx`, `dark-theme.css` | `App.test.tsx`; compilación, lint y 167 pruebas; QA visual exhaustiva pendiente |
+| Resumen operativo explorable con procedencia y casos reales | Solicitud del responsable 2026-10-06; reglas REAL/DEMO y trazabilidad | `insights.py`, `DashboardScreen.tsx`, `studio.css` | 22 pruebas de frontend y 19 de insights; TypeScript, ESLint dirigido y Ruff; API de vista previa 8001 verificada |
+## Entra en vista previa — 2026-10-07
+
+| Requisito | Fuente | Implementación | Verificación |
+|---|---|---|---|
+| Roles de lectura, administración, farmacia y ciencia de datos separados | ADR-0015; solicitud del responsable 2026-10-07 | Matriz local en `.env.entra-preview`; capacidades documentadas en `ENTRA_ID_INTEGRATION_PLAN.md` | Configuración Compose válida; contenedores sanos; `/auth/config` completo y acceso anónimo 401. Asignación de roles y prueba real pendientes |
+| Acceso HTTPS temporal desde VPN | Solicitud del responsable 2026-10-07; ADR-0015 | `nginx.vpn.conf`, `compose.entra.vpn.preview.yaml`, certificado SAN IP ignorado por Git | TLS y SAN verificados; web, redirect y API responden 200; ruta protegida sin sesión 401; el responsable inicia sesión por HTTPS. Prueba de segunda cuenta pendiente |
+
+## Rendimiento de arranque — 2026-10-07
+
+| Requisito | Fuente | Implementación | Verificación |
+|---|---|---|---|
+| Evitar el recuento completo del Resumen al abrir otra ruta | EST-06 | Fecha de importación en `/database-info`; `App` no solicita `/insights/dashboard` al arrancar | `test_database_info.py` 7/7, `App.test.tsx` y `RealData.test.tsx` 36/36, build Vite; lectura local REAL 0,36 s frente a 5,99 s de la cuenta pesada |
