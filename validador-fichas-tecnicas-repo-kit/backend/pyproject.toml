@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [tool.vercel]
-entrypoint = "src/pharma_validator_api/main.py"
+entrypoint = "src/pharma_validator_api.main:app"
 
 [project.optional-dependencies]
 dev = ['mypy>=2.3,<3', 'pytest>=8.3,<9', 'ruff>=0.9,<1']
