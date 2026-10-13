@@ -31,6 +31,7 @@ export function FieldRow({
   label = value.field_name,
   recordId,
   reviewer,
+  canReview = true,
   saving,
   saveError,
   onSave,
@@ -42,6 +43,7 @@ export function FieldRow({
   label?: string
   recordId: string
   reviewer: Reviewer | null
+  canReview?: boolean
   saving: boolean
   saveError: boolean
   onSave: (state: ValidationState, finalValue: string | null, comment: string | null) => void
@@ -53,7 +55,7 @@ export function FieldRow({
   // puede hacer que el revisor repita lo que ya había escrito.
   const restored = useRef(readDraft(recordId, value.id)).current
   const [localOpen, setLocalOpen] = useState(restored !== null)
-  const open = expanded ?? localOpen
+  const open = canReview && (expanded ?? localOpen)
   function setOpen(next: boolean | ((current: boolean) => boolean)) {
     const result = typeof next === 'function' ? next(open) : next
     if (onExpandedChange) onExpandedChange(result)
@@ -75,16 +77,17 @@ export function FieldRow({
   // Autoguardado local del borrador. No se envía nada al backend: una decisión
   // clínica se firma cuando el revisor la guarda, no cuando deja de teclear.
   useEffect(() => {
-    saveDraft(recordId, value.id, draft)
+    if (canReview) saveDraft(recordId, value.id, draft)
     // `draft` se recrea en cada render; sus campos son las dependencias reales.
-  }, [recordId, value.id, state, finalValue, comment])
+  }, [recordId, value.id, state, finalValue, comment, canReview])
 
   const needsValue = state === 'confirmado' || state === 'corregido'
   const needsComment = state === 'no_aplica'
   const missingValue = needsValue && finalValue.trim() === ''
   const missingComment = needsComment && comment.trim() === ''
   const canSubmit =
-    state !== '' && reviewer !== null && !saving && !missingValue && !missingComment
+    state !== '' && reviewer !== null && canReview && !saving && !missingValue && !missingComment
+    && (!['no_consta', 'no_aplica'].includes(state) || reviewer.may_sign_pharmacist_states)
 
   const historyLength = value.history.length
   const previousHistory = useRef(historyLength)
@@ -110,7 +113,7 @@ export function FieldRow({
    */
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     const action = resolveShortcut(event, isTypingTarget(event.target))
-    if (action === 'editar') {
+    if (action === 'editar' && canReview) {
       event.preventDefault()
       setOpen((current) => !current)
       return
@@ -137,8 +140,7 @@ export function FieldRow({
     >
       <div className='field-row__main'>
         <div className='field-row__identity'>
-          <span className='field-row__name'>{label}</span>
-          <span className='field-row__name'>{fieldLabel(value.field_name)}</span>
+          <span className='field-row__name'>{label === value.field_name ? fieldLabel(value.field_name) : label}</span>
           {fieldLabel(value.field_name) !== value.field_name && <code className='field-row__code'>{value.field_name}</code>}
           <span className='field-row__type'>{value.observed_type}</span>
         </div>
@@ -157,7 +159,7 @@ export function FieldRow({
             </span>
           )}
         </div>
-        <button
+        {canReview && <button
           type='button'
           className='button button--ghost'
           aria-expanded={open}
@@ -166,7 +168,7 @@ export function FieldRow({
           onClick={() => setOpen((current) => !current)}
         >
           {open ? 'Cerrar' : 'Revisar'}
-        </button>
+        </button>}
       </div>
 
       <div className='field-row__provenance'>
@@ -197,7 +199,7 @@ export function FieldRow({
               >
                 <option value=''>Seleccione una decisión…</option>
                 {ASSIGNABLE_STATES.map((item) => (
-                  <option key={item} value={item}>
+                  <option key={item} value={item} disabled={['no_consta', 'no_aplica'].includes(item) && !reviewer?.may_sign_pharmacist_states}>
                     {VALIDATION_STATE_LABELS[item]}
                   </option>
                 ))}

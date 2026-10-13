@@ -1,0 +1,13 @@
+alembic<2,>=1.19
+fastapi<1,>=0.115
+httpx<1,>=0.28
+mssql-python<2,>=1.7
+pydantic-settings<3,>=2.7
+PyJWT[crypto]<3,>=2.10
+sqlalchemy<3,>=2.0.52
+uvicorn<1,>=0.34
+
+[dev]
+mypy<3,>=2.3
+pytest<9,>=8.3
+ruff<1,>=0.9

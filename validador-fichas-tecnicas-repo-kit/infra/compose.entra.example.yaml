@@ -1,0 +1,23 @@
+# Ejemplo operativo, nunca se aplica a la vista previa automáticamente.
+# docker compose -f compose.yaml -f infra/compose.entra.example.yaml --profile real up -d --build
+# Variables en .env o entorno; sin secretos ni tokens. Registrar SPA redirect
+# https://<origen-real>/auth-redirect.html; requiere HTTPS salvo localhost.
+services:
+  backend-real:
+    environment:
+      APP_AUTH_MODE: entra
+      # Lista JSON con el origen HTTPS del frontend, por ejemplo
+      # '["https://farmalidacion.example.org"]'.
+      APP_CORS_ALLOW_ORIGINS: ${APP_CORS_ALLOW_ORIGINS:?Configura el origen HTTPS del frontend}
+      APP_ENTRA_TENANT_ID: ${APP_ENTRA_TENANT_ID:?Configura el tenant corporativo}
+      APP_ENTRA_API_CLIENT_ID: ${APP_ENTRA_API_CLIENT_ID:?Configura el registro API}
+      APP_ENTRA_SPA_CLIENT_ID: ${APP_ENTRA_SPA_CLIENT_ID:?Configura el registro SPA}
+      APP_ENTRA_REQUIRED_SCOPE: ${APP_ENTRA_REQUIRED_SCOPE:-access_as_user}
+      APP_ENTRA_SPA_SCOPE: ${APP_ENTRA_SPA_SCOPE:?Configura el scope delegado de la API}
+      APP_ENTRA_ROLE_CAPABILITIES: ${APP_ENTRA_ROLE_CAPABILITIES:?Configura la matriz de app roles}
+      APP_ENTRA_REVIEWER_BINDINGS: ${APP_ENTRA_REVIEWER_BINDINGS:?Acepta los vínculos OID a revisor}
+  frontend-real:
+    build:
+      args:
+        # URL pública HTTPS de la API; Vite la integra al compilar.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:?Configura la URL pública HTTPS de la API}

@@ -28,9 +28,14 @@ export interface DraftDecision {
 const MAX_AGE_MS = 24 * 60 * 60 * 1000
 
 const PREFIX = 'farmalidacion.draft.'
+let owner: string | null = null
+
+/** null conserva los borradores del piloto; Entra nunca hereda esos datos. */
+export function setDraftOwner(subject: string | null): void { owner = subject }
+function scopedPrefix(): string { return owner ? `${PREFIX}account.${encodeURIComponent(owner)}.` : PREFIX }
 
 function key(recordId: string, fieldValueId: string): string {
-  return `${PREFIX}${recordId}.${fieldValueId}`
+  return `${scopedPrefix()}${recordId}.${fieldValueId}`
 }
 
 /** Un borrador vacío no se guarda: no hay trabajo que proteger. */
@@ -90,7 +95,7 @@ export function clearDraft(recordId: string, fieldValueId: string): void {
 export function countDrafts(recordId: string): number {
   try {
     let total = 0
-    const prefix = `${PREFIX}${recordId}.`
+    const prefix = `${scopedPrefix()}${recordId}.`
     for (let index = 0; index < window.localStorage.length; index += 1) {
       const name = window.localStorage.key(index)
       if (name !== null && name.startsWith(prefix)) total += 1

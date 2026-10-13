@@ -18,10 +18,12 @@ from sqlalchemy.orm import Session
 
 from pharma_validator_api.config import Settings
 from pharma_validator_api.data_origin import DEMO_SOURCE_TYPE
+from pharma_validator_api.import_batches import CATALOG_DEFINITION_IMPORTER
 from pharma_validator_api.main import create_app
 from pharma_validator_api.models import (
     Base,
     DocumentRecordLink,
+    ImportBatch,
     SourceDocument,
     SourceDocumentVersion,
     TargetRecord,
@@ -91,8 +93,34 @@ def test_real_mode_reports_stored_real_records(tmp_path: Path) -> None:
     assert payload["records_total"] == 3
     assert payload["records_real"] == 3
     assert payload["records_demo"] == 0
+    assert payload["last_import_at"] is None
     assert payload["consistent"] is True
     assert client.get("/ready").status_code == 200
+
+
+def test_database_info_reports_last_business_import(tmp_path: Path) -> None:
+    url = _database(tmp_path, "imports.db")
+    engine = create_engine(url)
+    with Session(engine) as session:
+        session.add_all([
+            ImportBatch(
+                id="business", source_system="master_excel", source_locator="medication.xlsx",
+                source_version="v1", content_hash="a" * 64, importer_name="medication_master",
+                importer_version="1", status="completed", created_at=NOW, completed_at=NOW,
+            ),
+            ImportBatch(
+                id="catalog", source_system="master_excel", source_locator="catalog.xlsx",
+                source_version="v1", content_hash="b" * 64,
+                importer_name=CATALOG_DEFINITION_IMPORTER, importer_version="1",
+                status="completed", created_at=NOW.replace(day=5), completed_at=NOW.replace(day=5),
+            ),
+        ])
+        session.commit()
+    engine.dispose()
+    client = TestClient(create_app(Settings(env="test", database_url=url)))
+    payload = client.get("/database-info").json()
+    assert payload["import_batches"] == 1
+    assert payload["last_import_at"] == NOW.replace(tzinfo=None).isoformat()
 
 
 def test_demo_mode_reports_stored_demo_records(tmp_path: Path) -> None:

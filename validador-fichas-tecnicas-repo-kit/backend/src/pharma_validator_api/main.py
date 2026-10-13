@@ -2,12 +2,15 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import PurePosixPath
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.engine import make_url
 
+from pharma_validator_api.access_policy import authorize
+from pharma_validator_api.authentication import EntraVerifier
+from pharma_validator_api.authentication import router as auth_router
 from pharma_validator_api.block_api import router as block_router
 from pharma_validator_api.catalog_api import router as catalog_router
 from pharma_validator_api.catalog_demo_fixture import load_catalog_demo_fixture
@@ -81,6 +84,7 @@ class DatabaseInfoResponse(BaseModel):
     records_real: int
     records_demo: int
     import_batches: int
+    last_import_at: str | None
     consistent: bool
 
 
@@ -116,9 +120,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         docs_url="/docs" if active.env != "production" else None,
         redoc_url=None,
         lifespan=lifespan,
+        dependencies=[Depends(authorize)],
     )
     application.state.session_factory = session_factory
     application.state.settings = active
+    application.state.entra_verifier = EntraVerifier(active)
     if active.cors_allow_origins:
         application.add_middleware(
             CORSMiddleware,
@@ -126,12 +132,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             allow_methods=["GET", "POST", "PUT", "PATCH"],
             allow_headers=[
                 "Content-Type",
+                "Authorization",
                 "X-Expected-SHA256",
                 "X-Import-Actor",
                 "X-Import-Reason",
             ],
         )
     register_error_handlers(application)
+    application.include_router(auth_router)
     # Las rutas de bloque se registran antes que `records_router`: éste declara
     # `/records/{record_id}`, que de otro modo capturaría `/records/{id}/blocks`.
     application.include_router(block_router)
@@ -178,6 +186,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 )
                 or 0
             )
+            last_import = session.scalar(
+                select(ImportBatch.created_at)
+                .where(ImportBatch.importer_name != CATALOG_DEFINITION_IMPORTER)
+                .order_by(ImportBatch.created_at.desc())
+                .limit(1)
+            )
         real = total - demo
         # Un modo REAL sin ningún registro real es la avería concreta que se
         # quiere poder ver: la base está migrada pero la ingesta no se ha
@@ -195,6 +209,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             records_real=real,
             records_demo=demo,
             import_batches=batches,
+            last_import_at=last_import.isoformat() if last_import else None,
             consistent=consistent,
         )
 

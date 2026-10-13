@@ -1,4 +1,5 @@
 import { appConfig } from '../config'
+import { authenticatedFetch, SessionError } from '../auth/transport'
 import type {
   BlockEditRecord,
   BlockEditWrite,
@@ -16,6 +17,8 @@ import type {
   CatalogRelation,
   CatalogClassification,
   Dashboard,
+  DashboardExplore,
+  DashboardCasePage,
   DatabaseInfo,
   DataOrigin,
   DecisionWrite,
@@ -62,17 +65,18 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, init?: RequestInit, publicRequest = false): Promise<T> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 30_000)
   let response: Response
   try {
-    response = await fetch(`${appConfig.apiBaseUrl}${path}`, {
+    response = await (publicRequest ? fetch : authenticatedFetch)(`${appConfig.apiBaseUrl}${path}`, {
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
       ...init,
     })
-  } catch {
+  } catch (error) {
+    if (error instanceof SessionError) throw new ApiError(error.message, 401)
     if (controller.signal.aborted) {
       throw new ApiError('La solicitud ha tardado demasiado. Inténtelo de nuevo.', 0)
     }
@@ -196,6 +200,20 @@ export function fetchDatabaseInfo(): Promise<DatabaseInfo> {
 
 export function fetchDashboard(): Promise<Dashboard> {
   return request<Dashboard>('/insights/dashboard')
+}
+
+export function fetchDashboardExplore(filters: { entityType?: string; sourceType?: string } = {}): Promise<DashboardExplore> {
+  const search = new URLSearchParams()
+  if (filters.entityType) search.set('entity_type', filters.entityType)
+  if (filters.sourceType) search.set('source_type', filters.sourceType)
+  return request<DashboardExplore>(`/insights/dashboard/explore?${search}`)
+}
+
+export function fetchDashboardCases(filters: { segment: string; entityType?: string; sourceType?: string; offset?: number }): Promise<DashboardCasePage> {
+  const search = new URLSearchParams({ segment: filters.segment, offset: String(filters.offset ?? 0) })
+  if (filters.entityType) search.set('entity_type', filters.entityType)
+  if (filters.sourceType) search.set('source_type', filters.sourceType)
+  return request<DashboardCasePage>(`/insights/dashboard/cases?${search}`)
 }
 
 export function fetchSources(includeArchived = false): Promise<SourceList> {
@@ -691,9 +709,32 @@ export function fetchExportExclusions(runId: string): Promise<ExportExclusionRow
   )
 }
 
-export function exportArtifactUrl(runId: string): string {
-  return `${appConfig.apiBaseUrl}/exports/${encodeURIComponent(runId)}/artifact`
+export async function downloadExport(runId: string): Promise<void> {
+  const response = await authenticatedFetch(`${appConfig.apiBaseUrl}/exports/${encodeURIComponent(runId)}/artifact`)
+  if (!response.ok) throw new ApiError('No se pudo descargar la exportación.', response.status)
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `exportacion-${runId}`
+  link.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
+
+export interface AuthConfig {
+  mode: 'pilot' | 'entra'
+  configured: boolean
+  tenant_id: string | null
+  spa_client_id: string | null
+  scope: string | null
+}
+export function fetchAuthConfig() { return request<AuthConfig>('/auth/config', undefined, true) }
+export function fetchSession() { return request<{ subject_id: string; reviewer: Reviewer; capabilities: string[] }>('/auth/me') }
+export interface AccessOverview {
+  roles: { name: string; capabilities: string[] }[]
+  accounts: { object_id: string; reviewer_identifier: string; display_name: string; active: boolean; linked: boolean }[]
+}
+export function fetchAccessOverview() { return request<AccessOverview>('/auth/access') }
 
 export interface HistoryEntry {
   occurred_at: string

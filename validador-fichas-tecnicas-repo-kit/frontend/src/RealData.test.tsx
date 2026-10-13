@@ -37,6 +37,16 @@ const DASHBOARD = {
   empty: false,
 }
 
+const EXPLORE = {
+  total_records: 43381,
+  entity_types: [{ key: 'medication', label: 'Medicamentos', count: 43381 }],
+  sources: [{ key: 'master_excel', label: 'Maestros Excel', count: 43381 }],
+  review: [{ key: 'sin_cola', label: 'Sin incluir en cola', count: 43381 }],
+  coverage: [{ key: 'master_excel:present', label: 'Maestro', count: 43381 },
+    { key: 'cima:present', label: 'CIMA', count: 0 }],
+  pending: 0, second_review: 0, quarantined: 0, diagnostics: 0,
+}
+
 const RECORD_PAGE = {
   items: [
     {
@@ -190,6 +200,7 @@ const REAL_DATABASE = {
   records_real: 43381,
   records_demo: 0,
   import_batches: 4,
+  last_import_at: '2026-09-04T10:00:00',
   consistent: true,
 }
 
@@ -280,6 +291,7 @@ const REVIEW_DETAIL = {
 /** Devuelve la respuesta simulada según la ruta pedida. */
 function route(url: string): unknown {
   if (url.includes('/database-info')) return databaseInfo
+  if (url.includes('/insights/dashboard/explore')) return EXPLORE
   if (url.includes('/insights/dashboard')) return DASHBOARD
   if (url.includes('/insights/sources')) return SOURCES
   if (url.includes('/insights/imports')) return IMPORTS
@@ -331,10 +343,8 @@ describe('panel de inicio', () => {
   it('muestra cifras que provienen del backend', async () => {
     render(<App />)
     expect(await screen.findByText('43.381')).toBeInTheDocument()
-    expect(screen.getByText('Registros reales')).toBeInTheDocument()
-    // El estado de cada etapa llega calculado, no escrito en la interfaz.
-    const cima = screen.getByRole('row', { name: /CIMA/ })
-    expect(within(cima).getByText('Pendiente')).toBeInTheDocument()
+    expect(screen.getByText('registros reales en la selección')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ver 43.381 sin cima' })).toBeInTheDocument()
   })
 
   it('explica el sistema vacío en lugar de mostrar una pantalla en blanco', async () => {
@@ -346,7 +356,9 @@ describe('panel de inicio', () => {
           ok: true,
           status: 200,
           json: async () =>
-            url.includes('/insights/dashboard')
+            url.includes('/insights/dashboard/explore')
+              ? { ...EXPLORE, total_records: 0, entity_types: [], sources: [], review: [], coverage: [] }
+              : url.includes('/insights/dashboard')
               ? { metrics: [], pipeline: [], last_import_at: null, empty: true }
               : [],
         } as Response
@@ -354,7 +366,7 @@ describe('panel de inicio', () => {
     )
     render(<App />)
     expect(await screen.findByText(/Todavía no hay datos cargados/)).toBeInTheDocument()
-    expect(screen.getByText(/ingest_master_files/)).toBeInTheDocument()
+    expect(screen.getByText(/Consulte las importaciones y las fuentes/)).toBeInTheDocument()
   })
 
   it('muestra el error del backend sin reescribirlo', async () => {
@@ -425,7 +437,7 @@ describe('ficha de un registro real', () => {
     render(<App />)
     await screen.findByText('Omeprazol 20 mg cápsula')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Abrir expediente' }))
+    fireEvent.click(screen.getByRole('button', { name: /OMEPRAZOL/i }))
 
     expect(window.location.hash).toBe('#/fichas')
     expect(screen.getByRole('dialog', { name: 'Expediente del registro' })).toBeInTheDocument()
@@ -477,14 +489,13 @@ describe('ficha de un registro real', () => {
 })
 
 describe('fuentes e importaciones', () => {
-  it('lista las fuentes con versión, hash y registros', async () => {
+  it('muestra el maestro cargado con sus registros y versiones', async () => {
     window.location.hash = '#/fuentes'
     render(<App />)
     expect(
       await screen.findByText('Especialidades-CargaMaster190626.xlsx'),
     ).toBeInTheDocument()
-    expect(screen.getByText('29.850')).toBeInTheDocument()
-    expect(screen.getByText('2026-06-19')).toBeInTheDocument()
+    expect(screen.getByText('29.850').closest('.source-master-card')).toHaveTextContent('1 versión disponible')
   })
 
   it('lista los lotes ejecutados con sus contadores', async () => {
@@ -497,15 +508,16 @@ describe('fuentes e importaciones', () => {
 })
 
 describe('estado del conjunto de datos', () => {
-  it('muestra la fecha de actualización sin distintivo de modo', async () => {
+  it('muestra la fecha de actualización sin distintivo REAL en la barra', async () => {
     render(<App />)
 
-    expect(await screen.findByText('Datos actualizados')).toBeVisible()
-    expect(document.querySelector('.mode-chip')).toBeNull()
+    expect(await screen.findByText('Última importación')).toBeVisible()
+    expect(screen.queryByLabelText('Base de datos real')).not.toBeInTheDocument()
+    expect(document.querySelectorAll('.mode-chip')).toHaveLength(0)
     expect(screen.queryByText(/Datos reales · maestros importados/)).not.toBeInTheDocument()
   })
 
-  it('tampoco muestra un distintivo en modo DEMO', async () => {
+  it('identifica el modo DEMO en la barra compartida', async () => {
     databaseInfo = {
       mode: 'demo',
       backend: 'sqlite',
@@ -514,12 +526,13 @@ describe('estado del conjunto de datos', () => {
       records_real: 0,
       records_demo: 6,
       import_batches: 0,
+      last_import_at: null,
       consistent: true,
     }
     render(<App />)
 
-    await screen.findByText('Datos actualizados')
-    expect(document.querySelector('.mode-chip')).toBeNull()
+    await screen.findByText('Última importación')
+    expect(await screen.findByLabelText('Base de datos de demostración')).toBeVisible()
   })
 
   it('avisa cuando el modo REAL no encuentra ningún registro importado', async () => {
@@ -545,7 +558,7 @@ describe('estado del conjunto de datos', () => {
     )
     render(<App />)
 
-    await waitFor(() => expect(screen.queryByText(/Registros reales/)).toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByText(/registros reales en la selección/)).toBeInTheDocument())
     expect(screen.queryByText(/Datos reales/)).not.toBeInTheDocument()
   })
 })
@@ -556,16 +569,17 @@ describe('navegación', () => {
     const { rerender } = render(<App />)
 
     expect(await screen.findByRole('heading', { name: 'Catálogo' })).toBeVisible()
-    expect(screen.getByText('Explora medicamentos, presentaciones y principios activos.')).toBeVisible()
+    expect(screen.getByText('Explora y revisa medicamentos, presentaciones y principios activos.')).toBeVisible()
     expect(screen.queryByRole('navigation', { name: 'Páginas de Catálogo' })).toBeNull()
 
     window.location.hash = '#/novedades'
     rerender(<App />)
     expect(await screen.findByRole('heading', { name: 'Novedades CIMA' })).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Novedades CIMA' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Trabajo' })).toHaveAttribute(
       'aria-current',
       'page',
     )
+    expect(screen.getByRole('link', { name: 'Novedades CIMA' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('marca "Catálogo" como activo en /#/fichas', async () => {

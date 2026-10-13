@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 
 import { fetchDatabaseInfo, fetchNomenclatorConnection, fetchSource, fetchSources, importMasterWorkbook, previewMasterWorkbook, saveNomenclatorConnection, testNomenclatorConnection, updateSource } from '../api/client'
 import { useQuery } from '../api/useQuery'
+import { useCorporateSession, useCapability } from '../auth/SessionContext'
 import { AsyncBoundary } from '../components/AsyncState'
 import { PageHeader } from '../components/PageHeader'
 import { formatDateTime, orDash, shortHash } from '../domain/format'
@@ -59,9 +60,10 @@ const WORKBOOK_PREVIEWS: Record<string, {
 }
 
 function MasterUpload({ kind, onImported }: { kind: CatalogSourceWorkbook; onImported: () => void }) {
+  const account = useCorporateSession()
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<Awaited<ReturnType<typeof previewMasterWorkbook>> | null>(null)
-  const [actor, setActor] = useState('')
+  const [actor, setActor] = useState(account?.reviewer.identifier ?? '')
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -94,7 +96,7 @@ function MasterUpload({ kind, onImported }: { kind: CatalogSourceWorkbook; onImp
     {preview && <>
       <p>{preview.data_rows.toLocaleString('es-ES')} filas · {preview.sheets.length} hojas · SHA-256 <code>{shortHash(preview.sha256)}</code></p>
       {preview.blocked_reason && <p role='note'>{preview.blocked_reason}</p>}
-      <label className='field'><span>Responsable</span><input maxLength={80} value={actor} onChange={(event) => setActor(event.target.value)} /></label>
+      <label className='field'><span>Responsable</span><input readOnly={Boolean(account)} maxLength={80} value={actor} onChange={(event) => setActor(event.target.value)} /></label>
       <label className='field'><span>Motivo</span><input maxLength={1000} value={reason} onChange={(event) => setReason(event.target.value)} /></label>
       <button className='button button--primary' type='button' disabled={busy || !preview.can_import || !actor.trim() || !reason.trim()} onClick={() => void importFile()}>Confirmar importación</button>
     </>}
@@ -103,11 +105,13 @@ function MasterUpload({ kind, onImported }: { kind: CatalogSourceWorkbook; onImp
 }
 
 function NomenclatorConnection() {
+  const account = useCorporateSession()
+  const [expanded, setExpanded] = useState(false)
   const [refresh, setRefresh] = useState(0)
   const { data, error, loading } = useQuery(fetchNomenclatorConnection, [refresh])
   const [fields, setFields] = useState<NomenclatorConnectionFields>({ host: '', port: 1433, database_name: '', username: '' })
   const [password, setPassword] = useState('')
-  const [actor, setActor] = useState('')
+  const [actor, setActor] = useState(account?.reviewer.identifier ?? '')
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [feedback, setFeedback] = useState('')
@@ -136,30 +140,35 @@ function NomenclatorConnection() {
     finally { setPassword(''); setBusy(false) }
   }
 
-  return <section className='panel source-connector' aria-label='Conexión con Nomenclátor'>
-    <div className='panel__head'><div><p className='eyebrow'>Base de datos</p><h2>Nomenclátor</h2></div><span className='badge'>{data?.configured ? 'Configurada' : 'Sin configurar'}</span></div>
-    <p>La prueba SQL Server sólo consulta el nombre de la base; aún no importa registros. Utilice una cuenta con permisos de lectura.</p>
-    {loading && <p>Cargando configuración…</p>}{error && <p role='alert'>{error}</p>}
-    <form onSubmit={(event) => void save(event)}>
+  return <section className='panel source-connector source-connector--nomenclator' aria-label='Conexión con Nomenclátor'>
+    <div className='panel__head'><div><p className='eyebrow'>Base de datos · SQL Server</p><h2>Nomenclátor</h2></div><span className='badge'>{data?.configured ? 'Parámetros guardados' : 'Sin configurar'}</span></div>
+    <p className='source-connector__description'>Prepara una conexión de sólo lectura. La prueba consulta el nombre de la base; la importación de datos requiere revisar antes su esquema y sus claves.</p>
+    {data?.configured && <p className='source-connector__meta'><strong>{data.database_name}</strong> · {data.host}:{data.port}{data.updated_at ? ` · Actualizado ${formatDateTime(data.updated_at)}` : ''}</p>}
+    {loading && <p role='status'>Cargando configuración…</p>}{error && <p role='alert'>{error}</p>}
+    <button type='button' className='button button--secondary source-connector__toggle' aria-expanded={expanded} aria-controls='nomenclator-configuration' onClick={() => setExpanded(value => !value)}>{expanded ? 'Ocultar configuración' : data?.configured ? 'Revisar configuración' : 'Configurar conexión'}</button>
+    {expanded && <form id='nomenclator-configuration' className='source-connector__form' onSubmit={(event) => void save(event)}>
+      <p className='muted'>Guarda servidor, base y usuario. La contraseña se usa sólo para la prueba y se descarta después.</p>
       <div className='source-connection-grid'>
         <label className='field'><span>Servidor</span><input required value={fields.host} onChange={(event) => field('host', event.target.value)} placeholder='servidor o IP' /></label>
         <label className='field'><span>Puerto</span><input required type='number' min={1} max={65535} value={fields.port} onChange={(event) => field('port', Number(event.target.value))} /></label>
         <label className='field'><span>Base de datos</span><input required value={fields.database_name} onChange={(event) => field('database_name', event.target.value)} /></label>
         <label className='field'><span>Usuario SQL Server</span><input required autoComplete='username' value={fields.username} onChange={(event) => field('username', event.target.value)} /></label>
       </div>
-      <label className='field'><span>Contraseña para probar la conexión</span><input type='password' autoComplete='off' value={password} onChange={(event) => setPassword(event.target.value)} placeholder={data?.server_password_configured ? 'Secreto configurado en el servidor' : 'No se guarda'} /></label>
+      <label className='field'><span>Contraseña para probar la conexión</span><input type='password' autoComplete='off' value={password} onChange={(event) => setPassword(event.target.value)} placeholder={data?.server_password_configured ? 'Secreto disponible en el servidor' : 'No se guarda'} /></label>
       <div className='source-actions'><button type='button' className='button' disabled={busy || !fields.host || !fields.database_name || !fields.username || (!password && !data?.server_password_configured)} onClick={() => void probe()}>Probar conexión</button></div>
-      <label className='field'><span>Responsable del cambio</span><input required maxLength={80} value={actor} onChange={(event) => setActor(event.target.value)} /></label>
+      <label className='field'><span>Responsable del cambio</span><input readOnly={Boolean(account)} required maxLength={80} value={actor} onChange={(event) => setActor(event.target.value)} /></label>
       <label className='field'><span>Motivo</span><input required maxLength={1000} value={reason} onChange={(event) => setReason(event.target.value)} /></label>
       <button type='submit' className='button button--primary' disabled={busy}>Guardar configuración</button>
-    </form>
+    </form>}
     {feedback && <p role='status'>{feedback}</p>}{failure && <p role='alert'>{failure}</p>}
   </section>
 }
 
 function SourceDetail({ id, onClose, onSaved }: { id: string; onClose: () => void; onSaved: () => void }) {
+  const account = useCorporateSession()
+  const canManage = useCapability('sources.manage')
   const [displayName, setDisplayName] = useState('')
-  const [actorId, setActorId] = useState('')
+  const [actorId, setActorId] = useState(account?.reviewer.identifier ?? '')
   const [reason, setReason] = useState('')
   const [active, setActive] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -168,7 +177,7 @@ function SourceDetail({ id, onClose, onSaved }: { id: string; onClose: () => voi
   const [detailRefresh, setDetailRefresh] = useState(0)
   const [workbookFile, setWorkbookFile] = useState<File | null>(null)
   const [workbookPreview, setWorkbookPreview] = useState<Awaited<ReturnType<typeof previewMasterWorkbook>> | null>(null)
-  const [uploadActor, setUploadActor] = useState('')
+  const [uploadActor, setUploadActor] = useState(account?.reviewer.identifier ?? '')
   const [uploadReason, setUploadReason] = useState('')
   const [uploadBusy, setUploadBusy] = useState(false)
   const [uploadError, setUploadError] = useState('')
@@ -258,7 +267,7 @@ function SourceDetail({ id, onClose, onSaved }: { id: string; onClose: () => voi
       >
         {data && (
           <>
-            <form className='panel' onSubmit={(event) => void saveManagement(event)} aria-label='Gestionar fuente'>
+            {canManage && <form className='panel' onSubmit={(event) => void saveManagement(event)} aria-label='Gestionar fuente'>
               <h3>Gestionar fuente</h3>
               <p>El nombre visible se puede cambiar sin modificar el archivo original ni su historial.</p>
               <label className='field'>
@@ -267,7 +276,7 @@ function SourceDetail({ id, onClose, onSaved }: { id: string; onClose: () => voi
               </label>
               <label className='field'>
                 <span>Responsable del cambio</span>
-                <input required maxLength={80} value={actorId} onChange={(event) => setActorId(event.target.value)} />
+                <input readOnly={Boolean(account)} required maxLength={80} value={actorId} onChange={(event) => setActorId(event.target.value)} />
               </label>
               <label className='field'>
                 <span>Motivo</span>
@@ -282,7 +291,7 @@ function SourceDetail({ id, onClose, onSaved }: { id: string; onClose: () => voi
               <button className='button button--primary' type='submit' disabled={saving}>
                 {saving ? 'Guardando…' : 'Guardar cambios'}
               </button>
-            </form>
+            </form>}
             {(data.management_history?.length ?? 0) > 0 && <section className='panel' aria-label='Historial de gestión de la fuente'>
               <h3>Historial de gestión</h3>
               <ul>{data.management_history.map((revision, index) => <li key={`${revision.created_at}-${index}`}>
@@ -300,7 +309,7 @@ function SourceDetail({ id, onClose, onSaved }: { id: string; onClose: () => voi
                 {preview.action}
               </button>
             </div>}
-            {preview && <section className='panel' aria-label='Actualizar libro maestro'>
+            {preview && canManage && <section className='panel' aria-label='Actualizar libro maestro'>
               <h3>Importar una nueva versión</h3>
               <p>Selecciona un Excel con la misma estructura. La vista previa no modifica los datos; la importación se confirma después.</p>
               <label className='field'>
@@ -331,7 +340,7 @@ function SourceDetail({ id, onClose, onSaved }: { id: string; onClose: () => voi
                 {workbookPreview.blocked_reason && <p role='note'>{workbookPreview.blocked_reason}</p>}
                 <label className='field'>
                   <span>Responsable de la importación</span>
-                  <input required maxLength={80} value={uploadActor} onChange={(event) => setUploadActor(event.target.value)} />
+                  <input readOnly={Boolean(account)} required maxLength={80} value={uploadActor} onChange={(event) => setUploadActor(event.target.value)} />
                 </label>
                 <label className='field'>
                   <span>Motivo</span>
@@ -418,6 +427,7 @@ function SourceDetail({ id, onClose, onSaved }: { id: string; onClose: () => voi
 }
 
 export function SourcesScreen() {
+  const canManage = useCapability('sources.manage')
   const [selected, setSelected] = useState<string | null>(null)
   const [selectedUpload, setSelectedUpload] = useState<CatalogSourceWorkbook | null>(null)
   const [includeArchived, setIncludeArchived] = useState(false)
@@ -428,8 +438,8 @@ export function SourcesScreen() {
   const cimaDocuments = data?.items.filter((item) => item.source_type.startsWith('cima')).length ?? 0
 
   return (
-    <div className='screen'>
-      <PageHeader eyebrow='Datos' title='Fuentes de datos' description='Gestiona los tres maestros Excel, consulta CIMA y prepara las conexiones externas. Cada fuente indica si tiene datos cargados en este entorno.' />
+    <div className='screen sources-screen'>
+      <PageHeader eyebrow='Datos' title='Fuentes de datos' description='Consulta los datos disponibles y prepara nuevas conexiones desde un único lugar.' />
 
       <section aria-label='Maestros Excel'>
         <div className='source-section-heading'><div><p className='eyebrow'>Archivos principales</p><h2>Maestros Excel</h2></div><span className='badge'>{databaseInfo?.mode === 'demo' ? 'Entorno DEMO' : 'Entorno REAL'}</span></div>
@@ -437,14 +447,15 @@ export function SourcesScreen() {
           {Object.entries(WORKBOOK_PREVIEWS).map(([filename, profile]) => {
             const source = data?.items.find((item) => item.source_type === 'master_excel' && item.name === filename)
             return <article className='panel source-master-card' key={filename}>
-              <p className='eyebrow'>{profile.view.replace('_', ' ')}</p>
+              <p className='eyebrow'>Libro maestro</p>
               <h3>{profile.title}</h3>
-              <p className='source-filename'>{filename}</p>
-              <p>{source ? `${source.records.toLocaleString('es-ES')} registros · ${source.versions} versión(es)` : 'Sin datos cargados en este entorno'}</p>
+              <p className='source-master-card__count'>{source ? source.records.toLocaleString('es-ES') : '—'} <span>registros</span></p>
+              <p className='source-master-card__meta'>{source ? `${source.versions} ${source.versions === 1 ? 'versión' : 'versiones'} disponible${source.versions === 1 ? '' : 's'}` : 'Sin datos cargados en este entorno'}</p>
+              <p className='source-filename' title={filename}>{filename}</p>
               <div className='source-actions'>
-                {source && <button type='button' className='button button--primary' onClick={() => { setSelected(source.key); setSelectedUpload(null) }}>Gestionar y ver versiones</button>}
-                {source && <button type='button' className='button' onClick={() => openCatalogSource(profile.view)}>{profile.action}</button>}
-                {!source && databaseInfo?.mode === 'real' && <button type='button' className='button button--primary' onClick={() => { setSelectedUpload(profile.view); setSelected(null) }}>Cargar primer Excel</button>}
+                {source && <button type='button' className='button button--primary' onClick={() => openCatalogSource(profile.view)}>{profile.action}</button>}
+                {source && <button type='button' className='button' onClick={() => { setSelected(source.key); setSelectedUpload(null) }}>Gestionar y ver versiones</button>}
+                {!source && canManage && databaseInfo?.mode === 'real' && <button type='button' className='button button--primary' onClick={() => { setSelectedUpload(profile.view); setSelected(null) }}>Cargar primer Excel</button>}
               </div>
             </article>
           })}
@@ -456,19 +467,23 @@ export function SourcesScreen() {
         </section>}
       </section>
 
-      <section className='source-connector-grid' aria-label='Otras fuentes'>
-        <NomenclatorConnection />
+      <section aria-label='Conexiones y servicios'>
+        <div className='source-section-heading'><div><p className='eyebrow'>Origen y acceso</p><h2>Conexiones y servicios</h2></div></div>
+        <div className='source-connector-grid'>
+        {canManage ? <NomenclatorConnection /> : <section className='panel source-connector' aria-label='Conexión con Nomenclátor'><div className='panel__head'><div><p className='eyebrow'>Base de datos · SQL Server</p><h2>Nomenclátor</h2></div><span className='badge'>Acceso restringido</span></div><p className='source-connector__description'>La configuración está reservada a las personas autorizadas para gestionar fuentes.</p></section>}
         <div className='source-connector-stack'>
           <section className='panel source-connector' aria-label='CIMA'>
-            <div className='panel__head'><div><p className='eyebrow'>Agencia Española de Medicamentos</p><h2>CIMA</h2></div><span className='badge'>{cimaDocuments ? 'Con datos' : 'Sin documentos'}</span></div>
-            <p>{cimaDocuments.toLocaleString('es-ES')} documentos registrados en esta base. Las novedades y el mantenimiento siguen disponibles.</p>
+            <div className='panel__head'><div><p className='eyebrow'>Fuente documental · AEMPS</p><h2>CIMA</h2></div><span className='badge'>{cimaDocuments ? 'Con datos' : 'Sin documentos'}</span></div>
+            <p className='source-connector__description'><strong>{cimaDocuments.toLocaleString('es-ES')}</strong> documentos registrados en esta base. Consulta las novedades y su mantenimiento.</p>
             <a className='button' href='#/novedades'>Ver novedades CIMA</a>
           </section>
-          <section className='panel source-connector' aria-label='BOT PLUS Web'>
-            <div className='panel__head'><div><p className='eyebrow'>Consulta externa</p><h2>BOT PLUS Web</h2></div><span className='badge'>Pendiente de integración</span></div>
-            <p>Acceso a la cuenta web de consulta. La incorporación automática de datos requiere el servicio de integración y sus permisos; las credenciales se configurarán cuando estén disponibles.</p>
-            <a className='button' href='https://botplusweb.farmaceuticos.com/' target='_blank' rel='noopener noreferrer'>Abrir BOT PLUS Web</a>
+          <section className='panel source-connector source-connector--bot' aria-label='BOT PLUS'>
+            <div className='panel__head'><div><p className='eyebrow'>Servicio externo</p><h2>BOT PLUS</h2></div><span className='badge'>Sin conectar</span></div>
+            <p className='source-connector__description'>La consulta web está disponible. Para incorporar datos al catálogo se necesita el servicio oficial BOT PLUS Integración y autorización para los usos previstos.</p>
+            <div className='source-actions'><a className='button' href='https://botplusweb.farmaceuticos.com/' target='_blank' rel='noopener noreferrer'>Abrir BOT PLUS Web</a></div>
+            <details className='source-connector__requirements'><summary>Qué falta para conectar BOT PLUS Integración</summary><ul><li>Confirmar la modalidad contratada y el contacto técnico.</li><li>Recibir la documentación del servicio y un entorno de pruebas.</li><li>Acordar campos, frecuencia, conservación local y permisos de exportación.</li><li>Configurar después las credenciales mediante un secreto del servidor.</li></ul></details>
           </section>
+        </div>
         </div>
       </section>
 

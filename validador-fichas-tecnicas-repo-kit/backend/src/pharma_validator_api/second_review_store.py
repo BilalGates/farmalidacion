@@ -312,6 +312,7 @@ def submit_second_review(
         entity_id=row.field_value_id,
         action="segunda_revision_emitida",
         actor_id=decision.reviewer_id,
+        actor_assurance=second_record.reviewer_assurance,
         before_state={"state": row.state, "revealed": False},
         after_state={"state": outcome, "revealed": True},
         reason=comparison.kind,

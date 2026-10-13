@@ -25,6 +25,7 @@ import { SHORTCUTS, isTypingTarget, resolveShortcut } from '../domain/shortcuts'
 import { navigate } from '../navigation'
 import { blockLabel, fieldLabel, searchText } from '../domain/fieldLabels'
 import { clearDraft } from '../domain/drafts'
+import { useCapability, useCorporateSession } from '../auth/SessionContext'
 import { BlockEditor } from './BlockEditor'
 import { SourceFieldsMaintenance } from './CatalogSourceFields'
 import { FieldRow } from './FieldRow'
@@ -149,6 +150,9 @@ export function ReviewScreen({
   onBusyChange?: (busy: boolean) => void
   onRecordChange?: (record: TargetRecord) => void
 }) {
+  const canReview = useCapability('review.write')
+  const canMaintain = useCapability('catalog.maintain')
+  const corporateSession = useCorporateSession()
   const [record, setRecord] = useState<TargetRecord | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -190,7 +194,7 @@ export function ReviewScreen({
   }
 
   useEffect(() => {
-    if (reviewer === null) return
+    if (reviewer === null || !canReview) return
     let cancelled = false
     openTimingSession(recordId, reviewer.identifier)
       .then((opened) => {
@@ -206,7 +210,7 @@ export function ReviewScreen({
       capture?.leave()
       timingSession.current = null
     }
-  }, [recordId, reviewer])
+  }, [recordId, reviewer, canReview])
 
   useEffect(() => {
     const capture = tracker.current
@@ -265,7 +269,7 @@ export function ReviewScreen({
     comment: string | null,
     advance = false,
   ) {
-    if (reviewer === null || savingId !== null) return
+    if (reviewer === null || !canReview || savingId !== null) return
     const visible = Array.from(fieldsRef.current?.querySelectorAll<HTMLElement>('[data-review-field]') ?? []).filter(row => !row.closest('[hidden]'))
     const nextId = visible[visible.findIndex(row => row.dataset.reviewField === fieldValueId) + 1]?.dataset.reviewField
     setSavingId(fieldValueId)
@@ -276,7 +280,7 @@ export function ReviewScreen({
       await saveDecision(fieldValueId, {
         state,
         reviewer_id: reviewer.identifier,
-        reviewer_role: 'farmaceutico',
+        reviewer_role: reviewer.role,
         final_value: finalValue,
         comment,
       })
@@ -392,7 +396,7 @@ export function ReviewScreen({
       {/* Zona A — contexto de la ficha. */}
       <div className='screen__head'>
         <div>
-          <p className='eyebrow'>Revisión de ficha</p>
+          <p className='eyebrow'>{canReview ? 'Revisión de ficha' : 'Ficha y evidencia'}</p>
           <h1>{displayName || recordTitle(record)}</h1>
           <p className='lede'>
             <code>{record.id}</code> · {RECORD_TYPE_LABELS[record.entity_type] ?? record.entity_type}
@@ -490,8 +494,7 @@ export function ReviewScreen({
                   </p>
                   <h2>{BLOCK_SOURCE_LABELS[blockType]?.title ?? blockType.replaceAll('_', ' ')}</h2>
                 </div>
-                <h2>{compact ? blockLabel(blockType) : blockType}</h2>
-                <button
+                {canMaintain && <button
                   type='button'
                   className='button button--ghost'
                   aria-expanded={editing === blockType}
@@ -514,9 +517,9 @@ export function ReviewScreen({
                   }}
                 >
                   {editing === blockType ? 'Cerrar estructura' : 'Editar estructura'}
-                </button>
+                </button>}
               </div>
-              {editing === blockType && (
+              {canMaintain && editing === blockType && (
                 <BlockEditor
                   recordId={record.id}
                   blockType={blockType}
@@ -553,6 +556,7 @@ export function ReviewScreen({
                           : value.field_name}
                         recordId={record.id}
                         reviewer={reviewer}
+                        canReview={canReview}
                         saving={savingId !== null}
                         saveError={errorFieldId === value.id}
                         expanded={compact ? expandedId === value.id : undefined}
@@ -623,7 +627,7 @@ export function ReviewScreen({
           onToggle={(event) => setSourceMaintenanceOpen(event.currentTarget.open)}
           aria-label='Mantenimiento independiente de campos fuente'
         >
-          <summary>Mantenimiento del libro original · editar datos importados</summary>
+          <summary>Mantenimiento del libro original · {canMaintain ? 'editar' : 'consultar'} datos importados</summary>
           <p className='note'>Corrige el dato de trabajo sin registrar una decisión farmacéutica ni alterar el literal importado. Disponible también para registros que aún no tienen identidad canónica.</p>
           {sourceMaintenanceOpen && <SourceFieldsMaintenance recordId={record.id} reviewer={reviewer} />}
         </details>
@@ -633,8 +637,8 @@ export function ReviewScreen({
         {compact ? <summary>Validación farmacéutica y trazabilidad</summary> : <h2>Validación farmacéutica</h2>}
         <p className='note'>
           Cada decisión se guarda como un evento y no sustituye a la anterior: el historial de cada
-          campo conserva quién decidió qué y cuándo. La firma es <strong>declarada</strong>, no
-          demostrada, porque el piloto no incorpora autenticación.
+          campo conserva quién decidió qué y cuándo. Las firmas anteriores conservan su garantía.
+          {corporateSession ? ' Las decisiones nuevas se atribuyen a la cuenta autenticada.' : ' En el piloto, la firma es declarada.'}
         </p>
         <RoadmapNote title='Doble validación' note={ROADMAP_NOTES.dobleValidacion} />
         <RoadmapNote title='Extracción asistida' note={ROADMAP_NOTES.extraccion} />

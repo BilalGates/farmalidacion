@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 
 import { fetchCatalogCimaDocuments, fetchRecord } from '../api/client'
 import type { CatalogCimaDocument, TargetRecord } from '../api/types'
@@ -12,6 +12,8 @@ interface Props {
 }
 
 export function CatalogCimaDocumentReader({ identityId, recordId, reviewerId = '' }: Props) {
+  const reader = useRef<HTMLElement>(null)
+  const readerId = useId()
   const [documents, setDocuments] = useState<CatalogCimaDocument[]>([])
   const [record, setRecord] = useState<TargetRecord | null>(null)
   const [recordError, setRecordError] = useState('')
@@ -54,8 +56,15 @@ export function CatalogCimaDocumentReader({ identityId, recordId, reviewerId = '
     value: field.maintained_value === undefined ? field.literal_value : field.maintained_value,
   }))) ?? []
   const selectedField = fields.find((field) => field.id === selectedFieldId)
-  return <section className='panel catalog-cima' aria-labelledby='catalog-cima-title'>
-    <div className='panel__head'><div><p className='eyebrow'>Documento regulatorio</p><h2 id='catalog-cima-title'>Ficha técnica CIMA</h2></div></div>
+  return <section ref={reader} className='panel catalog-cima' aria-labelledby={`${readerId}-title`} onClick={event => {
+    const href = (event.target as Element).closest('a')?.getAttribute('href')
+    if (!href?.startsWith('#cima-')) return
+    event.preventDefault()
+    const section = Array.from(reader.current?.querySelectorAll<HTMLElement>('[data-cima-anchor]') ?? []).find(item => item.dataset.cimaAnchor === href.slice(1))
+    section?.scrollIntoView?.({ block: 'start' })
+    section?.focus({ preventScroll: true })
+  }}>
+    <div className='panel__head'><div><p className='eyebrow'>Documento regulatorio</p><h2 id={`${readerId}-title`}>Ficha técnica CIMA</h2></div></div>
     {loading ? <p role='status'>Cargando ficha técnica…</p> : error ? <p role='alert'>{error}</p> : documents.length === 0 ?
       <p>No hay una ficha técnica CIMA vinculada de forma verificada a este registro.</p> : <>
         <label className='field'><span className='field__label'>Buscar en los apartados</span>
@@ -100,7 +109,7 @@ export function CatalogCimaDocumentReader({ identityId, recordId, reviewerId = '
               <div className='catalog-cima__sections'>
                 <nav aria-label={`Apartados de ${document.document_name}`}><ul>{sections.map(({ section, index }) =>
                   <li key={`${section.locator}-${index}`}><a href={`#cima-${document.document_version_id}-${index}`}>Apartado {section.locator}</a></li>)}</ul></nav>
-                {sections.map(({ section, index }) => <section key={`${section.locator}-${index}`} id={`cima-${document.document_version_id}-${index}`}>
+                {sections.map(({ section, index }) => <section tabIndex={-1} key={`${section.locator}-${index}`} data-cima-anchor={`cima-${document.document_version_id}-${index}`} id={`${readerId}-cima-${document.document_version_id}-${index}`}>
                   <h4>Apartado {section.locator}</h4><pre>{section.literal_text}</pre>
                 </section>)}
               </div>}

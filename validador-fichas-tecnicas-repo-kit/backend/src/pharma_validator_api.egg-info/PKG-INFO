@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: pharma-validator-api
+Version: 0.1.0
+Summary: Backend del validador interno de fichas técnicas
+Requires-Python: >=3.11
+Requires-Dist: alembic<2,>=1.19
+Requires-Dist: fastapi<1,>=0.115
+Requires-Dist: httpx<1,>=0.28
+Requires-Dist: mssql-python<2,>=1.7
+Requires-Dist: pydantic-settings<3,>=2.7
+Requires-Dist: PyJWT[crypto]<3,>=2.10
+Requires-Dist: sqlalchemy<3,>=2.0.52
+Requires-Dist: uvicorn<1,>=0.34
+Provides-Extra: dev
+Requires-Dist: mypy<3,>=2.3; extra == "dev"
+Requires-Dist: pytest<9,>=8.3; extra == "dev"
+Requires-Dist: ruff<1,>=0.9; extra == "dev"

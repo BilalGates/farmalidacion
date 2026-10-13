@@ -1,8 +1,24 @@
 # Sistema visual de Farmalidación
 
-Estado: consolidado tras la migración y la fase de UI polish. La fuente de verdad es `frontend/src/design-system.css`, importada después de `styles.css` desde `main.tsx`. Las reglas históricas con consumidores activos permanecen por compatibilidad.
+Estado: primer corte Estudio, 2026-10-05 (ADR-0013). La fuente visual activa es
+`frontend/src/studio.css`, importada después de `styles.css` desde `main.tsx`.
+Reúne el sistema, la estructura lateral y el tema oscuro previos. Las reglas
+estructurales históricas con consumidores activos permanecen por compatibilidad.
+
+La lectura ofrece Cómoda y Compacta. Los tokens `--cell-y`, `--panel-pad`,
+`--workspace-gap` y `--control-height` cambian espaciado, no tamaño de los datos.
+`data-density` y `data-theme` son independientes. Equipo y preferencias permite
+cambiar ambas opciones y conserva la selección localmente. La tipografía editorial
+se reserva a los títulos de área; el expediente farmacéutico usa tipografía UI.
 
 ## Dirección
+
+ADR-0014 unifica los filtros en una columna de 264 px con controles de formulario
+y superficies compartidas. La navegación se pliega temporalmente al abrirlos,
+sin sobrescribir la preferencia manual. A 680 px o menos el panel precede a los
+resultados. El catálogo usa seis columnas con `colgroup`: nombre completo como
+botón, estado y responsable de revisión en líneas separadas. Transiciones de
+160–200 ms; movimiento reducido elimina animaciones y transiciones.
 
 Interfaz clínica para sesiones largas: fondo neutro, texto legible y morado reservado para navegación activa, acción principal y foco. Éxito, aviso, error e información tienen colores semánticos y etiquetas textuales. La agrupación se resuelve con espacio, tipografía y líneas discretas.
 

@@ -12,11 +12,13 @@ import {
 import type { CatalogClassification, CatalogIdentity, CatalogRelation, CatalogRevision, Reviewer } from '../api/types'
 import { AsyncBoundary } from '../components/AsyncState'
 import { PageHeader } from '../components/PageHeader'
+import { WorkspaceTabs } from '../components/WorkspaceTabs'
 import { formatDateTime, orDash } from '../domain/format'
 import { navigate } from '../navigation'
 import { SourceFieldsMaintenance } from './CatalogSourceFields'
 import { CatalogCimaDocumentReader } from './CatalogCimaDocument'
 import { CatalogReviewPanel } from './CatalogReviewPanel'
+import { useCapability } from '../auth/SessionContext'
 
 const TYPE_LABELS: Record<string, string> = {
   commercial_product: 'Producto comercial', authorization: 'Autorización',
@@ -58,6 +60,7 @@ interface Props {
 }
 
 export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, onOpenIdentity, onOpenRecord }: Props) {
+  const canMaintain = useCapability('catalog.maintain')
   const [identity, setIdentity] = useState<CatalogIdentity | null>(null)
   const [history, setHistory] = useState<CatalogRevision[]>([])
   const [relations, setRelations] = useState<CatalogRelation[]>([])
@@ -70,6 +73,8 @@ export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState('')
+  const [activeTab, setActiveTab] = useState('summary')
+  const [editing, setEditing] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -149,10 +154,16 @@ export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, 
 
           {notice && <p className='alert alert--ok' role='status'>{notice}</p>}
           {saveError && <p className='alert alert--error' role='alert'>{saveError}</p>}
-          {!reviewer && <p className='alert badge--warning'>Seleccione un revisor en la barra superior para guardar cambios.</p>}
+          {!reviewer && <p className='alert badge--warning'>Identifícate en Equipo y preferencias para guardar cambios.</p>}
 
+          <WorkspaceTabs label='Apartados del expediente' active={activeTab} onChange={setActiveTab} tabs={[
+            { id: 'summary', label: 'Resumen', content: <>
           <div className='catalog-record__grid'>
-            <section className='panel catalog-editor' aria-labelledby='catalog-data-title'>
+            <section className='panel catalog-summary' hidden={editing}>
+              <div className='catalog-summary__head'><h2>Datos del catálogo</h2>{canMaintain && <button type='button' className='button' onClick={() => setEditing(true)}>Editar datos</button>}</div>
+              <dl className='catalog-summary__values'><div><dt>Nombre visible</dt><dd>{identity.display_name}</dd></div><div><dt>Código</dt><dd>{orDash(identity.code)}</dd></div><div><dt>Estado</dt><dd>{identity.active ? 'Vigente' : 'Archivado'}</dd></div></dl>
+            </section>
+            <section className='panel catalog-editor' hidden={!editing} aria-labelledby='catalog-data-title'>
               <div className='panel__head'><div><p className='eyebrow'>Estado canónico</p><h2 id='catalog-data-title'>Datos editables</h2></div></div>
               <div className='catalog-form'>
                 <label className='field'><span className='field__label'>Nombre visible</span><input type='text' value={name} onChange={(event) => setName(event.target.value)} /></label>
@@ -160,6 +171,7 @@ export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, 
                 <label className='field catalog-form__reason'><span className='field__label'>Motivo del cambio</span><textarea value={reason} onChange={(event) => setReason(event.target.value)} placeholder='Explique qué se corrige y por qué' rows={3} /></label>
               </div>
               <div className='catalog-actions'>
+                <button className='button button--ghost' type='button' onClick={() => setEditing(false)}>Volver a lectura</button>
                 <button className='button button--primary' type='button' disabled={saving || !reviewer || !reason.trim() || !name.trim()} onClick={() => void save(true)}><Save size={16} aria-hidden='true' /> Guardar cambios</button>
                 {identity.active && <button className='button button--danger' type='button' disabled={saving || !reviewer || !reason.trim()} onClick={() => void save(false)}><Archive size={16} aria-hidden='true' /> Archivar</button>}
               </div>
@@ -171,9 +183,13 @@ export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, 
           </div>
 
           <CatalogReviewPanel recordId={identity.target_record_id} reviewer={reviewer} />
+          </> },
+            { id: 'sources', label: 'Fuentes', content: <>
           {identity.target_record_id && <SourceFieldsMaintenance recordId={identity.target_record_id} reviewer={reviewer} />}
 
           <CatalogCimaDocumentReader identityId={identity.id} recordId={identity.target_record_id} reviewerId={reviewer?.identifier ?? ''} />
+          </> },
+            { id: 'relations', label: 'Relaciones y clasificación', content: <>
 
           <section className='panel catalog-relations' aria-labelledby='catalog-relations-title'>
             <div className='panel__head'><div><p className='eyebrow'>Estructura farmacéutica</p><h2 id='catalog-relations-title'><GitBranch size={18} aria-hidden='true' /> Relaciones y composición</h2></div></div>
@@ -183,14 +199,14 @@ export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, 
           {identity.identity_type === 'presentation' && <section className='panel catalog-classifications' aria-labelledby='catalog-classifications-title'>
             <div className='panel__head'><div><p className='eyebrow'>Clasificación farmacéutica</p><h2 id='catalog-classifications-title'>Clase comercial y condiciones</h2></div></div>
             <p className='catalog-classifications__hint'>Seleccione una única clase comercial. Las condiciones se combinan de forma independiente.</p>
-            <fieldset disabled={!reviewer}>
+            <fieldset disabled={!reviewer || !canMaintain}>
               <legend>Clase comercial</legend>
               <div className='catalog-classifications__options'>{COMMERCIAL_CLASSES.map(([value, label]) => {
                 const selected = classifications.some((item) => item.classification_type === 'commercial_class' && item.value === value && item.active)
                 return <label key={value}><input type='radio' name={`commercial-${identity.id}`} checked={selected} onChange={() => void changeClassification('commercial_class', value, true)} />{label}</label>
               })}</div>
             </fieldset>
-            <fieldset disabled={!reviewer}>
+            <fieldset disabled={!reviewer || !canMaintain}>
               <legend>Condiciones</legend>
               <div className='catalog-classifications__options'>{CONDITIONS.map(([value, label]) => {
                 const selected = classifications.some((item) => item.classification_type === 'condition' && item.value === value && item.active)
@@ -201,10 +217,15 @@ export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, 
             <p className='catalog-classifications__provenance'>Clasificaciones cargadas con fuente: {classifications.filter((item) => item.source_system !== 'canonical_manual').map((item) => item.source_system).filter((value, index, all) => all.indexOf(value) === index).join(', ') || 'sin clasificaciones importadas'}.</p>
           </section>}
 
+          </> },
+            { id: 'history', label: 'Historial', content:
+
           <section className='panel catalog-history' aria-labelledby='catalog-history-title'>
             <div className='panel__head'><div><p className='eyebrow'>Auditoría</p><h2 id='catalog-history-title'><History size={18} aria-hidden='true' /> Historial de cambios</h2></div></div>
             <ol>{[...history].reverse().map((revision) => <li key={revision.sequence}><span className='catalog-history__sequence'>v{revision.sequence}</span><div><strong>{revision.action}</strong><p>{revision.reason}</p><small>{revision.actor_id} · {formatDateTime(revision.recorded_at)}</small></div></li>)}</ol>
           </section>
+          },
+          ]} />
         </>}
       </AsyncBoundary>
     </div>

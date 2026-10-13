@@ -1,0 +1,108 @@
+/* Tema oscuro: los tokens gobiernan la interfaz; estas reglas cubren colores
+   literales que todavía viven en las pantallas históricas. */
+:root[data-theme='dark'] {
+  --ink: #f2eef6;
+  --ink-soft: #cbc4d2;
+  --ink-faint: #aaa2b3;
+  --surface: #1d1e27;
+  --canvas: #15161e;
+  --line: #44414e;
+  --line-soft: #35333f;
+  --accent: #ae84db;
+  --accent-strong: #d4b3f4;
+  --accent-soft: #34283f;
+  --focus-ring: rgb(196 151 239 / 45%);
+  --success: #8edbb6;
+  --success-soft: #18372c;
+  --warn: #f0c180;
+  --warn-soft: #3b2d1c;
+  --danger: #f4a5b0;
+  --danger-soft: #42242d;
+  --info: #a5c9f4;
+  --info-soft: #202f45;
+  --shadow: 0 2px 12px rgb(0 0 0 / 16%);
+  color-scheme: dark;
+}
+
+.theme-picker { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 0 8px; border: 1px solid var(--line-soft); border-radius: var(--radius-control); color: var(--ink-soft); background: var(--surface); }
+.theme-picker select { min-height: 36px; max-width: 145px; padding: 0 4px; border: 0; color: var(--ink); background: transparent; font-size: .78rem; cursor: pointer; }
+.theme-picker:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme-picker select:focus-visible { outline: none; }
+@media (max-width: 680px) { .theme-picker select { max-width: 105px; } }
+
+:root[data-theme='dark'] body,
+:root[data-theme='dark'] .layout.app-shell { background: var(--canvas); color: var(--ink); }
+:root[data-theme='dark'] .app-sidebar { background: #191a23; }
+:root[data-theme='dark'] .app-shell .topbar { background: rgb(29 30 39 / 96%); }
+:root[data-theme='dark'] .app-shell__breadcrumb span { color: var(--ink-faint); }
+:root[data-theme='dark'] .app-shell .catalog-filter-workspace .filter-panel,
+:root[data-theme='dark'] .app-shell .catalog-table-scroll .table thead th { background: var(--surface); }
+
+:root[data-theme='dark'] .table th,
+:root[data-theme='dark'] .data-table th,
+:root[data-theme='dark'] .catalog-table-scroll .table thead th { color: var(--ink-soft); background: #252630; }
+:root[data-theme='dark'] .table tbody tr:hover,
+:root[data-theme='dark'] .data-table tbody tr:hover,
+:root[data-theme='dark'] .queue-list > li:hover { background: #292632; }
+:root[data-theme='dark'] .table [aria-selected='true'],
+:root[data-theme='dark'] .quarantine-screen__selected { background: var(--accent-soft); }
+:root[data-theme='dark'] .catalog-table-scroll { background: var(--surface); }
+
+:root[data-theme='dark'] .reviewer-picker,
+:root[data-theme='dark'] .reviewer-select__trigger,
+:root[data-theme='dark'] .reviewer-select__menu,
+:root[data-theme='dark'] .page-stat,
+:root[data-theme='dark'] .queue-add,
+:root[data-theme='dark'] .queue-filters__more,
+:root[data-theme='dark'] .queue-filters__advanced,
+:root[data-theme='dark'] .queue-filters__active > button,
+:root[data-theme='dark'] .validation-overview > div,
+:root[data-theme='dark'] .review-progress,
+:root[data-theme='dark'] .chip { background: var(--surface); color: var(--ink); }
+:root[data-theme='dark'] .reviewer-select__option-avatar,
+:root[data-theme='dark'] .reviewer-picker__avatar,
+:root[data-theme='dark'] .filter-panel__badge,
+:root[data-theme='dark'] .catalog-row__tag,
+:root[data-theme='dark'] .section-workspace__nav a[aria-current='page'] { background: var(--accent-soft); color: var(--accent-strong); }
+:root[data-theme='dark'] .chip--active,
+:root[data-theme='dark'] .app-sidebar .nav__item--active { background: var(--accent-soft); color: var(--accent-strong); }
+:root[data-theme='dark'] .button--secondary { border-color: var(--line); color: var(--accent-strong); background: var(--accent-soft); }
+:root[data-theme='dark'] .button--secondary:hover,
+:root[data-theme='dark'] .button--ghost:hover { border-color: var(--accent); background: #453350; }
+:root[data-theme='dark'] .button:hover:not(.button--primary):not(.button--secondary),
+:root[data-theme='dark'] .nav__item:hover,
+:root[data-theme='dark'] .filter-panel__reopen:hover,
+:root[data-theme='dark'] .section-workspace__nav a:hover,
+:root[data-theme='dark'] .catalog-condition-filter__options label:hover { background: #2b2934; }
+:root[data-theme='dark'] .button--primary,
+:root[data-theme='dark'] .button--primary:hover { color: #fff; background: #74419d; border-color: #74419d; }
+:root[data-theme='dark'] .button--primary:hover { background: #8650ad; border-color: #8650ad; }
+:root[data-theme='dark'] .button--primary:disabled { color: var(--ink-faint); background: var(--canvas); border-color: var(--line-soft); }
+:root[data-theme='dark'] .mode-chip--real { color: #fff; background: #74419d; }
+:root[data-theme='dark'] .mode-chip--demo { color: #20190f; background: var(--warn); }
+
+:root[data-theme='dark'] .pairs > div,
+:root[data-theme='dark'] .definition > div,
+:root[data-theme='dark'] .field-row,
+:root[data-theme='dark'] .sources li,
+:root[data-theme='dark'] .queue-toolbar,
+:root[data-theme='dark'] .queue-filters,
+:root[data-theme='dark'] .maintenance-detail-row > td,
+:root[data-theme='dark'] .maintenance-diff,
+:root[data-theme='dark'] .catalog-relations__empty { background: #252630; }
+:root[data-theme='dark'] .field-row--conflict { background: var(--warn-soft); border-color: var(--warn); }
+:root[data-theme='dark'] .sources__evidence,
+:root[data-theme='dark'] .catalog-relations li button,
+:root[data-theme='dark'] .record-dialog,
+:root[data-theme='dark'] .record-dialog__header { background: var(--surface); color: var(--ink); }
+:root[data-theme='dark'] .source-group { background: var(--surface); }
+:root[data-theme='dark'] .catalog-source-context,
+:root[data-theme='dark'] .source-workbook-preview { background: var(--accent-soft); }
+:root[data-theme='dark'] .catalog-row__tag--condition { color: var(--warn); background: var(--warn-soft); }
+:root[data-theme='dark'] .filter-panel__toggle { color: var(--accent-strong); background: var(--accent-soft); }
+:root[data-theme='dark'] .state--loading,
+:root[data-theme='dark'] .roadmap { background: var(--surface); }
+:root[data-theme='dark'] .review-progress__track { background: var(--line); }
+:root[data-theme='dark'] .record-dialog::backdrop { background: rgb(3 3 8 / 78%); }
+:root[data-theme='dark'] input::placeholder,
+:root[data-theme='dark'] textarea::placeholder { color: var(--ink-faint); opacity: 1; }

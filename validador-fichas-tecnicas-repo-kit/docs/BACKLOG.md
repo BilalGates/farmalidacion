@@ -4,6 +4,69 @@ Implementado: apertura contextual, anterior/siguiente entre páginas, conservaci
 
 # Backlog inicial
 
+## Estudio — 5 de octubre de 2026
+
+- **EST-10, implementado; aceptación de uso pendiente:** Equipo y preferencias
+  separa apariencia, identidad y gestión de revisores. El alta y la tabla tienen
+  áreas propias, con confirmación de operaciones y recuperación ante fallo de
+  carga de roles. Comprobado en navegador a ancho normal y 800 px.
+
+- **EST-07, implementado:** abrir por nombre; seis columnas, nombres completos,
+  estado y responsable agrupados en la celda de revisión; apariencia en Equipo.
+  El catálogo usa el alto de escritorio con scroll interno de tabla y filtros.
+  Sin selector de persona en cabecera o expediente. ADR-0014.
+- **EST-08, implementado:** filtros comunes en columna, navegación plegada
+  temporalmente y restaurada al cerrar/salir; transiciones y movimiento reducido.
+- **EST-09, implementado; activación y E2E corporativo pendientes:** MSAL,
+  verificación JWT y capacidades en todas las operaciones, actor no suplantable,
+  vínculos permanentes, aislamiento de borradores/caché y cierre de sesión.
+  Lectura de fichas e incidencias sin controles de escritura; estados clínicos
+  reservados al farmacéutico deshabilitados para el técnico.
+  ADR-0015. Falta tenant, registros, scope, roles y vínculos aceptados de personas
+  reales. La vista previa sigue siendo piloto declarado. Ver plan Entra.
+- **EST-11, implementado; asignaciones Entra pendientes:** administración de
+  equipo muestra vínculos configurados y capacidades por rol sólo con
+  `team.manage`. Las contraseñas, cuentas y app roles se administran en el
+  tenant; falta configuración aceptada y comprobación con dos cuentas reales.
+- **EST-12, activación local en curso (2026-10-07):** registros SPA/API, scope y
+  primer vínculo configurados; vista previa en modo Entra y acceso anónimo
+  rechazado. Matriz para `Reader`, `Administrator`, `Pharmacist` y
+  `DataScientist` preparada. Pendientes los tres nuevos roles y sus asignaciones
+  en Entra, inicio de sesión real y prueba E2E con dos cuentas; producción sigue
+  sin activar.
+
+- **EST-13, vista previa VPN temporal (2026-10-07):** HTTPS en la interfaz
+  Fortinet con certificado de prueba y segunda URI SPA registrada. Edge carga la
+  web desde el equipo anfitrión, el responsable inició sesión y la API niega
+  acceso anónimo. Elena tiene app role y vínculo configurados, pero su equipo
+  no conecta: pendiente comprobar firewall y política Fortinet entre clientes.
+  La revisión automática del workspace está sin créditos. Pendientes también
+  alcance de firewall por IP y
+  sustitución del certificado temporal por uno gestionado por TI.
+
+- **EST-01, implementado:** tres áreas y destinos secundarios, rutas antiguas
+  conservadas, expediente con pestañas y edición explícita. ADR-0013.
+- **EST-02, implementado:** densidades Cómoda/Compacta persistentes e independientes
+  de los temas Claro/Oscuro/Sistema; estilo visual consolidado en `studio.css`.
+- **EST-03, implementado:** exportación excluye registros con segunda lectura
+  abierta, discrepancia, cierre inválido o cierre sobre una decisión anterior.
+- **EST-04, pendiente:** conciliación completa en interfaz, reapertura versionada
+  de segunda revisión tras nuevas decisiones, columnas por nivel y depuración
+  estructural de CSS histórico. La unicidad actual de asignación por campo
+  impide abrir un nuevo ciclo; el exportador lo bloquea de forma explícita.
+- **EST-05, pendiente:** aceptación farmacéutica y contraste exhaustivo en todos
+  los estados. La vista previa usa una copia de los datos; no certifica producción.
+- **EST-06, parcialmente implementado:** el arranque ya no solicita el Resumen
+  completo para mostrar la fecha de importación; `/database-info` la entrega sin
+  contar `field_value`. Medición local: esa cuenta tardó 5,99 s y el diagnóstico
+  ampliado 0,36 s sobre la copia REAL. Aún falta perfilar el catálogo en frío y
+  el Resumen cuando se abre expresamente, incluidos planes de consulta y carga
+  concurrente. No ampliar el límite de 30 segundos como solución.
+
+## Rediseño global — modo oscuro (2 de octubre de 2026)
+
+- **RD-09, implementado; QA ampliada pendiente:** selector global claro/oscuro/según el sistema, preferencia persistente y aplicación antes del primer pintado. Tokens oscuros y compatibilidad de componentes históricos; catálogo, filtros, expediente y destinos principales inspeccionados con datos reales. Falta una pasada exhaustiva de contraste y estados poco frecuentes en todas las rutas. Criterios y cobertura en `docs/GLOBAL_REDESIGN_2026_PLAN.md`.
+
 ## Gestión de fuentes (1 de octubre de 2026)
 
 - **FUE-001, en curso:** Fuentes guarda un nombre visible y permite ocultar o
@@ -22,8 +85,10 @@ Implementado: apertura contextual, anterior/siguiente entre páginas, conservaci
   configuración de servidor, puerto, base y usuario con historial, y prueba
   cifrada de lectura. Faltan datos de acceso, inventario de tablas/vistas,
   mapeo y carga de una muestra.
-- **FUE-006, pendiente externa:** Fuentes da acceso a BOT PLUS Web; falta
-  confirmar el servicio autorizado de integración y recibir credenciales.
+- **FUE-006, pendiente externa:** Fuentes distingue consulta BOT PLUS Web de
+  integración y muestra sus requisitos. Falta confirmar servicio contratado,
+  documentación técnica, permisos de almacenamiento/exportación y credenciales
+  del servicio para implementar y probar el adaptador autorizado.
 - **Vista previa REAL de fuentes:** los tres Excel y documentos CIMA se ven en
   `sources-preview.db`, copia aislada de `real-preview.db`, mediante el perfil
   Compose `preview` en los puertos 5174/8001.
@@ -866,3 +931,14 @@ Solo después: `DEV-101` en adelante.
 ## UI — Novedades CIMA (10-09-2026)
 
 Rediseño del panel de novedades (§13): resumen de eventos cargados por tipo, etiquetas de cambio y reapertura, historial en panel y detalle documental contextual. Conserva fuentes, eventos y consulta bajo demanda. Prueba de pantalla cubre resumen y apertura del diff.
+## Rediseño global (2 de octubre de 2026)
+
+- **RD-08, primer corte en curso:** armazón lateral plegable y catálogo con
+  búsqueda visible y filtros avanzados superiores. Revisar el resultado con
+  datos representativos y en anchuras de portátil/monitor antes de cerrar sus
+  medidas visuales.
+- **Siguiente corte:** detalle del catálogo y revisión dentro del modal, con
+  evidencia y bloques repetibles; después adaptar Inicio, Novedades, Datos,
+  Exportaciones y Revisores según la matriz de estados del plan global.
+
+- **Resumen explorable:** primera versión implementada el 6 de octubre: prioridades, cobertura, filtros y casos paginados. Pendiente medir el rendimiento sobre una base completa y realizar la aceptación visual con usuarios.

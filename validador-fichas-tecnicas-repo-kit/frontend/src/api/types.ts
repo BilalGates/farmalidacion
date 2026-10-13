@@ -221,6 +221,7 @@ export interface DatabaseInfo {
   readonly records_real: number
   readonly records_demo: number
   readonly import_batches: number
+  readonly last_import_at: string | null
   readonly consistent: boolean
 }
 
@@ -272,6 +273,31 @@ export interface SourceDetail extends SourceSummary {
   sheets: SourceSheet[]
   batch_ids: string[]
   management_history: SourceManagementRevision[]
+}
+
+export interface DashboardSegment {
+  key: string
+  label: string
+  count: number
+}
+
+export interface DashboardExplore {
+  total_records: number
+  entity_types: DashboardSegment[]
+  sources: DashboardSegment[]
+  review: DashboardSegment[]
+  coverage: DashboardSegment[]
+  pending: number
+  second_review: number
+  quarantined: number
+  diagnostics: number
+}
+
+export interface DashboardCasePage {
+  items: { id: string; label: string; detail: string; kind: 'record' }[]
+  total: number
+  limit: number
+  offset: number
 }
 
 export interface SourceManagementRevision {

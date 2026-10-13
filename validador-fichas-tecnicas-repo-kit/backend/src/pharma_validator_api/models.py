@@ -649,6 +649,27 @@ class ReviewerRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+class AuthIdentityBinding(Base):
+    """Vínculo permanente de cuenta Entra a actor histórico; sin edición por API."""
+
+    __tablename__ = "auth_identity_binding"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "object_id", name="uq_auth_subject"),
+        UniqueConstraint("reviewer_identifier", name="uq_auth_reviewer"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    tenant_id: Mapped[str] = mapped_column(String(36))
+    object_id: Mapped[str] = mapped_column(String(36))
+    reviewer_identifier: Mapped[str] = mapped_column(String(80))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+@event.listens_for(AuthIdentityBinding, "before_update")
+@event.listens_for(AuthIdentityBinding, "before_delete")
+def _reject_auth_binding_mutation(*_: object) -> None:
+    raise ImmutableHistoryError("El vínculo de identidad es permanente y no puede reasignarse.")
+
+
 class ReviewQueueEntry(Base):
     """Trabajo de revisión de un registro (DEV-502).
 

@@ -21,6 +21,7 @@ from sqlalchemy import ColumnElement, Select, func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from pharma_validator_api.data_origin import (
+    DEMO_SOURCE_TYPES,
     DataOrigin,
     apply_origin_filter,
     origin_for_record,
@@ -38,6 +39,7 @@ from pharma_validator_api.models import (
     ImportDiagnostic,
     ImportedSourceSheet,
     QuarantinedSourceRow,
+    ReviewQueueEntry,
     SourceDocument,
     SourceDocumentVersion,
     SourceFragment,
@@ -100,6 +102,38 @@ class DashboardRead(BaseModel):
     #: `true` cuando no hay ningún dato real cargado todavía. La interfaz lo usa
     #: para explicar el vacío en lugar de mostrar una pantalla en blanco.
     empty: bool
+
+
+class DashboardSegmentRead(BaseModel):
+    key: str
+    label: str
+    count: int
+
+
+class DashboardExploreRead(BaseModel):
+    total_records: int
+    entity_types: list[DashboardSegmentRead]
+    sources: list[DashboardSegmentRead]
+    review: list[DashboardSegmentRead]
+    coverage: list[DashboardSegmentRead]
+    pending: int
+    second_review: int
+    quarantined: int
+    diagnostics: int
+
+
+class DashboardCaseRead(BaseModel):
+    id: str
+    label: str
+    detail: str
+    kind: str
+
+
+class DashboardCasePageRead(BaseModel):
+    items: list[DashboardCaseRead]
+    total: int
+    limit: int
+    offset: int
 
 
 class SourceRead(BaseModel):
@@ -399,6 +433,210 @@ def read_dashboard(session: SessionDependency) -> DashboardRead:
         pipeline=pipeline,
         last_import_at=last_import.isoformat() if last_import else None,
         empty=real_records == 0 and catalog_fields == 0 and batches == 0,
+    )
+
+
+def _linked_source(source_type: str) -> ColumnElement[bool]:
+    source_condition = (
+        SourceDocument.source_type.like("cima%")
+        if source_type == "cima"
+        else SourceDocument.source_type.in_(("ficha_tecnica", "cima_document_type_1"))
+        if source_type == "ficha_tecnica"
+        else SourceDocument.source_type == source_type
+    )
+    return (
+        select(DocumentRecordLink.id)
+        .join(
+            SourceDocumentVersion,
+            DocumentRecordLink.document_version_id == SourceDocumentVersion.id,
+        )
+        .join(SourceDocument, SourceDocumentVersion.document_id == SourceDocument.id)
+        .where(
+            DocumentRecordLink.target_record_id == TargetRecord.id,
+            source_condition,
+        )
+        .exists()
+    )
+
+
+def _explore_records(entity_type: str | None, source_type: str | None) -> Select[tuple[str]]:
+    statement = apply_origin_filter(select(TargetRecord.id), DataOrigin.REAL)
+    if entity_type:
+        statement = statement.where(TargetRecord.entity_type == entity_type)
+    if source_type:
+        statement = statement.where(_linked_source(source_type))
+    return statement
+
+
+def _review_condition(segment: str) -> ColumnElement[bool]:
+    queue = (
+        select(ReviewQueueEntry.id)
+        .where(ReviewQueueEntry.target_record_id == TargetRecord.id)
+    )
+    if segment == "sin_cola":
+        return ~queue.exists()
+    if segment == "segunda_revision":
+        return queue.where(
+            ReviewQueueEntry.requires_second_review.is_(True),
+            ReviewQueueEntry.state != "completado",
+        ).exists()
+    return queue.where(ReviewQueueEntry.state == segment).exists()
+
+
+def _segment(key: str, label: str, count: int) -> DashboardSegmentRead:
+    return DashboardSegmentRead(key=key, label=label, count=count)
+
+
+@router.get("/dashboard/explore", response_model=DashboardExploreRead)
+def explore_dashboard(
+    session: SessionDependency,
+    entity_type: str | None = None,
+    source_type: str | None = None,
+) -> DashboardExploreRead:
+    """Desgloses exactos de registros REAL; incidencias conservan su propia unidad."""
+    base = _explore_records(entity_type, source_type)
+    total = _count(session, base)
+    entity_keys = [key for (key,) in session.execute(
+        select(TargetRecord.entity_type).distinct().order_by(TargetRecord.entity_type)
+    ).all()]
+    source_keys = [key for (key,) in session.execute(
+        select(SourceDocument.source_type).distinct()
+        .where(SourceDocument.source_type.not_in(DEMO_SOURCE_TYPES))
+        .order_by(SourceDocument.source_type)
+    ).all()]
+    entity_segments = [
+        _segment(key, {
+            "medication": "Medicamentos",
+            "active_ingredient": "Principios activos",
+            "specialty": "Especialidades",
+        }.get(key, key.replace("_", " ").capitalize()),
+                 _count(session, base.where(TargetRecord.entity_type == key)))
+        for key in entity_keys
+    ]
+    source_segments = [
+        _segment(key, {
+            "master_excel": "Maestros Excel",
+            "cima_document_type_1": "Fichas técnicas CIMA",
+            "cima": "CIMA",
+            "ficha_tecnica": "Fichas técnicas",
+        }.get(key, key.replace("_", " ").capitalize()),
+                 _count(session, base.where(_linked_source(key))))
+        for key in source_keys
+    ]
+    review_states = (
+        ("sin_cola", "Sin incluir en cola"),
+        ("pendiente", "Pendiente"),
+        ("asignado", "Asignado"),
+        ("en_revision", "En revisión"),
+        ("requiere_segunda_revision", "Segunda revisión"),
+        ("bloqueado", "Bloqueado"),
+        ("completado", "Completado"),
+    )
+    review = [
+        _segment(key, label, _count(session, base.where(_review_condition(key))))
+        for key, label in review_states
+    ]
+    coverage = [
+        _segment(f"{key}:present", label, _count(session, base.where(_linked_source(key))))
+        for key, label in (
+            ("master_excel", "Maestro"),
+            ("cima", "CIMA"),
+            ("ficha_tecnica", "Ficha técnica"),
+        )
+    ]
+    # Las incidencias pertenecen a lotes, no a registros. No se filtran por
+    # entidad: hacerlo sugeriría una relación que el modelo no conserva.
+    batch_ids = select(ImportBatch.id).where(ImportBatch.source_system.not_in(DEMO_SOURCE_TYPES))
+    if source_type:
+        batch_ids = (
+            batch_ids.join(
+                SourceDocumentVersion,
+                ImportBatch.source_document_version_id == SourceDocumentVersion.id,
+            )
+            .join(SourceDocument, SourceDocumentVersion.document_id == SourceDocument.id)
+            .where(SourceDocument.source_type == source_type)
+        )
+    return DashboardExploreRead(
+        total_records=total,
+        entity_types=entity_segments,
+        sources=source_segments,
+        review=review,
+        coverage=coverage,
+        pending=sum(
+            item.count
+            for item in review
+            if item.key in {"pendiente", "asignado", "en_revision", "bloqueado"}
+        ),
+        second_review=_count(session, base.where(_review_condition("segunda_revision"))),
+        quarantined=_scalar_count(
+            session, QuarantinedSourceRow, QuarantinedSourceRow.import_batch_id.in_(batch_ids)
+        ),
+        diagnostics=_scalar_count(
+            session, ImportDiagnostic, ImportDiagnostic.import_batch_id.in_(batch_ids)
+        ),
+    )
+
+
+@router.get("/dashboard/cases", response_model=DashboardCasePageRead)
+def dashboard_cases(
+    session: SessionDependency,
+    segment: str,
+    entity_type: str | None = None,
+    source_type: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> DashboardCasePageRead:
+    """Registros detrás de un segmento; el cliente pide sólo una página."""
+    base = _explore_records(entity_type, source_type)
+    if segment.startswith("entity:"):
+        base = base.where(TargetRecord.entity_type == segment.removeprefix("entity:"))
+    elif segment.startswith("source:"):
+        base = base.where(_linked_source(segment.removeprefix("source:")))
+    elif segment.startswith("coverage:"):
+        parts = segment.split(":")
+        if (
+            len(parts) != 3
+            or parts[1] not in {"master_excel", "cima", "ficha_tecnica"}
+            or parts[2] not in {"present", "missing"}
+        ):
+            raise ApplicationError("Segmento no reconocido.", status_code=400)
+        condition = _linked_source(parts[1])
+        base = base.where(condition if parts[2] == "present" else ~condition)
+    elif segment.startswith("review:"):
+        key = segment.removeprefix("review:")
+        if key not in {
+            "sin_cola", "pendiente", "asignado", "en_revision",
+            "requiere_segunda_revision", "bloqueado", "completado", "segunda_revision",
+        }:
+            raise ApplicationError("Segmento no reconocido.", status_code=400)
+        base = base.where(_review_condition(key))
+    elif segment == "pending":
+        base = base.where(
+            _review_condition("pendiente")
+            | _review_condition("asignado")
+            | _review_condition("en_revision")
+            | _review_condition("bloqueado")
+        )
+    elif segment == "second_review":
+        base = base.where(_review_condition("segunda_revision"))
+    else:
+        raise ApplicationError("Segmento no reconocido.", status_code=400)
+    total = _count(session, base)
+    ids = list(session.scalars(base.order_by(TargetRecord.id).limit(limit).offset(offset)).all())
+    names, identifiers, _, _ = _identity_by_record(session, ids)
+    return DashboardCasePageRead(
+        items=[
+            DashboardCaseRead(
+                id=record_id,
+                label=names.get(record_id) or identifiers.get(record_id) or record_id,
+                detail=identifiers.get(record_id) or "Sin identificador externo",
+                kind="record",
+            )
+            for record_id in ids
+        ],
+        total=total,
+        limit=limit,
+        offset=offset,
     )
 
 

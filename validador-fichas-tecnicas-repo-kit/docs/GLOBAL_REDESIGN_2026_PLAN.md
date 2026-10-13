@@ -1,6 +1,25 @@
 # Plan global de rediseño de Farmalidación
 
-Fecha: 1 de octubre de 2026. Estado: planificación autorizada; implementación no autorizada en esta etapa.
+## Actualización aceptada — Estudio (2026-10-05)
+
+Segundo corte del mismo día, ADR-0014: apertura por nombre y sin columna de
+acciones, revisión con responsable legible, preferencias en Equipo y filtros
+en columna común con plegado temporal de navegación. Movimiento breve con
+respeto a reducción de animaciones. La continuación ADR-0015 implementa sesión
+Entra y autorización por operación; activación y prueba con cuentas corporativas
+pendientes de configuración autorizada. El piloto se identifica como declarado.
+
+La dirección actual del responsable y ADR-0013 prevalecen sobre las propuestas
+visuales pendientes de este documento. Primer corte: navegación de tres áreas,
+resumen de lectura con edición explícita, pestañas del expediente, densidades
+Cómoda/Compacta y temas Claro/Oscuro/Sistema con persistencia independiente.
+Implementación visual activa en `frontend/src/studio.css`; las rutas se conservan.
+La conciliación visual completa de segunda lectura, columnas específicas por nivel
+y depuración de CSS histórico siguen siendo entregas posteriores, no funciones
+terminadas por este corte. La exportación protege las lecturas abiertas y los
+cierres que no corresponden a la decisión vigente.
+
+Fecha: 1 de octubre de 2026. Estado: planificación aprobada; primer corte de implementación iniciado el 2 de octubre de 2026.
 
 El responsable ha aprobado preparar un rediseño global inspirado en la captura aportada: navegación lateral, herramientas compactas, superficies claras y contenido organizado mediante líneas y espacio. Se conserva la paleta actual y se recupera el degradado rosa–violeta como acento sutil. El catálogo será la pantalla guía. Este documento contiene el inventario inicial, la distribución propuesta y las entregas necesarias para avanzar sin omitir flujos.
 
@@ -161,6 +180,14 @@ Los bloques repetibles conservan ocurrencias separadas. El avance requiere acci�
 
 Los colores hexadecimales y medidas definitivos se cerrarán después de probar contraste y maquetas. `design-system.css` sobrescribe parte de los tokens históricos: conservar la identidad requiere resolver la paleta efectiva, no copiar sin más el último bloque de `styles.css`.
 
+### Modo oscuro (incorporado el 2 de octubre de 2026)
+
+El rediseño incluirá tema claro, oscuro y opción «Según el sistema». El tema claro actual seguirá siendo la referencia mientras se termina la migración. La elección manual se conservará en este navegador y se aplicará antes del primer pintado para evitar destellos. El control vivirá en una zona global accesible desde cualquier pantalla; icono, texto y estado seleccionado serán comprensibles con teclado y lector de pantalla.
+
+El oscuro conservará la marca morada y el degradado rosa–violeta como acento pequeño, con superficies neutras oscuras, texto de alto contraste y estados semánticos distinguibles por color y etiqueta. Se definirán tokens para fondos, bordes, texto, estados, foco y superposiciones antes de convertir los colores fijos. No se resolverá invirtiendo la página con filtros CSS: los documentos, capturas, gráficos y contenido de fuente deben mantener su significado.
+
+La comprobación abarcará todas las rutas y estados de la matriz, con prioridad visual para catálogo poblado, filtros, tabla, expediente modal, evidencia, edición, avisos REAL/DEMO, cola y segunda revisión. Revisar contraste de texto y controles (WCAG AA), foco, hover, selección, deshabilitado, menús, errores y largas sesiones de lectura. Se probará la preferencia del sistema, persistencia, zoom y los mismos anchos representativos del tema claro. El oscuro sólo se ofrecerá como acabado cuando no queden superficies claras accidentales en los recorridos principales.
+
 ## Matriz de estados obligatorios
 
 Para cada superficie aplicable, registrar evidencia de estos estados:
@@ -208,7 +235,8 @@ Para cada superficie aplicable, registrar evidencia de estos estados:
 | RD-05 Revisión | Maquetas de campos, evidencia, errores y segunda revisión | Completar recorridos 5–7 y conservar políticas |
 | RD-06 Resto de módulos | Maquetas de Inicio, Novedades, Datos, Exportaciones y Revisores | Completar recorridos 8–12 y matriz de estados |
 | RD-07 Cierre del diseño | Matriz de cobertura y decisiones visuales consolidadas | Sin superficies olvidadas; pendientes identificados y alcance de implementación explícito |
-| RD-08 Implementación posterior | Cambios pequeños, reversibles y verificados | Requiere autorización posterior para tocar código |
+| RD-08 Implementación gradual | Cambios pequeños, reversibles y verificados | Autorizada el 2 de octubre; cada corte requiere pruebas y revisión visual |
+| RD-09 Modo oscuro transversal | Tokens, selector global y revisión de todas las superficies | Contraste, estados y recorridos principales verificados en ambos temas |
 
 Comprobar inicialmente 1280×720, 1440×900, 1920×1080 y 2560×1440; añadir anchuras reducidas y zoom al 200 %. Son escenarios de comprobación, no una garantía de columnas idénticas. En pantallas pequeñas se preserva el acceso completo mediante reorganización y desplazamiento cuando sea necesario.
 
@@ -228,4 +256,14 @@ Cada entrega de diseño registra lo revisado, lo pendiente y la decisión tomada
 
 Completados: inventario estático inicial, reconciliación con planes existentes, esquema de catálogo y detalle, cobertura de estados, recorridos y secuencia de trabajo.
 
-Pendientes: capturas de la aplicación actual con datos representativos, auditoría visual en ejecución, maquetas de alta fidelidad, medición de contraste y validación de distribución con datos extensos. El próximo paso es RD-02; todavía no comienza implementación.
+Pendientes: capturas de la aplicación actual con datos representativos, auditoría visual en ejecución, maquetas de alta fidelidad, medición de contraste y validación de distribución con datos extensos. La revisión visual RD-02 debe comprobar el primer corte antes de cerrar medidas o extenderlo a otras pantallas.
+
+### Avance del 2 de octubre de 2026
+
+El responsable autorizó comenzar el rediseño. Se implementó el primer corte del armazón común: navegación lateral plegable, ubicación y revisor en la cabecera, y catálogo con búsqueda y orden siempre visibles más filtros avanzados plegables sobre la tabla. Se conserva el expediente modal vigente, las rutas y la lógica de consulta/revisión. Las medidas y el detalle visual continúan sujetos a verificación en navegador con datos representativos.
+
+La secuencia continúa con revisión visual de este corte, adaptación del detalle y el flujo de revisión y, después, el resto de módulos. La auditoría visual RD-02 sigue pendiente; no se presenta este corte como diseño final aprobado.
+
+### Avance RD-09 del 2 de octubre de 2026
+
+El responsable autorizó la implementación del modo oscuro. El selector global permite claro, oscuro y «Según el sistema», conserva la elección y aplica el tema antes de cargar React. Se definieron tokens oscuros y reglas para superficies históricas, con especial revisión del catálogo poblado, filtros y expediente modal. La auditoría visual de estados poco frecuentes y el contraste exhaustivo en todas las rutas siguen abiertos antes de cerrar RD-09.

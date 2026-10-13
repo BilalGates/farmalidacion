@@ -127,7 +127,8 @@ def opening(
     actor = directory.resolve(payload.reviewer_id)
     with translated(session):
         row = open_second_review(
-            session, field_value_id=field_id, actor_id=actor.identifier
+            session, field_value_id=field_id, actor_id=actor.identifier,
+            actor_assurance=actor.assurance,
         )
         session.commit()
     return view(row)
@@ -206,6 +207,7 @@ def _apply(
             session,
             assignment_id=assignment_id,
             reviewer_id=actor_id,
+            actor_assurance=directory.resolve(actor_id).assurance,
             expected_version=payload.expected_version,
         )
     elif operation == "decisions":
@@ -216,7 +218,7 @@ def _apply(
                 field_name=field_name,
                 state=payload.state,
                 reviewer_id=actor_id,
-                reviewer_role="farmaceutico",
+                reviewer_role=directory.resolve(actor_id).role,
                 final_value=payload.final_value,
                 comment=payload.comment,
                 required_sources=tuple(payload.required_sources),
@@ -239,6 +241,7 @@ def _apply(
                 final_value=payload.final_value,
             ),
             directory=directory,
+            reviewer_role=directory.resolve(actor_id).role,
             expected_version=payload.expected_version,
         )
         session.refresh(row)

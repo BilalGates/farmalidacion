@@ -53,7 +53,9 @@ from pharma_validator_api.validation_states import (
 router = APIRouter(prefix="/records", tags=["registros"])
 
 
-def _open_required_second_reviews(session: Session, *, target_record_id: str, actor_id: str) -> int:
+def _open_required_second_reviews(
+    session: Session, *, target_record_id: str, actor_id: str, actor_assurance: str = "declarada"
+) -> int:
     """Abre la segunda lectura de todos los campos ya decididos de un L04."""
     values = list(
         session.scalars(
@@ -83,7 +85,9 @@ def _open_required_second_reviews(session: Session, *, target_record_id: str, ac
     for item in values:
         if item.id not in decisions or item.id in existing:
             continue
-        open_second_review(session, field_value_id=item.id, actor_id=actor_id)
+        open_second_review(
+            session, field_value_id=item.id, actor_id=actor_id, actor_assurance=actor_assurance
+        )
         opened += 1
     session.execute(
         update(ReviewQueueEntry)
@@ -247,10 +251,19 @@ def get_reviewer_directory(request: Request, session: SessionDependency) -> Revi
     porque la tabla esté vacía. En cuanto hay uno dado de alta, manda la base.
     """
     from_database = directory_from_database(session)
-    if from_database.reviewers:
-        return from_database
     settings = cast(Settings, getattr(request.app.state, "settings", None) or get_settings())
-    return ReviewerDirectory.from_configuration(settings.reviewers)
+    directory = from_database if from_database.reviewers else ReviewerDirectory.from_configuration(
+        settings.reviewers
+    )
+    principal = getattr(request.state, "principal", None)
+    if principal is not None:
+        # Sólo la cuenta de esta petición tiene garantía verificada. La lista
+        # y los actores del pasado no se elevan de garantía por autenticarse otro.
+        directory = ReviewerDirectory(tuple(
+            principal.reviewer if item.identifier == principal.reviewer.identifier else item
+            for item in directory.reviewers
+        ))
+    return directory
 
 
 DirectoryDependency = Annotated[ReviewerDirectory, Depends(get_reviewer_directory)]
@@ -992,6 +1005,7 @@ def save_decision(
                 session,
                 target_record_id=block.target_record_id,
                 actor_id=signer.identifier,
+                actor_assurance=signer.assurance,
             )
         session.commit()
     except (ValidationStateError, ReviewerIdentityError, ValueError) as error:
