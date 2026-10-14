@@ -3,6 +3,7 @@
 .agents
 .codex
 .env
+.env.*
 .venv
 **/__pycache__
 **/*.pyc
@@ -13,4 +14,5 @@
 artifacts
 data/reference/raw
 data/local/*.db
+data/hosted
 reports/generated

@@ -1,0 +1,61 @@
+name: farmalidacion-hosted
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: infra/backend.Dockerfile
+    environment:
+      APP_ENV: production
+      APP_DATA_MODE: real
+      APP_AUTH_MODE: entra
+      APP_DATABASE_URL: sqlite:////app/data/real.db
+      APP_LOAD_DEMO_FIXTURE: 'false'
+      APP_LOAD_SHOWCASE_FIXTURE: 'false'
+      APP_CORS_ALLOW_ORIGINS: ${APP_CORS_ALLOW_ORIGINS:?Indica el origen HTTPS del frontend}
+      APP_ENTRA_TENANT_ID: ${APP_ENTRA_TENANT_ID:?Falta el tenant ID}
+      APP_ENTRA_API_CLIENT_ID: ${APP_ENTRA_API_CLIENT_ID:?Falta el client ID de API}
+      APP_ENTRA_SPA_CLIENT_ID: ${APP_ENTRA_SPA_CLIENT_ID:?Falta el client ID de SPA}
+      APP_ENTRA_REQUIRED_SCOPE: ${APP_ENTRA_REQUIRED_SCOPE:-access_as_user}
+      APP_ENTRA_SPA_SCOPE: ${APP_ENTRA_SPA_SCOPE:?Falta el scope de API}
+      APP_ENTRA_ROLE_CAPABILITIES: ${APP_ENTRA_ROLE_CAPABILITIES:?Falta la matriz de roles}
+      APP_ENTRA_REVIEWER_BINDINGS: ${APP_ENTRA_REVIEWER_BINDINGS:?Faltan los vínculos de revisores}
+      APP_EXPORT_ARTIFACT_DIR: /app/data/exports
+      HOSTED_MIN_REAL_RECORDS: ${HOSTED_MIN_REAL_RECORDS:?Indica el mínimo de registros REAL}
+    command:
+      - sh
+      - -ec
+      - >-
+        python /app/scripts/check_hosted_database.py &&
+        python -m alembic -c backend/alembic.ini upgrade head &&
+        exec python -m uvicorn pharma_validator_api.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - ../data/hosted:/app/data
+    healthcheck:
+      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  gateway:
+    image: caddy:2
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?Indica el dominio DNS de la API}
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./Caddyfile.hosted:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

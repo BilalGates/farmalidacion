@@ -1,3 +1,22 @@
+## 2026-10-14 — Preparación de publicación REAL compartida
+
+El responsable solicita el catálogo completo de los Excel en el frontend
+Vercel. Se verificaron 43.381 registros REAL, cero DEMO y 2.169.251 valores de
+campo en las bases locales; `real-preview.db` no contiene sesiones de revisión
+de prueba y supera `PRAGMA quick_check`. Tres Excel mantienen el SHA-256 de
+ingesta. El libro de medicamentos actual tiene un ZIP distinto, pero la
+comparación de sus siete hojas con la revisión importada no halló cambios de
+filas, valores ni fórmulas.
+
+Se prepararon Compose, proxy HTTPS, comprobación de base y procedimiento de
+instantánea en `infra/` y `scripts/`. La instantánea íntegra
+`data/hosted/real.db` (1.928.785.920 bytes) quedó creada y excluida de Git.
+No se ha publicado la base REAL: el
+responsable confirmó que aún no existe servidor remoto. Falta aprovisionar un
+servidor persistente y dominio API, trasladar la instantánea, activar Entra con
+asignaciones corporativas, actualizar la URL de API en Vercel y comprobar acceso
+externo autenticado. La demo pública se conserva aislada hasta entonces.
+
 ## 2026-10-14 — Demostración pública en Vercel
 
 El proyecto API de Vercel arranca con una base SQLite temporal creada en `/tmp`

@@ -11,6 +11,7 @@ RUN python -m pip install --no-cache-dir /app/backend \
     && mkdir -p /app/data \
     && chown -R appuser:appuser /app
 COPY --chown=appuser:appuser scripts/run_cima_maintenance.py /app/scripts/run_cima_maintenance.py
+COPY --chown=appuser:appuser scripts/check_hosted_database.py /app/scripts/check_hosted_database.py
 
 USER appuser
 EXPOSE 8000
