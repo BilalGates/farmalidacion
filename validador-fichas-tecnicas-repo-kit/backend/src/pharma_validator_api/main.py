@@ -1,6 +1,8 @@
+import os
+import tempfile
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,7 +31,7 @@ from pharma_validator_api.insights import router as insights_router
 from pharma_validator_api.logging import configure_logging
 from pharma_validator_api.maintenance_api import router as maintenance_router
 from pharma_validator_api.master_workbook_export_api import router as master_export_router
-from pharma_validator_api.models import ImportBatch, TargetRecord
+from pharma_validator_api.models import Base, ImportBatch, TargetRecord
 from pharma_validator_api.quarantine_api import router as quarantine_router
 from pharma_validator_api.queue_api import maturity_router
 from pharma_validator_api.queue_api import router as queue_router
@@ -90,12 +92,39 @@ class DatabaseInfoResponse(BaseModel):
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     active = settings or get_settings()
+    # Vercel sólo permite escritura temporal. La publicación pública actual es
+    # una demostración sintética: nunca se conecta al corpus real del equipo.
+    vercel_demo = (
+        os.environ.get("VERCEL") == "1"
+        and make_url(active.database_url).get_backend_name() == "sqlite"
+    )
+    if vercel_demo:
+        fixture_dir = Path(__file__).resolve().parent / "demo_data"
+        demo_db = Path(tempfile.gettempdir()) / f"farmalidacion-demo-{os.getpid()}.db"
+        active = active.model_copy(
+            update={
+                "env": "production",
+                "data_mode": "demo",
+                "database_url": f"sqlite:///{demo_db.as_posix()}",
+                "load_demo_fixture": True,
+                "demo_fixture_path": fixture_dir / "omeprazole-demo.json",
+                "load_showcase_fixture": True,
+                "showcase_fixture_path": fixture_dir / "showcase-demo.json",
+                "cors_allow_origins": ("https://farmalidacion-beta.vercel.app",),
+                "auth_mode": "pilot",
+                "reviewers": ("mtorres:M. Torres", "jlopez:J. Lopez"),
+                "cima_cache_dir": Path(tempfile.gettempdir()) / "farmalidacion-cima-cache",
+                "export_artifact_dir": Path(tempfile.gettempdir()) / "farmalidacion-exports",
+            }
+        )
     configure_logging(active.log_level)
     engine = create_database_engine(active)
     session_factory = create_session_factory(engine)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        if vercel_demo:
+            Base.metadata.create_all(engine)
         if active.load_demo_fixture:
             with session_factory() as session:
                 load_demo_fixture(session, active.demo_fixture_path)
@@ -137,7 +166,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "X-Import-Actor",
                 "X-Import-Reason",
             ],
-            allow_private_network=True,
         )
     register_error_handlers(application)
     application.include_router(auth_router)

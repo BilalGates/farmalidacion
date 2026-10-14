@@ -66,12 +66,12 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit, publicRequest = false): Promise<T> {
+  const baseUrl = requireApiBaseUrl()
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 30_000)
   let response: Response
   try {
-    response = await (publicRequest ? fetch : authenticatedFetch)(`${appConfig.apiBaseUrl}${path}`, {
-      ...appConfig.apiFetchOptions,
+    response = await (publicRequest ? fetch : authenticatedFetch)(`${baseUrl}${path}`, {
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
       ...init,
@@ -98,6 +98,13 @@ async function request<T>(path: string, init?: RequestInit, publicRequest = fals
   // 204 no trae cuerpo: pedir el JSON lanzaría y convertiría un éxito en error.
   if (response.status === 204) return undefined as T
   return (await response.json()) as T
+}
+
+function requireApiBaseUrl(): string {
+  if (!appConfig.apiBaseUrl) {
+    throw new ApiError('La API de este despliegue no está configurada. Falta VITE_API_BASE_URL.', 0)
+  }
+  return appConfig.apiBaseUrl
 }
 
 export function fetchRecords(params: { q?: string; estado?: string } = {}): Promise<RecordList> {
@@ -711,7 +718,7 @@ export function fetchExportExclusions(runId: string): Promise<ExportExclusionRow
 }
 
 export async function downloadExport(runId: string): Promise<void> {
-  const response = await authenticatedFetch(`${appConfig.apiBaseUrl}/exports/${encodeURIComponent(runId)}/artifact`, appConfig.apiFetchOptions)
+  const response = await authenticatedFetch(`${requireApiBaseUrl()}/exports/${encodeURIComponent(runId)}/artifact`)
   if (!response.ok) throw new ApiError('No se pudo descargar la exportación.', response.status)
   const blob = await response.blob()
   const url = URL.createObjectURL(blob)

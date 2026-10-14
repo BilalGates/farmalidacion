@@ -21,6 +21,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = ['mypy>=2.3,<3', 'pytest>=8.3,<9', 'ruff>=0.9,<1']
 
+[tool.setuptools.package-data]
+pharma_validator_api = ["demo_data/*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ['tests']
 # Los marcadores sólo permiten *seleccionar* subconjuntos. Ninguna prueba se

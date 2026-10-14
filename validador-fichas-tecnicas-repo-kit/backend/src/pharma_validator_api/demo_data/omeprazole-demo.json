@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "source_document": {"id": "00000000-0000-4000-8000-000000000001", "source_type": "synthetic_fixture", "name": "Omeprazol — fixture sintético DEV-107"},
+  "source_document_version": {"id": "00000000-0000-4000-8000-000000000002", "document_id": "00000000-0000-4000-8000-000000000001", "content_hash": "69e70944a4038f9443b02cd711d210ca7adf39d5e37e412b206993ce85d6a46e", "source_version": "synthetic-v1", "source_locator": "data/examples/omeprazole-demo.json", "acquired_at": "2026-08-26T00:00:00"},
+  "source_fragments": [
+    {"id": "00000000-0000-4000-8000-000000000003", "document_version_id": "00000000-0000-4000-8000-000000000002", "locator_type": "fixture_path", "locator": "composition/1", "literal_text": "Ocurrencia sintética de composición 1"},
+    {"id": "00000000-0000-4000-8000-000000000004", "document_version_id": "00000000-0000-4000-8000-000000000002", "locator_type": "fixture_path", "locator": "composition/2", "literal_text": "Ocurrencia sintética de composición 2"}
+  ],
+  "target_record": {"id": "00000000-0000-4000-8000-000000000101", "entity_type": "medication"},
+  "external_identifiers": [{"id": "00000000-0000-4000-8000-000000000102", "target_record_id": "00000000-0000-4000-8000-000000000101", "source_system": "synthetic_fixture", "source_identifier": "OMEPRAZOLE-DEMO", "source_version": "synthetic-v1"}],
+  "document_record_links": [{"id": "00000000-0000-4000-8000-000000000103", "document_version_id": "00000000-0000-4000-8000-000000000002", "target_record_id": "00000000-0000-4000-8000-000000000101", "link_type": "demo_source"}],
+  "block_instances": [
+    {"id": "00000000-0000-4000-8000-000000000201", "target_record_id": "00000000-0000-4000-8000-000000000101", "block_type": "composition", "ordinal": 1, "source_fragment_id": "00000000-0000-4000-8000-000000000003"},
+    {"id": "00000000-0000-4000-8000-000000000202", "target_record_id": "00000000-0000-4000-8000-000000000101", "block_type": "composition", "ordinal": 2, "source_fragment_id": "00000000-0000-4000-8000-000000000004"}
+  ],
+  "field_values": [
+    {"id": "00000000-0000-4000-8000-000000000301", "block_instance_id": "00000000-0000-4000-8000-000000000201", "field_name": "description", "literal_value": "omeprazol", "observed_type": "text", "logical_state": "valued"},
+    {"id": "00000000-0000-4000-8000-000000000302", "block_instance_id": "00000000-0000-4000-8000-000000000202", "field_name": "description", "literal_value": "omeprazol", "observed_type": "text", "logical_state": "valued"}
+  ],
+  "value_provenances": [
+    {"id": "00000000-0000-4000-8000-000000000401", "field_value_id": "00000000-0000-4000-8000-000000000301", "source_fragment_id": "00000000-0000-4000-8000-000000000003", "provenance_role": "baseline"},
+    {"id": "00000000-0000-4000-8000-000000000402", "field_value_id": "00000000-0000-4000-8000-000000000302", "source_fragment_id": "00000000-0000-4000-8000-000000000004", "provenance_role": "baseline"}
+  ]
+}

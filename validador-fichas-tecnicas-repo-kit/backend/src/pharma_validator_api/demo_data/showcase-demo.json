@@ -1,0 +1,970 @@
+{
+  "schema_version": "1.0.0",
+  "provenance_note": "DATOS DE DEMOSTRACIÓN. Los nombres de campo y bloque proceden del catálogo real; los valores son de demostración y no provienen de los maestros ni de CIMA. No deben usarse como evidencia clínica ni exportarse.",
+  "source_documents": [
+    {
+      "id": "10000000-0000-4000-8000-000000000001",
+      "source_type": "demo_showcase",
+      "name": "Conjunto DEMO de la vertical de revisión"
+    }
+  ],
+  "source_document_versions": [
+    {
+      "id": "10000000-0000-4000-8000-000000000010",
+      "document_id": "10000000-0000-4000-8000-000000000001",
+      "content_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "source_version": "demo-maestro-v1",
+      "source_locator": "demo://maestro",
+      "acquired_at": "2026-09-03T00:00:00"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000011",
+      "document_id": "10000000-0000-4000-8000-000000000001",
+      "content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "source_version": "demo-cima-v1",
+      "source_locator": "demo://cima",
+      "acquired_at": "2026-09-03T00:00:00"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000012",
+      "document_id": "10000000-0000-4000-8000-000000000001",
+      "content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+      "source_version": "demo-ficha-v1",
+      "source_locator": "demo://ficha-tecnica",
+      "acquired_at": "2026-09-03T00:00:00"
+    }
+  ],
+  "source_fragments": [
+    {
+      "id": "10000000-0000-4000-8000-000100000001",
+      "document_version_id": "10000000-0000-4000-8000-000000000010",
+      "locator_type": "demo_locator",
+      "locator": "maestro/DEMO-0001",
+      "literal_text": "Fila de maestro DEMO DEMO-0001"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000100000002",
+      "document_version_id": "10000000-0000-4000-8000-000000000011",
+      "locator_type": "demo_locator",
+      "locator": "cima/DEMO-0001",
+      "literal_text": "Metadato CIMA DEMO DEMO-0001"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000100000003",
+      "document_version_id": "10000000-0000-4000-8000-000000000012",
+      "locator_type": "demo_locator",
+      "locator": "ficha-tecnica/DEMO-0001#2",
+      "literal_text": "Apartado 2 de ficha técnica DEMO para DEMO-0001"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000100000004",
+      "document_version_id": "10000000-0000-4000-8000-000000000010",
+      "locator_type": "demo_locator",
+      "locator": "maestro/DEMO-0002",
+      "literal_text": "Fila de maestro DEMO DEMO-0002"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000100000005",
+      "document_version_id": "10000000-0000-4000-8000-000000000011",
+      "locator_type": "demo_locator",
+      "locator": "cima/DEMO-0002",
+      "literal_text": "Metadato CIMA DEMO DEMO-0002"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000100000006",
+      "document_version_id": "10000000-0000-4000-8000-000000000012",
+      "locator_type": "demo_locator",
+      "locator": "ficha-tecnica/DEMO-0002#2",
+      "literal_text": "Apartado 2 de ficha técnica DEMO para DEMO-0002"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000100000007",
+      "document_version_id": "10000000-0000-4000-8000-000000000010",
+      "locator_type": "demo_locator",
+      "locator": "maestro/DEMO-0003",
+      "literal_text": "Fila de maestro DEMO DEMO-0003"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000100000008",
+      "document_version_id": "10000000-0000-4000-8000-000000000011",
+      "locator_type": "demo_locator",
+      "locator": "cima/DEMO-0003",
+      "literal_text": "Metadato CIMA DEMO DEMO-0003"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000100000009",
+      "document_version_id": "10000000-0000-4000-8000-000000000012",
+      "locator_type": "demo_locator",
+      "locator": "ficha-tecnica/DEMO-0003#2",
+      "literal_text": "Apartado 2 de ficha técnica DEMO para DEMO-0003"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000100000010",
+      "document_version_id": "10000000-0000-4000-8000-000000000010",
+      "locator_type": "demo_locator",
+      "locator": "maestro/DEMO-0004",
+      "literal_text": "Fila de maestro DEMO DEMO-0004"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000100000011",
+      "document_version_id": "10000000-0000-4000-8000-000000000011",
+      "locator_type": "demo_locator",
+      "locator": "cima/DEMO-0004",
+      "literal_text": "Metadato CIMA DEMO DEMO-0004"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000100000012",
+      "document_version_id": "10000000-0000-4000-8000-000000000012",
+      "locator_type": "demo_locator",
+      "locator": "ficha-tecnica/DEMO-0004#2",
+      "literal_text": "Apartado 2 de ficha técnica DEMO para DEMO-0004"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000100000013",
+      "document_version_id": "10000000-0000-4000-8000-000000000010",
+      "locator_type": "demo_locator",
+      "locator": "maestro/DEMO-0005",
+      "literal_text": "Fila de maestro DEMO DEMO-0005"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000100000014",
+      "document_version_id": "10000000-0000-4000-8000-000000000011",
+      "locator_type": "demo_locator",
+      "locator": "cima/DEMO-0005",
+      "literal_text": "Metadato CIMA DEMO DEMO-0005"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000100000015",
+      "document_version_id": "10000000-0000-4000-8000-000000000012",
+      "locator_type": "demo_locator",
+      "locator": "ficha-tecnica/DEMO-0005#2",
+      "literal_text": "Apartado 2 de ficha técnica DEMO para DEMO-0005"
+    }
+  ],
+  "target_records": [
+    {
+      "id": "10000000-0000-4000-8000-000200000001",
+      "entity_type": "medication"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000200000002",
+      "entity_type": "medication"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000200000003",
+      "entity_type": "medication"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000200000004",
+      "entity_type": "medication"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000200000005",
+      "entity_type": "medication"
+    }
+  ],
+  "external_identifiers": [
+    {
+      "id": "10000000-0000-4000-8000-000300000001",
+      "target_record_id": "10000000-0000-4000-8000-000200000001",
+      "source_system": "demo_showcase",
+      "source_identifier": "DEMO-0001",
+      "source_version": "demo-v1"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000300000002",
+      "target_record_id": "10000000-0000-4000-8000-000200000002",
+      "source_system": "demo_showcase",
+      "source_identifier": "DEMO-0002",
+      "source_version": "demo-v1"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000300000003",
+      "target_record_id": "10000000-0000-4000-8000-000200000003",
+      "source_system": "demo_showcase",
+      "source_identifier": "DEMO-0003",
+      "source_version": "demo-v1"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000300000004",
+      "target_record_id": "10000000-0000-4000-8000-000200000004",
+      "source_system": "demo_showcase",
+      "source_identifier": "DEMO-0004",
+      "source_version": "demo-v1"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000300000005",
+      "target_record_id": "10000000-0000-4000-8000-000200000005",
+      "source_system": "demo_showcase",
+      "source_identifier": "DEMO-0005",
+      "source_version": "demo-v1"
+    }
+  ],
+  "document_record_links": [
+    {
+      "id": "10000000-0000-4000-8000-000400000001",
+      "document_version_id": "10000000-0000-4000-8000-000000000010",
+      "target_record_id": "10000000-0000-4000-8000-000200000001",
+      "link_type": "demo_source"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000400000002",
+      "document_version_id": "10000000-0000-4000-8000-000000000011",
+      "target_record_id": "10000000-0000-4000-8000-000200000001",
+      "link_type": "demo_source"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000400000003",
+      "document_version_id": "10000000-0000-4000-8000-000000000012",
+      "target_record_id": "10000000-0000-4000-8000-000200000001",
+      "link_type": "demo_source"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000400000004",
+      "document_version_id": "10000000-0000-4000-8000-000000000010",
+      "target_record_id": "10000000-0000-4000-8000-000200000002",
+      "link_type": "demo_source"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000400000005",
+      "document_version_id": "10000000-0000-4000-8000-000000000011",
+      "target_record_id": "10000000-0000-4000-8000-000200000002",
+      "link_type": "demo_source"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000400000006",
+      "document_version_id": "10000000-0000-4000-8000-000000000012",
+      "target_record_id": "10000000-0000-4000-8000-000200000002",
+      "link_type": "demo_source"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000400000007",
+      "document_version_id": "10000000-0000-4000-8000-000000000010",
+      "target_record_id": "10000000-0000-4000-8000-000200000003",
+      "link_type": "demo_source"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000400000008",
+      "document_version_id": "10000000-0000-4000-8000-000000000011",
+      "target_record_id": "10000000-0000-4000-8000-000200000003",
+      "link_type": "demo_source"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000400000009",
+      "document_version_id": "10000000-0000-4000-8000-000000000012",
+      "target_record_id": "10000000-0000-4000-8000-000200000003",
+      "link_type": "demo_source"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000400000010",
+      "document_version_id": "10000000-0000-4000-8000-000000000010",
+      "target_record_id": "10000000-0000-4000-8000-000200000004",
+      "link_type": "demo_source"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000400000011",
+      "document_version_id": "10000000-0000-4000-8000-000000000011",
+      "target_record_id": "10000000-0000-4000-8000-000200000004",
+      "link_type": "demo_source"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000400000012",
+      "document_version_id": "10000000-0000-4000-8000-000000000012",
+      "target_record_id": "10000000-0000-4000-8000-000200000004",
+      "link_type": "demo_source"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000400000013",
+      "document_version_id": "10000000-0000-4000-8000-000000000010",
+      "target_record_id": "10000000-0000-4000-8000-000200000005",
+      "link_type": "demo_source"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000400000014",
+      "document_version_id": "10000000-0000-4000-8000-000000000011",
+      "target_record_id": "10000000-0000-4000-8000-000200000005",
+      "link_type": "demo_source"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000400000015",
+      "document_version_id": "10000000-0000-4000-8000-000000000012",
+      "target_record_id": "10000000-0000-4000-8000-000200000005",
+      "link_type": "demo_source"
+    }
+  ],
+  "block_instances": [
+    {
+      "id": "10000000-0000-4000-8000-000500000001",
+      "target_record_id": "10000000-0000-4000-8000-000200000001",
+      "block_type": "Medicamento - General",
+      "ordinal": 1,
+      "source_fragment_id": "10000000-0000-4000-8000-000100000001"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000500000002",
+      "target_record_id": "10000000-0000-4000-8000-000200000001",
+      "block_type": "Composición",
+      "ordinal": 1,
+      "source_fragment_id": "10000000-0000-4000-8000-000100000001"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000500000003",
+      "target_record_id": "10000000-0000-4000-8000-000200000001",
+      "block_type": "Composición",
+      "ordinal": 2,
+      "source_fragment_id": "10000000-0000-4000-8000-000100000003"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000500000004",
+      "target_record_id": "10000000-0000-4000-8000-000200000002",
+      "block_type": "Medicamento - General",
+      "ordinal": 1,
+      "source_fragment_id": "10000000-0000-4000-8000-000100000004"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000500000005",
+      "target_record_id": "10000000-0000-4000-8000-000200000002",
+      "block_type": "Composición",
+      "ordinal": 1,
+      "source_fragment_id": "10000000-0000-4000-8000-000100000004"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000500000006",
+      "target_record_id": "10000000-0000-4000-8000-000200000002",
+      "block_type": "Composición",
+      "ordinal": 2,
+      "source_fragment_id": "10000000-0000-4000-8000-000100000006"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000500000007",
+      "target_record_id": "10000000-0000-4000-8000-000200000003",
+      "block_type": "Medicamento - General",
+      "ordinal": 1,
+      "source_fragment_id": "10000000-0000-4000-8000-000100000007"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000500000008",
+      "target_record_id": "10000000-0000-4000-8000-000200000003",
+      "block_type": "Composición",
+      "ordinal": 1,
+      "source_fragment_id": "10000000-0000-4000-8000-000100000007"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000500000009",
+      "target_record_id": "10000000-0000-4000-8000-000200000003",
+      "block_type": "Composición",
+      "ordinal": 2,
+      "source_fragment_id": "10000000-0000-4000-8000-000100000009"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000500000010",
+      "target_record_id": "10000000-0000-4000-8000-000200000004",
+      "block_type": "Medicamento - General",
+      "ordinal": 1,
+      "source_fragment_id": "10000000-0000-4000-8000-000100000010"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000500000011",
+      "target_record_id": "10000000-0000-4000-8000-000200000004",
+      "block_type": "Composición",
+      "ordinal": 1,
+      "source_fragment_id": "10000000-0000-4000-8000-000100000010"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000500000012",
+      "target_record_id": "10000000-0000-4000-8000-000200000004",
+      "block_type": "Composición",
+      "ordinal": 2,
+      "source_fragment_id": "10000000-0000-4000-8000-000100000012"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000500000013",
+      "target_record_id": "10000000-0000-4000-8000-000200000005",
+      "block_type": "Medicamento - General",
+      "ordinal": 1,
+      "source_fragment_id": "10000000-0000-4000-8000-000100000013"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000500000014",
+      "target_record_id": "10000000-0000-4000-8000-000200000005",
+      "block_type": "Composición",
+      "ordinal": 1,
+      "source_fragment_id": "10000000-0000-4000-8000-000100000013"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000500000015",
+      "target_record_id": "10000000-0000-4000-8000-000200000005",
+      "block_type": "Composición",
+      "ordinal": 2,
+      "source_fragment_id": "10000000-0000-4000-8000-000100000015"
+    }
+  ],
+  "field_values": [
+    {
+      "id": "10000000-0000-4000-8000-000600000001",
+      "block_instance_id": "10000000-0000-4000-8000-000500000001",
+      "field_name": "ME_DESCRIPCION",
+      "literal_value": "Omeprazol 20 mg cápsulas duras",
+      "observed_type": "CHAR(100)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000002",
+      "block_instance_id": "10000000-0000-4000-8000-000500000001",
+      "field_name": "ATC",
+      "literal_value": "A02BC01",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000003",
+      "block_instance_id": "10000000-0000-4000-8000-000500000001",
+      "field_name": "FORMAFARMA",
+      "literal_value": "Cápsula dura gastrorresistente",
+      "observed_type": "CHAR(100)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000004",
+      "block_instance_id": "10000000-0000-4000-8000-000500000001",
+      "field_name": "RECOMENPRESCRIP",
+      "literal_value": null,
+      "observed_type": "CHAR(4000)",
+      "logical_state": "empty"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000005",
+      "block_instance_id": "10000000-0000-4000-8000-000500000002",
+      "field_name": "PA_DESCRIPCION",
+      "literal_value": "omeprazol",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000006",
+      "block_instance_id": "10000000-0000-4000-8000-000500000002",
+      "field_name": "CANTIDAD",
+      "literal_value": "20 mg",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000007",
+      "block_instance_id": "10000000-0000-4000-8000-000500000003",
+      "field_name": "EX_DESCRIPCION",
+      "literal_value": "Lactosa monohidrato",
+      "observed_type": "CHAR(100)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000008",
+      "block_instance_id": "10000000-0000-4000-8000-000500000004",
+      "field_name": "ME_DESCRIPCION",
+      "literal_value": "Metotrexato 2,5 mg comprimidos",
+      "observed_type": "CHAR(100)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000009",
+      "block_instance_id": "10000000-0000-4000-8000-000500000004",
+      "field_name": "ATC",
+      "literal_value": "L01BA01",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000010",
+      "block_instance_id": "10000000-0000-4000-8000-000500000004",
+      "field_name": "FORMAFARMA",
+      "literal_value": "Comprimido",
+      "observed_type": "CHAR(100)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000011",
+      "block_instance_id": "10000000-0000-4000-8000-000500000004",
+      "field_name": "RECOMENPRESCRIP",
+      "literal_value": null,
+      "observed_type": "CHAR(4000)",
+      "logical_state": "empty"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000012",
+      "block_instance_id": "10000000-0000-4000-8000-000500000005",
+      "field_name": "PA_DESCRIPCION",
+      "literal_value": "metotrexato",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000013",
+      "block_instance_id": "10000000-0000-4000-8000-000500000005",
+      "field_name": "CANTIDAD",
+      "literal_value": "2,5 mg",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000014",
+      "block_instance_id": "10000000-0000-4000-8000-000500000005",
+      "field_name": "CANTIDAD",
+      "literal_value": "2,5 mg/comprimido",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000015",
+      "block_instance_id": "10000000-0000-4000-8000-000500000006",
+      "field_name": "EX_DESCRIPCION",
+      "literal_value": "Lactosa monohidrato",
+      "observed_type": "CHAR(100)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000016",
+      "block_instance_id": "10000000-0000-4000-8000-000500000007",
+      "field_name": "ME_DESCRIPCION",
+      "literal_value": "Adalimumab 40 mg solución inyectable",
+      "observed_type": "CHAR(100)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000017",
+      "block_instance_id": "10000000-0000-4000-8000-000500000007",
+      "field_name": "ATC",
+      "literal_value": "L04AB04",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000018",
+      "block_instance_id": "10000000-0000-4000-8000-000500000007",
+      "field_name": "FORMAFARMA",
+      "literal_value": "Solución inyectable en pluma precargada",
+      "observed_type": "CHAR(100)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000019",
+      "block_instance_id": "10000000-0000-4000-8000-000500000007",
+      "field_name": "RECOMENPRESCRIP",
+      "literal_value": null,
+      "observed_type": "CHAR(4000)",
+      "logical_state": "empty"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000020",
+      "block_instance_id": "10000000-0000-4000-8000-000500000008",
+      "field_name": "PA_DESCRIPCION",
+      "literal_value": "adalimumab",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000021",
+      "block_instance_id": "10000000-0000-4000-8000-000500000008",
+      "field_name": "CANTIDAD",
+      "literal_value": "40 mg",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000022",
+      "block_instance_id": "10000000-0000-4000-8000-000500000009",
+      "field_name": "EX_DESCRIPCION",
+      "literal_value": "Lactosa monohidrato",
+      "observed_type": "CHAR(100)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000023",
+      "block_instance_id": "10000000-0000-4000-8000-000500000010",
+      "field_name": "ME_DESCRIPCION",
+      "literal_value": "Amoxicilina 500 mg cápsulas",
+      "observed_type": "CHAR(100)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000024",
+      "block_instance_id": "10000000-0000-4000-8000-000500000010",
+      "field_name": "ATC",
+      "literal_value": "J01CA04",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000025",
+      "block_instance_id": "10000000-0000-4000-8000-000500000010",
+      "field_name": "FORMAFARMA",
+      "literal_value": "Cápsula dura",
+      "observed_type": "CHAR(100)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000026",
+      "block_instance_id": "10000000-0000-4000-8000-000500000010",
+      "field_name": "RECOMENPRESCRIP",
+      "literal_value": null,
+      "observed_type": "CHAR(4000)",
+      "logical_state": "empty"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000027",
+      "block_instance_id": "10000000-0000-4000-8000-000500000011",
+      "field_name": "PA_DESCRIPCION",
+      "literal_value": "amoxicilina",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000028",
+      "block_instance_id": "10000000-0000-4000-8000-000500000011",
+      "field_name": "CANTIDAD",
+      "literal_value": "500 mg",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000029",
+      "block_instance_id": "10000000-0000-4000-8000-000500000012",
+      "field_name": "EX_DESCRIPCION",
+      "literal_value": "Lactosa monohidrato",
+      "observed_type": "CHAR(100)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000030",
+      "block_instance_id": "10000000-0000-4000-8000-000500000013",
+      "field_name": "ME_DESCRIPCION",
+      "literal_value": "Enalapril 10 mg comprimidos",
+      "observed_type": "CHAR(100)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000031",
+      "block_instance_id": "10000000-0000-4000-8000-000500000013",
+      "field_name": "ATC",
+      "literal_value": "C09AA02",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000032",
+      "block_instance_id": "10000000-0000-4000-8000-000500000013",
+      "field_name": "FORMAFARMA",
+      "literal_value": "Comprimido",
+      "observed_type": "CHAR(100)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000033",
+      "block_instance_id": "10000000-0000-4000-8000-000500000013",
+      "field_name": "RECOMENPRESCRIP",
+      "literal_value": null,
+      "observed_type": "CHAR(4000)",
+      "logical_state": "empty"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000034",
+      "block_instance_id": "10000000-0000-4000-8000-000500000014",
+      "field_name": "PA_DESCRIPCION",
+      "literal_value": "enalapril",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000035",
+      "block_instance_id": "10000000-0000-4000-8000-000500000014",
+      "field_name": "CANTIDAD",
+      "literal_value": "10 mg",
+      "observed_type": "CHAR(50)",
+      "logical_state": "valued"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000600000036",
+      "block_instance_id": "10000000-0000-4000-8000-000500000015",
+      "field_name": "EX_DESCRIPCION",
+      "literal_value": "Lactosa monohidrato",
+      "observed_type": "CHAR(100)",
+      "logical_state": "valued"
+    }
+  ],
+  "value_provenances": [
+    {
+      "id": "10000000-0000-4000-8000-000700000001",
+      "field_value_id": "10000000-0000-4000-8000-000600000001",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000001",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000002",
+      "field_value_id": "10000000-0000-4000-8000-000600000002",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000001",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000003",
+      "field_value_id": "10000000-0000-4000-8000-000600000002",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000002",
+      "provenance_role": "cima_structured"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000004",
+      "field_value_id": "10000000-0000-4000-8000-000600000003",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000002",
+      "provenance_role": "cima_structured"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000005",
+      "field_value_id": "10000000-0000-4000-8000-000600000004",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000001",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000006",
+      "field_value_id": "10000000-0000-4000-8000-000600000005",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000001",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000007",
+      "field_value_id": "10000000-0000-4000-8000-000600000005",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000003",
+      "provenance_role": "technical_sheet"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000008",
+      "field_value_id": "10000000-0000-4000-8000-000600000006",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000001",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000009",
+      "field_value_id": "10000000-0000-4000-8000-000600000007",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000003",
+      "provenance_role": "technical_sheet"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000010",
+      "field_value_id": "10000000-0000-4000-8000-000600000008",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000004",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000011",
+      "field_value_id": "10000000-0000-4000-8000-000600000009",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000004",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000012",
+      "field_value_id": "10000000-0000-4000-8000-000600000009",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000005",
+      "provenance_role": "cima_structured"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000013",
+      "field_value_id": "10000000-0000-4000-8000-000600000010",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000005",
+      "provenance_role": "cima_structured"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000014",
+      "field_value_id": "10000000-0000-4000-8000-000600000011",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000004",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000015",
+      "field_value_id": "10000000-0000-4000-8000-000600000012",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000004",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000016",
+      "field_value_id": "10000000-0000-4000-8000-000600000012",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000006",
+      "provenance_role": "technical_sheet"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000017",
+      "field_value_id": "10000000-0000-4000-8000-000600000013",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000004",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000018",
+      "field_value_id": "10000000-0000-4000-8000-000600000014",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000005",
+      "provenance_role": "cima_structured"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000019",
+      "field_value_id": "10000000-0000-4000-8000-000600000015",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000006",
+      "provenance_role": "technical_sheet"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000020",
+      "field_value_id": "10000000-0000-4000-8000-000600000016",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000007",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000021",
+      "field_value_id": "10000000-0000-4000-8000-000600000017",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000007",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000022",
+      "field_value_id": "10000000-0000-4000-8000-000600000017",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000008",
+      "provenance_role": "cima_structured"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000023",
+      "field_value_id": "10000000-0000-4000-8000-000600000018",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000008",
+      "provenance_role": "cima_structured"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000024",
+      "field_value_id": "10000000-0000-4000-8000-000600000019",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000007",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000025",
+      "field_value_id": "10000000-0000-4000-8000-000600000020",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000007",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000026",
+      "field_value_id": "10000000-0000-4000-8000-000600000020",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000009",
+      "provenance_role": "technical_sheet"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000027",
+      "field_value_id": "10000000-0000-4000-8000-000600000021",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000007",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000028",
+      "field_value_id": "10000000-0000-4000-8000-000600000022",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000009",
+      "provenance_role": "technical_sheet"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000029",
+      "field_value_id": "10000000-0000-4000-8000-000600000023",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000010",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000030",
+      "field_value_id": "10000000-0000-4000-8000-000600000024",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000010",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000031",
+      "field_value_id": "10000000-0000-4000-8000-000600000024",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000011",
+      "provenance_role": "cima_structured"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000032",
+      "field_value_id": "10000000-0000-4000-8000-000600000025",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000011",
+      "provenance_role": "cima_structured"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000033",
+      "field_value_id": "10000000-0000-4000-8000-000600000026",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000010",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000034",
+      "field_value_id": "10000000-0000-4000-8000-000600000027",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000010",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000035",
+      "field_value_id": "10000000-0000-4000-8000-000600000027",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000012",
+      "provenance_role": "technical_sheet"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000036",
+      "field_value_id": "10000000-0000-4000-8000-000600000028",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000010",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000037",
+      "field_value_id": "10000000-0000-4000-8000-000600000029",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000012",
+      "provenance_role": "technical_sheet"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000038",
+      "field_value_id": "10000000-0000-4000-8000-000600000030",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000013",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000039",
+      "field_value_id": "10000000-0000-4000-8000-000600000031",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000013",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000040",
+      "field_value_id": "10000000-0000-4000-8000-000600000031",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000014",
+      "provenance_role": "cima_structured"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000041",
+      "field_value_id": "10000000-0000-4000-8000-000600000032",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000014",
+      "provenance_role": "cima_structured"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000042",
+      "field_value_id": "10000000-0000-4000-8000-000600000033",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000013",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000043",
+      "field_value_id": "10000000-0000-4000-8000-000600000034",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000013",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000044",
+      "field_value_id": "10000000-0000-4000-8000-000600000034",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000015",
+      "provenance_role": "technical_sheet"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000045",
+      "field_value_id": "10000000-0000-4000-8000-000600000035",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000013",
+      "provenance_role": "master_baseline"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000700000046",
+      "field_value_id": "10000000-0000-4000-8000-000600000036",
+      "source_fragment_id": "10000000-0000-4000-8000-000100000015",
+      "provenance_role": "technical_sheet"
+    }
+  ]
+}

@@ -4,6 +4,12 @@ Aceptada por petición explícita del responsable: abrir el expediente sobre el 
 
 # Registro de decisiones
 
+## D-038 — Demostración pública desechable (2026-10-14)
+
+Aceptada por la petición de publicar una versión accesible al equipo usando
+los servicios Vercel disponibles. ADR-0016 limita esta versión a fixtures
+sintéticos y estado temporal; no sustituye el piloto REAL con Entra.
+
 ## D-037 — Sesión corporativa y perímetro de permisos (2026-10-05)
 
 Implementación aceptada por petición explícita de iniciar/cerrar sesión y

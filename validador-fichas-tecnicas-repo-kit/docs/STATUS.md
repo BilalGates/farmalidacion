@@ -1,3 +1,45 @@
+## 2026-10-14 — Demostración pública en Vercel
+
+El proyecto API de Vercel arranca con una base SQLite temporal creada en `/tmp`
+y carga exclusivamente tres fixtures sintéticos incluidos en el paquete. El
+frontend público apunta al proyecto API de Vercel y se permite su origen HTTPS
+mediante CORS. Este modo solo se activa dentro de Vercel cuando la configuración
+de base usa SQLite. El corpus REAL local nunca se copia ni se consulta.
+
+La base temporal puede desaparecer entre invocaciones y cada instancia tiene
+estado independiente. Esta publicación sirve para recorrer la interfaz y sus
+datos DEMO; las decisiones, revisores o importaciones realizadas allí no son
+persistentes ni se deben usar como trabajo clínico. Para un piloto REAL
+compartido sigue haciendo falta una API con almacenamiento persistente y Entra.
+
+Comprobación local del arranque equivalente: `/health`, `/ready`,
+`/database-info`, `/auth/config` y la preflight CORS correctas; la base contiene
+solo registros DEMO. Comprobación de la publicación pública pendiente tras push.
+
+## 2026-10-14 — Diagnóstico previo del despliegue en Vercel
+
+El frontend Vercel y el backend local no forman un despliegue compartido: en el
+navegador remoto, `localhost` es el equipo de cada visitante. La variable
+`VITE_API_BASE_URL` del proyecto frontend apuntaba al propio dominio del
+frontend; el cliente acababa usando loopback como fallback. El proyecto backend
+Vercel, por su parte, registró `sqlite3.OperationalError: unable to open
+database file` y un fallo de importación `vc_handler` del runtime Python. El
+backend depende de SQLite local y de almacenamiento escribible; no queda
+arreglado cambiando CORS.
+
+El código ahora rechaza silenciosamente menos configuraciones: solo usa la API
+local por defecto en desarrollo local. Si el frontend publicado no tiene una
+API externa válida, muestra el error de configuración en vez de intentar hablar
+con el ordenador del visitante. Se retiró también la excepción CORS de acceso a
+red privada. Detalle de arquitectura y pasos pendientes en
+`VERCEL_FRONTEND_HOSTED_API.md`.
+
+La publicación compartida REAL aún no está completada: falta alojar FastAPI fuera de
+Vercel Functions con almacenamiento persistente, activar Entra con la
+configuración corporativa y registrar la URL HTTPS final de la API en Vercel.
+El proyecto tiene una vista previa por VPN, pero `STATUS.md` registra que una
+compañera no pudo acceder y que faltaba resolver certificado/firewall.
+
 ## 2026-10-07 — Vista previa HTTPS por VPN Fortinet
 
 Publicación temporal autorizada por el responsable en
