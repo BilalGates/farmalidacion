@@ -71,6 +71,7 @@ async function request<T>(path: string, init?: RequestInit, publicRequest = fals
   let response: Response
   try {
     response = await (publicRequest ? fetch : authenticatedFetch)(`${appConfig.apiBaseUrl}${path}`, {
+      ...appConfig.apiFetchOptions,
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
       ...init,
@@ -710,7 +711,7 @@ export function fetchExportExclusions(runId: string): Promise<ExportExclusionRow
 }
 
 export async function downloadExport(runId: string): Promise<void> {
-  const response = await authenticatedFetch(`${appConfig.apiBaseUrl}/exports/${encodeURIComponent(runId)}/artifact`)
+  const response = await authenticatedFetch(`${appConfig.apiBaseUrl}/exports/${encodeURIComponent(runId)}/artifact`, appConfig.apiFetchOptions)
   if (!response.ok) throw new ApiError('No se pudo descargar la exportación.', response.status)
   const blob = await response.blob()
   const url = URL.createObjectURL(blob)
