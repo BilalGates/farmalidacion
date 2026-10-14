@@ -137,6 +137,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "X-Import-Actor",
                 "X-Import-Reason",
             ],
+            allow_private_network=True,
         )
     register_error_handlers(application)
     application.include_router(auth_router)
