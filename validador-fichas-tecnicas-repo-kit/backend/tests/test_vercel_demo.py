@@ -19,6 +19,9 @@ def test_vercel_demo_bootstraps_and_allows_public_frontend(monkeypatch) -> None:
         assert database.json()["records_demo"] > 0
         assert database.json()["records_real"] == 0
         assert client.get("/auth/config").status_code == 200
+        reviewers = client.get("/records/reviewers")
+        assert reviewers.status_code == 200
+        assert len(reviewers.json()) == 2
         response = client.options(
             "/auth/config",
             headers={

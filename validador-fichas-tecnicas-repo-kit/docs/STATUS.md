@@ -13,8 +13,13 @@ persistentes ni se deben usar como trabajo clínico. Para un piloto REAL
 compartido sigue haciendo falta una API con almacenamiento persistente y Entra.
 
 Comprobación local del arranque equivalente: `/health`, `/ready`,
-`/database-info`, `/auth/config` y la preflight CORS correctas; la base contiene
-solo registros DEMO. Comprobación de la publicación pública pendiente tras push.
+`/database-info`, `/auth/config`, `/records/reviewers`, el Resumen y la preflight
+CORS correctas. Tras publicar el commit `50a5970`, las rutas públicas de la API
+responden 200: seis registros DEMO, cero REAL y dos revisores declarados. El
+frontend devuelve 200 y su bundle apunta al origen HTTPS de esta API. La
+preflight desde el origen del frontend recibe `Access-Control-Allow-Origin`
+correcto. No se pudo comprobar la vista renderizada mediante el control del
+navegador de esta sesión; el navegador se quedó sin conexión con su pestaña.
 
 ## 2026-10-14 — Diagnóstico previo del despliegue en Vercel
 
