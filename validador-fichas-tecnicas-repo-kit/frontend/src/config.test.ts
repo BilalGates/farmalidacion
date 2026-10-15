@@ -25,6 +25,14 @@ describe('resolveApiBaseUrl', () => {
     )).toBe('https://farmalidacion-api.example.com')
   })
 
+  it('accepts the same-origin API path for a hosted frontend', () => {
+    expect(resolveApiBaseUrl(
+      '/api',
+      'https://farmalidacion.example.com',
+      'farmalidacion.example.com',
+    )).toBe('/api')
+  })
+
   it('rejects loopback and insecure HTTP APIs from a public HTTPS page', () => {
     expect(resolveApiBaseUrl(
       'http://127.0.0.1:8000',

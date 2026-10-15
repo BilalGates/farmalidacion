@@ -1,0 +1,60 @@
+# Coolify: Git repository, base directory /validador-fichas-tecnicas-repo-kit,
+# Compose location /infra/compose.coolify.yaml. El proxy público apunta solo
+# a frontend:8080; /api se enruta dentro de la red de Compose.
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: infra/backend.Dockerfile
+    environment:
+      APP_ENV: production
+      APP_DATA_MODE: real
+      APP_AUTH_MODE: entra
+      APP_DATABASE_URL: sqlite:////app/data/real.db
+      APP_LOAD_DEMO_FIXTURE: 'false'
+      APP_LOAD_SHOWCASE_FIXTURE: 'false'
+      APP_ENTRA_TENANT_ID: ${APP_ENTRA_TENANT_ID:?Falta el tenant ID}
+      APP_ENTRA_API_CLIENT_ID: ${APP_ENTRA_API_CLIENT_ID:?Falta el client ID de API}
+      APP_ENTRA_SPA_CLIENT_ID: ${APP_ENTRA_SPA_CLIENT_ID:?Falta el client ID de SPA}
+      APP_ENTRA_REQUIRED_SCOPE: access_as_user
+      APP_ENTRA_SPA_SCOPE: ${APP_ENTRA_SPA_SCOPE:?Falta el scope delegado}
+      APP_ENTRA_ROLE_CAPABILITIES: ${APP_ENTRA_ROLE_CAPABILITIES:?Falta la matriz de roles}
+      APP_ENTRA_REVIEWER_BINDINGS: ${APP_ENTRA_REVIEWER_BINDINGS:?Faltan los vínculos de revisores}
+      APP_CIMA_CACHE_DIR: /app/data/cima-cache
+      APP_EXPORT_ARTIFACT_DIR: /app/data/exports
+      HOSTED_MIN_REAL_RECORDS: '43381'
+    command:
+      - sh
+      - -ec
+      - >-
+        python /app/scripts/check_hosted_database.py &&
+        python -m alembic -c backend/alembic.ini upgrade head &&
+        exec python -m uvicorn pharma_validator_api.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - type: bind
+        source: /srv/farmalidacion/data
+        target: /app/data
+    healthcheck:
+      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: infra/frontend.coolify.Dockerfile
+    environment:
+      SERVICE_URL_FRONTEND_8080: /
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:8080/healthz']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped

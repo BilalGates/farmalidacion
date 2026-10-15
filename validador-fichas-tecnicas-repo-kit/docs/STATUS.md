@@ -1,3 +1,7 @@
+## 2026-10-15 — Despliegue conjunto en Coolify en preparación
+
+El responsable aporta el servidor Coolify `coolify.proyectogt.com` para publicar frontend y backend juntos. El servidor responde, ejecuta 17 contenedores, tiene 2 CPU, 3,7 GB de RAM y 46 GB libres. La conexión GitHub del equipo está activa. Se preparó `infra/compose.coolify.yaml` con frontend bajo un único dominio, API interna en `/api`, base REAL persistente en `/srv/farmalidacion/data` y modo Entra obligatorio. La instantánea REAL sigue local hasta transferirla y verificarla. El dominio final, la URI SPA de Entra y la prueba con cuentas corporativas están pendientes.
+
 ## 2026-10-14 — Preparación de publicación REAL compartida
 
 El responsable solicita el catálogo completo de los Excel en el frontend

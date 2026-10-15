@@ -4,6 +4,10 @@ Aceptada por petición explícita del responsable: abrir el expediente sobre el 
 
 # Registro de decisiones
 
+## D-039 — Servidor compartido Coolify (2026-10-15)
+
+El responsable aporta un servidor Coolify y solicita alojar allí frontend y backend con los registros REAL. ADR-0017 fija el despliegue conjunto, la base persistente y el acceso Entra obligatorio. La activación queda pendiente de transferencia y verificación en el servidor.
+
 ## D-038 — Demostración pública desechable (2026-10-14)
 
 Aceptada por la petición de publicar una versión accesible al equipo usando

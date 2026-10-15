@@ -1,0 +1,9 @@
+# Despliegue REAL en Coolify
+
+1. En el servidor, crear `/srv/farmalidacion/data` con propietario UID/GID `10001` y permisos `0700`. Copiar allí la instantánea local ignorada por Git `data/hosted/real.db` mediante canal cifrado. Comprobar SHA-256, `PRAGMA quick_check`, 43.381 registros REAL y cero DEMO antes de iniciar la API.
+2. Crear un proyecto Farmalidación en Coolify y una aplicación Git desde `https://github.com/BilalGates/farmalidacion`, rama `main`. Elegir Docker Compose, base directory `/validador-fichas-tecnicas-repo-kit`, Compose location `/infra/compose.coolify.yaml`. La única URL pública corresponde a `frontend:8080`; la API no recibe dominio ni puerto público.
+3. Configurar en Coolify las variables `APP_ENTRA_TENANT_ID`, `APP_ENTRA_API_CLIENT_ID`, `APP_ENTRA_SPA_CLIENT_ID`, `APP_ENTRA_SPA_SCOPE`, `APP_ENTRA_ROLE_CAPABILITIES` y `APP_ENTRA_REVIEWER_BINDINGS` de la configuración corporativa revisada. No guardar tokens, contraseñas ni claves en Git. Los identificadores y vínculos deben concordar con el tenant y los roles asignados.
+4. Registrar `https://<dominio>/auth-redirect.html` como URI SPA en Entra. Abrir el dominio HTTPS, comprobar `/healthz`, `/api/health`, `/api/ready`, `/api/auth/config` y, con un token corporativo válido, `/api/database-info` y el catálogo de 43.381 registros.
+5. Comprobar inicio y cierre con dos cuentas autorizadas, lectura, permisos de escritura y prohibición de acceso con cuenta no asignada. Realizar copia de seguridad cifrada y prueba de restauración del volumen de datos antes de usar la aplicación para trabajo compartido.
+
+El despliegue se detiene si falta la base REAL o la configuración Entra. La demo de Vercel permanece aislada y desechable.

@@ -9,6 +9,8 @@ export function resolveApiBaseUrl(
   const isLocalFrontend = localHostnames.has(locationHostname)
   const configuredApiBaseUrl = configuredValue?.trim()
   if (!configuredApiBaseUrl) return isLocalFrontend ? localApiBaseUrl : null
+  // Coolify sirve web y API en el mismo origen, con /api como ruta interna.
+  if (configuredApiBaseUrl === '/api') return '/api'
 
   try {
     const configured = new URL(configuredApiBaseUrl)
