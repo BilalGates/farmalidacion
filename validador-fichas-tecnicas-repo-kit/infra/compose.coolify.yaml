@@ -4,7 +4,7 @@
 services:
   api:
     build:
-      context: ..
+      context: .
       dockerfile: infra/backend.Dockerfile
     environment:
       APP_ENV: production
@@ -44,7 +44,7 @@ services:
 
   frontend:
     build:
-      context: ..
+      context: .
       dockerfile: infra/frontend.coolify.Dockerfile
     environment:
       SERVICE_URL_FRONTEND_8080: /
