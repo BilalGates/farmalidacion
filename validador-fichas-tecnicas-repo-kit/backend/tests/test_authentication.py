@@ -88,6 +88,35 @@ def test_no_token_cannot_read_or_download_and_health_remains_public(corporate):
     assert client.get("/auth/config").json()["configured"] is True
 
 
+def test_every_signed_in_role_can_access_personal_nomenclator_routes(
+    corporate, signing_key,
+):
+    client, _ = corporate
+    reader = auth(signing_key, roles=["Reader"])
+    assert client.get("/nomenclator/snapshot").status_code == 401
+    assert client.post("/nomenclator/snapshots", content=b"test").status_code == 401
+    assert client.get("/nomenclator/snapshot", headers=reader).status_code == 200
+    # El almacenamiento no está configurado en esta prueba. El 503 demuestra
+    # que el lector atravesó la autorización hasta el controlador de la ruta.
+    assert client.post(
+        "/nomenclator/snapshots", headers=reader, content=b"test",
+    ).status_code == 503
+
+
+def test_reader_can_see_team_without_managing_it(corporate, signing_key):
+    client, _ = corporate
+    reader = auth(signing_key, roles=["Reader"])
+    assert client.get("/records/reviewers").status_code == 401
+    response = client.get("/records/reviewers", headers=reader)
+    assert response.status_code == 200
+    assert {item["identifier"] for item in response.json()} >= {"ana", "luis"}
+    assert client.get("/reviewers", headers=reader).status_code == 403
+    assert client.post(
+        "/reviewers", headers=reader,
+        json={"identifier": "otro", "display_name": "Otro", "role": "tecnico"},
+    ).status_code == 403
+
+
 @pytest.mark.parametrize("changes", [
     {"aud": "https://graph.microsoft.com"}, {"iss": "https://invalid.example"},
     {"tid": OTHER}, {"azp": OTHER}, {"exp": 1}, {"nbf": 9999999999},
@@ -115,6 +144,7 @@ def test_permissions_are_checked_by_server(corporate, signing_key):
     headers = auth(signing_key, roles=["Reader"])
     assert client.get("/records", headers=headers).status_code == 200
     assert client.get("/reviewers", headers=headers).status_code == 403
+    assert client.get("/reviewers/roles", headers=headers).status_code == 403
     assert client.get("/auth/access", headers=headers).status_code == 403
     assert client.get("/exports/x/artifact", headers=headers).status_code == 403
     response = client.post("/queue", headers=headers, json={"target_record_id": "rec-1"})

@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 
 import { SourcesScreen } from './SourcesScreen'
+import { SessionContext } from '../auth/SessionContext'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -17,7 +18,9 @@ const workbooks = [
 
 it('separa la consulta de BOT PLUS de su integración y pliega la configuración SQL Server', async () => {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => new Response(JSON.stringify(
-    String(input).includes('/source-connections/nomenclator')
+    String(input).includes('/nomenclator/snapshot')
+      ? { available: true, sha256: 'a'.repeat(64), row_count: 35228, latest_source_date: '2026-10-01' }
+      : String(input).includes('/source-connections/nomenclator')
       ? { configured: false, host: null, port: 1433, database_name: null, username: null, server_password_configured: false, updated_at: null }
       : { items: [], total: 0 },
   ))))
@@ -32,10 +35,37 @@ it('separa la consulta de BOT PLUS de su integración y pliega la configuración
   expect(bot).toHaveTextContent('Configurar después las credenciales mediante un secreto del servidor.')
 
   const toggle = screen.getByRole('button', { name: 'Configurar conexión' })
+  expect(await screen.findByText('La sincronización personal requiere una sesión corporativa.')).toBeVisible()
   expect(toggle).toHaveAttribute('aria-expanded', 'false')
   fireEvent.click(toggle)
   expect(screen.getByRole('button', { name: 'Ocultar configuración' })).toHaveAttribute('aria-expanded', 'true')
   expect(screen.getByRole('textbox', { name: 'Servidor' })).toBeInTheDocument()
+})
+
+it('permite sincronizar al lector con su conector local sin mostrar la configuración central', async () => {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input)
+    if (url.startsWith('http://127.0.0.1:8765/')) return new Response(new Blob(['copia local']))
+    if (url.includes('/nomenclator/snapshots') && init?.method === 'POST') return new Response(JSON.stringify({
+      available: true, sha256: 'a'.repeat(64), row_count: 35228,
+      latest_source_date: '2026-10-01', changed: true,
+    }))
+    if (url.includes('/nomenclator/snapshot')) return new Response(JSON.stringify({ available: false, sha256: null, row_count: 0, latest_source_date: null }))
+    return new Response(JSON.stringify({ items: [], total: 0 }))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  render(<SessionContext.Provider value={{
+    subject_id: 'entra:test:reader', capabilities: ['sources.read'], logout: () => {},
+    reviewer: { identifier: 'ana', display_name: 'Ana', role: 'tecnico',
+      role_label: 'Técnico', assurance: 'verificada_entra', may_sign_pharmacist_states: false },
+  }}><SourcesScreen /></SessionContext.Provider>)
+  expect(await screen.findByRole('heading', { name: 'Mi Nomenclátor' })).toBeVisible()
+  expect(screen.queryByText('Acceso restringido')).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Sincronizar mi Nomenclátor' }))
+  await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/nomenclator/snapshots'))).toBe(true))
+  const localCall = fetchMock.mock.calls.find(([url]) => String(url).startsWith('http://127.0.0.1:8765/'))
+  expect(JSON.parse(String(localCall?.[1]?.body))).toMatchObject({ server: 'localhost', auth: 'windows' })
+  expect(await screen.findByText('Sincronización completa: 35.228 filas.')).toBeVisible()
 })
 
 for (const [index, workbook] of workbooks.entries()) {

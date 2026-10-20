@@ -1,3 +1,30 @@
+## 2026-10-20 — Comparación local con Nomenclátor
+
+Actualización: se ha preparado la sincronización personal. Cada usuario
+corporativo podrá leer su propio SQL Server mediante un conector en Windows,
+incluido `localhost`, y cargar una instantánea aislada por cuenta. La pantalla
+«Mi Nomenclátor» está disponible a quienes tienen lectura de fuentes; gestionar
+una conexión central ya no es requisito para sincronizar. Se han añadido
+validación de esquema, versiones por hash y pruebas sin una base SQL real. El
+conector y la nueva pantalla aún deben publicarse y probarse en un ordenador
+con SQL Server. Ver `docs/NOMENCLATOR_PERSONAL_SYNC.md`.
+
+La exportación de `dbo.nomenclatur` recibida se ha validado como instantánea TSV
+de 35.228 filas y 73 columnas, identificada por SHA-256. Se conserva en
+`data/local/` fuera de Git y se sirve en los perfiles locales REAL y preview.
+El cruce de las 29.850 presentaciones del catálogo se basa en CN exacto y único;
+las 5.378 filas adicionales de Nomenclátor no generan fichas automáticamente.
+
+La pantalla Fuentes indica la instantánea local disponible. La pestaña Fuentes
+de cada presentación muestra los campos disponibles, el
+valor del maestro cuando hay correspondencia confirmada, coincidencias,
+diferencias y posibles complementos. Las decisiones farmacéuticas se guardan
+con autor, motivo, CN, hash de la instantánea y secuencia, sin sustituir el
+maestro. El acceso nuevo está sujeto a la matriz de capacidades. La exportación
+no consume todavía estos complementos: requiere un mapeo de destino y una regla
+de prioridad por campo aceptados. El despliegue remoto necesita trasladar la
+instantánea de forma controlada y configurar `APP_NOMENCLATOR_SNAPSHOT_PATH`.
+
 ## 2026-10-15 — Despliegue conjunto en Coolify en preparación
 
 El responsable aporta el servidor Coolify `coolify.proyectogt.com` para publicar frontend y backend juntos. El servidor responde, ejecuta 17 contenedores, tiene 2 CPU, 3,7 GB de RAM y 46 GB libres. La conexión GitHub del equipo está activa. Se preparó `infra/compose.coolify.yaml` con frontend bajo un único dominio, API interna en `/api`, base REAL persistente en `/srv/farmalidacion/data` y modo Entra obligatorio. La instantánea REAL sigue local hasta transferirla y verificarla. El dominio final, la URI SPA de Entra y la prueba con cuentas corporativas están pendientes.
@@ -1951,3 +1978,4 @@ de sólo lectura, el `count(*)` de `field_value` tardó 5,99 s en la primera
 petición medida; `/database-info` con la fecha añadida respondió en 0,36 s.
 Son medidas locales individuales, no un benchmark de usuarios concurrentes.
 Pruebas enfocadas: backend 7/7, frontend 36/36; build Vite correcto.
+\n

@@ -34,6 +34,20 @@ it('explica el estado vacío', async () => {
   vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => [] }) as Response))
   render(<MaintenanceScreen />)
   expect(await screen.findByText('Sin novedades')).toBeInTheDocument()
+  expect(await screen.findByRole('alert')).toHaveTextContent('Todavía no hay una consulta automática CIMA completada')
+})
+
+it('advierte cuando la última consulta completa quedó atrasada', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({
+    ok: true, status: 200,
+    json: async () => String(input).endsWith('/maintenance/runs')
+      ? [{ id: 'run', requested_date: '08/09/2026', attempt: 1, status: 'completed',
+          event_count: 0, error_detail: null, started_at: SUMMARY.recorded_at,
+          finished_at: SUMMARY.recorded_at }]
+      : [],
+  }) as Response))
+  render(<MaintenanceScreen />)
+  expect(await screen.findByRole('alert')).toHaveTextContent('La consulta automática CIMA lleva')
 })
 
 it('hace visible el último fallo operativo y su intento', async () => {

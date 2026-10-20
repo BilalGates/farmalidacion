@@ -5,6 +5,10 @@ import type {
   BlockEditWrite,
   BlockOccurrence,
   CatalogIdentity,
+  NomenclatorComparison,
+  NomenclatorDecision,
+  NomenclatorSnapshot,
+  NomenclatorSnapshotImport,
   CatalogCimaDocument,
   CatalogCimaComparison,
   CatalogCimaDecision,
@@ -65,10 +69,10 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit, publicRequest = false): Promise<T> {
+async function request<T>(path: string, init?: RequestInit, publicRequest = false, timeoutMs = 30_000): Promise<T> {
   const baseUrl = requireApiBaseUrl()
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 30_000)
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
   let response: Response
   try {
     response = await (publicRequest ? fetch : authenticatedFetch)(`${baseUrl}${path}`, {
@@ -446,6 +450,68 @@ export function fetchCatalogIdentities(params: {
 
 export function fetchCatalogIdentity(id: string): Promise<CatalogIdentity> {
   return request<CatalogIdentity>(`/catalog/identities/${encodeURIComponent(id)}`)
+}
+
+export function fetchNomenclatorSnapshot(): Promise<NomenclatorSnapshot> {
+  return request<NomenclatorSnapshot>('/nomenclator/snapshot')
+}
+
+export interface LocalNomenclatorConnection {
+  server: string
+  port: number
+  database: string
+  auth: 'windows' | 'sql'
+  username: string
+  password: string
+  encrypt: boolean
+  trust_server_certificate: boolean
+}
+
+export async function synchronizePersonalNomenclator(
+  connection: LocalNomenclatorConnection,
+): Promise<NomenclatorSnapshotImport> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 180_000)
+  let local: Response
+  try {
+    local = await fetch('http://127.0.0.1:8765/snapshot', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(connection), signal: controller.signal,
+    })
+  } catch {
+    throw new ApiError('No se pudo contactar con el conector local. Ábralo en este ordenador y autorice el acceso local del navegador.', 0)
+  } finally {
+    clearTimeout(timer)
+  }
+  if (!local.ok) {
+    const detail = await local.json().catch(() => null) as { detail?: string } | null
+    throw new ApiError(detail?.detail ?? 'El conector local no pudo leer Nomenclátor.', local.status)
+  }
+  const snapshot = await local.blob()
+  return request<NomenclatorSnapshotImport>('/nomenclator/snapshots', {
+    method: 'POST', headers: { 'Content-Type': 'text/tab-separated-values' }, body: snapshot,
+  }, false, 180_000)
+}
+
+export function fetchNomenclatorComparison(id: string): Promise<NomenclatorComparison> {
+  return request<NomenclatorComparison>(`/nomenclator/identities/${encodeURIComponent(id)}/comparison`)
+}
+
+export function saveNomenclatorDecision(
+  id: string,
+  payload: {
+    field_name: string
+    snapshot_sha256: string
+    expected_sequence: number
+    action: 'aceptar' | 'descartar' | 'pendiente'
+    actor_id: string
+    reason: string
+  },
+): Promise<NomenclatorDecision> {
+  return request<NomenclatorDecision>(
+    `/nomenclator/identities/${encodeURIComponent(id)}/decisions`,
+    { method: 'POST', body: JSON.stringify(payload) },
+  )
 }
 
 export function fetchCatalogCimaDocuments(id: string): Promise<CatalogCimaDocument[]> {

@@ -16,6 +16,7 @@ import { ModeBanner } from './components/ModeBanner'
 import { AppearancePreferences } from './components/AppearancePreferences'
 import { FilterLayoutContext } from './components/FilterLayoutContext'
 import { PilotIdentity } from './components/PilotIdentity'
+import { TeamDirectory } from './components/TeamDirectory'
 import { useCorporateSession } from './auth/SessionContext'
 import { SectionWorkspace } from './components/SectionWorkspace'
 import { formatDateTime } from './domain/format'
@@ -252,6 +253,7 @@ export function App() {
                 {session ? <section className='panel identity-preferences'><h2>Identidad y acceso</h2><p className='muted'>Sesión corporativa verificada. Tus permisos se comprueban en cada operación.</p><div className='identity-preferences__current'><span><strong>{session.reviewer.display_name}</strong><small>{session.reviewer.role_label}</small></span><button type='button' className='button' onClick={session.logout}>Cerrar sesión</button></div></section> : <PilotIdentity reviewers={reviewers} reviewer={reviewer} onChange={changeReviewer} />}
               </div>
               {may('team.manage') && <ReviewersScreen embedded />}
+              {session && !may('team.manage') && <TeamDirectory />}
               {session && may('team.manage') && <AccessAdministration />}
             </div>}
             {route.name === 'seccion' && !['trabajo', 'revision/cola', 'catalogo/trabajo', 'revision/validaciones', 'catalogo/segunda', 'catalogo/novedades', 'datos/cuarentena', 'exportaciones', 'revisores'].includes(route.id) && (

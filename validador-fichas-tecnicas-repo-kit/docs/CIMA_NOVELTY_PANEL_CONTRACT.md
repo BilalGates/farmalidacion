@@ -11,9 +11,11 @@ Cada fila de `maintenance_change_event` conserva de forma inmutable:
 - diff reproducible completo;
 - número de campos cuya revisión se reabrió.
 
-El identificador deriva del hash de la respuesta y del cambio. Reprocesar la
-misma observación devuelve el evento existente y no vuelve a descargar,
-versionar ni reabrir campos. Los cambios sin `ft` también se registran para que
+El identificador deriva de la identidad del cambio, independiente del hash de
+la respuesta acumulativa. Las filas anteriores con identificador antiguo se
+reconocen por sus campos literales. Reprocesar la misma observación conserva el
+evento existente y no vuelve a descargar, versionar ni reabrir campos. Los
+cambios sin `ft` también se registran para que
 estado y comercialización no desaparezcan, pero no se presentan como una nueva
 versión documental.
 

@@ -22,13 +22,37 @@ from pharma_validator_api.models import (
 )
 
 
-def _event_id(source_sha256: str, change: CimaChange) -> str:
+def _event_id(change: CimaChange) -> str:
     identity = json.dumps(
-        [source_sha256, change.nregistro, change.occurred_at, change.change_type, change.areas],
+        [change.nregistro, change.occurred_at, change.change_type, change.areas],
         ensure_ascii=False,
         separators=(",", ":"),
     ).encode()
     return hashlib.sha256(identity).hexdigest()
+
+
+def _existing_event(session: Session, change: CimaChange) -> MaintenanceChangeEvent | None:
+    """Reconoce también los IDs antiguos, que incluían el hash de la respuesta.
+
+    registroCambios devuelve cambios *desde* la fecha pedida; el mismo aviso
+    puede aparecer en respuestas distintas y sus hashes no tienen por qué ser
+    iguales. La identidad del aviso depende de su contenido, no de la página.
+    """
+    current = session.get(MaintenanceChangeEvent, _event_id(change))
+    if current is not None:
+        return current
+    return session.scalar(select(MaintenanceChangeEvent).where(
+        MaintenanceChangeEvent.nregistro == change.nregistro,
+        MaintenanceChangeEvent.occurred_at_epoch == change.occurred_at,
+        MaintenanceChangeEvent.change_type == change.change_type,
+        MaintenanceChangeEvent.areas_json == json.dumps(
+            change.areas, ensure_ascii=False, separators=(",", ":")
+        ),
+    ).limit(1))
+
+
+def change_is_recorded(session: Session, change: CimaChange) -> bool:
+    return _existing_event(session, change) is not None
 
 
 def record_change(
@@ -39,8 +63,8 @@ def record_change(
     refresh: RefreshResult | None,
     catalog_targets: Sequence[tuple[str, str]] = (),
 ) -> MaintenanceChangeEvent:
-    event_id = _event_id(report.source_sha256, change)
-    existing = session.get(MaintenanceChangeEvent, event_id)
+    existing = _existing_event(session, change)
+    event_id = existing.id if existing else _event_id(change)
     event = existing or MaintenanceChangeEvent(
         id=event_id,
         nregistro=change.nregistro,
@@ -101,17 +125,14 @@ def process_change_report(
     refreshed: dict[str, RefreshResult] = {}
     targets_by_registration = targets_by_registration or {}
     for change in report.changes:
-        event_id = _event_id(report.source_sha256, change)
-        existing = session.get(MaintenanceChangeEvent, event_id)
+        existing = _existing_event(session, change)
         if existing is not None:
-            events.append(
-                record_change(
-                    session,
-                    report=report,
-                    change=change,
-                    refresh=None,
-                    catalog_targets=targets_by_registration.get(change.nregistro, ()),
-                )
+            record_change(
+                session,
+                report=report,
+                change=change,
+                refresh=None,
+                catalog_targets=targets_by_registration.get(change.nregistro, ()),
             )
             continue
         refresh = None

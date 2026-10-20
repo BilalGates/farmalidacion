@@ -32,6 +32,14 @@ function areaLabel(area: string): string {
   return AREA_LABELS[area] ?? `${area} (código nuevo de CIMA)`
 }
 
+function daysBehind(requestedDate: string): number {
+  const [day, month, year] = requestedDate.split('/').map(Number)
+  const lastDay = Date.UTC(year, month - 1, day)
+  const now = new Date()
+  const yesterday = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1)
+  return Math.max(0, Math.round((yesterday - lastDay) / 86_400_000))
+}
+
 function ChangeDetail({ eventId }: { eventId: string }) {
   const { data, error, loading } = useQuery(() => fetchMaintenanceChange(eventId), [eventId])
 
@@ -89,8 +97,10 @@ export function MaintenanceScreen() {
   const [runError, setRunError] = useState<string | null>(null)
   const [runMessage, setRunMessage] = useState<string | null>(null)
   const { data, error, loading } = useQuery(() => fetchMaintenanceChanges(), [refreshKey])
-  const { data: runs } = useQuery(() => fetchMaintenanceRuns(), [refreshKey])
+  const { data: runs, error: runsError } = useQuery(() => fetchMaintenanceRuns(), [refreshKey])
   const latestRun = runs?.[0]
+  const latestCompleted = runs?.find((run) => run.status === 'completed')
+  const delayedDays = latestCompleted ? daysBehind(latestCompleted.requested_date) : null
 
   async function checkYesterday() {
     setRunning(true)
@@ -121,6 +131,14 @@ export function MaintenanceScreen() {
           </p>
         </div>
       )}
+      {runsError && <div className='state state--error' role='alert'>No se pudo comprobar la actualización automática: {runsError}</div>}
+      {runs && latestRun?.status !== 'failed' && (delayedDays === null || delayedDays > 0) && (
+        <div className='state state--error' role='alert'>
+          {delayedDays === null
+            ? 'Todavía no hay una consulta automática CIMA completada.'
+            : `La consulta automática CIMA lleva ${delayedDays} ${delayedDays === 1 ? 'día' : 'días'} de retraso.`}
+        </div>
+      )}
       <section className='panel' aria-label='Estado de sincronización CIMA'>
         <div className='panel__head'>
           <h2>Estado de sincronización</h2>
@@ -134,7 +152,7 @@ export function MaintenanceScreen() {
             : 'Todavía no hay consultas registradas.'}
         </p>
         <p className='state__detail'>
-          Se consulta el último día cerrado. Solo se registran avisos cuyo CN coincide de forma exacta y única con el catálogo.
+          Se consulta cada día cerrado. Solo se registran avisos cuyo CN coincide de forma exacta y única con el catálogo.
           Las correcciones siguen requiriendo revisión humana.
         </p>
         {runMessage && <p role='status'>{runMessage}</p>}
@@ -145,7 +163,7 @@ export function MaintenanceScreen() {
         error={error}
         empty={data !== null && data.length === 0}
         emptyTitle='Sin novedades'
-        emptyDetail='No se han registrado cambios CIMA.'
+        emptyDetail='No se han registrado cambios CIMA que coincidan de forma exacta con el catálogo.'
       >
         {data && data.length > 0 && (
           <div className='table-wrap' role='region' aria-label='Novedades CIMA; desplazamiento horizontal disponible' tabIndex={0}><table className='table'>

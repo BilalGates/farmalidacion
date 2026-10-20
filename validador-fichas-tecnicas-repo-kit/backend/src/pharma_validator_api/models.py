@@ -267,6 +267,61 @@ class MedicationCatalogIdentity(Base):
     version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
 
 
+class NomenclatorReviewDecision(Base):
+    """Decisión append-only sobre una afirmación de una instantánea Nomenclátor."""
+
+    __tablename__ = "nomenclator_review_decision"
+    __table_args__ = (
+        UniqueConstraint(
+            "owner_subject_id", "identity_id", "field_name", "sequence",
+            name="uq_nomenclator_decision_sequence"
+        ),
+        Index("ix_nomenclator_decision_identity_field", "identity_id", "field_name"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    owner_subject_id: Mapped[str] = mapped_column(String(200))
+    identity_id: Mapped[str] = mapped_column(ForeignKey("medication_catalog_identity.id"))
+    field_name: Mapped[str] = mapped_column(String(80))
+    sequence: Mapped[int] = mapped_column(Integer)
+    snapshot_sha256: Mapped[str] = mapped_column(String(64))
+    source_cn: Mapped[str] = mapped_column(String(7))
+    source_value: Mapped[str] = mapped_column(Text)
+    compared_value: Mapped[str | None] = mapped_column(Text)
+    comparison_status: Mapped[str] = mapped_column(String(40))
+    action: Mapped[str] = mapped_column(String(40))
+    actor_id: Mapped[str] = mapped_column(String(80))
+    actor_assurance: Mapped[str] = mapped_column(String(20))
+    reason: Mapped[str] = mapped_column(Text)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class NomenclatorUserSnapshot(Base):
+    """Historial inmutable de versiones Nomenclátor por cuenta corporativa."""
+
+    __tablename__ = "nomenclator_user_snapshot"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    owner_subject_id: Mapped[str] = mapped_column(String(200), index=True)
+    snapshot_sha256: Mapped[str] = mapped_column(String(64))
+    snapshot_path: Mapped[str] = mapped_column(Text)
+    row_count: Mapped[int] = mapped_column(Integer)
+    latest_source_date: Mapped[str | None] = mapped_column(String(40))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+@event.listens_for(NomenclatorReviewDecision, "before_update")
+@event.listens_for(NomenclatorReviewDecision, "before_delete")
+def _reject_nomenclator_decision_mutation(*_: object) -> None:
+    raise ImmutableHistoryError("Las decisiones Nomenclátor son append-only.")
+
+
+@event.listens_for(NomenclatorUserSnapshot, "before_update")
+@event.listens_for(NomenclatorUserSnapshot, "before_delete")
+def _reject_nomenclator_snapshot_mutation(*_: object) -> None:
+    raise ImmutableHistoryError("Las versiones Nomenclátor son append-only.")
+
+
 class MedicationCatalogRelation(Base):
     """Arista tipada, ordenada y atribuible entre identidades del catálogo."""
 

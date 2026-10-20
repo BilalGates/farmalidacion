@@ -12,9 +12,11 @@ from pharma_validator_api.cima_client import CimaClient
 from pharma_validator_api.config import Settings
 from pharma_validator_api.database import create_database_engine, create_session_factory
 from pharma_validator_api.maintenance_job import run_pending_days
+from pharma_validator_api.maintenance_lock import (
+    MaintenanceAlreadyRunning,
+    maintenance_lock,
+)
 from sqlalchemy.engine import make_url
-
-from scripts.maintenance_lock import MaintenanceAlreadyRunning, maintenance_lock
 
 
 def day(value: str) -> date:

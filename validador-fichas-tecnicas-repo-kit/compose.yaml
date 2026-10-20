@@ -92,6 +92,8 @@ services:
       # El corpus piloto y sus enlaces exactos están materializados en real.db.
       APP_ENABLE_CIMA_LINK: 'true'
       APP_ENABLE_AUTO_REVALIDATION: 'true'
+      APP_NOMENCLATOR_SNAPSHOT_PATH: /app/data/nomenclatur-3ad6fa8c3eef425ca80c09cf4153344f81bd9f15a6305ef4b3820c3f275d8852.tsv
+      APP_NOMENCLATOR_SNAPSHOT_DIR: /app/data/nomenclator-users
     command:
       - sh
       - -c
@@ -161,6 +163,8 @@ services:
       APP_ENABLE_EXPORT: 'true'
       APP_EXPORT_ARTIFACT_DIR: /app/data/exports-preview
       APP_ENABLE_CIMA_LINK: 'true'
+      APP_NOMENCLATOR_SNAPSHOT_PATH: /app/data/nomenclatur-3ad6fa8c3eef425ca80c09cf4153344f81bd9f15a6305ef4b3820c3f275d8852.tsv
+      APP_NOMENCLATOR_SNAPSHOT_DIR: /app/data/nomenclator-users
     command:
       - sh
       - -c

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from pharma_validator_api.cima_changes import query_cima_changes
 from pharma_validator_api.maintenance_refresh import MaintenanceClient, MaintenanceRefreshError
-from pharma_validator_api.maintenance_store import process_change_report
+from pharma_validator_api.maintenance_store import change_is_recorded, process_change_report
 from pharma_validator_api.models import (
     BlockInstance,
     FieldValue,
@@ -147,6 +147,8 @@ def run_one_day(
         # consultas CIMA adicionales y registra igualmente la pasada del día.
         if master_by_cn:
             for change in report.changes:
+                if change_is_recorded(session, change):
+                    continue
                 matches = _catalog_targets_for_change(
                     session,
                     client=client,

@@ -18,6 +18,7 @@ import { navigate } from '../navigation'
 import { SourceFieldsMaintenance } from './CatalogSourceFields'
 import { CatalogCimaDocumentReader } from './CatalogCimaDocument'
 import { CatalogReviewPanel } from './CatalogReviewPanel'
+import { NomenclatorComparisonPanel } from './NomenclatorComparisonPanel'
 import { useCapability } from '../auth/SessionContext'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -186,6 +187,8 @@ export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, 
           </> },
             { id: 'sources', label: 'Fuentes', content: <>
           {identity.target_record_id && <SourceFieldsMaintenance recordId={identity.target_record_id} reviewer={reviewer} />}
+
+          {identity.identity_type === 'presentation' && <NomenclatorComparisonPanel identityId={identity.id} reviewer={reviewer} />}
 
           <CatalogCimaDocumentReader identityId={identity.id} recordId={identity.target_record_id} reviewerId={reviewer?.identifier ?? ''} />
           </> },

@@ -83,8 +83,14 @@ Implementado: apertura contextual, anterior/siguiente entre páginas, conservaci
   de Importaciones sigue siendo de consulta y aún no lanza cargas.
 - **FUE-004, en curso:** motor Nomenclátor confirmado como SQL Server;
   configuración de servidor, puerto, base y usuario con historial, y prueba
-  cifrada de lectura. Faltan datos de acceso, inventario de tablas/vistas,
-  mapeo y carga de una muestra.
+  cifrada de lectura. La exportación recibida de `dbo.nomenclatur` se compara
+  localmente por CN en el expediente y admite decisiones trazables. Faltan el
+  acceso directo autorizado a SQL Server, refresco controlado de instantáneas,
+  mapeo de destino y prioridad por campo para incorporar datos aceptados al
+  estado canónico o a exportaciones.
+  La sincronización personal por conector local está implementada en código:
+  falta instalarla y probarla con SQL Server real en al menos dos equipos,
+  verificar la solicitud de acceso local de Edge y publicar el frontend/API.
 - **FUE-006, pendiente externa:** Fuentes distingue consulta BOT PLUS Web de
   integración y muestra sus requisitos. Falta confirmar servicio contratado,
   documentación técnica, permisos de almacenamiento/exportación y credenciales

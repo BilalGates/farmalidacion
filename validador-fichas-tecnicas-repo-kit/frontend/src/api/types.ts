@@ -459,6 +459,49 @@ export interface CatalogIdentityPage {
   offset: number
 }
 
+export interface NomenclatorSnapshot {
+  available: boolean
+  sha256: string | null
+  row_count: number
+  latest_source_date: string | null
+}
+
+export interface NomenclatorSnapshotImport extends NomenclatorSnapshot {
+  changed: boolean
+}
+
+export interface NomenclatorDecision {
+  sequence: number
+  action: 'aceptar' | 'descartar' | 'pendiente'
+  actor_id: string
+  actor_assurance: string
+  reason: string
+  recorded_at: string
+  snapshot_sha256: string
+}
+
+export interface NomenclatorComparisonField {
+  field_name: string
+  label: string
+  level: string
+  source_value: string
+  master_field: string | null
+  master_value: string | null
+  status: 'coincide' | 'difiere' | 'complemento' | 'sin_comparacion'
+  latest_decision: NomenclatorDecision | null
+  decision_history: NomenclatorDecision[]
+}
+
+export interface NomenclatorComparison {
+  available: boolean
+  code: string | null
+  source_row_id: string | null
+  source_line: number | null
+  snapshot_sha256: string | null
+  latest_source_date: string | null
+  fields: NomenclatorComparisonField[]
+}
+
 export interface CatalogCimaDocument {
   document_name: string
   document_version_id: string

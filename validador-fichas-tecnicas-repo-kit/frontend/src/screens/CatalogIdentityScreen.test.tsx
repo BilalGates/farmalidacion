@@ -94,6 +94,13 @@ it('edita campos importados sin enviar una decisión farmacéutica', async () =>
 it('consulta clasificaciones solo para una presentación', async () => {
   const presentation = { ...IDENTITY, id: 'presentation-1', identity_type: 'presentation', target_record_id: null }
   const fetchMock = vi.fn(async (url: string) => {
+    if (url.includes('/nomenclator/')) return new Response(JSON.stringify({
+      available: true, code: '600000', source_row_id: '634287', source_line: 1,
+      snapshot_sha256: 'a'.repeat(64), latest_source_date: '2026-10-01',
+      fields: [{ field_name: 'cod_dcp', label: 'Código DCP', level: 'medicamento',
+        source_value: '2431000140106', master_field: 'MED_DCP', master_value: 'anterior',
+        status: 'difiere', latest_decision: null, decision_history: [] }],
+    }))
     if (url.includes('/cima-comparison')) return new Response(JSON.stringify([]))
     if (url.includes('/cima-documents')) return new Response(JSON.stringify([]))
     if (url.includes('/classifications')) return new Response(JSON.stringify([]))
@@ -105,4 +112,8 @@ it('consulta clasificaciones solo para una presentación', async () => {
 
   await screen.findByRole('heading', { name: presentation.display_name })
   expect(fetchMock.mock.calls.some(([url]) => url.includes('/classifications'))).toBe(true)
+  fireEvent.click(screen.getByRole('tab', { name: 'Fuentes' }))
+  expect(await screen.findByRole('heading', { name: 'Nomenclátor' })).toBeVisible()
+  expect(screen.getByText('2431000140106')).toBeVisible()
+  expect(screen.getByText('Diferencia por revisar')).toBeVisible()
 })

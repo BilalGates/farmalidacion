@@ -37,6 +37,7 @@ data/local/gold-set-*/
 # Anotaciones y ejecuciones del conjunto oro
 data/local/gold-run-*/
 data/local/vpn-tls/
+data/local/nomenclatur-*.tsv
 data/hosted/
 
 # Reference source files are local inputs, not repository content

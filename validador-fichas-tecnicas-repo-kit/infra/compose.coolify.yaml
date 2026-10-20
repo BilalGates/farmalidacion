@@ -22,6 +22,7 @@ services:
       APP_ENTRA_REVIEWER_BINDINGS: ${APP_ENTRA_REVIEWER_BINDINGS:?Faltan los vínculos de revisores}
       APP_CIMA_CACHE_DIR: /app/data/cima-cache
       APP_EXPORT_ARTIFACT_DIR: /app/data/exports
+      APP_NOMENCLATOR_SNAPSHOT_DIR: /app/data/nomenclator-users
       HOSTED_MIN_REAL_RECORDS: '43381'
     command:
       - sh
@@ -57,4 +58,32 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+    restart: unless-stopped
+
+  cima-maintenance:
+    build:
+      context: .
+      dockerfile: infra/backend.Dockerfile
+    environment:
+      APP_ENV: production
+      APP_DATA_MODE: real
+      APP_DATABASE_URL: sqlite:////app/data/real.db
+      APP_CIMA_CACHE_DIR: /app/data/cima-cache
+      CIMA_START_DATE: ${CIMA_START_DATE:-27/09/2026}
+    command:
+      - sh
+      - -ec
+      - |
+        python -c 'import scripts.run_cima_maintenance'
+        while :; do
+          python -m scripts.run_cima_maintenance --start-date "$$CIMA_START_DATE" || echo 'La consulta CIMA falló; se reintentará en una hora.' >&2
+          sleep 3600
+        done
+    volumes:
+      - type: bind
+        source: /srv/farmalidacion/data
+        target: /app/data
+    depends_on:
+      api:
+        condition: service_healthy
     restart: unless-stopped

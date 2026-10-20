@@ -2,10 +2,11 @@
 
 ## Modelo de ejecución
 
-`scripts/run_cima_maintenance.py` realiza una pasada finita y está diseñado
-para ser invocado diariamente por cron, systemd timer, Task Scheduler o el
-orquestador de despliegue. No mantiene un segundo planificador residente dentro
-de la aplicación.
+`scripts/run_cima_maintenance.py` realiza una pasada finita. En Coolify, el
+servicio `cima-maintenance` la ejecuta al arrancar y vuelve a intentarlo cada
+hora. Comparte la base y la caché de la API; no necesita que alguien abra la
+página ni pulse «Consultar ayer». En otros entornos puede invocarlo cron,
+systemd timer o Task Scheduler.
 
 La fecha inicial es explícita (`--start-date dd/mm/yyyy`). La fecha final puede
 indicarse con `--through-date`; por defecto es el día anterior, evitando
@@ -56,9 +57,11 @@ puede permanecer tras la ejecución; el bloqueo activo se libera al salir el
 proceso, incluso si termina por error. Todos los ejecutores deben usar la misma
 ruta y el mismo volumen para que esta exclusión sea efectiva.
 
-La programación concreta pertenece a infraestructura y debe invocar este
-comando una vez al día. El comando devuelve código distinto de cero si una
-fecha falla, permitiendo alertas del orquestador además de la alerta interna.
+La programación concreta pertenece a infraestructura. En Coolify, el servicio
+residente repite la pasada cada hora: cuando ayer ya está completado no consulta
+de nuevo CIMA; si hubo un fallo o días sin ejecutar, reintenta el primer hueco.
+El comando devuelve código distinto de cero si una fecha falla. La pantalla
+avisa cuando el último día completado queda atrasado y muestra los fallos.
 
 ## Ejecutor para un host con Docker Engine permanente
 
@@ -82,3 +85,13 @@ hay que verificar que `real.db` existe, está migrada y contiene los maestros;
 además se requiere copia y restauración probada de los datos humanos según
 `HUMAN_DATA_PROTECTION.md`. La tarea actual de Windows continúa activa hasta
 que exista el host permanente y se complete esa transición.
+
+## Despliegue Coolify
+
+`infra/compose.coolify.yaml` incluye `cima-maintenance` sin puerto público. El
+servicio espera a que la API haya migrado y verificado `real.db`, comparte
+`/srv/farmalidacion/data` y arranca una recuperación desde
+`CIMA_START_DATE` (por defecto `27/09/2026`) hasta ayer en UTC. Tras publicar,
+comprobar en «Novedades CIMA» que hay una ejecución completada reciente y
+revisar los logs del servicio si aparece un fallo. El volumen debe conservarse
+entre despliegues para no perder el cursor ni los documentos.

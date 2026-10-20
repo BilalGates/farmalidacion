@@ -1,4 +1,5 @@
 import hashlib
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -43,8 +44,50 @@ def test_non_ft_changes_are_persisted_idempotently_without_refresh(tmp_path: Pat
             session, client=UnusedClient(), report=change_report  # type: ignore[arg-type]
         )
 
-        assert first[0].id == second[0].id
+        assert len(first) == 1
+        assert second == ()
         assert first[0].diff_json is None
+        assert session.scalar(select(func.count()).select_from(MaintenanceChangeEvent)) == 1
+
+
+def test_cumulative_responses_do_not_duplicate_the_same_notice(tmp_path: Path) -> None:
+    session = session_for(tmp_path)
+    notice = CimaChange("51347", 10, 3, ("estado", "comerc"))
+    first_report = report(notice)
+    later_report = CimaChangeReport(
+        requested_date="10/09/2026", changes=(notice,), unknown_areas=(),
+        source_sha256="f" * 64, fetched_at="2026-09-10T10:00:00+00:00",
+    )
+    with session:
+        first = process_change_report(
+            session, client=UnusedClient(), report=first_report  # type: ignore[arg-type]
+        )
+        second = process_change_report(
+            session, client=UnusedClient(), report=later_report  # type: ignore[arg-type]
+        )
+        assert len(first) == 1
+        assert second == ()
+        stored = session.get(MaintenanceChangeEvent, first[0].id)
+        assert stored is not None and stored.source_sha256 == first_report.source_sha256
+        assert session.scalar(select(func.count()).select_from(MaintenanceChangeEvent)) == 1
+
+
+def test_notice_from_previous_id_scheme_is_recognized(tmp_path: Path) -> None:
+    session = session_for(tmp_path)
+    notice = CimaChange("51347", 10, 3, ("estado",))
+    with session:
+        session.add(MaintenanceChangeEvent(
+            id="0" * 64, nregistro=notice.nregistro,
+            occurred_at_epoch=notice.occurred_at, change_type=notice.change_type,
+            areas_json='["estado"]', source_sha256="a" * 64,
+            fetched_at="2026-09-09T10:00:00+00:00", old_version_id=None,
+            new_version_id=None, diff_json=None, affected_field_count=0,
+            recorded_at=datetime.now(UTC),
+        ))
+        session.commit()
+        assert process_change_report(
+            session, client=UnusedClient(), report=report(notice)  # type: ignore[arg-type]
+        ) == ()
         assert session.scalar(select(func.count()).select_from(MaintenanceChangeEvent)) == 1
 
 

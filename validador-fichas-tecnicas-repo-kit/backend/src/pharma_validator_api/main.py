@@ -32,6 +32,7 @@ from pharma_validator_api.logging import configure_logging
 from pharma_validator_api.maintenance_api import router as maintenance_router
 from pharma_validator_api.master_workbook_export_api import router as master_export_router
 from pharma_validator_api.models import Base, ImportBatch, TargetRecord
+from pharma_validator_api.nomenclator_api import router as nomenclator_router
 from pharma_validator_api.quarantine_api import router as quarantine_router
 from pharma_validator_api.queue_api import maturity_router
 from pharma_validator_api.queue_api import router as queue_router
@@ -180,6 +181,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(insights_router)
     application.include_router(source_import_router)
     application.include_router(source_connection_router)
+    application.include_router(nomenclator_router)
     application.include_router(queue_router)
     application.include_router(maturity_router)
     application.include_router(timing_router)

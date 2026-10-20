@@ -1,16 +1,20 @@
 from __future__ import annotations
 
 import json
+from contextlib import nullcontext
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 from sqlalchemy import select
+from sqlalchemy.engine import make_url
 
 from pharma_validator_api.cima_client import CimaClient
 from pharma_validator_api.errors import ApplicationError
 from pharma_validator_api.maintenance_job import MaintenanceJobError, run_one_day
+from pharma_validator_api.maintenance_lock import MaintenanceAlreadyRunning, maintenance_lock
 from pharma_validator_api.maintenance_store import list_changes
 from pharma_validator_api.models import (
     MaintenanceChangeEvent,
@@ -120,8 +124,15 @@ def run_yesterday(request: Request, session: SessionDependency) -> dict[str, Any
     """Consulta el último día cerrado de CIMA y guarda sólo cambios del catálogo."""
     settings = request.app.state.settings
     day = date.today() - timedelta(days=1)
+    url = make_url(settings.database_url)
+    database_path = url.database
+    lock = (
+        maintenance_lock(Path(database_path))
+        if url.get_backend_name() == "sqlite" and database_path not in (None, ":memory:")
+        else nullcontext()
+    )
     try:
-        with CimaClient(
+        with lock, CimaClient(
             base_url=settings.cima_base_url,
             cache_dir=settings.cima_cache_dir,
             timeout_seconds=settings.cima_timeout_seconds,
@@ -133,6 +144,8 @@ def run_yesterday(request: Request, session: SessionDependency) -> dict[str, Any
             row = run_one_day(session, client=client, day=day)
     except MaintenanceJobError as error:
         raise ApplicationError(str(error), status_code=503) from error
+    except MaintenanceAlreadyRunning as error:
+        raise ApplicationError(str(error), status_code=409) from error
     return {
         "id": row.id,
         "requested_date": row.requested_date,

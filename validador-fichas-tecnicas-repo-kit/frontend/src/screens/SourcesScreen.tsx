@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 
-import { fetchDatabaseInfo, fetchNomenclatorConnection, fetchSource, fetchSources, importMasterWorkbook, previewMasterWorkbook, saveNomenclatorConnection, testNomenclatorConnection, updateSource } from '../api/client'
+import { fetchDatabaseInfo, fetchNomenclatorConnection, fetchNomenclatorSnapshot, fetchSource, fetchSources, importMasterWorkbook, previewMasterWorkbook, saveNomenclatorConnection, synchronizePersonalNomenclator, testNomenclatorConnection, updateSource } from '../api/client'
+import type { LocalNomenclatorConnection } from '../api/client'
 import { useQuery } from '../api/useQuery'
 import { useCorporateSession, useCapability } from '../auth/SessionContext'
 import { AsyncBoundary } from '../components/AsyncState'
@@ -161,6 +162,54 @@ function NomenclatorConnection() {
       <button type='submit' className='button button--primary' disabled={busy}>Guardar configuración</button>
     </form>}
     {feedback && <p role='status'>{feedback}</p>}{failure && <p role='alert'>{failure}</p>}
+  </section>
+}
+
+function NomenclatorPersonalSync() {
+  const account = useCorporateSession()
+  const [refresh, setRefresh] = useState(0)
+  const { data: snapshot, error: snapshotError } = useQuery(fetchNomenclatorSnapshot, [refresh])
+  const [connection, setConnection] = useState<LocalNomenclatorConnection>({
+    server: 'localhost', port: 0, database: 'DICCIONARIOS', auth: 'windows',
+    username: '', password: '', encrypt: true, trust_server_certificate: false,
+  })
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  function change<K extends keyof LocalNomenclatorConnection>(
+    key: K, value: LocalNomenclatorConnection[K],
+  ) { setConnection((current) => ({ ...current, [key]: value })) }
+  async function sync(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setBusy(true); setError(''); setMessage('')
+    try {
+      const result = await synchronizePersonalNomenclator(connection)
+      setMessage(result.changed ? `Sincronización completa: ${result.row_count.toLocaleString('es-ES')} filas.` : 'Sin cambios: la versión ya estaba disponible.')
+      setRefresh((value) => value + 1)
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'No se pudo sincronizar Nomenclátor.') }
+    finally { setConnection((current) => ({ ...current, password: '' })); setBusy(false) }
+  }
+  return <section className='panel source-connector source-connector--nomenclator' aria-label='Mi Nomenclátor'>
+    <div className='panel__head'><div><p className='eyebrow'>Conector de este ordenador</p><h2>Mi Nomenclátor</h2></div><span className='badge'>{snapshot?.available ? 'Sincronizado' : 'Sin sincronizar'}</span></div>
+    <p className='source-connector__description'>Cada persona conecta su propio SQL Server. «localhost» se refiere a este ordenador. La lectura se limita a dbo.nomenclatur y tu copia queda asociada a tu cuenta.</p>
+    {snapshot?.available && <p className='source-connector__meta'>Tu copia: <strong>{snapshot.row_count.toLocaleString('es-ES')} filas</strong> · fecha de origen {snapshot.latest_source_date ?? 'no indicada'} · SHA-256 <code>{shortHash(snapshot.sha256 ?? '')}</code>.</p>}
+    {snapshotError && <p role='alert'>{snapshotError}</p>}
+    {!account ? <p className='note'>La sincronización personal requiere una sesión corporativa.</p> : <>
+      <p><a className='button' href='/downloads/conector-nomenclator.zip' download>Descargar conector para Windows</a></p>
+      <p className='muted'>Descomprímelo y abre «iniciar-conector.cmd» en este equipo antes de sincronizar. El navegador puede pedir permiso para acceder al conector local.</p>
+      <form className='source-connector__form' onSubmit={(event) => void sync(event)}>
+        <div className='source-connection-grid'>
+          <label className='field'><span>Servidor SQL Server</span><input required value={connection.server} onChange={(event) => change('server', event.target.value)} /></label>
+          <label className='field'><span>Puerto (0: automático)</span><input required type='number' min={0} max={65535} value={connection.port} onChange={(event) => change('port', Number(event.target.value))} /></label>
+          <label className='field'><span>Base de datos</span><input required value={connection.database} onChange={(event) => change('database', event.target.value)} /></label>
+          <label className='field'><span>Cómo te conectas</span><select value={connection.auth} onChange={(event) => change('auth', event.target.value as 'windows' | 'sql')}><option value='windows'>Mi sesión de Windows</option><option value='sql'>Usuario de SQL Server</option></select></label>
+          {connection.auth === 'sql' && <><label className='field'><span>Usuario SQL Server</span><input required value={connection.username} onChange={(event) => change('username', event.target.value)} /></label><label className='field'><span>Contraseña SQL Server</span><input required type='password' autoComplete='off' value={connection.password} onChange={(event) => change('password', event.target.value)} /></label></>}
+        </div>
+        <label className='field field--inline'><input type='checkbox' checked={connection.encrypt} onChange={(event) => change('encrypt', event.target.checked)} /><span>Cifrar la conexión con SQL Server (recomendado)</span></label>
+        <label className='field field--inline'><input type='checkbox' checked={connection.trust_server_certificate} onChange={(event) => change('trust_server_certificate', event.target.checked)} /><span>Confiar en el certificado de este servidor (solo si lo conozco)</span></label>
+        <button className='button button--primary' type='submit' disabled={busy || !connection.server.trim() || !connection.database.trim()}>{busy ? 'Sincronizando…' : 'Sincronizar mi Nomenclátor'}</button>
+      </form>
+    </>}
+    {message && <p role='status'>{message}</p>}{error && <p role='alert'>{error}</p>}
   </section>
 }
 
@@ -470,7 +519,8 @@ export function SourcesScreen() {
       <section aria-label='Conexiones y servicios'>
         <div className='source-section-heading'><div><p className='eyebrow'>Origen y acceso</p><h2>Conexiones y servicios</h2></div></div>
         <div className='source-connector-grid'>
-        {canManage ? <NomenclatorConnection /> : <section className='panel source-connector' aria-label='Conexión con Nomenclátor'><div className='panel__head'><div><p className='eyebrow'>Base de datos · SQL Server</p><h2>Nomenclátor</h2></div><span className='badge'>Acceso restringido</span></div><p className='source-connector__description'>La configuración está reservada a las personas autorizadas para gestionar fuentes.</p></section>}
+        <NomenclatorPersonalSync />
+        {canManage && <NomenclatorConnection />}
         <div className='source-connector-stack'>
           <section className='panel source-connector' aria-label='CIMA'>
             <div className='panel__head'><div><p className='eyebrow'>Fuente documental · AEMPS</p><h2>CIMA</h2></div><span className='badge'>{cimaDocuments ? 'Con datos' : 'Sin documentos'}</span></div>

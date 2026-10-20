@@ -68,6 +68,10 @@ class Settings(BaseSettings):
     # explícitamente la carpeta con los maestros y superar el gate de ida/vuelta.
     enable_master_workbook_export: bool = False
     master_data_directory: Path | None = None
+    # Instantánea exportada de dbo.nomenclatur. Nunca se consulta una tabla de
+    # pacientes ni se modifica el maestro por configurar esta ruta.
+    nomenclator_snapshot_path: Path | None = None
+    nomenclator_snapshot_dir: Path | None = None
     # Directorio de artefactos de exportación. El fichero va a disco y la base
     # guarda sólo su metadato: un export de decenas de miles de fichas no cabe
     # razonablemente en una fila.

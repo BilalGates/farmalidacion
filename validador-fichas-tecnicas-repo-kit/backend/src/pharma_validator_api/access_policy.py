@@ -26,7 +26,7 @@ def _rules(method: str, capability: str, paths: tuple[str, ...],
 
 
 _rules("GET", "catalog.read", (
-    "/records", "/records/reviewers", "/records/{record_id}",
+    "/records", "/records/{record_id}",
     "/records/{record_id}/blocks/{block_type}", "/records/{record_id}/block-history",
     "/records/{record_id}/blocks/{block_id}/empty-source-columns",
     "/catalog/identities", "/catalog/identities/{identity_id}",
@@ -35,6 +35,7 @@ _rules("GET", "catalog.read", (
     "/catalog/identities/{identity_id}/history", "/catalog/identities/{identity_id}/relations",
     "/catalog/identities/{identity_id}/classifications",
     "/catalog/identities/{identity_id}/classification-history",
+    "/nomenclator/identities/{identity_id}/comparison",
     "/insights/dashboard", "/insights/dashboard/explore", "/insights/dashboard/cases",
     "/insights/records", "/insights/records/{record_id}",
     "/risk/rules", "/risk/assess",
@@ -53,6 +54,7 @@ _rules("PUT", "catalog.maintain", (
 ), "actor_id")
 _rules("POST", "review.write", (
     "/catalog/identities/{identity_id}/cima-comparisons/{field_value_id}/decisions",
+    "/nomenclator/identities/{identity_id}/decisions",
 ), "actor_id")
 _rules("GET", "sources.read", (
     "/records/quarantined", "/records/quarantined/{row_id}/empty-source-columns",
@@ -60,6 +62,8 @@ _rules("GET", "sources.read", (
     "/insights/imports/{batch_id}", "/maintenance/changes", "/maintenance/changes/{event_id}",
     "/maintenance/runs",
 ))
+_rules("GET", "", ("/nomenclator/snapshot",))
+_rules("POST", "", ("/nomenclator/snapshots",))
 _rules("PATCH", "sources.manage", ("/insights/sources/{source_id}",), "actor_id")
 _rules("POST", "sources.manage", (
     "/imports/master/{kind}/preview", "/source-connections/nomenclator/test", "/maintenance/run",
@@ -90,6 +94,7 @@ _rules("GET", "export.read", (
     "/exports/{run_id}/artifact",
 ))
 _rules("GET", "audit.read", ("/audit/records/{record_id}", "/audit/events"))
+_rules("GET", "", ("/records/reviewers",))
 _rules("GET", "team.manage", ("/reviewers", "/reviewers/roles"))
 _rules("GET", "team.manage", ("/auth/access",))
 _rules("POST", "team.manage", ("/reviewers",))
