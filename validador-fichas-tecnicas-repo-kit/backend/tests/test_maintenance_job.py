@@ -23,6 +23,9 @@ class ChangesClient:
         self.fail = fail
         self.dates: list[str] = []
 
+    def all_presentations(self) -> tuple[dict, ...]:
+        return ()
+
     def changes(self, *, date: str, nregistros: tuple[str, ...] = ()) -> CimaResponse:
         self.dates.append(date)
         if self.fail:
@@ -42,6 +45,10 @@ class ChangesClient:
 
 
 class NoPresentationsClient(ChangesClient):
+    def all_presentations(self) -> tuple[dict, ...]:
+        # A stale index must still be checked against the medication detail.
+        return ({"cn": "600000", "nregistro": "30/09/2026"},)
+
     def medication(self, *, nregistro: str, use_cache: bool = False) -> CimaResponse:
         body = json.dumps({"nregistro": nregistro, "nombre": "Medicamento retirado"}).encode()
         return CimaResponse(
@@ -53,6 +60,14 @@ class NoPresentationsClient(ChangesClient):
             fetched_at="2026-09-09T08:00:00+00:00",
             from_cache=False,
         )
+
+
+class UnrelatedChangeClient(ChangesClient):
+    def all_presentations(self) -> tuple[dict, ...]:
+        return ({"cn": "700000", "nregistro": "07/09/2026"},)
+
+    def medication(self, *, nregistro: str, use_cache: bool = False) -> CimaResponse:
+        raise AssertionError("An unrelated change must not request medication metadata")
 
 
 def session_for(tmp_path: Path) -> Session:
@@ -76,6 +91,7 @@ def test_pending_days_resume_after_last_completed_date(tmp_path: Path) -> None:
             through_date=date(2026, 9, 8),
         )
         assert [run.requested_date for run in runs] == ["07/09/2026", "08/09/2026"]
+        assert client.dates == ["07/09/2026"]
         assert next_pending_date(session, start_date=date(2026, 9, 7)) == date(2026, 9, 9)
         assert run_pending_days(
             session,
@@ -102,6 +118,23 @@ def test_medication_without_presentations_does_not_block_day(
         assert run.status == "completed"
         assert run.event_count == 0
         assert "no publica presentaciones" in caplog.text
+
+
+def test_bulk_index_skips_changes_without_matching_catalog_cn(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        maintenance_job, "_master_cn_index", lambda _session: {"600000": ("record-1",)}
+    )
+    session = session_for(tmp_path)
+    with session:
+        run = run_one_day(
+            session,
+            client=UnrelatedChangeClient(),  # type: ignore[arg-type]
+            day=date(2026, 9, 7),
+        )
+        assert run.status == "completed"
+        assert run.event_count == 0
 
 
 def test_failure_is_visible_and_next_attempt_retries_same_day(tmp_path: Path) -> None:

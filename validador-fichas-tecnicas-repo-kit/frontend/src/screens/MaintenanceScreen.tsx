@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 
 import {
   fetchMaintenanceChange,
@@ -96,6 +96,10 @@ export function MaintenanceScreen() {
   const [running, setRunning] = useState(false)
   const [runError, setRunError] = useState<string | null>(null)
   const [runMessage, setRunMessage] = useState<string | null>(null)
+  useEffect(() => {
+    const interval = window.setInterval(() => setRefreshKey((value) => value + 1), 60_000)
+    return () => window.clearInterval(interval)
+  }, [])
   const { data, error, loading } = useQuery(() => fetchMaintenanceChanges(), [refreshKey])
   const { data: runs, error: runsError } = useQuery(() => fetchMaintenanceRuns(), [refreshKey])
   const latestRun = runs?.[0]

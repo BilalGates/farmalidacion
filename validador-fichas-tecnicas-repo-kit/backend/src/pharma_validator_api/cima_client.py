@@ -336,6 +336,38 @@ class CimaClient:
             params=[("nregistro", nregistro), ("pagina", str(pagina))],
         )
 
+    def all_presentations(self) -> tuple[dict, ...]:
+        """Read the complete CN/registration index before matching change notices."""
+        first = self.get("/presentaciones", params=[("pagina", "1")], use_cache=False).json()
+        if not isinstance(first, dict):
+            raise CimaClientError("Índice de presentaciones CIMA incompatible.")
+        total, size = first.get("totalFilas"), first.get("tamanioPagina")
+        rows = first.get("resultados")
+        if (
+            not isinstance(total, int) or isinstance(total, bool) or total < 0
+            or not isinstance(size, int) or isinstance(size, bool) or size <= 0
+            or first.get("pagina") != 1 or not isinstance(rows, list)
+        ):
+            raise CimaClientError("Paginación incompatible en presentaciones CIMA.")
+        result = list(rows)
+        for page in range(2, (total + size - 1) // size + 1):
+            current = self.get(
+                "/presentaciones", params=[("pagina", str(page))], use_cache=False
+            ).json()
+            if (
+                not isinstance(current, dict)
+                or current.get("pagina") != page
+                or current.get("totalFilas") != total
+                or not isinstance(current.get("resultados"), list)
+            ):
+                raise CimaClientError(
+                    "La paginación de presentaciones CIMA cambió durante la consulta."
+                )
+            result.extend(current["resultados"])
+        if len(result) != total or not all(isinstance(row, dict) for row in result):
+            raise CimaClientError("Índice de presentaciones CIMA incompleto.")
+        return tuple(result)
+
     def presentation(self, *, cn: str, use_cache: bool = True) -> CimaResponse:
         if not cn or cn != cn.strip():
             raise ValueError("El código nacional CIMA debe ser texto no vacío sin espacios.")

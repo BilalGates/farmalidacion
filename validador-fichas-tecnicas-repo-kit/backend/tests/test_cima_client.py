@@ -8,6 +8,7 @@ import pytest
 from pharma_validator_api.cima_client import (
     CimaCacheIntegrityError,
     CimaClient,
+    CimaClientError,
     CimaHTTPError,
     CimaRetryDelayError,
     RateLimiter,
@@ -262,3 +263,47 @@ def test_medication_inventory_requests_only_authorized_commercialized_page(
         ('autorizados', '1'),
         ('comerc', '1'),
     ]
+
+
+def test_all_presentations_reads_every_page_without_filters(tmp_path: Path) -> None:
+    pages: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        page = int(request.url.params['pagina'])
+        pages.append(page)
+        assert list(request.url.params) == ['pagina']
+        return httpx.Response(
+            200,
+            json={
+                'totalFilas': 2,
+                'tamanioPagina': 1,
+                'pagina': page,
+                'resultados': [{'cn': str(page), 'nregistro': str(page)}],
+            },
+            request=request,
+        )
+
+    with client(tmp_path, httpx.MockTransport(handler)) as cima:
+        rows = cima.all_presentations()
+
+    assert pages == [1, 2]
+    assert [row['cn'] for row in rows] == ['1', '2']
+
+
+def test_all_presentations_rejects_incomplete_index(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                'totalFilas': 2,
+                'tamanioPagina': 1,
+                'pagina': int(request.url.params['pagina']),
+                'resultados': [],
+            },
+            request=request,
+        )
+
+    with client(tmp_path, httpx.MockTransport(handler)) as cima, pytest.raises(
+        CimaClientError, match='incompleto'
+    ):
+        cima.all_presentations()

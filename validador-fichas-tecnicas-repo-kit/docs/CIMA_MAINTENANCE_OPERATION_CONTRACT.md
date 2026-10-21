@@ -15,9 +15,18 @@ consultar como cerrado un día que todavía está creciendo.
 ## Cursor y recuperación
 
 El cursor es el primer día sin `maintenance_run` completado desde la fecha
-inicial. Se procesan en orden los días sin completar hasta la fecha final;
-un día completado posterior a un hueco no hace que se pierda ese hueco ni se
+inicial. `registroCambios(fecha)` devuelve todos los cambios desde esa fecha:
+una consulta del primer día pendiente cubre también los días posteriores hasta
+la fecha final. Se registra la pasada real para el primer día y se marcan los
+demás días pendientes como cubiertos por la misma respuesta y su mismo hash.
+Un día completado posterior a un hueco no hace que se pierda ese hueco ni se
 repite. Si no hay ejecuciones completadas se comienza en la fecha inicial.
+
+Antes de consultar el detalle de un aviso, la pasada lee el índice paginado
+de presentaciones CIMA y compara CN literales con el maestro. Sólo para los
+números de registro candidatos vuelve a verificar el CN y nregistro exactos
+en el detalle de CIMA. Un índice incompleto o paginación cambiante detiene la
+pasada; nunca se asume que una respuesta parcial equivale a ausencia de cambios.
 
 Cada día tiene intentos numerados. Un fallo:
 

@@ -33,6 +33,8 @@ class MaintenanceRefreshError(RuntimeError):
 class MaintenanceClient(Protocol):
     def changes(self, *, date: str, nregistros: Sequence[str] = ()) -> CimaResponse: ...
 
+    def all_presentations(self) -> tuple[dict, ...]: ...
+
     def medication(
         self,
         *,

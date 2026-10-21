@@ -78,6 +78,23 @@ def _master_cn_index(session: Session) -> dict[str, tuple[str, ...]]:
     return {cn: tuple(sorted(target_ids)) for cn, target_ids in candidates.items()}
 
 
+def _catalog_registrations(
+    client: MaintenanceClient, master_by_cn: dict[str, tuple[str, ...]]
+) -> set[str]:
+    """Use CIMA's paginated presentation index to avoid one request per unrelated notice."""
+    registrations: set[str] = set()
+    for row in client.all_presentations():
+        cn, nregistro = row.get("cn"), row.get("nregistro")
+        if (
+            isinstance(cn, str)
+            and isinstance(nregistro, str)
+            and nregistro
+            and len(master_by_cn.get(cn, ())) == 1
+        ):
+            registrations.add(nregistro)
+    return registrations
+
+
 def _catalog_targets_for_change(
     session: Session,
     *,
@@ -157,18 +174,23 @@ def run_one_day(
         # Sin ningún CN maestro no puede existir un destino exacto. Evita
         # consultas CIMA adicionales y registra igualmente la pasada del día.
         if master_by_cn:
+            catalog_registrations = _catalog_registrations(client, master_by_cn)
             for change in report.changes:
-                if change_is_recorded(session, change):
+                if (
+                    change.nregistro not in catalog_registrations
+                    or change_is_recorded(session, change)
+                ):
                     continue
-                matches = _catalog_targets_for_change(
-                    session,
-                    client=client,
-                    nregistro=change.nregistro,
-                    master_by_cn=master_by_cn,
-                )
+                if change.nregistro not in targets_by_registration:
+                    targets_by_registration[change.nregistro] = _catalog_targets_for_change(
+                        session,
+                        client=client,
+                        nregistro=change.nregistro,
+                        master_by_cn=master_by_cn,
+                    )
+                matches = targets_by_registration[change.nregistro]
                 if matches:
                     relevant_changes.append(change)
-                    targets_by_registration[change.nregistro] = matches
         report = replace(report, changes=tuple(relevant_changes))
         events = process_change_report(
             session,
@@ -203,10 +225,33 @@ def run_pending_days(
     through_date: date,
 ) -> tuple[MaintenanceRun, ...]:
     completed_days = _completed_days(session)
-    pending = start_date
-    runs: list[MaintenanceRun] = []
-    while pending <= through_date:
-        if pending not in completed_days:
-            runs.append(run_one_day(session, client=client, day=pending))
-        pending += timedelta(days=1)
+    pending_days: list[date] = []
+    day = start_date
+    while day <= through_date:
+        if day not in completed_days:
+            pending_days.append(day)
+        day += timedelta(days=1)
+    if not pending_days:
+        return ()
+    # registroCambios(fecha) is cumulative through the moment of the request.
+    # The earliest pending date therefore covers every later pending date.
+    first = run_one_day(session, client=client, day=pending_days[0])
+    runs = [first]
+    coverage_started_at = datetime.now(UTC)
+    for day in pending_days[1:]:
+        requested = _literal(day)
+        covered_at = coverage_started_at + timedelta(microseconds=len(runs))
+        covered = MaintenanceRun(
+            requested_date=requested,
+            attempt=_attempt(session, requested),
+            status="completed",
+            event_count=0,
+            source_sha256=first.source_sha256,
+            error_detail=None,
+            started_at=covered_at,
+            finished_at=covered_at,
+        )
+        session.add(covered)
+        runs.append(covered)
+    session.commit()
     return tuple(runs)

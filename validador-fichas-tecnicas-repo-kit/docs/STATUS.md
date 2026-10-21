@@ -1,11 +1,28 @@
+## 2026-10-21 — Recuperación del atraso de CIMA
+
+El commit `226a23e` sí estaba desplegado en Coolify y el servicio de
+mantenimiento ya procesaba el caso sin presentaciones como aviso. La pasada
+seguía en `running` porque `registroCambios` devolvía 55.037 avisos acumulados
+desde el 30/09/2026; el algoritmo consultaba el detalle de cada aviso y repetía
+la consulta acumulada por cada día pendiente. La recuperación se ha cambiado
+para leer el índice paginado de CN/nregistro de CIMA, descartar avisos ajenos al
+catálogo antes de pedir metadatos individuales y cubrir todos los días pendientes
+con una sola consulta acumulada. Se mantiene la verificación literal de CN y
+nregistro en el detalle de cada candidato. El panel actualiza su estado cada
+minuto sin recargar la página. Verificación local: 33 pruebas enfocadas del
+cliente y mantenimiento, Ruff y mypy, además de build y lint del frontend.
+Pendiente comprobar la ejecución completa
+en Coolify tras publicar esta corrección.
+
 ## 2026-10-21 — Mantenimiento CIMA en Coolify
 
 El despliegue `680f281` inició el servicio `cima-maintenance`, pero la pasada
 del 30/09/2026 falló al consultar el medicamento CIMA `00131043`: la respuesta
 oficial no incluye `presentaciones`. Como no hay CN para cruzarlo con el
 catálogo, ese caso se deja sin destino y se registra un aviso en el log, sin
-bloquear las demás novedades. La corrección queda pendiente de publicación y de
-verificación de que el atraso se recupera en Coolify.
+bloquear las demás novedades. La corrección se publicó como `226a23e` y el
+servicio registró el aviso correspondiente; el atraso persistente se describe
+en la entrada anterior.
 
 ## 2026-10-21 — Enlaces a fichas técnicas
 

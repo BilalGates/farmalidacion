@@ -900,13 +900,17 @@ y nueve enlaces, sin descargar ni alterar valores maestros. Migración aditiva
 
 **Estado: núcleo técnico cerrado y ejecución local programada (28-09-2026).**
 `maintenance_run` conserva cada intento; el cursor busca el primer día sin
-completar desde la fecha inicial y recupera huecos en orden. Un fallo queda visible y el
+completar desde la fecha inicial. Desde octubre de 2026 una consulta acumulada
+cubre los días pendientes y el índice paginado de presentaciones limita las
+consultas de detalle a CN candidatos del catálogo. Un fallo queda visible y el
 siguiente intento repite la fecha. `scripts/run_cima_maintenance.py` continúa
 siendo la pasada finita; `scripts/run_real_preview_cima_maintenance.ps1` la
 conecta a `real-preview.db`. La tarea local
 `Farmalidacion-CIMA-Mantenimiento` está registrada a las 08:00 con recuperación
 de días pendientes y requiere sesión iniciada. El despliegue productivo deberá
-configurar su propio scheduler y base de datos. La CLI SQLite impide pasadas
+configurar su propio scheduler y base de datos; Coolify incluye ya el servicio
+`cima-maintenance`, cuya recuperación de atrasos sigue pendiente de verificación
+productiva. La CLI SQLite impide pasadas
 simultáneas sobre la misma ruta mediante un bloqueo del sistema operativo. Contrato en
 `docs/CIMA_MAINTENANCE_OPERATION_CONTRACT.md`.
 
