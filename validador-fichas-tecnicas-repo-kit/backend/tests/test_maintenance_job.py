@@ -7,6 +7,7 @@ import pytest
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
+import pharma_validator_api.maintenance_job as maintenance_job
 from pharma_validator_api.cima_client import CimaResponse
 from pharma_validator_api.maintenance_job import (
     MaintenanceJobError,
@@ -31,6 +32,20 @@ class ChangesClient:
         ).encode()
         return CimaResponse(
             url="https://cima.example.test/rest/registroCambios",
+            status_code=200,
+            headers=(("Content-Type", "application/json"),),
+            body=body,
+            content_sha256=hashlib.sha256(body).hexdigest(),
+            fetched_at="2026-09-09T08:00:00+00:00",
+            from_cache=False,
+        )
+
+
+class NoPresentationsClient(ChangesClient):
+    def medication(self, *, nregistro: str, use_cache: bool = False) -> CimaResponse:
+        body = json.dumps({"nregistro": nregistro, "nombre": "Medicamento retirado"}).encode()
+        return CimaResponse(
+            url="https://cima.example.test/rest/medicamento",
             status_code=200,
             headers=(("Content-Type", "application/json"),),
             body=body,
@@ -68,6 +83,25 @@ def test_pending_days_resume_after_last_completed_date(tmp_path: Path) -> None:
             start_date=date(2026, 9, 7),
             through_date=date(2026, 9, 8),
         ) == ()
+
+
+def test_medication_without_presentations_does_not_block_day(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setattr(
+        maintenance_job, "_master_cn_index", lambda _session: {"600000": ("record-1",)}
+    )
+    session = session_for(tmp_path)
+    with session:
+        run = run_one_day(
+            session,
+            client=NoPresentationsClient(),  # type: ignore[arg-type]
+            day=date(2026, 9, 30),
+            now=fixed_now,
+        )
+        assert run.status == "completed"
+        assert run.event_count == 0
+        assert "no publica presentaciones" in caplog.text
 
 
 def test_failure_is_visible_and_next_attempt_retries_same_day(tmp_path: Path) -> None:

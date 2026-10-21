@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
@@ -21,6 +22,9 @@ from pharma_validator_api.models import (
 
 class MaintenanceJobError(RuntimeError):
     pass
+
+
+logger = logging.getLogger(__name__)
 
 
 def _literal(day: date) -> str:
@@ -88,7 +92,14 @@ def _catalog_targets_for_change(
         raise MaintenanceRefreshError(
             f"{nregistro}: los metadatos CIMA no contienen JSON válido."
         ) from error
-    presentations = payload.get("presentaciones") if isinstance(payload, dict) else None
+    if not isinstance(payload, dict):
+        raise MaintenanceRefreshError(f"{nregistro}: metadatos CIMA incompatibles.")
+    presentations = payload.get("presentaciones")
+    if presentations is None:
+        # Algunos medicamentos retirados conservan ficha técnica pero CIMA ya
+        # no publica presentaciones. Sin CN no existe cruce exacto con el maestro.
+        logger.warning("CIMA no publica presentaciones para %s; sin destino CN.", nregistro)
+        return ()
     if not isinstance(presentations, list):
         raise MaintenanceRefreshError(f"{nregistro}: presentaciones CIMA incompatibles.")
 

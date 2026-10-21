@@ -1,3 +1,12 @@
+## 2026-10-21 — Mantenimiento CIMA en Coolify
+
+El despliegue `680f281` inició el servicio `cima-maintenance`, pero la pasada
+del 30/09/2026 falló al consultar el medicamento CIMA `00131043`: la respuesta
+oficial no incluye `presentaciones`. Como no hay CN para cruzarlo con el
+catálogo, ese caso se deja sin destino y se registra un aviso en el log, sin
+bloquear las demás novedades. La corrección queda pendiente de publicación y de
+verificación de que el atraso se recupera en Coolify.
+
 ## 2026-10-21 — Enlaces a fichas técnicas
 
 Los valores importados que contienen una URL web completa se muestran ahora
