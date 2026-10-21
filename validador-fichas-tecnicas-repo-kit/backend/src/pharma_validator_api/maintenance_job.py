@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import json
-import logging
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
@@ -10,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from pharma_validator_api.cima_changes import query_cima_changes
-from pharma_validator_api.maintenance_refresh import MaintenanceClient, MaintenanceRefreshError
+from pharma_validator_api.maintenance_refresh import MaintenanceClient
 from pharma_validator_api.maintenance_store import change_is_recorded, process_change_report
 from pharma_validator_api.models import (
     BlockInstance,
@@ -22,9 +20,6 @@ from pharma_validator_api.models import (
 
 class MaintenanceJobError(RuntimeError):
     pass
-
-
-logger = logging.getLogger(__name__)
 
 
 def _literal(day: date) -> str:
@@ -78,72 +73,21 @@ def _master_cn_index(session: Session) -> dict[str, tuple[str, ...]]:
     return {cn: tuple(sorted(target_ids)) for cn, target_ids in candidates.items()}
 
 
-def _catalog_registrations(
+def _catalog_targets_by_registration(
     client: MaintenanceClient, master_by_cn: dict[str, tuple[str, ...]]
-) -> set[str]:
-    """Use CIMA's paginated presentation index to avoid one request per unrelated notice."""
-    registrations: set[str] = set()
+) -> dict[str, tuple[tuple[str, str], ...]]:
+    """Match literal CN only when it is unique in both complete inventories."""
+    cima_by_cn: dict[str, list[str]] = {}
     for row in client.all_presentations():
         cn, nregistro = row.get("cn"), row.get("nregistro")
-        if (
-            isinstance(cn, str)
-            and isinstance(nregistro, str)
-            and nregistro
-            and len(master_by_cn.get(cn, ())) == 1
-        ):
-            registrations.add(nregistro)
-    return registrations
-
-
-def _catalog_targets_for_change(
-    session: Session,
-    *,
-    client: MaintenanceClient,
-    nregistro: str,
-    master_by_cn: dict[str, tuple[str, ...]],
-) -> tuple[tuple[str, str], ...]:
-    """Resolve a notice only when CIMA confirms a unique literal CN match."""
-    try:
-        payload = client.medication(nregistro=nregistro, use_cache=False).json()
-    except (ValueError, json.JSONDecodeError) as error:
-        raise MaintenanceRefreshError(
-            f"{nregistro}: los metadatos CIMA no contienen JSON válido."
-        ) from error
-    if not isinstance(payload, dict):
-        raise MaintenanceRefreshError(f"{nregistro}: metadatos CIMA incompatibles.")
-    presentations = payload.get("presentaciones")
-    if presentations is None:
-        # Algunos medicamentos retirados conservan ficha técnica pero CIMA ya
-        # no publica presentaciones. Sin CN no existe cruce exacto con el maestro.
-        logger.warning("CIMA no publica presentaciones para %s; sin destino CN.", nregistro)
-        return ()
-    if not isinstance(presentations, list):
-        raise MaintenanceRefreshError(f"{nregistro}: presentaciones CIMA incompatibles.")
-
-    cns: list[str] = []
-    for row in presentations:
-        if isinstance(row, dict):
-            cn = row.get("cn")
-            if isinstance(cn, str) and cn:
-                cns.append(cn)
-    targets: set[tuple[str, str]] = set()
-    for cn in set(cns):
+        if isinstance(cn, str) and cn and isinstance(nregistro, str) and nregistro:
+            cima_by_cn.setdefault(cn, []).append(nregistro)
+    targets: dict[str, set[tuple[str, str]]] = {}
+    for cn, registrations in cima_by_cn.items():
         master_candidates = master_by_cn.get(cn, ())
-        if len(master_candidates) != 1 or cns.count(cn) != 1:
-            continue
-        try:
-            exact = client.presentation(cn=cn, use_cache=False).json()
-        except (ValueError, json.JSONDecodeError) as error:
-            raise MaintenanceRefreshError(
-                f"{nregistro}/{cn}: la respuesta de presentación no es JSON válido."
-            ) from error
-        if (
-            isinstance(exact, dict)
-            and exact.get("cn") == cn
-            and exact.get("nregistro") == nregistro
-        ):
-            targets.add((master_candidates[0], cn))
-    return tuple(sorted(targets))
+        if len(registrations) == 1 and len(master_candidates) == 1:
+            targets.setdefault(registrations[0], set()).add((master_candidates[0], cn))
+    return {registration: tuple(sorted(matches)) for registration, matches in targets.items()}
 
 
 def run_one_day(
@@ -174,23 +118,14 @@ def run_one_day(
         # Sin ningún CN maestro no puede existir un destino exacto. Evita
         # consultas CIMA adicionales y registra igualmente la pasada del día.
         if master_by_cn:
-            catalog_registrations = _catalog_registrations(client, master_by_cn)
+            targets_by_registration = _catalog_targets_by_registration(client, master_by_cn)
             for change in report.changes:
                 if (
-                    change.nregistro not in catalog_registrations
+                    change.nregistro not in targets_by_registration
                     or change_is_recorded(session, change)
                 ):
                     continue
-                if change.nregistro not in targets_by_registration:
-                    targets_by_registration[change.nregistro] = _catalog_targets_for_change(
-                        session,
-                        client=client,
-                        nregistro=change.nregistro,
-                        master_by_cn=master_by_cn,
-                    )
-                matches = targets_by_registration[change.nregistro]
-                if matches:
-                    relevant_changes.append(change)
+                relevant_changes.append(change)
         report = replace(report, changes=tuple(relevant_changes))
         events = process_change_report(
             session,

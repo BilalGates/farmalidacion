@@ -46,20 +46,7 @@ class ChangesClient:
 
 class NoPresentationsClient(ChangesClient):
     def all_presentations(self) -> tuple[dict, ...]:
-        # A stale index must still be checked against the medication detail.
-        return ({"cn": "600000", "nregistro": "30/09/2026"},)
-
-    def medication(self, *, nregistro: str, use_cache: bool = False) -> CimaResponse:
-        body = json.dumps({"nregistro": nregistro, "nombre": "Medicamento retirado"}).encode()
-        return CimaResponse(
-            url="https://cima.example.test/rest/medicamento",
-            status_code=200,
-            headers=(("Content-Type", "application/json"),),
-            body=body,
-            content_sha256=hashlib.sha256(body).hexdigest(),
-            fetched_at="2026-09-09T08:00:00+00:00",
-            from_cache=False,
-        )
+        return ()
 
 
 class UnrelatedChangeClient(ChangesClient):
@@ -102,7 +89,7 @@ def test_pending_days_resume_after_last_completed_date(tmp_path: Path) -> None:
 
 
 def test_medication_without_presentations_does_not_block_day(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(
         maintenance_job, "_master_cn_index", lambda _session: {"600000": ("record-1",)}
@@ -117,7 +104,29 @@ def test_medication_without_presentations_does_not_block_day(
         )
         assert run.status == "completed"
         assert run.event_count == 0
-        assert "no publica presentaciones" in caplog.text
+
+
+def test_bulk_index_requires_unique_literal_cn_on_both_sides() -> None:
+    class CatalogClient(ChangesClient):
+        def all_presentations(self) -> tuple[dict, ...]:
+            return (
+                {"cn": "060000", "nregistro": "one"},
+                {"cn": "600000", "nregistro": "two"},
+                {"cn": "600000", "nregistro": "three"},
+                {"cn": "700000", "nregistro": "one"},
+                {"cn": "800000", "nregistro": "one"},
+            )
+
+    matches = maintenance_job._catalog_targets_by_registration(
+        CatalogClient(),
+        {
+            "060000": ("target-a",),
+            "600000": ("target-b",),
+            "700000": ("target-c", "target-d"),
+            "800000": ("target-e",),
+        },
+    )
+    assert matches == {"one": (("target-a", "060000"), ("target-e", "800000"))}
 
 
 def test_bulk_index_skips_changes_without_matching_catalog_cn(

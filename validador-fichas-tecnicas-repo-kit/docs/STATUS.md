@@ -6,10 +6,10 @@ seguía en `running` porque `registroCambios` devolvía 55.037 avisos acumulados
 desde el 30/09/2026; el algoritmo consultaba el detalle de cada aviso y repetía
 la consulta acumulada por cada día pendiente. La recuperación se ha cambiado
 para leer el índice paginado de CN/nregistro de CIMA, descartar avisos ajenos al
-catálogo antes de pedir metadatos individuales y cubrir todos los días pendientes
-con una sola consulta acumulada. Se mantiene la verificación literal de CN y
-nregistro en el detalle de cada candidato. El panel actualiza su estado cada
-minuto sin recargar la página. Verificación local: 33 pruebas enfocadas del
+catálogo y cubrir todos los días pendientes con una sola consulta acumulada.
+El cruce exige CN literal único en CIMA y en el maestro; no precisa consultar
+cada medicamento individualmente. El panel actualiza su estado cada
+minuto sin recargar la página. Verificación local: 34 pruebas enfocadas del
 cliente y mantenimiento, Ruff y mypy, además de build y lint del frontend.
 Pendiente comprobar la ejecución completa
 en Coolify tras publicar esta corrección.

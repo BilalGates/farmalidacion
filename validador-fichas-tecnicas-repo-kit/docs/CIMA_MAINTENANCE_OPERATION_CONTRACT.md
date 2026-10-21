@@ -22,11 +22,12 @@ demás días pendientes como cubiertos por la misma respuesta y su mismo hash.
 Un día completado posterior a un hueco no hace que se pierda ese hueco ni se
 repite. Si no hay ejecuciones completadas se comienza en la fecha inicial.
 
-Antes de consultar el detalle de un aviso, la pasada lee el índice paginado
-de presentaciones CIMA y compara CN literales con el maestro. Sólo para los
-números de registro candidatos vuelve a verificar el CN y nregistro exactos
-en el detalle de CIMA. Un índice incompleto o paginación cambiante detiene la
-pasada; nunca se asume que una respuesta parcial equivale a ausencia de cambios.
+La pasada lee el índice paginado completo de presentaciones CIMA y compara CN
+literales con el maestro. Sólo un CN que aparece una vez en cada inventario
+puede vincular una novedad a un registro. Un índice vacío, incompleto o con
+paginación cambiante detiene la pasada; nunca se asume que una respuesta parcial
+equivale a ausencia de cambios. Los avisos de ficha técnica vinculados siguen
+descargando y versionando la documentación CIMA.
 
 Cada día tiene intentos numerados. Un fallo:
 

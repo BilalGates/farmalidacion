@@ -344,7 +344,7 @@ class CimaClient:
         total, size = first.get("totalFilas"), first.get("tamanioPagina")
         rows = first.get("resultados")
         if (
-            not isinstance(total, int) or isinstance(total, bool) or total < 0
+            not isinstance(total, int) or isinstance(total, bool) or total <= 0
             or not isinstance(size, int) or isinstance(size, bool) or size <= 0
             or first.get("pagina") != 1 or not isinstance(rows, list)
         ):
