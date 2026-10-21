@@ -30,10 +30,14 @@ class MaintenanceRefreshError(RuntimeError):
     pass
 
 
+class CimaTechnicalSheetUnavailable(MaintenanceRefreshError):
+    """CIMA confirma que no ofrece secciones de FT para este registro."""
+
+
 class MaintenanceClient(Protocol):
     def changes(self, *, date: str, nregistros: Sequence[str] = ()) -> CimaResponse: ...
 
-    def all_presentations(self) -> tuple[dict, ...]: ...
+    def all_presentations(self) -> tuple[dict[str, object], ...]: ...
 
     def medication(
         self,
@@ -76,6 +80,8 @@ def _section_codes(response: CimaResponse) -> tuple[str, ...]:
         payload = json.loads(response.body)
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise MaintenanceRefreshError("El índice de secciones CIMA no es JSON válido.") from exc
+    if payload == {"error": "No existen secciones para el medicamento indicado"}:
+        raise CimaTechnicalSheetUnavailable(str(payload["error"]))
     if not isinstance(payload, list):
         raise MaintenanceRefreshError("El índice de secciones CIMA debe ser una lista.")
     result: list[str] = []
@@ -99,7 +105,10 @@ def _download(
 ) -> tuple[ArtifactInput, ...]:
     metadata = client.medication(nregistro=nregistro, use_cache=False)
     index = client.sections(nregistro=nregistro, document_type=document_type, use_cache=False)
-    codes = _section_codes(index)
+    try:
+        codes = _section_codes(index)
+    except MaintenanceRefreshError as exc:
+        raise type(exc)(f"nregistro {nregistro}: {exc}") from exc
     artifacts = [
         ArtifactInput("metadata", 1, "medicamento", metadata),
         ArtifactInput("section_index", 1, "secciones", index),

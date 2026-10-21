@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from pharma_validator_api.cima_changes import CimaChange, CimaChangeReport
 from pharma_validator_api.maintenance_refresh import (
+    CimaTechnicalSheetUnavailable,
     MaintenanceClient,
     RefreshResult,
     refresh_technical_sheet,
@@ -123,6 +124,7 @@ def process_change_report(
 ) -> tuple[MaintenanceChangeEvent, ...]:
     events: list[MaintenanceChangeEvent] = []
     refreshed: dict[str, RefreshResult] = {}
+    unavailable: set[str] = set()
     targets_by_registration = targets_by_registration or {}
     for change in report.changes:
         existing = _existing_event(session, change)
@@ -136,13 +138,20 @@ def process_change_report(
             )
             continue
         refresh = None
-        if change.affects_technical_sheet:
+        if change.affects_technical_sheet and change.nregistro not in unavailable:
             refresh = refreshed.get(change.nregistro)
             if refresh is None:
-                refresh = refresh_technical_sheet(
-                    session, client=client, nregistro=change.nregistro
-                )
-                refreshed[change.nregistro] = refresh
+                try:
+                    refresh = refresh_technical_sheet(
+                        session, client=client, nregistro=change.nregistro
+                    )
+                except CimaTechnicalSheetUnavailable:
+                    # El aviso sigue siendo relevante; no se inventa una versión
+                    # documental ni se marca ningún valor como revisado.
+                    unavailable.add(change.nregistro)
+                    refresh = None
+                else:
+                    refreshed[change.nregistro] = refresh
         events.append(
             record_change(
                 session,

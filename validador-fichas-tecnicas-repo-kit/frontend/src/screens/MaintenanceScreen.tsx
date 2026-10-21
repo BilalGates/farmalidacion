@@ -7,6 +7,7 @@ import {
   runCimaMaintenance,
 } from '../api/client'
 import { useQuery } from '../api/useQuery'
+import { useCapability } from '../auth/SessionContext'
 import { AsyncBoundary } from '../components/AsyncState'
 import { PageHeader } from '../components/PageHeader'
 import { formatDateTime, shortHash } from '../domain/format'
@@ -59,7 +60,9 @@ function ChangeDetail({ eventId }: { eventId: string }) {
           </div>
           {data.diff === null ? (
             <p className='state state--empty'>
-              CIMA no comunica un cambio en la ficha técnica. Se conserva el aviso, sin proponer cambios en los campos maestros.
+              {data.areas.includes('ft') && data.new_version_id === null
+                ? 'CIMA comunicó un cambio de ficha técnica, pero no ofrece sus secciones para este medicamento. Se conserva el aviso; no se ha creado una versión documental ni se han modificado campos.'
+                : 'CIMA no comunica un cambio en la ficha técnica. Se conserva el aviso, sin proponer cambios en los campos maestros.'}
               {' '}Áreas notificadas: {data.areas.map(areaLabel).join(', ') || 'sin área declarada'}.
             </p>
           ) : (
@@ -91,6 +94,7 @@ function ChangeDetail({ eventId }: { eventId: string }) {
 }
 
 export function MaintenanceScreen() {
+  const canRunMaintenance = useCapability('sources.manage')
   const [selected, setSelected] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [running, setRunning] = useState(false)
@@ -135,6 +139,12 @@ export function MaintenanceScreen() {
           </p>
         </div>
       )}
+      {latestRun?.status === 'completed' && latestRun.error_detail && (
+        <div className='state state--error' role='alert'>
+          <p className='state__title'>La consulta CIMA terminó con documentos no disponibles</p>
+          <p className='state__detail'>{latestRun.error_detail}</p>
+        </div>
+      )}
       {runsError && <div className='state state--error' role='alert'>No se pudo comprobar la actualización automática: {runsError}</div>}
       {runs && latestRun?.status !== 'failed' && (delayedDays === null || delayedDays > 0) && (
         <div className='state state--error' role='alert'>
@@ -146,9 +156,11 @@ export function MaintenanceScreen() {
       <section className='panel' aria-label='Estado de sincronización CIMA'>
         <div className='panel__head'>
           <h2>Estado de sincronización</h2>
-          <button type='button' className='button button--primary' onClick={checkYesterday} disabled={running}>
-            {running ? 'Consultando CIMA…' : 'Consultar ayer'}
-          </button>
+          {canRunMaintenance && (
+            <button type='button' className='button button--primary' onClick={checkYesterday} disabled={running}>
+              {running ? 'Consultando CIMA…' : 'Consultar ayer'}
+            </button>
+          )}
         </div>
         <p>
           {latestRun

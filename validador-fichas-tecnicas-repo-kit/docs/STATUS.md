@@ -2013,3 +2013,15 @@ petición medida; `/database-info` con la fecha añadida respondió en 0,36 s.
 Son medidas locales individuales, no un benchmark de usuarios concurrentes.
 Pruebas enfocadas: backend 7/7, frontend 36/36; build Vite correcto.
 \n
+
+## 2026-10-21 — Novedades CIMA: fichas sin secciones
+
+La API viva de CIMA puede responder HTTP 200 con
+`{"error":"No existen secciones para el medicamento indicado"}` en el índice
+segmentado de una ficha técnica. La consulta diaria conserva esos avisos y
+continúa con los demás registros; no crea una versión de FT ni altera valores
+sin documento. El intento completado comunica cuántos avisos carecen de
+secciones, y la pantalla identifica cada caso en el detalle. Las respuestas
+inesperadas siguen deteniendo la consulta con el `nregistro` en el error.
+El botón manual sólo aparece para quienes pueden gestionar fuentes. Verificación
+local: 19 pruebas backend, 6 de interfaz, Ruff, mypy y build correctos.

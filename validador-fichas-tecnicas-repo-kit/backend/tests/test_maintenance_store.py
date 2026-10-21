@@ -1,4 +1,5 @@
 import hashlib
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -7,6 +8,8 @@ from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 
 from pharma_validator_api.cima_changes import CimaChange, CimaChangeReport
+from pharma_validator_api.cima_client import CimaResponse
+from pharma_validator_api.maintenance_refresh import MaintenanceRefreshError
 from pharma_validator_api.maintenance_store import list_changes, process_change_report
 from pharma_validator_api.models import Base, ImmutableHistoryError, MaintenanceChangeEvent
 
@@ -14,6 +17,33 @@ from pharma_validator_api.models import Base, ImmutableHistoryError, Maintenance
 class UnusedClient:
     def __getattr__(self, name: str) -> object:
         raise AssertionError(f"No debía consultarse CIMA: {name}")
+
+
+class SectionsUnavailableClient:
+    def __init__(self, *, error: str = "No existen secciones para el medicamento indicado") -> None:
+        self.error = error
+        self.section_calls = 0
+
+    def _response(self, body: bytes) -> CimaResponse:
+        return CimaResponse(
+            url="https://cima.aemps.es/cima/rest/docSegmentado/secciones/1",
+            status_code=200,
+            headers=(("Content-Type", "application/json"),),
+            body=body,
+            content_sha256=hashlib.sha256(body).hexdigest(),
+            fetched_at="2026-10-21T08:00:00+00:00",
+            from_cache=False,
+        )
+
+    def medication(self, **_: object) -> CimaResponse:
+        return self._response(b'{"nregistro":"07398006"}')
+
+    def sections(self, **_: object) -> CimaResponse:
+        self.section_calls += 1
+        return self._response(json.dumps({"error": self.error}).encode())
+
+    def content(self, **_: object) -> CimaResponse:
+        raise AssertionError("No debe solicitarse contenido si CIMA no ofrece secciones")
 
 
 def session_for(tmp_path: Path) -> Session:
@@ -48,6 +78,32 @@ def test_non_ft_changes_are_persisted_idempotently_without_refresh(tmp_path: Pat
         assert second == ()
         assert first[0].diff_json is None
         assert session.scalar(select(func.count()).select_from(MaintenanceChangeEvent)) == 1
+
+
+def test_unavailable_ft_sections_keep_notice_and_continue_batch(tmp_path: Path) -> None:
+    session = session_for(tmp_path)
+    client = SectionsUnavailableClient()
+    changes = report(
+        CimaChange("07398006", 10, 3, ("ft",)),
+        CimaChange("07398006", 11, 3, ("ft", "otros")),
+        CimaChange("other", 12, 3, ("otros",)),
+    )
+    with session:
+        events = process_change_report(session, client=client, report=changes)  # type: ignore[arg-type]
+        assert len(events) == 3
+        assert client.section_calls == 1
+        assert all(event.new_version_id is None for event in events)
+        assert session.scalar(select(func.count()).select_from(MaintenanceChangeEvent)) == 3
+        assert process_change_report(session, client=client, report=changes) == ()  # type: ignore[arg-type]
+
+
+def test_unexpected_sections_error_fails_with_registration(tmp_path: Path) -> None:
+    session = session_for(tmp_path)
+    client = SectionsUnavailableClient(error="Error interno")
+    with session, pytest.raises(MaintenanceRefreshError, match="nregistro 07398006"):
+        process_change_report(
+            session, client=client, report=report(CimaChange("07398006", 10, 3, ("ft",)))  # type: ignore[arg-type]
+        )
 
 
 def test_cumulative_responses_do_not_duplicate_the_same_notice(tmp_path: Path) -> None:

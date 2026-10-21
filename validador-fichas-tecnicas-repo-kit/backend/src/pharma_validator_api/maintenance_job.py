@@ -135,6 +135,16 @@ def run_one_day(
         )
         run.status = "completed"
         run.event_count = len(events)
+        unavailable = sum(
+            "ft" in change.areas and event.new_version_id is None
+            for change, event in zip(report.changes, events, strict=True)
+        )
+        if unavailable:
+            run.error_detail = (
+                f"{unavailable} {'aviso' if unavailable == 1 else 'avisos'} de ficha técnica "
+                "sin secciones disponibles en CIMA. "
+                "Se conservaron los avisos, sin crear versiones ni alterar campos."
+            )
         run.source_sha256 = report.source_sha256
         run.finished_at = now()
         session.commit()
@@ -182,7 +192,7 @@ def run_pending_days(
             status="completed",
             event_count=0,
             source_sha256=first.source_sha256,
-            error_detail=None,
+            error_detail=first.error_detail,
             started_at=covered_at,
             finished_at=covered_at,
         )

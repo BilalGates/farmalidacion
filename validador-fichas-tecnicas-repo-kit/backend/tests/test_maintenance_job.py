@@ -106,6 +106,57 @@ def test_medication_without_presentations_does_not_block_day(
         assert run.event_count == 0
 
 
+def test_missing_cima_ft_sections_complete_day_with_visible_warning(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class MissingSectionsClient(ChangesClient):
+        def changes(self, *, date: str, nregistros: tuple[str, ...] = ()) -> CimaResponse:
+            body = b'[{"nregistro":"07398006","fecha":1,"tipoCambio":3,"cambio":["ft"]}]'
+            return CimaResponse(
+                url="https://cima.aemps.es/cima/rest/registroCambios",
+                status_code=200,
+                headers=(("Content-Type", "application/json"),),
+                body=body,
+                content_sha256=hashlib.sha256(body).hexdigest(),
+                fetched_at="2026-10-21T08:00:00+00:00",
+                from_cache=False,
+            )
+
+        def medication(self, **_: object) -> CimaResponse:
+            return self.changes(date="30/09/2026")
+
+        def sections(self, **_: object) -> CimaResponse:
+            body = b'{"error":"No existen secciones para el medicamento indicado"}'
+            return CimaResponse(
+                url="https://cima.aemps.es/cima/rest/docSegmentado/secciones/1",
+                status_code=200,
+                headers=(("Content-Type", "application/json"),),
+                body=body,
+                content_sha256=hashlib.sha256(body).hexdigest(),
+                fetched_at="2026-10-21T08:00:00+00:00",
+                from_cache=False,
+            )
+
+    monkeypatch.setattr(
+        maintenance_job, "_master_cn_index", lambda _session: {"600000": ("record",)}
+    )
+    monkeypatch.setattr(
+        maintenance_job, "_catalog_targets_by_registration",
+        lambda _client, _index: {"07398006": ()},
+    )
+    session = session_for(tmp_path)
+    with session:
+        runs = run_pending_days(
+            session,
+            client=MissingSectionsClient(),  # type: ignore[arg-type]
+            start_date=date(2026, 9, 30),
+            through_date=date(2026, 10, 1),
+        )
+        assert [run.status for run in runs] == ["completed", "completed"]
+        assert runs[0].event_count == 1
+        assert all("sin secciones disponibles" in (run.error_detail or "") for run in runs)
+
+
 def test_bulk_index_requires_unique_literal_cn_on_both_sides() -> None:
     class CatalogClient(ChangesClient):
         def all_presentations(self) -> tuple[dict, ...]:
