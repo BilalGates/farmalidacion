@@ -5,6 +5,7 @@ import { createEmptySourceValue, fetchEmptySourceColumns, fetchRecord, saveField
 import type { EmptySourceColumn, FieldValue, Reviewer, TargetRecord } from '../api/types'
 import { formatDateTime } from '../domain/format'
 import { useCapability } from '../auth/SessionContext'
+import { SourceValue } from '../components/SourceValue'
 
 interface Props {
   readonly recordId: string
@@ -168,8 +169,8 @@ export function SourceFieldsMaintenance({ recordId, reviewer }: Props) {
                   </dt>
                   <dd>
                     <div className='catalog-source-field__values'>
-                      <p><span>Valor de trabajo</span><output>{isEditing ? draft : displayValue(value)}</output></p>
-                      <p><span>Literal original</span><output>{displayValue(field.literal_value)}</output></p>
+                      <p><span>Valor de trabajo</span><output>{isEditing ? draft : <SourceValue value={displayValue(value)} />}</output></p>
+                      <p><span>Literal original</span><output><SourceValue value={displayValue(field.literal_value)} /></output></p>
                     </div>
                     {isEditing ? (
                       <div className='catalog-source-field__editor'>

@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { FieldValue, Reviewer, ValidationState } from '../api/types'
 import { ValidationBadge } from '../components/StateBadge'
 import { ProvenanceList } from '../components/ProvenanceList'
+import { SourceValue } from '../components/SourceValue'
 import { clearDraft, isEmptyDraft, readDraft, saveDraft } from '../domain/drafts'
 import { isTypingTarget, resolveShortcut } from '../domain/shortcuts'
 import { fieldLabel } from '../domain/fieldLabels'
@@ -148,7 +149,7 @@ export function FieldRow({
           {value.literal_value === null ? (
             <span className='muted'>Sin valor en la fuente</span>
           ) : (
-            <span className='value'>{value.literal_value}</span>
+            <span className='value'><SourceValue value={value.literal_value} /></span>
           )}
         </div>
         <div className='field-row__states'>

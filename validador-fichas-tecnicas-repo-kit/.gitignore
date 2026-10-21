@@ -22,6 +22,7 @@ coverage/
 *.db
 *.sqlite
 *.sqlite3
+*.cima.lock
 artifacts/
 !data/examples/cima-offline-corpus/artifacts/
 !data/examples/cima-offline-corpus/artifacts/*

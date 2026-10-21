@@ -1,3 +1,11 @@
+## 2026-10-21 — Enlaces a fichas técnicas
+
+Los valores importados que contienen una URL web completa se muestran ahora
+como enlaces abribles desde «Campos importados» y desde la revisión. El literal
+original se conserva; las direcciones que no usan HTTP o HTTPS permanecen como
+texto. La apertura de una ficha externa depende de que AEMPS la mantenga
+disponible.
+
 ## 2026-10-20 — Comparación local con Nomenclátor
 
 Actualización: se ha preparado la sincronización personal. Cada usuario

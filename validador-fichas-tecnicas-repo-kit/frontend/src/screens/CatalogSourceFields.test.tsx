@@ -6,6 +6,32 @@ import { SourceFieldsMaintenance } from './CatalogSourceFields'
 
 afterEach(() => vi.unstubAllGlobals())
 
+it('permite abrir la ficha técnica CIMA desde los valores importados', async () => {
+  const url = 'https://cima.aemps.es/cima/pdfs/es/ft/66337/66337_ft.pdf'
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+    id: 'record-1', entity_type: 'medication', external_identifiers: [], blocks: [{
+      id: 'block-1', block_type: 'Links', ordinal: 1, values: [{
+        id: 'field-1', field_name: 'FICHA_TECNICA', source_column_index: 1,
+        literal_value: url, maintained_value: url, maintenance_sequence: 0,
+        maintenance_history: [], observed_type: 'texto', logical_state: 'valued',
+        provenance: [], validation_state: 'pendiente', conflict_status: 'sin_conflicto',
+        has_conflict: false, history: [], prefill_policy: 'solo_evidencia',
+        prefill_presentation: 'casilla_vacia', proposed_value: null, prefill_options: [],
+        prefill_warning: null,
+      }],
+    }],
+  }))))
+  render(<SourceFieldsMaintenance recordId='record-1' reviewer={null} />)
+
+  const links = await screen.findAllByRole('link', { name: url })
+  expect(links).toHaveLength(2)
+  for (const link of links) {
+    expect(link).toHaveAttribute('href', url)
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  }
+})
+
 it('completa una celda vacía con columna, actor y motivo', async () => {
   const record = {
     id: 'record-1', entity_type: 'medication', external_identifiers: [], blocks: [{
