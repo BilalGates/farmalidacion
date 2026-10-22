@@ -231,6 +231,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 
 .maintenance-detail-row > td { background: var(--canvas); }
 .maintenance-detail-row .panel { padding: var(--space-4); }
+.maintenance-history-search form, .maintenance-history-pager, .maintenance-history-pager form { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; }
+.maintenance-history-search input { min-width: 15rem; }
+.maintenance-history-pager { justify-content: center; padding: 1rem; }
+.maintenance-history-pager form { margin-left: .5rem; }
+.maintenance-history-pager input { width: 5rem; }
 .maintenance-diff { max-height: 360px; margin: 0; padding: var(--space-3); overflow: auto; border: 1px solid var(--line-soft); border-left: 3px solid var(--info); border-radius: var(--radius-small); color: var(--ink); background: var(--surface); font: 12px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .maintenance-detail-row .table th, .maintenance-detail-row .table td { vertical-align: top; }
 .maintenance-detail-row .table td:last-child { width: 60%; }

@@ -26,6 +26,10 @@ DELETE mediante la misma barrera de inmutabilidad que las versiones fuente.
 
 - `GET /maintenance/changes` devuelve hasta 100 resúmenes por defecto,
   ordenados por Epoch descendente; admite un límite entre 1 y 500.
+- `GET /maintenance/changes/history` devuelve el histórico paginado con
+  `items`, `page`, `page_size` y `total`. Admite página 1..10.000, tamaño
+  1..100 y filtro literal exacto por `nregistro`. El orden es estable por
+  fecha del cambio CIMA descendente e identificador.
 - `GET /maintenance/changes/{id}` añade hash de fuente, captura y diff.
 
 La lista no incluye el cuerpo del diff: cargar todos los textos para mostrar
@@ -37,6 +41,10 @@ cuando el usuario lo abre.
 `Novedades CIMA` muestra tipo, áreas y campos reabiertos. El detalle diferencia
 claramente un cambio sin nueva ficha de uno con diff y presenta cada artefacto
 sin resumir ni reinterpretar su texto.
+La pantalla muestra el total de avisos conservados, permite buscar por número
+de registro y recorrer o elegir cualquier página. También ofrece los intentos
+recientes de consulta diaria. El histórico de novedades no queda limitado a la
+primera página de avisos.
 
 El panel es informativo. Decidir que una validación anterior continúa siendo
 válida se realiza en la pantalla de revisión y conserva las reglas existentes

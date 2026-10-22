@@ -863,6 +863,19 @@ export function fetchMaintenanceChanges(): Promise<MaintenanceChangeSummary[]> {
   return request<MaintenanceChangeSummary[]>('/maintenance/changes')
 }
 
+export interface MaintenanceChangeHistoryPage {
+  items: MaintenanceChangeSummary[]
+  page: number
+  page_size: number
+  total: number
+}
+
+export function fetchMaintenanceChangeHistory(page: number, nregistro: string): Promise<MaintenanceChangeHistoryPage> {
+  const params = new URLSearchParams({ page: String(page), limit: '50' })
+  if (nregistro) params.set('nregistro', nregistro)
+  return request<MaintenanceChangeHistoryPage>(`/maintenance/changes/history?${params}`)
+}
+
 export function fetchMaintenanceChange(id: string): Promise<MaintenanceChangeDetail> {
   return request<MaintenanceChangeDetail>(`/maintenance/changes/${encodeURIComponent(id)}`)
 }

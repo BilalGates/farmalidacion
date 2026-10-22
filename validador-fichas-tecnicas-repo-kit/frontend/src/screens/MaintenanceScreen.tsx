@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from 'react'
 
 import {
   fetchMaintenanceChange,
-  fetchMaintenanceChanges,
+  fetchMaintenanceChangeHistory,
   fetchMaintenanceRuns,
   runCimaMaintenance,
 } from '../api/client'
@@ -96,6 +96,9 @@ function ChangeDetail({ eventId }: { eventId: string }) {
 export function MaintenanceScreen() {
   const canRunMaintenance = useCapability('sources.manage')
   const [selected, setSelected] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [registrationInput, setRegistrationInput] = useState('')
+  const [registrationFilter, setRegistrationFilter] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
   const [running, setRunning] = useState(false)
   const [runError, setRunError] = useState<string | null>(null)
@@ -104,7 +107,10 @@ export function MaintenanceScreen() {
     const interval = window.setInterval(() => setRefreshKey((value) => value + 1), 60_000)
     return () => window.clearInterval(interval)
   }, [])
-  const { data, error, loading } = useQuery(() => fetchMaintenanceChanges(), [refreshKey])
+  const { data, error, loading } = useQuery(
+    () => fetchMaintenanceChangeHistory(page, registrationFilter),
+    [page, registrationFilter, refreshKey],
+  )
   const { data: runs, error: runsError } = useQuery(() => fetchMaintenanceRuns(), [refreshKey])
   const latestRun = runs?.[0]
   const latestCompleted = runs?.find((run) => run.status === 'completed')
@@ -179,15 +185,52 @@ export function MaintenanceScreen() {
         </p>
         {runMessage && <p role='status'>{runMessage}</p>}
         {runError && <p className='state__detail' role='alert'>{runError}</p>}
+        {runs && runs.length > 0 && (
+          <details>
+            <summary>Historial de consultas ({runs.length} intentos recientes)</summary>
+            <ol>
+              {runs.map((run) => (
+                <li key={run.id}>
+                  {run.requested_date} · intento {run.attempt} · {run.status === 'completed' ? 'completada' : run.status === 'running' ? 'en curso' : 'fallida'} · {run.event_count} novedades
+                </li>
+              ))}
+            </ol>
+          </details>
+        )}
+      </section>
+      <section className='panel maintenance-history-search' aria-label='Buscar en el histórico CIMA'>
+        <div className='panel__head'><h2>Histórico de novedades</h2></div>
+        <form onSubmit={(event) => {
+          event.preventDefault()
+          setRegistrationFilter(registrationInput.trim())
+          setPage(1)
+          setSelected(null)
+        }}>
+          <label htmlFor='maintenance-registration'>N.º registro CIMA</label>{' '}
+          <input
+            id='maintenance-registration'
+            type='search'
+            value={registrationInput}
+            onChange={(event) => setRegistrationInput(event.target.value)}
+            maxLength={80}
+            placeholder='Todos los registros'
+          />{' '}
+          <button type='submit' className='button button--secondary'>Buscar</button>
+        </form>
+        {data && (
+          <p className='state__detail'>
+            {data.total.toLocaleString('es-ES')} novedades conservadas{registrationFilter && ` para el registro ${registrationFilter}`}.
+          </p>
+        )}
       </section>
       <AsyncBoundary
         loading={loading}
         error={error}
-        empty={data !== null && data.length === 0}
+        empty={data !== null && data.items.length === 0}
         emptyTitle='Sin novedades'
-        emptyDetail='No se han registrado cambios CIMA que coincidan de forma exacta con el catálogo.'
+        emptyDetail={registrationFilter ? 'No hay novedades para ese número de registro.' : 'No se han registrado cambios CIMA que coincidan de forma exacta con el catálogo.'}
       >
-        {data && data.length > 0 && (
+        {data && data.items.length > 0 && (
           <div className='table-wrap' role='region' aria-label='Novedades CIMA; desplazamiento horizontal disponible' tabIndex={0}><table className='table'>
             <thead>
               <tr>
@@ -201,7 +244,7 @@ export function MaintenanceScreen() {
               </tr>
             </thead>
             <tbody>
-                {data.map((item) => (
+                {data.items.map((item) => (
                 <Fragment key={item.id}>
                 <tr>
                   <th scope='row'>{formatDateTime(item.recorded_at)}</th>
@@ -242,6 +285,26 @@ export function MaintenanceScreen() {
           </table></div>
         )}
       </AsyncBoundary>
+      {data && data.total > data.page_size && (
+        <nav className='maintenance-history-pager' aria-label='Páginas del histórico CIMA'>
+          <button type='button' className='button button--ghost' disabled={page <= 1 || loading} onClick={() => { setPage(page - 1); setSelected(null) }}>Más recientes</button>
+          <span>Página {page} de {Math.ceil(data.total / data.page_size)}</span>
+          <button type='button' className='button button--ghost' disabled={page >= Math.ceil(data.total / data.page_size) || loading} onClick={() => { setPage(page + 1); setSelected(null) }}>Más antiguas</button>
+          <form onSubmit={(event) => {
+            event.preventDefault()
+            const input = event.currentTarget.elements.namedItem('history-page') as HTMLInputElement
+            const destination = Number(input.value)
+            if (Number.isInteger(destination) && destination >= 1 && destination <= Math.ceil(data.total / data.page_size)) {
+              setPage(destination)
+              setSelected(null)
+            }
+          }}>
+            <label htmlFor='history-page'>Ir a la página</label>{' '}
+            <input key={page} id='history-page' name='history-page' type='number' min={1} max={Math.ceil(data.total / data.page_size)} defaultValue={page} />{' '}
+            <button type='submit' className='button button--secondary' disabled={loading}>Ir</button>
+          </form>
+        </nav>
+      )}
     </div>
   )
 }

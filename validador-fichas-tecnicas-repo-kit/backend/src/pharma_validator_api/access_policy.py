@@ -59,7 +59,8 @@ _rules("POST", "review.write", (
 _rules("GET", "sources.read", (
     "/records/quarantined", "/records/quarantined/{row_id}/empty-source-columns",
     "/insights/sources", "/insights/sources/{source_id}", "/insights/imports",
-    "/insights/imports/{batch_id}", "/maintenance/changes", "/maintenance/changes/{event_id}",
+    "/insights/imports/{batch_id}", "/maintenance/changes", "/maintenance/changes/history",
+    "/maintenance/changes/{event_id}",
     "/maintenance/runs",
 ))
 _rules("GET", "", ("/nomenclator/snapshot",))

@@ -296,6 +296,7 @@ function route(url: string): unknown {
   if (url.includes('/insights/sources')) return SOURCES
   if (url.includes('/insights/imports')) return IMPORTS
   if (url.includes('/insights/records/')) return RECORD_DETAIL
+  if (url.includes('/maintenance/changes/history')) return { items: [], total: 0, page: 1, page_size: 50 }
   if (url.includes('/maintenance/changes')) return []
   if (url.includes('/maintenance/runs')) return []
   if (url.includes('/catalog/identities/cat-real/')) return []

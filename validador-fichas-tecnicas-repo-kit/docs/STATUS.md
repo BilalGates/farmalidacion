@@ -2040,4 +2040,13 @@ intento en curso y distingue esta recuperación del retraso sin actividad. El
 contador se guarda cada diez avisos. Al reiniciarse el trabajador, el intento
 anterior queda registrado como interrumpido y se reanudan los avisos pendientes
 mediante sus identidades idempotentes. El cierre de la recuperación se comprobó
-en producción el 22/10; la nueva pantalla de progreso aún requiere despliegue.
+en producción el 22/10; la pantalla de progreso se desplegó ese día.
+
+## 2026-10-22 — Histórico consultable de novedades CIMA
+
+El panel anterior sólo pedía las 100 novedades más recientes aunque la base
+conservaba 44.706. La API incorpora una ruta de lectura paginada con total y
+filtro literal por número de registro. La pantalla permite recorrer las páginas,
+ir directamente a una de ellas y consultar los intentos diarios recientes.
+El detalle documental sigue cargándose bajo demanda y no se modifican los
+eventos conservados.

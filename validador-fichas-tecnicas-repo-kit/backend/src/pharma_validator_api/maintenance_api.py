@@ -8,7 +8,7 @@ from typing import Any
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.engine import make_url
 
 from pharma_validator_api.cima_client import CimaClient
@@ -82,6 +82,39 @@ def changes(session: SessionDependency, limit: int = 100) -> list[dict[str, Any]
     if not 1 <= limit <= 500:
         raise ApplicationError("El límite debe estar entre 1 y 500.", status_code=400)
     return [_summary(session, row) for row in list_changes(session, limit=limit)]
+
+
+@router.get("/changes/history")
+def change_history(
+    session: SessionDependency, page: int = 1, limit: int = 50, nregistro: str = ""
+) -> dict[str, Any]:
+    if not 1 <= page <= 10_000 or not 1 <= limit <= 100:
+        raise ApplicationError("Página o tamaño de página inválidos.", status_code=400)
+    registration = nregistro.strip()
+    if len(registration) > 80:
+        raise ApplicationError("El número de registro es demasiado largo.", status_code=400)
+    conditions = (
+        (MaintenanceChangeEvent.nregistro == registration,) if registration else ()
+    )
+    total = session.scalar(
+        select(func.count()).select_from(MaintenanceChangeEvent).where(*conditions)
+    ) or 0
+    rows = session.scalars(
+        select(MaintenanceChangeEvent)
+        .where(*conditions)
+        .order_by(
+            MaintenanceChangeEvent.occurred_at_epoch.desc(),
+            MaintenanceChangeEvent.id,
+        )
+        .offset((page - 1) * limit)
+        .limit(limit)
+    ).all()
+    return {
+        "items": [_summary(session, row) for row in rows],
+        "page": page,
+        "page_size": limit,
+        "total": total,
+    }
 
 
 @router.get("/changes/{event_id}")

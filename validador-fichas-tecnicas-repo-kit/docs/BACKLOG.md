@@ -895,6 +895,8 @@ CN corresponde al `nregistro`. Los avisos enlazan al expediente con una tabla
 append-only. En la consulta viva del 27-09 se registraron nueve cambios `otros`
 y nueve enlaces, sin descargar ni alterar valores maestros. Migración aditiva
 `f3e4d5c6b7a8`; contrato en `docs/CIMA_NOVELTY_PANEL_CONTRACT.md`.
+El 22-10-2026 se añadió consulta paginada de todo el histórico, búsqueda exacta
+por `nregistro`, acceso directo a página y visibilidad de intentos recientes.
 
 ### DEV-704 — Operación programada y alertas (`P1`)
 

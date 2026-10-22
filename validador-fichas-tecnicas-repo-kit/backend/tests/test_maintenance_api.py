@@ -54,6 +54,40 @@ def test_limits_and_missing_event_fail_in_spanish(scratch_db_url: str) -> None:
     assert missing.json()["detail"] == "Novedad CIMA no encontrada."
 
 
+def test_history_pages_all_events_and_filters_by_registration(scratch_db_url: str) -> None:
+    client, _ = client_with_event(scratch_db_url)
+    engine = create_engine(scratch_db_url)
+    with Session(engine) as session:
+        for suffix, nregistro, occurred_at in (("c", "51347", 124), ("d", "other", 122)):
+            session.add(MaintenanceChangeEvent(
+                id=suffix * 64,
+                nregistro=nregistro,
+                occurred_at_epoch=occurred_at,
+                change_type=3,
+                areas_json='["otros"]',
+                source_sha256="b" * 64,
+                fetched_at="2026-09-09T10:00:00+00:00",
+                old_version_id=None,
+                new_version_id=None,
+                diff_json=None,
+                affected_field_count=0,
+                recorded_at=datetime.now(UTC),
+            ))
+        session.commit()
+
+    first = client.get("/maintenance/changes/history?page=1&limit=2")
+    second = client.get("/maintenance/changes/history?page=2&limit=2")
+    filtered = client.get("/maintenance/changes/history?nregistro=51347")
+    assert first.status_code == second.status_code == filtered.status_code == 200
+    assert first.json()["total"] == second.json()["total"] == 3
+    assert [row["id"] for row in first.json()["items"]] == ["c" * 64, "a" * 64]
+    assert [row["id"] for row in second.json()["items"]] == ["d" * 64]
+    assert filtered.json()["total"] == 2
+    assert [row["nregistro"] for row in filtered.json()["items"]] == ["51347", "51347"]
+    assert client.get("/maintenance/changes/history?page=0").status_code == 400
+    assert client.get("/maintenance/changes/history?limit=101").status_code == 400
+
+
 def test_runs_expose_operational_failure(scratch_db_url: str) -> None:
     client, _ = client_with_event(scratch_db_url)
     engine = create_engine(scratch_db_url)
