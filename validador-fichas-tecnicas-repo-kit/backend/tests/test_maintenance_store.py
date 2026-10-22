@@ -97,6 +97,20 @@ def test_unavailable_ft_sections_keep_notice_and_continue_batch(tmp_path: Path) 
         assert process_change_report(session, client=client, report=changes) == ()  # type: ignore[arg-type]
 
 
+def test_long_report_publishes_durable_progress(tmp_path: Path) -> None:
+    session = session_for(tmp_path)
+    changes = report(*(CimaChange(str(index), index, 3, ("otros",)) for index in range(11)))
+    observed: list[int] = []
+    with session:
+        events = process_change_report(
+            session, client=UnusedClient(), report=changes,  # type: ignore[arg-type]
+            on_progress=observed.append,
+        )
+        assert len(events) == 11
+        assert observed == [10]
+        assert session.scalar(select(func.count()).select_from(MaintenanceChangeEvent)) == 11
+
+
 def test_unexpected_sections_error_fails_with_registration(tmp_path: Path) -> None:
     session = session_for(tmp_path)
     client = SectionsUnavailableClient(error="Error interno")

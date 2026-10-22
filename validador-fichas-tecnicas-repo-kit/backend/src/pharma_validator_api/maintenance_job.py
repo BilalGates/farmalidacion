@@ -98,6 +98,21 @@ def run_one_day(
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> MaintenanceRun:
     requested = _literal(day)
+    # A new invocation can only start after the shared maintenance lock is
+    # released. Any older running attempt was interrupted by a worker restart.
+    interrupted = session.scalars(
+        select(MaintenanceRun).where(
+            MaintenanceRun.requested_date == requested,
+            MaintenanceRun.status == "running",
+        )
+    ).all()
+    for previous in interrupted:
+        previous.status = "failed"
+        previous.error_detail = (
+            "La consulta se interrumpió; el siguiente intento continúa "
+            "con los avisos ya guardados."
+        )
+        previous.finished_at = now()
     run = MaintenanceRun(
         requested_date=requested,
         attempt=_attempt(session, requested),
@@ -127,11 +142,16 @@ def run_one_day(
                     continue
                 relevant_changes.append(change)
         report = replace(report, changes=tuple(relevant_changes))
+        def save_progress(count: int) -> None:
+            run.event_count = count
+            session.commit()
+
         events = process_change_report(
             session,
             client=client,
             report=report,
             targets_by_registration=targets_by_registration,
+            on_progress=save_progress,
         )
         run.status = "completed"
         run.event_count = len(events)

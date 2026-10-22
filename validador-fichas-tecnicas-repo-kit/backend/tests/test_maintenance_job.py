@@ -222,6 +222,29 @@ def test_failure_is_visible_and_next_attempt_retries_same_day(tmp_path: Path) ->
         assert recovered.status == "completed"
 
 
+def test_interrupted_attempt_is_closed_before_resuming(tmp_path: Path) -> None:
+    session = session_for(tmp_path)
+    with session:
+        old = MaintenanceRun(
+            requested_date="08/09/2026", attempt=1, status="running", event_count=20,
+            source_sha256=None, error_detail=None, started_at=fixed_now(), finished_at=None,
+        )
+        session.add(old)
+        session.commit()
+
+        resumed = run_one_day(
+            session, client=ChangesClient(),  # type: ignore[arg-type]
+            day=date(2026, 9, 8), now=fixed_now,
+        )
+        assert resumed.attempt == 2
+        assert resumed.status == "completed"
+        session.refresh(old)
+        assert old.status == "failed"
+        assert old.event_count == 20
+        assert "interrumpió" in (old.error_detail or "")
+        assert old.finished_at == fixed_now().replace(tzinfo=None)
+
+
 def test_pending_days_fill_gap_before_later_completed_day(tmp_path: Path) -> None:
     session = session_for(tmp_path)
     with session:

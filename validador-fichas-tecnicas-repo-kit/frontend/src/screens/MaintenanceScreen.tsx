@@ -146,7 +146,13 @@ export function MaintenanceScreen() {
         </div>
       )}
       {runsError && <div className='state state--error' role='alert'>No se pudo comprobar la actualización automática: {runsError}</div>}
-      {runs && latestRun?.status !== 'failed' && (delayedDays === null || delayedDays > 0) && (
+      {latestRun?.status === 'running' && (
+        <div className='state' role='status'>
+          Consulta CIMA en curso desde el {latestRun.requested_date}: {latestRun.event_count} novedades nuevas procesadas en este intento.
+          {delayedDays !== null && delayedDays > 0 && ` Se están recuperando ${delayedDays} días pendientes.`}
+        </div>
+      )}
+      {runs && latestRun?.status !== 'failed' && latestRun?.status !== 'running' && (delayedDays === null || delayedDays > 0) && (
         <div className='state state--error' role='alert'>
           {delayedDays === null
             ? 'Todavía no hay una consulta automática CIMA completada.'
@@ -164,7 +170,7 @@ export function MaintenanceScreen() {
         </div>
         <p>
           {latestRun
-            ? `Último día consultado: ${latestRun.requested_date} · ${latestRun.status === 'completed' ? 'completada' : latestRun.status} · ${latestRun.event_count} novedades.`
+            ? `Último día consultado: ${latestRun.requested_date} · ${latestRun.status === 'completed' ? 'completada' : latestRun.status === 'running' ? 'en curso' : 'fallida'} · ${latestRun.event_count} novedades.`
             : 'Todavía no hay consultas registradas.'}
         </p>
         <p className='state__detail'>

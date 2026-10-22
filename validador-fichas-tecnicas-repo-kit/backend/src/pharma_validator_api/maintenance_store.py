@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from uuid import NAMESPACE_URL, uuid5
 
@@ -121,6 +121,7 @@ def process_change_report(
     client: MaintenanceClient,
     report: CimaChangeReport,
     targets_by_registration: dict[str, tuple[tuple[str, str], ...]] | None = None,
+    on_progress: Callable[[int], None] | None = None,
 ) -> tuple[MaintenanceChangeEvent, ...]:
     events: list[MaintenanceChangeEvent] = []
     refreshed: dict[str, RefreshResult] = {}
@@ -161,6 +162,8 @@ def process_change_report(
                 catalog_targets=targets_by_registration.get(change.nregistro, ()),
             )
         )
+        if on_progress is not None and len(events) % 10 == 0:
+            on_progress(len(events))
     return tuple(events)
 
 

@@ -51,6 +51,26 @@ it('advierte cuando la última consulta completa quedó atrasada', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent('La consulta automática CIMA lleva')
 })
 
+it('muestra el progreso de una recuperación en curso sin llamarla fallida', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({
+    ok: true, status: 200,
+    json: async () => String(input).endsWith('/maintenance/runs')
+      ? [
+          { id: 'current', requested_date: '30/09/2026', attempt: 6, status: 'running',
+            event_count: 40, error_detail: null, started_at: SUMMARY.recorded_at,
+            finished_at: null },
+          { id: 'previous', requested_date: '29/09/2026', attempt: 1, status: 'completed',
+            event_count: 1, error_detail: null, started_at: SUMMARY.recorded_at,
+            finished_at: SUMMARY.recorded_at },
+        ]
+      : [],
+  }) as Response))
+  render(<MaintenanceScreen />)
+  expect(await screen.findByText(/40 novedades nuevas procesadas/)).toBeInTheDocument()
+  expect(screen.getByText(/Último día consultado: 30\/09\/2026 · en curso/)).toBeInTheDocument()
+  expect(screen.queryByText(/La consulta automática CIMA lleva/)).not.toBeInTheDocument()
+})
+
 it('hace visible el último fallo operativo y su intento', async () => {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({
     ok: true,

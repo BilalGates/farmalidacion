@@ -2025,3 +2025,19 @@ secciones, y la pantalla identifica cada caso en el detalle. Las respuestas
 inesperadas siguen deteniendo la consulta con el `nregistro` en el error.
 El botón manual sólo aparece para quienes pueden gestionar fuentes. Verificación
 local: 19 pruebas backend, 6 de interfaz, Ruff, mypy y build correctos.
+
+## 2026-10-21 — Progreso de la recuperación CIMA
+
+La pasada de recuperación iniciada el 21 de octubre terminó durante la noche.
+El intento 6 del 30/09 quedó `completed` con 29.638 avisos nuevos, y los días
+cubiertos hasta el 21/10 también quedaron completados. La base conserva 44.706
+avisos acumulados. CIMA declaró 83 cambios de ficha sin secciones disponibles;
+se guardaron los avisos sin inventar versiones documentales. La API de
+`registroCambios` declara 55.037 avisos desde el 30 de septiembre; una ficha
+consultada tiene 29 secciones y el cliente respeta un límite de cinco peticiones
+por segundo. La pantalla muestra ahora las novedades procesadas durante el
+intento en curso y distingue esta recuperación del retraso sin actividad. El
+contador se guarda cada diez avisos. Al reiniciarse el trabajador, el intento
+anterior queda registrado como interrumpido y se reanudan los avisos pendientes
+mediante sus identidades idempotentes. El cierre de la recuperación se comprobó
+en producción el 22/10; la nueva pantalla de progreso aún requiere despliegue.
