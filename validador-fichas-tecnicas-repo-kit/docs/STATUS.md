@@ -2050,3 +2050,11 @@ filtro literal por número de registro. La pantalla permite recorrer las página
 ir directamente a una de ellas y consultar los intentos diarios recientes.
 El detalle documental sigue cargándose bajo demanda y no se modifican los
 eventos conservados.
+
+## 2026-10-22 — Rediseño de Novedades CIMA
+
+La vista presenta el estado de la consulta y su resultado como un resumen claro.
+El histórico usa tarjetas con fecha, registro, tipo, áreas y campos reabiertos;
+los registros del catálogo se muestran dos a la vez y los demás se despliegan
+sin perder enlaces. La navegación aparece arriba y abajo del listado y el diff
+continúa disponible bajo demanda. La disposición se adapta a pantallas estrechas.

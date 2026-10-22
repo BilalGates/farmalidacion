@@ -29,9 +29,29 @@ it('muestra campos reabiertos y despliega el diff bajo demanda', async () => {
 
   expect(await screen.findByText('51347')).toBeInTheDocument()
   expect(screen.getByText('2')).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'Ver' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }))
   expect(await screen.findByText('4.2')).toBeInTheDocument()
   expect(screen.getByText(/después/)).toBeInTheDocument()
+})
+
+it('resume los registros relacionados sin ocultar los enlaces adicionales', async () => {
+  const catalog_targets = [1, 2, 3, 4].map((number) => ({
+    identity_id: `identity-${number}`,
+    display_name: `Medicamento ${number}`,
+    identity_type: 'especialidad',
+    national_code: String(number).padStart(6, '0'),
+  }))
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => ({
+    ok: true, status: 200,
+    json: async () => String(input).endsWith('/maintenance/runs')
+      ? [] : history([{ ...SUMMARY, catalog_targets }]),
+  }) as Response))
+  render(<MaintenanceScreen />)
+
+  expect(await screen.findByText('4 registros del catálogo relacionados')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /Medicamento 1/ })).toHaveAttribute('href', '#/catalogo/identity-1')
+  fireEvent.click(screen.getByText('Mostrar 2 registros más'))
+  expect(screen.getByRole('link', { name: /Medicamento 4/ })).toHaveAttribute('href', '#/catalogo/identity-4')
 })
 
 it('permite recorrer el histórico y buscar un número de registro', async () => {
@@ -47,17 +67,17 @@ it('permite recorrer el histórico y buscar un número de registro', async () =>
   }) as Response))
   render(<MaintenanceScreen />)
 
-  expect(await screen.findByText('51 novedades conservadas.')).toBeInTheDocument()
-  expect(screen.getByText('Página 1 de 2')).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'Más antiguas' }))
+  expect(await screen.findByText('Mostrando 1–50 de 51 novedades conservadas.')).toBeInTheDocument()
+  expect(screen.getAllByText('Página 1 de 2')).toHaveLength(2)
+  fireEvent.click(screen.getAllByRole('button', { name: 'Más antiguas' })[0])
   expect(await screen.findByText('older')).toBeInTheDocument()
-  expect(screen.getByText('Página 2 de 2')).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'Más recientes' }))
+  expect(screen.getAllByText('Página 2 de 2')).toHaveLength(2)
+  fireEvent.click(screen.getAllByRole('button', { name: 'Más recientes' })[0])
   expect(await screen.findByText('51347')).toBeInTheDocument()
-  fireEvent.change(screen.getByRole('spinbutton', { name: 'Ir a la página' }), {
+  fireEvent.change(screen.getAllByRole('spinbutton', { name: 'Ir a la página' })[0], {
     target: { value: '2' },
   })
-  fireEvent.click(screen.getByRole('button', { name: 'Ir' }))
+  fireEvent.click(screen.getAllByRole('button', { name: 'Ir' })[0])
   expect(await screen.findByText('older')).toBeInTheDocument()
   fireEvent.change(screen.getByRole('searchbox', { name: 'N.º registro CIMA' }), {
     target: { value: '70000' },
@@ -65,6 +85,9 @@ it('permite recorrer el histórico y buscar un número de registro', async () =>
   fireEvent.click(screen.getByRole('button', { name: 'Buscar' }))
   expect(await screen.findByText('70000')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Más antiguas' })).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Limpiar búsqueda' }))
+  expect(await screen.findByText('51347')).toBeInTheDocument()
+  expect(screen.getAllByText('Página 1 de 2')).toHaveLength(2)
 })
 
 it('explica el estado vacío', async () => {
@@ -106,7 +129,7 @@ it('muestra el progreso de una recuperación en curso sin llamarla fallida', asy
   }) as Response))
   render(<MaintenanceScreen />)
   expect(await screen.findByText(/40 novedades nuevas procesadas/)).toBeInTheDocument()
-  expect(screen.getByText(/Último día consultado: 30\/09\/2026 · en curso/)).toBeInTheDocument()
+  expect(screen.getByText('En curso · 40 novedades')).toBeInTheDocument()
   expect(screen.queryByText(/La consulta automática CIMA lleva/)).not.toBeInTheDocument()
 })
 
@@ -142,7 +165,7 @@ it('explica los avisos de ficha técnica sin secciones disponibles', async () =>
   render(<MaintenanceScreen />)
   expect(await screen.findByText('51347')).toBeInTheDocument()
   expect(screen.getByText('La consulta CIMA terminó con documentos no disponibles')).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'Ver' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Ver detalle' }))
   expect(await screen.findByText(/no ofrece sus secciones para este medicamento/)).toBeInTheDocument()
 })
 

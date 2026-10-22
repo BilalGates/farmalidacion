@@ -897,6 +897,8 @@ y nueve enlaces, sin descargar ni alterar valores maestros. Migración aditiva
 `f3e4d5c6b7a8`; contrato en `docs/CIMA_NOVELTY_PANEL_CONTRACT.md`.
 El 22-10-2026 se añadió consulta paginada de todo el histórico, búsqueda exacta
 por `nregistro`, acceso directo a página y visibilidad de intentos recientes.
+La vista se reorganizó en tarjetas compactas para evitar filas de altura excesiva
+cuando un aviso enlaza muchos registros; conserva todos los enlaces y el diff.
 
 ### DEV-704 — Operación programada y alertas (`P1`)
 

@@ -45,6 +45,9 @@ La pantalla muestra el total de avisos conservados, permite buscar por número
 de registro y recorrer o elegir cualquier página. También ofrece los intentos
 recientes de consulta diaria. El histórico de novedades no queda limitado a la
 primera página de avisos.
+Cada aviso muestra un resumen compacto de fecha, registro, tipo, áreas, campos
+reabiertos y registros del catálogo. Si hay más de dos registros relacionados,
+los enlaces restantes se despliegan dentro del aviso; ninguno se descarta.
 
 El panel es informativo. Decidir que una validación anterior continúa siendo
 válida se realiza en la pantalla de revisión y conserva las reglas existentes
