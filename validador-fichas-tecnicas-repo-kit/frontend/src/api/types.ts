@@ -464,10 +464,59 @@ export interface NomenclatorSnapshot {
   sha256: string | null
   row_count: number
   latest_source_date: string | null
+  version_id?: number | null
+  synced_at?: string | null
+  version_count?: number
+}
+
+export interface NomenclatorChanges {
+  previous_sha256: string | null
+  added: number
+  removed: number
+  modified: number
+  sample_added: string[]
+  sample_removed: string[]
+  sample_modified: string[]
 }
 
 export interface NomenclatorSnapshotImport extends NomenclatorSnapshot {
   changed: boolean
+  changes?: NomenclatorChanges | null
+}
+
+export interface NomenclatorVersion {
+  version_id: number
+  sha256: string
+  row_count: number
+  latest_source_date: string | null
+  synced_at: string
+  changed: boolean
+  current: boolean
+}
+
+export interface NomenclatorRow {
+  code: string
+  source_row_id: string
+  values: Record<string, string | null>
+  catalog_match: 'exacta' | 'ambigua' | 'sin_correspondencia'
+  catalog_identity_id: string | null
+}
+
+export interface NomenclatorRowPage {
+  available: boolean
+  sha256: string | null
+  total: number
+  items: NomenclatorRow[]
+}
+
+export interface NomenclatorReconciliation {
+  available: boolean
+  sha256: string | null
+  nomenclator_rows: number
+  exact: number
+  ambiguous: number
+  nomenclator_without_catalog: number
+  catalog_without_nomenclator: number
 }
 
 export interface NomenclatorDecision {

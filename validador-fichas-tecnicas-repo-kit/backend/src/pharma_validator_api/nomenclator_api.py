@@ -9,9 +9,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -28,6 +28,7 @@ from pharma_validator_api.nomenclator_snapshot import (
     FIELD_BY_NAME,
     FIELDS,
     NomenclatorSnapshot,
+    compare_snapshots,
     load_snapshot,
     source_value,
 )
@@ -42,10 +43,64 @@ class SnapshotRead(BaseModel):
     sha256: str | None = None
     row_count: int = 0
     latest_source_date: str | None = None
+    version_id: int | None = None
+    synced_at: str | None = None
+    version_count: int = 0
+
+
+class ChangesRead(BaseModel):
+    """Diferencias literales por CN; `previous_sha256` nulo en la primera versión."""
+
+    previous_sha256: str | None
+    added: int
+    removed: int
+    modified: int
+    sample_added: list[str]
+    sample_removed: list[str]
+    sample_modified: list[str]
 
 
 class SnapshotImportRead(SnapshotRead):
     changed: bool
+    changes: ChangesRead | None = None
+
+
+class VersionRead(BaseModel):
+    version_id: int
+    sha256: str
+    row_count: int
+    latest_source_date: str | None
+    synced_at: str
+    changed: bool
+    current: bool
+
+
+class RowRead(BaseModel):
+    code: str
+    source_row_id: str
+    values: dict[str, str | None]
+    catalog_match: Literal["exacta", "ambigua", "sin_correspondencia"]
+    catalog_identity_id: str | None
+
+
+class RowPageRead(BaseModel):
+    available: bool
+    sha256: str | None = None
+    total: int = 0
+    items: list[RowRead] = Field(default_factory=list)
+
+
+class ReconciliationRead(BaseModel):
+    available: bool
+    sha256: str | None = None
+    nomenclator_rows: int = 0
+    exact: int = 0
+    ambiguous: int = 0
+    nomenclator_without_catalog: int = 0
+    catalog_without_nomenclator: int = 0
+
+
+SAMPLE_SIZE = 20
 
 
 class DecisionRead(BaseModel):
@@ -95,24 +150,69 @@ def _owner(request: Request) -> str:
     return principal.subject_id if principal is not None else "pilot"
 
 
-def _snapshot(request: Request, session: Session) -> NomenclatorSnapshot | None:
-    owner = _owner(request)
-    latest = session.scalar(
+def _versions(session: Session, owner: str) -> list[NomenclatorUserSnapshot]:
+    """Historial propio, del más reciente al más antiguo. Nunca mezcla cuentas."""
+    return list(session.scalars(
+        select(NomenclatorUserSnapshot)
+        .where(NomenclatorUserSnapshot.owner_subject_id == owner)
+        .order_by(NomenclatorUserSnapshot.id.desc())
+    ).all())
+
+
+def _latest(session: Session, owner: str) -> NomenclatorUserSnapshot | None:
+    return session.scalar(
         select(NomenclatorUserSnapshot)
         .where(NomenclatorUserSnapshot.owner_subject_id == owner)
         .order_by(NomenclatorUserSnapshot.id.desc()).limit(1)
     )
-    path = Path(latest.snapshot_path) if latest else (
-        request.app.state.settings.nomenclator_snapshot_path if owner == "pilot" else None
-    )
-    if path is None:
-        return None
+
+
+def _load(path: Path) -> NomenclatorSnapshot:
     try:
         return load_snapshot(path)
     except (OSError, ValueError) as error:
         raise ApplicationError(
             "La instantánea Nomenclátor configurada no se puede leer.", status_code=503
         ) from error
+
+
+def _snapshot(request: Request, session: Session) -> NomenclatorSnapshot | None:
+    owner = _owner(request)
+    latest = _latest(session, owner)
+    path = Path(latest.snapshot_path) if latest else (
+        request.app.state.settings.nomenclator_snapshot_path if owner == "pilot" else None
+    )
+    return None if path is None else _load(path)
+
+
+def _changes(previous: NomenclatorSnapshot | None, current: NomenclatorSnapshot) -> ChangesRead:
+    if previous is None:
+        return ChangesRead(
+            previous_sha256=None, added=current.row_count, removed=0, modified=0,
+            sample_added=sorted(current.rows)[:SAMPLE_SIZE], sample_removed=[],
+            sample_modified=[],
+        )
+    diff = compare_snapshots(previous, current)
+    return ChangesRead(
+        previous_sha256=previous.sha256, added=len(diff.added), removed=len(diff.removed),
+        modified=len(diff.modified), sample_added=list(diff.added[:SAMPLE_SIZE]),
+        sample_removed=list(diff.removed[:SAMPLE_SIZE]),
+        sample_modified=list(diff.modified[:SAMPLE_SIZE]),
+    )
+
+
+def _catalog_codes(session: Session) -> dict[str, list[str]]:
+    """CN de presentaciones activas del catálogo. Sólo igualdad literal exacta."""
+    codes: dict[str, list[str]] = {}
+    for identity_id, code in session.execute(
+        select(MedicationCatalogIdentity.id, MedicationCatalogIdentity.code).where(
+            MedicationCatalogIdentity.identity_type == "presentation",
+            MedicationCatalogIdentity.active.is_(True),
+            MedicationCatalogIdentity.code.is_not(None),
+        )
+    ):
+        codes.setdefault((code or "").strip(), []).append(identity_id)
+    return codes
 
 
 def _record_field(session: Session, record_id: str, name: str) -> str | None:
@@ -232,12 +332,21 @@ def _comparison(
 
 @router.get("/snapshot", response_model=SnapshotRead)
 def snapshot_info(request: Request, session: SessionDependency) -> SnapshotRead:
+    # Sólo lee la copia persistida: no depende de que el conector local esté abierto.
     snapshot = _snapshot(request, session)
     if snapshot is None:
         return SnapshotRead(available=False)
+    owner = _owner(request)
+    latest = _latest(session, owner)
+    count = session.scalar(
+        select(func.count()).select_from(NomenclatorUserSnapshot)
+        .where(NomenclatorUserSnapshot.owner_subject_id == owner)
+    ) or 0
     return SnapshotRead(
         available=True, sha256=snapshot.sha256, row_count=snapshot.row_count,
         latest_source_date=snapshot.latest_source_date,
+        version_id=latest.id if latest else None,
+        synced_at=latest.created_at.isoformat() if latest else None, version_count=count,
     )
 
 
@@ -288,21 +397,30 @@ async def import_personal_snapshot(
         else:
             os.replace(temporary, destination)
             temporary = None
-        last = session.scalar(
-            select(NomenclatorUserSnapshot)
-            .where(NomenclatorUserSnapshot.owner_subject_id == owner)
-            .order_by(NomenclatorUserSnapshot.id.desc()).limit(1)
-        )
+        last = _latest(session, owner)
         changed = last is None or last.snapshot_sha256 != snapshot.sha256
-        session.add(NomenclatorUserSnapshot(
+        previous: NomenclatorSnapshot | None = None
+        if last is not None and changed:
+            try:
+                previous = load_snapshot(Path(last.snapshot_path))
+            except (OSError, ValueError):
+                previous = None  # La nueva versión sigue siendo válida por sí misma.
+        version = NomenclatorUserSnapshot(
             owner_subject_id=owner, snapshot_sha256=snapshot.sha256,
             snapshot_path=str(destination), row_count=snapshot.row_count,
             latest_source_date=snapshot.latest_source_date, created_at=datetime.now(UTC),
-        ))
+        )
+        session.add(version)
         session.commit()
         return SnapshotImportRead(
             available=True, sha256=snapshot.sha256, row_count=snapshot.row_count,
             latest_source_date=snapshot.latest_source_date, changed=changed,
+            version_id=version.id, synced_at=version.created_at.isoformat(),
+            version_count=len(_versions(session, owner)),
+            changes=(
+                _changes(previous, snapshot)
+                if changed and (last is None or previous is not None) else None
+            ),
         )
     except OSError as error:
         raise ApplicationError(
@@ -311,6 +429,92 @@ async def import_personal_snapshot(
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
+
+
+@router.get("/snapshots", response_model=list[VersionRead])
+def snapshot_history(request: Request, session: SessionDependency) -> list[VersionRead]:
+    versions = _versions(session, _owner(request))
+    result: list[VersionRead] = []
+    for index, row in enumerate(versions):
+        older = versions[index + 1] if index + 1 < len(versions) else None
+        result.append(VersionRead(
+            version_id=row.id, sha256=row.snapshot_sha256, row_count=row.row_count,
+            latest_source_date=row.latest_source_date, synced_at=row.created_at.isoformat(),
+            changed=older is None or older.snapshot_sha256 != row.snapshot_sha256,
+            current=index == 0,
+        ))
+    return result
+
+
+@router.get("/snapshots/{version_id}/changes", response_model=ChangesRead)
+def snapshot_changes(
+    version_id: int, request: Request, session: SessionDependency,
+) -> ChangesRead:
+    versions = _versions(session, _owner(request))
+    position = next((i for i, row in enumerate(versions) if row.id == version_id), None)
+    if position is None:
+        # Misma respuesta para inexistente y ajena: no revela otras cuentas.
+        raise ApplicationError("Versión Nomenclátor no encontrada.", status_code=404)
+    current = versions[position]
+    previous = next(
+        (row for row in versions[position + 1:]
+         if row.snapshot_sha256 != current.snapshot_sha256),
+        None,
+    )
+    return _changes(
+        _load(Path(previous.snapshot_path)) if previous else None,
+        _load(Path(current.snapshot_path)),
+    )
+
+
+@router.get("/rows", response_model=RowPageRead)
+def snapshot_rows(
+    request: Request, session: SessionDependency,
+    q: str = Query("", max_length=120),
+    limit: int = Query(25, ge=1, le=100), offset: int = Query(0, ge=0),
+) -> RowPageRead:
+    snapshot = _snapshot(request, session)
+    if snapshot is None:
+        return RowPageRead(available=False)
+    needle = q.strip().casefold()
+    searchable = [FIELD_BY_NAME[name] for name in ("nro_definitivo", "principioactivo", "cod_atc")]
+    matches = [
+        (cn, row) for cn, row in sorted(snapshot.rows.items())
+        if not needle or cn.startswith(needle) or any(
+            needle in (source_value(row.columns, spec) or "").casefold() for spec in searchable
+        )
+    ]
+    codes = _catalog_codes(session)
+    items: list[RowRead] = []
+    for cn, row in matches[offset:offset + limit]:
+        identities = codes.get(cn, [])
+        items.append(RowRead(
+            code=cn, source_row_id=row.columns[0],
+            values={spec.name: source_value(row.columns, spec) for spec in FIELDS},
+            catalog_match=(
+                "exacta" if len(identities) == 1
+                else "ambigua" if identities else "sin_correspondencia"
+            ),
+            catalog_identity_id=identities[0] if len(identities) == 1 else None,
+        ))
+    return RowPageRead(available=True, sha256=snapshot.sha256, total=len(matches), items=items)
+
+
+@router.get("/reconciliation", response_model=ReconciliationRead)
+def reconciliation(request: Request, session: SessionDependency) -> ReconciliationRead:
+    """Recuento de correspondencias por CN exacto. No consolida ni reescribe nada."""
+    snapshot = _snapshot(request, session)
+    if snapshot is None:
+        return ReconciliationRead(available=False)
+    codes = _catalog_codes(session)
+    exact = sum(1 for cn in snapshot.rows if len(codes.get(cn, [])) == 1)
+    ambiguous = sum(1 for cn in snapshot.rows if len(codes.get(cn, [])) > 1)
+    return ReconciliationRead(
+        available=True, sha256=snapshot.sha256, nomenclator_rows=snapshot.row_count,
+        exact=exact, ambiguous=ambiguous,
+        nomenclator_without_catalog=snapshot.row_count - exact - ambiguous,
+        catalog_without_nomenclator=sum(1 for cn in codes if cn not in snapshot.rows),
+    )
 
 
 @router.get("/identities/{identity_id}/comparison", response_model=ComparisonRead)

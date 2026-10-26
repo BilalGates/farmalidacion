@@ -63,7 +63,11 @@ _rules("GET", "sources.read", (
     "/maintenance/changes/{event_id}",
     "/maintenance/runs",
 ))
-_rules("GET", "", ("/nomenclator/snapshot",))
+_rules("GET", "", (
+    "/nomenclator/snapshot", "/nomenclator/snapshots",
+    "/nomenclator/snapshots/{version_id}/changes",
+    "/nomenclator/rows", "/nomenclator/reconciliation",
+))
 _rules("POST", "", ("/nomenclator/snapshots",))
 _rules("PATCH", "sources.manage", ("/insights/sources/{source_id}",), "actor_id")
 _rules("POST", "sources.manage", (

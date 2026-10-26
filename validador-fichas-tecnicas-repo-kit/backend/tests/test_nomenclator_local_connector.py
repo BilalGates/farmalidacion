@@ -1,5 +1,10 @@
 """El conector de escritorio sólo consulta la tabla y conserva sus 73 celdas."""
 
+import threading
+import urllib.error
+import urllib.request
+import zipfile
+from http.server import ThreadingHTTPServer
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -80,3 +85,39 @@ def test_local_connector_rejects_schema_change(
             "auth": "windows",
         }, path)
     assert not path.exists()
+
+
+def _call(url: str, method: str, origin: str) -> int:
+    request = urllib.request.Request(url, method=method, headers={"Origin": origin})
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            return int(response.status)
+    except urllib.error.HTTPError as error:
+        return int(error.code)
+
+
+def test_local_connector_rejects_other_origins_and_closes_on_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(connector.ConnectorHandler, "allowed_origin", "https://farmalidacion.test")
+    server = ThreadingHTTPServer(("127.0.0.1", 0), connector.ConnectorHandler)
+    worker = threading.Thread(target=server.serve_forever, daemon=True)
+    worker.start()
+    base = f"http://127.0.0.1:{server.server_address[1]}"
+    try:
+        assert _call(f"{base}/health", "GET", "https://malicioso.test") == 403
+        assert _call(f"{base}/shutdown", "POST", "https://malicioso.test") == 403
+        assert _call(f"{base}/snapshot", "POST", "https://malicioso.test") == 403
+        assert _call(f"{base}/health", "GET", "https://farmalidacion.test") == 200
+        assert _call(f"{base}/shutdown", "POST", "https://farmalidacion.test") == 200
+        worker.join(timeout=5)
+        assert not worker.is_alive()
+    finally:
+        server.server_close()
+
+
+def test_published_connector_zip_matches_scripts() -> None:
+    root = Path(__file__).resolve().parents[2]
+    with zipfile.ZipFile(root / "frontend/public/downloads/conector-nomenclator.zip") as archive:
+        for name in archive.namelist():
+            assert archive.read(name) == (root / "scripts" / name).read_bytes(), name

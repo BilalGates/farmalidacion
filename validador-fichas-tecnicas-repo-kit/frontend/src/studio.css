@@ -1025,3 +1025,32 @@ select option { color: var(--ink); background: var(--surface); }
 .nomenclator-comparison__decision {
   margin-top: .75rem;
 }
+
+/* Mi Nomenclátor: estado de la copia separado del estado del conector. */
+.nomenclator-source { display: grid; align-content: start; gap: 14px; }
+.nomenclator-source > * { margin: 0; }
+.nomenclator-facts, .nomenclator-match, .nomenclator-changes__counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 0; }
+.nomenclator-facts > div, .nomenclator-match > div, .nomenclator-changes__counts > div { padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: var(--radius-control); background: var(--canvas); }
+.nomenclator-facts dt, .nomenclator-match dt, .nomenclator-changes__counts dt { color: var(--ink-faint); font-size: var(--text-xs); }
+.nomenclator-facts dd, .nomenclator-match dd, .nomenclator-changes__counts dd { margin: 2px 0 0; color: var(--ink); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.nomenclator-connector { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--ink-soft); font-size: .85rem; }
+.nomenclator-connector__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-faint); }
+.nomenclator-connector__dot.is-on { background: #2f8f5b; }
+.nomenclator-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.nomenclator-target { font-size: .78rem; overflow-wrap: anywhere; }
+.nomenclator-progress, .nomenclator-result { padding: 10px 12px; border-radius: var(--radius-control); background: var(--accent-soft); color: var(--ink); }
+.nomenclator-result > p { margin: 0 0 8px; }
+.nomenclator-changes { display: grid; gap: 6px; margin: 0; }
+.nomenclator-changes .muted { margin: 0; font-size: .78rem; overflow-wrap: anywhere; }
+.nomenclator-view { display: grid; gap: 12px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+.nomenclator-view > p { margin: 0; }
+.nomenclator-search { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.nomenclator-search .field { flex: 1 1 240px; margin: 0; }
+.nomenclator-table { overflow-x: auto; }
+.nomenclator-table table { width: 100%; font-size: .8rem; }
+.nomenclator-pager { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.nomenclator-history { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.nomenclator-history > li { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--line-soft); border-radius: var(--radius-control); }
+.nomenclator-history > li > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.nomenclator-history > li > div > p { flex-basis: 100%; margin: 0; font-size: .78rem; }
+.nomenclator-history > li > .button { justify-self: start; }
