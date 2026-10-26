@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from conftest import seed_reviewable_record
 from fastapi import Request
 from fastapi.testclient import TestClient
+from httpx import Response
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 
@@ -150,3 +151,141 @@ def test_personal_snapshots_are_isolated(scratch_db_url: str, tmp_path: Path) ->
     ] is False
     with app.state.session_factory() as session:
         assert session.scalar(select(func.count()).select_from(NomenclatorUserSnapshot)) == 1
+
+
+def _rows(*items: tuple[str, str]) -> bytes:
+    """Filas de 73 columnas con CN y principio activo; sin datos de pacientes."""
+    lines = []
+    for index, (cn, active) in enumerate(items, start=1):
+        columns = [""] * 73
+        columns[0], columns[1], columns[2] = str(index), cn, f"R{cn}"
+        columns[62], columns[65] = "2026-10-01", active
+        lines.append("\t".join(columns))
+    return ("\n".join(lines) + "\n").encode("utf-8")
+
+
+def _personal_app(scratch_db_url: str, tmp_path: Path) -> TestClient:
+    app = create_app(Settings(
+        env="test", database_url=scratch_db_url, nomenclator_snapshot_dir=tmp_path / "users",
+    ))
+
+    async def identify(request: Request) -> None:
+        request.state.principal = SimpleNamespace(
+            subject_id=request.headers.get("X-Test-User", "user-a"),
+        )
+
+    app.dependency_overrides[authorize] = identify
+    return TestClient(app)
+
+
+def _upload(api: TestClient, body: bytes, user: str = "user-a") -> Response:
+    return api.post("/nomenclator/snapshots", content=body, headers={
+        "X-Test-User": user, "Content-Type": "text/tab-separated-values",
+    })
+
+
+def test_resync_reports_changes_and_keeps_history(scratch_db_url: str, tmp_path: Path) -> None:
+    api = _personal_app(scratch_db_url, tmp_path)
+    first = _upload(api, _rows(("600000", "A"), ("600001", "B"), ("600002", "C")))
+    assert first.status_code == 201
+    assert first.json()["changes"]["added"] == 3
+    second = _upload(api, _rows(("600000", "A"), ("600001", "B MODIFICADO"), ("600003", "D")))
+    changes = second.json()["changes"]
+    assert (changes["added"], changes["removed"], changes["modified"]) == (1, 1, 1)
+    assert changes["sample_modified"] == ["600001"]
+    assert changes["previous_sha256"] == first.json()["sha256"]
+    repeated = _upload(api, _rows(("600000", "A"), ("600001", "B MODIFICADO"), ("600003", "D")))
+    assert repeated.json()["changed"] is False
+    assert repeated.json()["changes"] is None
+    history = api.get("/nomenclator/snapshots").json()
+    assert [item["changed"] for item in history] == [False, True, True]
+    assert history[0]["current"] is True
+    # Las versiones anteriores siguen legibles y su diferencia es reproducible.
+    again = api.get(f"/nomenclator/snapshots/{history[1]['version_id']}/changes").json()
+    assert again["modified"] == 1
+    oldest = api.get(f"/nomenclator/snapshots/{history[2]['version_id']}/changes").json()
+    assert oldest["previous_sha256"] is None
+    info = api.get("/nomenclator/snapshot").json()
+    assert info["version_count"] == 3
+    assert info["synced_at"]
+
+
+def test_failed_import_keeps_last_valid_version(scratch_db_url: str, tmp_path: Path) -> None:
+    api = _personal_app(scratch_db_url, tmp_path)
+    valid = _upload(api, _rows(("600000", "A")))
+    truncated = _rows(("600001", "B"))[:-40]
+    assert _upload(api, truncated).status_code == 422
+    assert _upload(api, b"").status_code == 422
+    info = api.get("/nomenclator/snapshot").json()
+    assert info["sha256"] == valid.json()["sha256"]
+    assert info["version_count"] == 1
+    assert not list((tmp_path / "users").rglob("recepcion-*"))
+
+
+def test_history_and_rows_are_private(scratch_db_url: str, tmp_path: Path) -> None:
+    api = _personal_app(scratch_db_url, tmp_path)
+    _upload(api, _rows(("600000", "A")), user="user-a")
+    _upload(api, _rows(("700000", "Z")), user="user-b")
+    version_a = api.get("/nomenclator/snapshots", headers={"X-Test-User": "user-a"}).json()
+    assert len(version_a) == 1
+    assert api.get(
+        f"/nomenclator/snapshots/{version_a[0]['version_id']}/changes",
+        headers={"X-Test-User": "user-b"},
+    ).status_code == 404
+    rows_b = api.get("/nomenclator/rows", headers={"X-Test-User": "user-b"}).json()
+    assert [item["code"] for item in rows_b["items"]] == ["700000"]
+    assert api.get("/nomenclator/snapshots", headers={"X-Test-User": "user-c"}).json() == []
+    assert api.get("/nomenclator/rows", headers={"X-Test-User": "user-c"}).json()[
+        "available"
+    ] is False
+
+
+def test_rows_and_reconciliation_use_exact_cn_only(
+    scratch_db_url: str, tmp_path: Path,
+) -> None:
+    api = _personal_app(scratch_db_url, tmp_path)
+    identities = [
+        ("exact", "600000", "master_excel"), ("dup-1", "600001", "master_excel"),
+        ("dup-2", "600001", "cima"), ("orphan", "999999", "master_excel"),
+        # Un CN parecido no es una correspondencia.
+        ("near", "60000", "master_excel"),
+    ]
+    with api.app.state.session_factory() as session:  # type: ignore[attr-defined]
+        session.add_all([
+            MedicationCatalogIdentity(
+                id=identity_id, identity_type="presentation", code=code, display_name=code,
+                source_system=system, source_version="v1",
+            )
+            for identity_id, code, system in identities
+        ])
+        session.commit()
+    _upload(api, _rows(("600000", "AMOXICILINA"), ("600001", "B"), ("600002", "C")))
+    rows = {item["code"]: item for item in api.get("/nomenclator/rows").json()["items"]}
+    assert rows["600000"]["catalog_match"] == "exacta"
+    assert rows["600000"]["catalog_identity_id"] == "exact"
+    assert rows["600001"]["catalog_match"] == "ambigua"
+    assert rows["600001"]["catalog_identity_id"] is None
+    assert rows["600002"]["catalog_match"] == "sin_correspondencia"
+    found = api.get("/nomenclator/rows", params={"q": "amoxi"}).json()
+    assert found["total"] == 1
+    assert found["items"][0]["values"]["principioactivo"] == "AMOXICILINA"
+    summary = api.get("/nomenclator/reconciliation").json()
+    assert (summary["exact"], summary["ambiguous"], summary["nomenclator_without_catalog"]) == (
+        1, 1, 1,
+    )
+    assert summary["catalog_without_nomenclator"] == 2
+    with api.app.state.session_factory() as session:  # type: ignore[attr-defined]
+        assert session.scalar(
+            select(func.count()).select_from(MedicationCatalogIdentity)
+        ) == len(identities)
+
+
+def test_volume_comparable_to_real_table(scratch_db_url: str, tmp_path: Path) -> None:
+    rows = [(f"{600000 + index:06d}", f"PA {index}") for index in range(35_228)]
+    api = _personal_app(scratch_db_url, tmp_path)
+    imported = _upload(api, _rows(*rows))
+    assert imported.status_code == 201
+    assert imported.json()["row_count"] == 35_228
+    page = api.get("/nomenclator/rows", params={"limit": 100, "offset": 35_200}).json()
+    assert page["total"] == 35_228
+    assert len(page["items"]) == 28

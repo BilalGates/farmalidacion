@@ -61,7 +61,7 @@ def source_value(row: tuple[str, ...], field: NomenclatorField) -> str | None:
     return _value(row, field.column)
 
 
-@lru_cache(maxsize=2)
+@lru_cache(maxsize=4)
 def _load_snapshot(path: str, size: int, modified_ns: int) -> NomenclatorSnapshot:
     del size, modified_ns  # Sólo identifican la versión de caché.
     digest = hashlib.sha256()
@@ -101,3 +101,24 @@ def load_snapshot(path: Path) -> NomenclatorSnapshot:
     ):
         raise ValueError("El contenido no coincide con el hash del nombre de la instantánea.")
     return snapshot
+
+
+@dataclass(frozen=True)
+class SnapshotChanges:
+    added: tuple[str, ...]
+    removed: tuple[str, ...]
+    modified: tuple[str, ...]
+
+
+def compare_snapshots(
+    previous: NomenclatorSnapshot, current: NomenclatorSnapshot,
+) -> SnapshotChanges:
+    """Compara por CN las 73 celdas literales; no interpreta ningún valor."""
+    old, new = previous.rows, current.rows
+    return SnapshotChanges(
+        added=tuple(sorted(new.keys() - old.keys())),
+        removed=tuple(sorted(old.keys() - new.keys())),
+        modified=tuple(sorted(
+            cn for cn in new.keys() & old.keys() if new[cn].columns != old[cn].columns
+        )),
+    )

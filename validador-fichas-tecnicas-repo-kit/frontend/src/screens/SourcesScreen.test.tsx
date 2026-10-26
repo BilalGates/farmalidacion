@@ -35,7 +35,8 @@ it('separa la consulta de BOT PLUS de su integración y pliega la configuración
   expect(bot).toHaveTextContent('Configurar después las credenciales mediante un secreto del servidor.')
 
   const toggle = screen.getByRole('button', { name: 'Configurar conexión' })
-  expect(await screen.findByText('La sincronización personal requiere una sesión corporativa.')).toBeVisible()
+  expect(await screen.findByText('Para actualizar tu Nomenclátor necesitas una sesión corporativa.')).toBeVisible()
+  expect(screen.getByRole('region', { name: 'Mi Nomenclátor' })).toHaveTextContent('35.228')
   expect(toggle).toHaveAttribute('aria-expanded', 'false')
   fireEvent.click(toggle)
   expect(screen.getByRole('button', { name: 'Ocultar configuración' })).toHaveAttribute('aria-expanded', 'true')
@@ -45,10 +46,12 @@ it('separa la consulta de BOT PLUS de su integración y pliega la configuración
 it('permite sincronizar al lector con su conector local sin mostrar la configuración central', async () => {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
+    if (url === 'http://127.0.0.1:8765/health') return new Response(JSON.stringify({ ready: true, version: '2', busy: false }))
     if (url.startsWith('http://127.0.0.1:8765/')) return new Response(new Blob(['copia local']))
     if (url.includes('/nomenclator/snapshots') && init?.method === 'POST') return new Response(JSON.stringify({
       available: true, sha256: 'a'.repeat(64), row_count: 35228,
       latest_source_date: '2026-10-01', changed: true,
+      changes: { previous_sha256: null, added: 35228, removed: 0, modified: 0, sample_added: [], sample_removed: [], sample_modified: [] },
     }))
     if (url.includes('/nomenclator/snapshot')) return new Response(JSON.stringify({ available: false, sha256: null, row_count: 0, latest_source_date: null }))
     return new Response(JSON.stringify({ items: [], total: 0 }))
@@ -61,11 +64,40 @@ it('permite sincronizar al lector con su conector local sin mostrar la configura
   }}><SourcesScreen /></SessionContext.Provider>)
   expect(await screen.findByRole('heading', { name: 'Mi Nomenclátor' })).toBeVisible()
   expect(screen.queryByText('Acceso restringido')).not.toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'Sincronizar mi Nomenclátor' }))
+  const update = screen.getByRole('button', { name: 'Actualizar datos' })
+  await waitFor(() => expect(update).toBeEnabled())
+  fireEvent.click(update)
   await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/nomenclator/snapshots'))).toBe(true))
-  const localCall = fetchMock.mock.calls.find(([url]) => String(url).startsWith('http://127.0.0.1:8765/'))
+  const localCall = fetchMock.mock.calls.find(([url]) => String(url) === 'http://127.0.0.1:8765/snapshot')
   expect(JSON.parse(String(localCall?.[1]?.body))).toMatchObject({ server: 'localhost', auth: 'windows' })
-  expect(await screen.findByText('Sincronización completa: 35.228 filas.')).toBeVisible()
+  expect(await screen.findByText('Datos actualizados: 35.228 registros verificados y guardados.')).toBeVisible()
+  expect(screen.getByText(/Primera versión/)).toHaveTextContent('35.228')
+})
+
+it('muestra la copia guardada y no la marca como pendiente cuando el conector está cerrado', async () => {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input)
+    if (url.startsWith('http://127.0.0.1:8765/')) throw new TypeError('Failed to fetch')
+    if (url.includes('/nomenclator/snapshot')) return new Response(JSON.stringify({
+      available: true, sha256: 'b'.repeat(64), row_count: 35228, latest_source_date: '2026-10-01',
+      version_id: 3, synced_at: '2026-10-20T10:00:00+00:00', version_count: 3,
+    }))
+    return new Response(JSON.stringify({ items: [], total: 0 }))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  render(<SessionContext.Provider value={{
+    subject_id: 'entra:test:reader', capabilities: ['sources.read'], logout: () => {},
+    reviewer: { identifier: 'ana', display_name: 'Ana', role: 'tecnico',
+      role_label: 'Técnico', assurance: 'verificada_entra', may_sign_pharmacist_states: false },
+  }}><SourcesScreen /></SessionContext.Provider>)
+  const panel = await screen.findByRole('region', { name: 'Mi Nomenclátor' })
+  await waitFor(() => expect(panel).toHaveTextContent('No detectado'))
+  expect(panel).toHaveTextContent('Datos disponibles')
+  expect(panel).toHaveTextContent('35.228')
+  expect(panel).not.toHaveTextContent(/pendiente/i)
+  expect(screen.getByRole('button', { name: 'Actualizar datos' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Ver información' })).toBeEnabled()
+  expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/nomenclator/snapshots'))).toBe(false)
 })
 
 for (const [index, workbook] of workbooks.entries()) {

@@ -8,6 +8,12 @@ $origin = ([Uri]$FarmalidacionUrl).GetLeftPart([UriPartial]::Authority)
 $install = Join-Path $env:LOCALAPPDATA 'Farmalidacion\NomenclatorConnector'
 $venv = Join-Path $install 'venv'
 $python = Join-Path $venv 'Scripts\python.exe'
+$config = Join-Path $install 'origen.txt'
+
+if ($origin -notmatch '^https?://[^/]+$') { throw 'La direccion de Farmalidacion no es valida.' }
+New-Item -ItemType Directory -Path $install -Force | Out-Null
+# Solo se guarda el origen autorizado; nunca credenciales de SQL Server.
+Set-Content -LiteralPath $config -Value $origin -Encoding ascii
 
 if (-not (Test-Path -LiteralPath $python)) {
     if (-not (Get-Command py -ErrorAction SilentlyContinue)) {

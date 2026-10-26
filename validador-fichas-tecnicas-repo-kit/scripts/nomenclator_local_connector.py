@@ -10,6 +10,7 @@ import argparse
 import hashlib
 import json
 import tempfile
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import import_module
 from pathlib import Path
@@ -24,6 +25,8 @@ EXPECTED_COLUMNS = {
 }
 MAX_ROWS = 200_000
 MAX_BYTES = 100_000_000
+VERSION = "2"
+ROUTES = {"/snapshot", "/shutdown"}
 
 
 def _text(value: object) -> str:
@@ -108,6 +111,8 @@ def export_snapshot(payload: dict[str, object], destination: Path) -> tuple[str,
 
 class ConnectorHandler(BaseHTTPRequestHandler):
     allowed_origin = ""
+    # Una sola lectura a la vez: evita consultas paralelas sobre SQL Server.
+    export_lock = threading.Lock()
 
     def log_message(self, format: str, *args: object) -> None:
         # No registrar peticiones: pueden contener configuraciones sensibles.
@@ -134,7 +139,7 @@ class ConnectorHandler(BaseHTTPRequestHandler):
         self.wfile.write(encoded)
 
     def do_OPTIONS(self) -> None:
-        if self.path != "/snapshot" or not self._origin_allowed():
+        if self.path not in ROUTES or not self._origin_allowed():
             self._json(403, {"detail": "Origen no autorizado."})
             return
         self.send_response(204)
@@ -145,11 +150,27 @@ class ConnectorHandler(BaseHTTPRequestHandler):
         if self.path != "/health" or not self._origin_allowed():
             self._json(403, {"detail": "Origen no autorizado."})
             return
-        self._json(200, {"ready": True})
+        self._json(200, {
+            "ready": True, "version": VERSION, "busy": self.export_lock.locked(),
+        })
+
+    def _shutdown(self) -> None:
+        if self.export_lock.locked():
+            self._json(409, {"detail": "Hay una lectura en curso; espere a que termine."})
+            return
+        self._json(200, {"closing": True})
+        # shutdown() bloquea hasta salir de serve_forever: se lanza fuera del handler.
+        threading.Thread(target=self.server.shutdown, daemon=True).start()
 
     def do_POST(self) -> None:
-        if self.path != "/snapshot" or not self._origin_allowed():
+        if self.path not in ROUTES or not self._origin_allowed():
             self._json(403, {"detail": "Origen no autorizado."})
+            return
+        if self.path == "/shutdown":
+            self._shutdown()
+            return
+        if not self.export_lock.acquire(blocking=False):
+            self._json(409, {"detail": "Ya hay una lectura en curso en este equipo."})
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -180,6 +201,8 @@ class ConnectorHandler(BaseHTTPRequestHandler):
                 "No se pudo consultar SQL Server desde este equipo. "
                 "Revise servidor, puerto, autenticación y cifrado."
             )})
+        finally:
+            self.export_lock.release()
 
 
 def main() -> None:
@@ -193,6 +216,7 @@ def main() -> None:
     ConnectorHandler.allowed_origin = arguments.origin.rstrip("/")
     server = ThreadingHTTPServer(("127.0.0.1", arguments.port), ConnectorHandler)
     print(f"Conector Nomenclátor listo en 127.0.0.1:{arguments.port}.")
+    print("Puede cerrarlo desde Farmalidación al terminar; los datos ya sincronizados se conservan.")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

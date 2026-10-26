@@ -9,6 +9,10 @@ import type {
   NomenclatorDecision,
   NomenclatorSnapshot,
   NomenclatorSnapshotImport,
+  NomenclatorChanges,
+  NomenclatorReconciliation,
+  NomenclatorRowPage,
+  NomenclatorVersion,
   CatalogCimaDocument,
   CatalogCimaComparison,
   CatalogCimaDecision,
@@ -456,6 +460,55 @@ export function fetchNomenclatorSnapshot(): Promise<NomenclatorSnapshot> {
   return request<NomenclatorSnapshot>('/nomenclator/snapshot')
 }
 
+export function fetchNomenclatorHistory(): Promise<NomenclatorVersion[]> {
+  return request<NomenclatorVersion[]>('/nomenclator/snapshots')
+}
+
+export function fetchNomenclatorChanges(versionId: number): Promise<NomenclatorChanges> {
+  return request<NomenclatorChanges>(`/nomenclator/snapshots/${versionId}/changes`)
+}
+
+export function fetchNomenclatorRows(q: string, offset = 0, limit = 25): Promise<NomenclatorRowPage> {
+  const search = new URLSearchParams({ q, offset: String(offset), limit: String(limit) })
+  return request<NomenclatorRowPage>(`/nomenclator/rows?${search.toString()}`)
+}
+
+export function fetchNomenclatorReconciliation(): Promise<NomenclatorReconciliation> {
+  return request<NomenclatorReconciliation>('/nomenclator/reconciliation')
+}
+
+export const LOCAL_CONNECTOR_URL = 'http://127.0.0.1:8765'
+
+export interface LocalConnectorStatus {
+  reachable: boolean
+  busy: boolean
+  version: string | null
+}
+
+/** Sondea el conector local sin afectar a la copia ya sincronizada. */
+export async function probeLocalConnector(timeoutMs = 2_500): Promise<LocalConnectorStatus> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const response = await fetch(`${LOCAL_CONNECTOR_URL}/health`, { signal: controller.signal })
+    if (!response.ok) return { reachable: false, busy: false, version: null }
+    const body = await response.json() as { busy?: boolean; version?: string }
+    return { reachable: true, busy: Boolean(body.busy), version: body.version ?? '1' }
+  } catch {
+    return { reachable: false, busy: false, version: null }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+export async function closeLocalConnector(): Promise<void> {
+  const response = await fetch(`${LOCAL_CONNECTOR_URL}/shutdown`, { method: 'POST' })
+  if (!response.ok) {
+    const detail = await response.json().catch(() => null) as { detail?: string } | null
+    throw new ApiError(detail?.detail ?? 'El conector no pudo cerrarse.', response.status)
+  }
+}
+
 export interface LocalNomenclatorConnection {
   server: string
   port: number
@@ -469,12 +522,14 @@ export interface LocalNomenclatorConnection {
 
 export async function synchronizePersonalNomenclator(
   connection: LocalNomenclatorConnection,
+  onStage?: (stage: 'reading' | 'saving') => void,
 ): Promise<NomenclatorSnapshotImport> {
+  onStage?.('reading')
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 180_000)
   let local: Response
   try {
-    local = await fetch('http://127.0.0.1:8765/snapshot', {
+    local = await fetch(`${LOCAL_CONNECTOR_URL}/snapshot`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(connection), signal: controller.signal,
     })
@@ -488,6 +543,7 @@ export async function synchronizePersonalNomenclator(
     throw new ApiError(detail?.detail ?? 'El conector local no pudo leer Nomenclátor.', local.status)
   }
   const snapshot = await local.blob()
+  onStage?.('saving')
   return request<NomenclatorSnapshotImport>('/nomenclator/snapshots', {
     method: 'POST', headers: { 'Content-Type': 'text/tab-separated-values' }, body: snapshot,
   }, false, 180_000)

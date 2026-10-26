@@ -1,3 +1,16 @@
+## 2026-10-26 — Nomenclátor persistente, versionado y consultable
+
+Auditoría: la copia de `dbo.nomenclatur` ya se persistía en el servidor por
+cuenta (TSV con las 73 columnas, nombre SHA-256, historial append-only) y la
+importación era atómica; el problema era la experiencia y la falta de consulta.
+Ahora «Mi Nomenclátor» distingue datos disponibles y estado del conector, muestra
+fecha de origen, última sincronización y versión, e incluye «Ver información»
+(búsqueda paginada con correspondencia por CN exacto), «Historial» y cambios
+nuevos/modificados/retirados por versión. El conector recuerda el origen
+autorizado, informa de su versión y se puede cerrar desde la web. Sin migración.
+ADR-0018 propuesto; D-035 pendiente para usar Nomenclátor en filtros del
+catálogo. Ver `docs/NOMENCLATOR_PERSONAL_SYNC.md`.
+
 ## 2026-10-21 — Recuperación del atraso de CIMA
 
 El commit `226a23e` sí estaba desplegado en Coolify y el servicio de
