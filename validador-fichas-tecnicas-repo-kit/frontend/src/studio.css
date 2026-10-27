@@ -516,7 +516,6 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 :root[data-theme='dark'] .reviewer-picker,
 :root[data-theme='dark'] .reviewer-select__trigger,
 :root[data-theme='dark'] .reviewer-select__menu,
-:root[data-theme='dark'] .page-stat,
 :root[data-theme='dark'] .queue-add,
 :root[data-theme='dark'] .queue-filters__more,
 :root[data-theme='dark'] .queue-filters__advanced,
@@ -531,8 +530,6 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 :root[data-theme='dark'] .section-workspace__nav a[aria-current='page'] { background: var(--accent-soft); color: var(--accent-strong); }
 :root[data-theme='dark'] .chip--active,
 :root[data-theme='dark'] .app-sidebar .nav__item--active { background: var(--accent-soft); color: var(--accent-strong); }
-:root[data-theme='dark'] .button--secondary { border-color: var(--line); color: var(--accent-strong); background: var(--accent-soft); }
-:root[data-theme='dark'] .button--secondary:hover,
 :root[data-theme='dark'] .button--ghost:hover { border-color: var(--accent); background: #453350; }
 :root[data-theme='dark'] .button:hover:not(.button--primary):not(.button--secondary),
 :root[data-theme='dark'] .nav__item:hover,
