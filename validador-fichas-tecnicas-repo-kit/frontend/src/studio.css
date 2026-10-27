@@ -1,54 +1,5 @@
 /* Base visual v1. Importada después de los estilos históricos para permitir
    una migración gradual de pantallas sin cambiar su estructura ni lógica. */
-:root {
-  --font-ui: 'Segoe UI Variable', 'Segoe UI', Inter, system-ui, sans-serif;
-  --ink: #24212b;
-  --ink-soft: #55515e;
-  --ink-faint: #696572;
-  --surface: #fff;
-  --canvas: #f8f7f9;
-  --line: #dcd9e1;
-  --line-soft: #ebe9ee;
-  --accent: #684398;
-  --accent-strong: #593783;
-  --accent-soft: #f2edf7;
-  --focus-ring: rgb(104 67 152 / 26%);
-  --success: #246c54;
-  --success-soft: #eaf4ef;
-  --warn: #805312;
-  --warn-soft: #fbf3e5;
-  --danger: #a43647;
-  --danger-soft: #f9ebee;
-  --info: #345f8b;
-  --info-soft: #ecf3fa;
-  --muted: var(--ink-soft);
-  --border: var(--line);
-  --radius: 8px;
-  --radius-control: 6px;
-  --radius-small: 4px;
-  --shadow: 0 1px 2px rgb(32 25 42 / 4%);
-  --space-1: .25rem;
-  --space-2: .5rem;
-  --space-3: .75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --text-xs: .75rem;
-  --text-sm: .85rem;
-  --text-base: .94rem;
-  --text-lg: 1.08rem;
-  --text-title: clamp(1.45rem, 1.7vw, 1.7rem);
-  --weight-regular: 400;
-  --weight-medium: 550;
-  --weight-semibold: 650;
-  --line-tight: 1.25;
-  --line-normal: 1.5;
-  --z-sticky: 10;
-  --z-popover: 40;
-  --scrollbar-thumb: #b9b3c1;
-  --scrollbar-thumb-hover: #82778d;
-}
 
 /* Barras verticales y horizontales: visibles sin competir con el contenido. */
 html, body, body * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
@@ -449,7 +400,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   width: 3px;
   height: auto;
   border-radius: 3px;
-  background: var(--accent-gradient);
+  background: var(--accent);
 }
 .app-sidebar .nav__icon { width: 17px; height: 17px; }
 .app-sidebar__footer { margin-top: auto; padding: 16px 17px; border-top: 1px solid var(--line-soft); }
@@ -537,31 +488,6 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .app-shell .catalog-table-scroll .table thead th { background: #fbfafc; }
 .app-shell .catalog-active-filters { margin: 0; }
 
-:root[data-theme='dark'] {
-  --ink: #f2eef6;
-  --ink-soft: #cbc4d2;
-  --ink-faint: #aaa2b3;
-  --surface: #1d1e27;
-  --canvas: #15161e;
-  --line: #44414e;
-  --line-soft: #35333f;
-  --accent: #ae84db;
-  --accent-strong: #d4b3f4;
-  --accent-soft: #34283f;
-  --focus-ring: rgb(196 151 239 / 45%);
-  --success: #8edbb6;
-  --success-soft: #18372c;
-  --warn: #f0c180;
-  --warn-soft: #3b2d1c;
-  --danger: #f4a5b0;
-  --danger-soft: #42242d;
-  --info: #a5c9f4;
-  --info-soft: #202f45;
-  --shadow: 0 2px 12px rgb(0 0 0 / 16%);
-  --scrollbar-thumb: #777080;
-  --scrollbar-thumb-hover: #a79aac;
-  color-scheme: dark;
-}
 
 .theme-picker { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 0 8px; border: 1px solid var(--line-soft); border-radius: var(--radius-control); color: var(--ink-soft); background: var(--surface); }
 .theme-picker select { min-height: 36px; max-width: 145px; padding: 0 4px; border: 0; color: var(--ink); background: transparent; font-size: .78rem; cursor: pointer; }
@@ -647,43 +573,6 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 :root[data-theme='dark'] textarea::placeholder { color: var(--ink-faint); opacity: 1; }
 
 /* Estudio: preferencias y composición compartidas por todas las pantallas. */
-:root {
-  --canvas: #f5f3ef;
-  --surface: #fffdfa;
-  --ink: #2e2933;
-  --ink-soft: #625b67;
-  --ink-faint: #736b78;
-  --line: #d9d3db;
-  --line-soft: #e7e1e5;
-  --accent: #754a91;
-  --accent-strong: #623879;
-  --accent-soft: #f0e9f3;
-  --rail: #30243b;
-  --cell-y: 15px;
-  --panel-pad: 24px;
-  --workspace-gap: 22px;
-  --control-height: 40px;
-  --text-title: clamp(1.8rem, 2.2vw, 2.2rem);
-}
-:root[data-density='compact'] {
-  --cell-y: 9px;
-  --panel-pad: 16px;
-  --workspace-gap: 14px;
-  --control-height: 34px;
-}
-:root[data-theme='dark'] {
-  --canvas: #18161e;
-  --surface: #24212b;
-  --ink: #f4eff6;
-  --ink-soft: #ccc3d2;
-  --ink-faint: #ada2b6;
-  --line: #504657;
-  --line-soft: #3b3442;
-  --accent: #bc92d7;
-  --accent-strong: #d9b9eb;
-  --accent-soft: #3a2b45;
-  --rail: #241b2e;
-}
 .layout.app-shell { --shell-sidebar-width: 228px; background: var(--canvas); }
 .layout.app-shell--collapsed { --shell-sidebar-width: 66px; }
 .app-shell > .app-sidebar { grid-column: 1; grid-row: 1; }
@@ -733,7 +622,6 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 /* El panel nativo ignora los estilos del control cerrado en algunos navegadores.
    Personalizar el picker cuando está disponible mantiene todas las opciones,
    el teclado y el estado disabled del select original. */
-:root { color-scheme: light; }
 select option { color: var(--ink); background: var(--surface); }
 @supports (appearance: base-select) {
   select, select::picker(select) { appearance: base-select; }

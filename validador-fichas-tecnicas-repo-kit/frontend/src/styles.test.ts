@@ -2,13 +2,23 @@ import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
-const styles = readFileSync('src/studio.css', 'utf8')
+const tokens = readFileSync('src/ui/tokens.css', 'utf8')
+const styles = tokens + readFileSync('src/studio.css', 'utf8')
 const entry = readFileSync('src/main.tsx', 'utf8')
 
 describe('tipografia global', () => {
   it('usa tipografia del sistema y evita fabricar grosores borrosos', () => {
     expect(styles).toContain("--font-ui: 'Segoe UI Variable', 'Segoe UI', Inter, system-ui, sans-serif")
     expect(entry.indexOf("import './studio.css'")).toBeGreaterThan(entry.indexOf("import './styles.css'"))
+    expect(entry.indexOf("import './ui/tokens.css'")).toBeLessThan(entry.indexOf("import './styles.css'"))
+  })
+})
+
+describe('tokens', () => {
+  it('se definen en un único archivo', () => {
+    for (const file of ['src/styles.css', 'src/studio.css']) {
+      expect(readFileSync(file, 'utf8')).not.toMatch(/^:root(\[[^\]]+\])? \{[^{}]*--[a-z-]+:/m)
+    }
   })
 })
 
