@@ -8,6 +8,8 @@ import './studio.css'
 import './ui/components.css'
 // Hojas de pantalla migradas: tras los componentes para prevalecer sobre las históricas.
 import './screens/catalog.css'
+import './screens/work.css'
+import './screens/sources.css'
 
 const root = document.getElementById('root')
 

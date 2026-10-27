@@ -163,3 +163,48 @@ code, kbd, .mono { font-family: var(--font-mono); font-size: .92em; font-variant
 .app-shell a.button { text-decoration: none; }
 .app-shell .button.back { justify-self: start; min-height: 28px; margin-left: calc(var(--space-2) * -1); padding-inline: var(--space-2); color: var(--ink-soft); }
 .app-shell .button.back:hover:not(:disabled) { color: var(--ink); background: var(--line-soft); }
+
+/* ── Campos de formulario ──────────────────────────────────────────────── */
+.app-shell .field { display: grid; gap: 6px; min-width: 0; }
+.app-shell .field__label { color: var(--ink-soft); font-size: var(--text-xs); font-weight: var(--weight-semibold); letter-spacing: .01em; }
+.app-shell :is(input[type='text'], input[type='search'], input:not([type]), select) {
+  min-height: 34px;
+  border-color: var(--line);
+  border-radius: var(--radius-control);
+  background-color: var(--surface);
+  font-size: var(--text-sm);
+}
+.app-shell :is(input, select, textarea):hover:not(:disabled):not(:focus) { border-color: var(--ink-faint); }
+.app-shell :is(input, select, textarea)::placeholder { color: var(--ink-faint); }
+
+/* ── Cifra de cabecera ─────────────────────────────────────────────────── */
+/* Una cifra acompaña al título; no es una tarjeta que compita con él. */
+.app-shell .page-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+/* Cifras siempre en la letra de interfaz: la de títulos usa numerales de estilo antiguo (el 0 se confunde con la O). */
+.app-shell .page-stat strong { color: var(--ink); font-family: var(--font-ui); font-size: 1.75rem; font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; line-height: 1; }
+.app-shell .page-stat span { color: var(--ink-faint); font-size: var(--text-xs); }
+
+/* ── Estado vacío ilustrado ────────────────────────────────────────────── */
+.app-shell .empty-state { padding: var(--space-8) var(--space-4); }
+.app-shell .empty-state__icon { width: 40px; height: 40px; margin-bottom: var(--space-3); border-radius: 50%; color: var(--ink-soft); background: var(--line-soft); }
+.app-shell .empty-state h2 { font-size: var(--text-base); font-weight: var(--weight-semibold); }
+.app-shell .empty-state p { color: var(--ink-soft); font-size: var(--text-sm); }
+
+/* ── Panel de filtros ──────────────────────────────────────────────────── */
+.app-shell .filter-panel__head h2 { font-size: var(--text-base); }
+.app-shell .filter-panel__head .eyebrow { color: var(--ink-faint); }
+.app-shell .filter-panel__body { gap: var(--space-3); }
+.app-shell .filter-panel__actions { gap: var(--space-2); padding-top: var(--space-3); }
+.app-shell .filter-panel__actions [role='status'] { color: var(--warn); font-size: var(--text-xs); }
+
+/* Errores escritos como párrafo suelto: se leen como aviso, no como contenido. */
+.app-shell p[role='alert']:not(.alert):not(.state) { margin: 0; padding: var(--space-2) var(--space-3); border-left: 2px solid var(--danger); color: var(--danger); background: var(--danger-soft); font-size: var(--text-sm); }
