@@ -5,6 +5,9 @@ import { AccessGate } from './auth/AccessGate'
 import './ui/tokens.css'
 import './styles.css'
 import './studio.css'
+import './ui/components.css'
+// Hojas de pantalla migradas: tras los componentes para prevalecer sobre las históricas.
+import './screens/catalog.css'
 
 const root = document.getElementById('root')
 
