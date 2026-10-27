@@ -73,6 +73,16 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Mensajes por defecto del servidor HTTP, en inglés y sin contexto: aparecen
+ * cuando la ruta no existe en el backend desplegado, no cuando falta un dato.
+ */
+const GENERIC_HTTP_DETAILS: Record<string, string> = {
+  'Not Found': 'Este servicio no está disponible en el servidor actual.',
+  'Method Not Allowed': 'El servidor actual no admite esta operación.',
+  'Internal Server Error': 'Se ha producido un error inesperado en el servidor.',
+}
+
 async function request<T>(path: string, init?: RequestInit, publicRequest = false, timeoutMs = 30_000): Promise<T> {
   const baseUrl = requireApiBaseUrl()
   const controller = new AbortController()
@@ -97,7 +107,7 @@ async function request<T>(path: string, init?: RequestInit, publicRequest = fals
     let detail = 'Se ha producido un error inesperado.'
     try {
       const body = (await response.json()) as { detail?: string }
-      if (body.detail) detail = body.detail
+      if (body.detail) detail = GENERIC_HTTP_DETAILS[body.detail] ?? body.detail
     } catch {
       // Un cuerpo ilegible no debe ocultar el código de estado.
     }

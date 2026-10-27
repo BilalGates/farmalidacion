@@ -664,7 +664,6 @@ select option { color: var(--ink); background: var(--surface); }
 .catalog-summary__values dt { color: var(--ink-faint); font-size: .75rem; margin-bottom: 5px; }
 .catalog-summary__values dd { margin: 0; font-size: 1rem; }
 .app-shell .catalog-editor[hidden], .app-shell .catalog-summary[hidden] { display: none; }
-.app-shell .catalog-record .screen__head h1 { font-family: var(--font-ui); font-size: 1.5rem; font-weight: 600; letter-spacing: -.025em; }
 .app-shell .catalog-cima, .app-shell .review-workspace { color: var(--ink); }
 .app-shell :is(.catalog-cima__text, .source-group, .record-dialog, .record-dialog__header, .catalog-relations li button, .sources__evidence, .reviewer-select__trigger, .reviewer-select__menu) { background: var(--surface); color: var(--ink); }
 .app-shell :is(.catalog-cima__section, .field-row, .queue-toolbar, .queue-filters, .catalog-relations__empty) { background: var(--canvas); color: var(--ink); }

@@ -363,12 +363,12 @@ export function ReviewScreen({
   if (error !== null && record === null) {
     return (
       <div className='screen'>
-        <p className='alert alert--error' role='alert'>
-          {error}
-        </p>
-        <button type='button' className='button' onClick={() => navigate(backTo)}>
-          Volver al listado
-        </button>
+        <div className='state state--error' role='alert'>
+          <p>{error}</p>
+          <button type='button' className='button' onClick={() => navigate(backTo)}>
+            Volver al listado
+          </button>
+        </div>
       </div>
     )
   }
