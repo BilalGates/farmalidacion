@@ -269,7 +269,7 @@ export function MaintenanceScreen() {
         </div>
       )}
       {runs && latestRun?.status !== 'failed' && latestRun?.status !== 'running' && (delayedDays === null || delayedDays > 0) && (
-        <div className='state state--error' role='alert'>
+        <div className='state state--warning' role='alert'>
           {delayedDays === null
             ? 'Todavía no hay una consulta automática CIMA completada.'
             : `La consulta automática CIMA lleva ${delayedDays} ${delayedDays === 1 ? 'día' : 'días'} de retraso.`}

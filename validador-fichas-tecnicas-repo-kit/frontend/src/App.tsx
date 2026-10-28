@@ -27,6 +27,7 @@ import { ImportsScreen } from './screens/ImportsScreen'
 import { RealRecordListScreen } from './screens/RealRecordListScreen'
 import { ReviewersScreen } from './screens/ReviewersScreen'
 import { PageHeader } from './components/PageHeader'
+import { EmptyState } from './components/AsyncState'
 import { AccessAdministration } from './components/AccessAdministration'
 import { ReviewScreen } from './screens/ReviewScreen'
 import { SourcesScreen } from './screens/SourcesScreen'
@@ -214,7 +215,7 @@ export function App() {
         <div className='main'>
           <main className='content' id='workspace-content' tabIndex={-1}>
             <ModeBanner info={database} />
-            {!allowed ? <section className='screen'><h1>Acceso restringido</h1><p>No tienes permiso para este apartado.</p><button type='button' className='button' onClick={() => navigate('/revisores')}>Ir a mi cuenta</button></section> : <>
+            {!allowed ? <section className='screen'><PageHeader title='Acceso restringido' /><EmptyState title='No tienes permiso para este apartado' detail='Tu rol no incluye esta función. Si la necesitas, pídela a quien gestiona el equipo.' action={<button type='button' className='button' onClick={() => navigate('/revisores')}>Ir a mi cuenta</button>} /></section> : <>
             {route.name === 'inicio' && <DashboardScreen />}
             {route.name === 'fichas' && (
               <RealRecordListScreen reviewer={reviewer} reviewers={reviewers} />
@@ -257,7 +258,7 @@ export function App() {
               {session && may('team.manage') && <AccessAdministration />}
             </div>}
             {route.name === 'seccion' && !['trabajo', 'revision/cola', 'catalogo/trabajo', 'revision/validaciones', 'catalogo/segunda', 'catalogo/novedades', 'datos/cuarentena', 'exportaciones', 'revisores'].includes(route.id) && (
-              <section className='screen'><h1>Página no encontrada</h1><p className='muted'>Este enlace no corresponde a un apartado disponible.</p><button type='button' className='button button--primary' onClick={() => navigate('/fichas')}>Volver al catálogo</button></section>
+              <section className='screen'><PageHeader title='Página no encontrada' /><EmptyState title='Este enlace no lleva a ningún apartado' detail='Este enlace no corresponde a un apartado disponible.' action={<button type='button' className='button button--primary' onClick={() => navigate('/fichas')}>Volver al catálogo</button>} /></section>
             )}
             </>}
           </main>

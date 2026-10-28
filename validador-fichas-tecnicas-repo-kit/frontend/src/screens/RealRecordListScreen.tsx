@@ -482,7 +482,7 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
           <button type='button' className='segmented__option' aria-pressed={showQuarantine} onClick={() => setShowQuarantine(true)}><AlertTriangle size={14} aria-hidden='true' /> Filas en cuarentena{showQuarantine ? <span className='segmented__count'>{quarantineTotal}</span> : null}</button>
         </div>
         {showQuarantine && <section aria-label='Filas en cuarentena del catálogo'>
-          <p className='alert badge--warning' role='status'><AlertTriangle size={16} aria-hidden='true' /> Estas {quarantineTotal} filas de excipientes están guardadas, pero no vinculadas a una especialidad. No forman parte del catálogo validado ni se pueden enviar a revisión hasta resolver su relación. Los filtros y la búsqueda superiores se aplican a los registros vinculados.</p>
+          <p className='alert alert--warning' role='status'><AlertTriangle size={16} aria-hidden='true' /> Estas {quarantineTotal} filas de excipientes están guardadas, pero no vinculadas a una especialidad. No forman parte del catálogo validado ni se pueden enviar a revisión hasta resolver su relación. Los filtros y la búsqueda superiores se aplican a los registros vinculados.</p>
           {quarantineError && <p className='alert alert--error' role='alert'>{quarantineError} <button type='button' className='button' onClick={() => setRetryKey(key => key + 1)}>Reintentar</button></p>}
           {quarantineLoading && <p role='status'>Cargando filas en cuarentena…</p>}
           {!quarantineLoading && !quarantineError && <>
@@ -619,7 +619,7 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
       </RecordDialog>
       <RecordDialog open={selectedQuarantine !== null} onClose={() => setSelectedQuarantine(null)} titleId='catalog-quarantine-dialog-title'>
         {selectedQuarantine && <><header className='record-dialog__header'><h2 id='catalog-quarantine-dialog-title'>Fila en cuarentena · {selectedQuarantine.source_locator}</h2><button type='button' className='button button--secondary' onClick={() => setSelectedQuarantine(null)}>Cerrar</button></header>
-          <div className='record-dialog__body'><p className='alert badge--warning' role='alert'><AlertTriangle size={16} aria-hidden='true' /> {selectedQuarantine.reason_code}: {selectedQuarantine.reason}</p><p>Datos preservados; relación con la especialidad pendiente. Los cambios de valores no vinculan automáticamente esta fila.</p>
+          <div className='record-dialog__body'><p className='alert alert--warning' role='alert'><AlertTriangle size={16} aria-hidden='true' /> {selectedQuarantine.reason_code}: {selectedQuarantine.reason}</p><p>Datos preservados; relación con la especialidad pendiente. Los cambios de valores no vinculan automáticamente esta fila.</p>
             <dl className='quarantine-fields'>{selectedQuarantine.fields.map(field => <div className='quarantine-field' key={field.source_column_index}><dt><strong>{field.field_name}</strong><small>Columna Excel {field.source_column_index}</small></dt><dd><p><span>Valor de trabajo</span><output>{field.maintained_value ?? 'Vacío en el origen'}</output></p><p><span>Literal original</span><output>{field.literal_value ?? 'Vacío en el origen'}</output></p></dd></div>)}</dl>
             <a className='button button--secondary' href='#/datos/cuarentena'>Abrir incidencias para editar campos</a>
           </div></>}

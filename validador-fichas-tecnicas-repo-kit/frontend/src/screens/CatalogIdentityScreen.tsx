@@ -155,7 +155,7 @@ export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, 
 
           {notice && <p className='alert alert--ok' role='status'>{notice}</p>}
           {saveError && <p className='alert alert--error' role='alert'>{saveError}</p>}
-          {!reviewer && <p className='alert badge--warning'>Identifícate en Equipo y preferencias para guardar cambios.</p>}
+          {!reviewer && <p className='alert alert--warning'>Identifícate en Equipo y preferencias para guardar cambios.</p>}
 
           <WorkspaceTabs label='Apartados del expediente' active={activeTab} onChange={setActiveTab} tabs={[
             { id: 'summary', label: 'Resumen', content: <>

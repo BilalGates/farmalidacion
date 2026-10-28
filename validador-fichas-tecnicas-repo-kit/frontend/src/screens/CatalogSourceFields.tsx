@@ -147,7 +147,7 @@ export function SourceFieldsMaintenance({ recordId, reviewer }: Props) {
           ? 'El literal del Excel se conserva. Aquí se corrige el valor de trabajo; cada cambio queda en un historial independiente de la revisión farmacéutica.'
           : 'Consulta el valor de trabajo, el literal original y el historial de mantenimiento de cada campo.'}
       </p>
-      {!reviewer && <p className='alert badge--warning'>Identifícate en Equipo y preferencias para editar campos.</p>}
+      {!reviewer && <p className='alert alert--warning'>Identifícate en Equipo y preferencias para editar campos.</p>}
       {reviewer && !canMaintain && <p className='note'>Esta cuenta puede consultar los campos; no tiene permiso para modificarlos.</p>}
       {loading && <p role='status'>Cargando campos del libro…</p>}
       {!loading && loadError && <div className='alert alert--error' role='alert'>{loadError}<button type='button' className='button button--ghost' onClick={() => void load()}>Reintentar</button></div>}

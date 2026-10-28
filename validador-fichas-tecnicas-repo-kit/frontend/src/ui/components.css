@@ -208,3 +208,7 @@ code, kbd, .mono { font-family: var(--font-mono); font-size: .92em; font-variant
 
 /* Errores escritos como párrafo suelto: se leen como aviso, no como contenido. */
 .app-shell p[role='alert']:not(.alert):not(.state) { margin: 0; padding: var(--space-2) var(--space-3); border-left: 2px solid var(--danger); color: var(--danger); background: var(--danger-soft); font-size: var(--text-sm); }
+
+/* Advertencias: algo que conviene saber o hacer, no un fallo. */
+.app-shell .alert--warning { color: var(--warn); background: var(--warn-soft); }
+.app-shell .state--warning { border: 1px solid color-mix(in srgb, var(--warn) 25%, transparent); color: var(--warn); background: var(--warn-soft); }

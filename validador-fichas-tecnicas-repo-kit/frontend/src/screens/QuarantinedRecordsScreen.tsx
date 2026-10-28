@@ -172,7 +172,7 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
         }
       >
       <section className='panel quarantine-results-panel'>
-        {!reviewer && <p className='alert badge--warning'>Identifícate en Equipo y preferencias para mantener campos.</p>}
+        {!reviewer && <p className='alert alert--warning'>Identifícate en Equipo y preferencias para mantener campos.</p>}
         {reviewer && !canMaintain && <p className='note'>Esta cuenta puede consultar las incidencias; no tiene permiso para modificar campos.</p>}
         {loadError && <p className='alert alert--error' role='alert'>{loadError}<button className='button button--ghost' type='button' onClick={() => void load()}>Reintentar</button></p>}
         {loading && <p role='status'>Cargando filas…</p>}
