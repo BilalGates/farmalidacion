@@ -277,3 +277,7 @@ code, kbd, .mono { font-family: var(--font-mono); font-size: var(--text-code); f
 
 /* Títulos de sección dentro de una página: misma voz que «Maestros Excel». */
 .app-shell .page-header h2 { margin: 0; font-family: var(--font-display); font-size: var(--text-xl); font-weight: var(--weight-regular); letter-spacing: -.01em; }
+
+/* Títulos de recuadro con la voz de documento, como los bloques del expediente. */
+.app-shell :is(.panel > h2:first-child, .panel__head h2, .panel > header h2) { font-family: var(--font-display); font-size: var(--text-xl); font-weight: var(--weight-regular); letter-spacing: -.01em; }
+.app-shell :is(.validation-overview__icon, .empty-state__icon) { display: inline-grid; place-items: center; }

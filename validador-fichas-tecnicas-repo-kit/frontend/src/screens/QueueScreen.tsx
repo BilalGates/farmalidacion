@@ -106,30 +106,32 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
         <strong>{items.length}</strong><span>En cola</span>
       </div>} />
     {error && <div role='alert' className='alert alert--error'>{error} {stale && items.length > 0 && 'La lista muestra la última carga correcta y puede estar desactualizada.'} <button type='button' className='button button--secondary' disabled={loading || busy} onClick={() => void reload()}>Reintentar carga</button></div>}
-    <form className='queue-add panel' onSubmit={(event) => {
-          event.preventDefault()
-          void act(async () => {
-            await enqueueRecord(recordId.trim(), reviewSet, requiresSecondReview)
-            setRecordId('')
-          })
-        }}>
-          <div className='queue-toolbar__title'><Plus size={17} aria-hidden='true' /><span>Añadir registro a la cola</span></div>
-          <label className='field queue-add__record'><span className='field__label'>Registro</span>
-            <span className='input-with-icon'><Search size={16} aria-hidden='true' /><input placeholder='Identificador del registro' aria-label='Identificador del registro' value={recordId} onChange={(event) => setRecordId(event.target.value)} required /></span>
-          </label>
-          <label className='field'><span className='field__label'>Conjunto</span>
-            <select value={reviewSet} onChange={(event) => setReviewSet(event.target.value as QueueItem['review_set'])}>
-              <option value='corpus'>Corpus</option><option value='oro'>Oro</option><option value='medida'>Medida</option>
-            </select>
-          </label>
-          <label className='queue-check'><input type='checkbox' checked={requiresSecondReview} onChange={(event) => setRequiresSecondReview(event.target.checked)} /> Doble validación</label>
-          <button className='button button--primary' disabled={!canReview || busy || !recordId.trim()}><Plus size={16} aria-hidden='true' />Añadir</button>
-    </form>
     <FilterWorkspace
       title='Filtros de revisión'
       storageKey='farmalidacion.filters.queue.closed'
       activeCount={appliedFilterCount}
       className='queue-workspace'
+      toolbar={
+          <form className='queue-add' aria-label='Añadir registro a la cola' onSubmit={(event) => {
+                event.preventDefault()
+                void act(async () => {
+                  await enqueueRecord(recordId.trim(), reviewSet, requiresSecondReview)
+                  setRecordId('')
+                })
+              }}>
+                <span className='queue-add__title'>Añadir a la cola</span>
+                <label className='field queue-add__record'><span className='field__label'>Registro</span>
+                  <span className='input-with-icon'><Search size={16} aria-hidden='true' /><input placeholder='Identificador del registro' aria-label='Identificador del registro' value={recordId} onChange={(event) => setRecordId(event.target.value)} required /></span>
+                </label>
+                <label className='field'><span className='field__label'>Conjunto</span>
+                  <select value={reviewSet} onChange={(event) => setReviewSet(event.target.value as QueueItem['review_set'])}>
+                    <option value='corpus'>Corpus</option><option value='oro'>Oro</option><option value='medida'>Medida</option>
+                  </select>
+                </label>
+                <label className='queue-check'><input type='checkbox' checked={requiresSecondReview} onChange={(event) => setRequiresSecondReview(event.target.checked)} /> Doble validación</label>
+                <button className='button button--primary' disabled={!canReview || busy || !recordId.trim()}><Plus size={16} aria-hidden='true' />Añadir</button>
+          </form>
+      }
       filters={
         <>
           <label className='field'><span className='field__label'>Estado</span><select value={filter} onChange={(event) => setStateFilter(event.target.value)}><option value=''>Todos</option>{Object.entries(labels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
