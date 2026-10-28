@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Database,
   CheckCheck,
@@ -14,7 +14,6 @@ import { fetchDatabaseInfo, fetchReviewers } from './api/client'
 import type { DatabaseInfo, Reviewer } from './api/types'
 import { ModeBanner } from './components/ModeBanner'
 import { AppearancePreferences } from './components/AppearancePreferences'
-import { FilterLayoutContext } from './components/FilterLayoutContext'
 import { PilotIdentity } from './components/PilotIdentity'
 import { TeamDirectory } from './components/TeamDirectory'
 import { useCorporateSession } from './auth/SessionContext'
@@ -110,14 +109,7 @@ export function App() {
     const saved = localStorage.getItem('farmalidacion.sidebar.collapsed')
     return saved === null ? window.innerWidth <= 900 : saved === 'true'
   })
-  const [openFilterPanels, setOpenFilterPanels] = useState<string[]>([])
-  const reportFilterOpen = useCallback((id: string, open: boolean) => {
-    setOpenFilterPanels(current => open
-      ? current.includes(id) ? current : [...current, id]
-      : current.includes(id) ? current.filter(item => item !== id) : current)
-  }, [])
-  const filtersOpen = openFilterPanels.length > 0
-  const navigationCollapsed = sidebarCollapsed || filtersOpen
+  const navigationCollapsed = sidebarCollapsed
 
   useEffect(() => {
     fetchReviewers()
@@ -164,7 +156,6 @@ export function App() {
   }
 
   return (
-    <FilterLayoutContext.Provider value={reportFilterOpen}>
     <div className={`layout app-shell${navigationCollapsed ? ' app-shell--collapsed' : ''}`}>
       <a className='skip-link' href='#workspace-content' onClick={event => { event.preventDefault(); document.getElementById('workspace-content')?.focus() }}>Ir al contenido</a>
       <aside className='app-sidebar'>
@@ -216,8 +207,6 @@ export function App() {
               className='app-shell__toggle'
               aria-label={navigationCollapsed ? 'Expandir navegación' : 'Plegar navegación'}
               aria-expanded={!navigationCollapsed}
-              disabled={filtersOpen}
-              title={filtersOpen ? 'Cierra los filtros para expandir la navegación' : undefined}
               onClick={() => {
                 const next = !sidebarCollapsed
                 setSidebarCollapsed(next)
@@ -292,6 +281,5 @@ export function App() {
         </div>
       </div>
     </div>
-    </FilterLayoutContext.Provider>
   )
 }

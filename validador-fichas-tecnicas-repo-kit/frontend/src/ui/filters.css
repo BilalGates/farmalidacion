@@ -1,0 +1,95 @@
+/*
+ * Barra de filtros única.
+ *
+ * Primera fila: buscar y ordenar. Segunda: un filtro por píldora, con su
+ * valor a la vista; la píldora se tiñe cuando filtra. Todo en una banda
+ * sobre los resultados, separada por una línea.
+ */
+
+.app-shell .filter-bar { display: grid; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--line-soft); }
+.app-shell .filter-bar__search { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); }
+.app-shell .filter-bar__search > form { display: flex; flex: 1 1 520px; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); margin: 0; padding: 0; border: 0; background: none; }
+.app-shell .filter-bar__search .field { flex: 1 1 280px; }
+.app-shell .filter-bar__row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.app-shell .filter-bar__filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); min-width: 0; }
+.app-shell .filter-bar__aside { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+
+/* ── Píldora ───────────────────────────────────────────────────────────── */
+.app-shell .filter-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--ink);
+  background: transparent;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--motion-fast) ease, background-color var(--motion-fast) ease;
+}
+.app-shell .filter-pill:hover { border-color: var(--ink-faint); }
+.app-shell .filter-pill:focus-within { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
+.app-shell .filter-pill[data-active='true'] { border-color: var(--accent-fill); color: var(--accent-strong); background: var(--accent-soft); }
+.app-shell .filter-pill__label { color: var(--ink-faint); }
+.app-shell .filter-pill[data-active='true'] .filter-pill__label { color: var(--accent-strong); }
+.app-shell .filter-pill__label::after { content: ':'; }
+.app-shell .filter-pill svg { flex: none; color: var(--ink-faint); }
+
+/* El control nativo ocupa la píldora: se ve su valor y responde al teclado. */
+.app-shell .filter-pill select,
+.app-shell .filter-pill input:not([type='checkbox']) {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-weight: var(--weight-medium);
+  appearance: none;
+  cursor: pointer;
+}
+.app-shell .filter-pill select { padding-right: 2px; }
+.app-shell .filter-pill--text input { width: 9ch; cursor: text; }
+.app-shell .filter-pill--text input::placeholder { color: var(--ink-faint); font-weight: var(--weight-regular); }
+.app-shell .filter-pill--toggle input { margin: 0; accent-color: var(--accent-fill); }
+
+/* Opciones múltiples: la píldora abre un menú flotante. */
+.app-shell .filter-pill--menu { padding: 0; }
+.app-shell .filter-pill__trigger { display: inline-flex; align-items: center; gap: 6px; height: 100%; padding: 0 var(--space-3); border: 0; color: inherit; background: transparent; font: inherit; cursor: pointer; }
+.app-shell .filter-pill__trigger:focus-visible { outline: 0; }
+.app-shell .filter-pill__value { font-weight: var(--weight-medium); }
+.app-shell .filter-pill__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: var(--z-popover);
+  display: grid;
+  gap: 2px;
+  min-width: 220px;
+  margin: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  color: var(--ink);
+  background: var(--field);
+  box-shadow: var(--shadow-dialog);
+  cursor: default;
+}
+.app-shell .filter-pill__menu label { display: flex; align-items: center; gap: var(--space-2); padding: 6px var(--space-2); border-radius: var(--radius-small); font-size: var(--text-sm); cursor: pointer; }
+.app-shell .filter-pill__menu label:hover { background: var(--line-faint); }
+.app-shell .filter-pill__menu input { margin: 0; accent-color: var(--accent-fill); }
+.app-shell .filter-pill__menu small { padding: var(--space-1) var(--space-2) 0; color: var(--ink-faint); font-size: var(--text-xs); white-space: normal; }
+
+.app-shell .filter-bar__clear { height: 32px; padding: 0 var(--space-2); border: 0; color: var(--accent-strong); background: transparent; font: inherit; font-size: var(--text-sm); font-weight: var(--weight-medium); cursor: pointer; }
+.app-shell .filter-bar__clear:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) { .app-shell .filter-pill { transition: none; } }
+
+/* El desplegable se ajusta a su valor, no a la opción más larga. */
+.app-shell .filter-pill select { width: auto; field-sizing: content; }

@@ -52,3 +52,7 @@
 .app-shell .catalog-review-cell__assignee { overflow: hidden; color: var(--ink-faint); font-size: var(--text-xs); text-overflow: ellipsis; }
 .app-shell .catalog-table-scroll .catalog-review-cell .button { flex: none; border-color: transparent; color: var(--accent-strong); background: transparent; }
 .app-shell .catalog-table-scroll .catalog-review-cell .button:hover:not(:disabled) { background: var(--accent-soft); }
+
+/* Barra de búsqueda: el buscador se estira; el orden tiene un ancho fijo. */
+.app-shell .filter-bar .catalog-search-toolbar { display: flex; }
+.app-shell .filter-bar .catalog-sort-control { flex: 0 0 220px; }

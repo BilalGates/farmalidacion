@@ -14,6 +14,7 @@ import './styles.css'
 import './studio.css'
 import './ui/components.css'
 import './ui/shell.css'
+import './ui/filters.css'
 // Hojas de pantalla migradas: tras los componentes para prevalecer sobre las históricas.
 import './screens/catalog.css'
 import './screens/work.css'

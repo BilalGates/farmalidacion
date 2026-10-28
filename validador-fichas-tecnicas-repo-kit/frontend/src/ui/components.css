@@ -304,3 +304,6 @@ code, kbd, .mono { font-family: var(--font-mono); font-size: var(--text-code); f
 .app-shell .skeleton__row:nth-child(odd) > span:first-child { width: 55%; }
 @keyframes skeleton-pulse { 50% { opacity: .45; } }
 @media (prefers-reduced-motion: reduce) { .app-shell .skeleton__row > span { animation: none; } }
+
+/* Un estado vacío dentro de un recuadro no dibuja otra caja. */
+.app-shell .panel .state--empty { padding: 0; border: 0; background: none; }
