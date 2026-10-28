@@ -22,6 +22,18 @@ describe('tokens', () => {
   })
 })
 
+describe('capa común y hojas migradas', () => {
+  // El código nuevo sólo usa tokens: un color o un tamaño escrito a mano es
+  // exactamente la deriva que llevó a cinco paletas superpuestas.
+  const migrated = ['src/ui/components.css', 'src/screens/catalog.css', 'src/screens/work.css', 'src/screens/sources.css']
+  it.each(migrated)('%s no escribe colores ni tamaños de letra literales', (file) => {
+    const css = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(css).not.toMatch(/#[0-9a-f]{3,8}\b/i)
+    expect(css).not.toMatch(/\brgba?\(/)
+    expect(css).not.toMatch(/font-size:\s*[0-9.]+(rem|px|em)/)
+  })
+})
+
 describe('sistema visual profesional', () => {
   it('centraliza semántica y usa acento sólido en la acción primaria', () => {
     for (const token of ['--accent:', '--success:', '--warn:', '--danger:', '--info:', '--space-4:', '--radius:', '--text-title:', '--z-popover:']) {

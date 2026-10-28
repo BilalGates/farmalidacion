@@ -20,6 +20,8 @@
   --text-lg: 1.08rem;
   --text-xl: 1.38rem;
   --text-title: clamp(1.8rem, 2.2vw, 2.2rem);
+  --text-figure: 1.75rem;
+  --text-code: .92em;
   --weight-regular: 400;
   --weight-medium: 550;
   --weight-semibold: 650;
@@ -37,6 +39,10 @@
   --accent: #754a91;
   --accent-strong: #623879;
   --accent-soft: #f0e9f3;
+  /* Relleno de la acción principal: en oscuro, más saturado que el acento de texto. */
+  --accent-fill: var(--accent);
+  --accent-fill-hover: var(--accent-strong);
+  --on-accent: #fff;
   --rail: #30243b;
   --focus-ring: rgb(104 67 152 / 26%);
   --success: #246c54;
@@ -58,6 +64,7 @@
   --radius-small: 4px;
   --shadow: 0 1px 2px rgb(32 25 42 / 4%);
   --shadow-hover: 0 8px 22px rgb(55 35 62 / 8%);
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 6%);
 
   /* Espacio */
   --space-1: .25rem;
@@ -106,6 +113,8 @@
   --accent: #bc92d7;
   --accent-strong: #d9b9eb;
   --accent-soft: #3a2b45;
+  --accent-fill: #74419d;
+  --accent-fill-hover: #8650ad;
   --rail: #241b2e;
   --focus-ring: rgb(196 151 239 / 45%);
   --success: #8edbb6;
