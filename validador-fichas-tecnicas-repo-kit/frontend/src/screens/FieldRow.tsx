@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 
 import type { FieldValue, Reviewer, ValidationState } from '../api/types'
 import { ValidationBadge } from '../components/StateBadge'
+import { SourceComparison, divergentClaims } from '../components/SourceComparison'
 import { ProvenanceList } from '../components/ProvenanceList'
 import { SourceValue } from '../components/SourceValue'
 import { clearDraft, isEmptyDraft, readDraft, saveDraft } from '../domain/drafts'
@@ -40,6 +41,7 @@ export function FieldRow({
   onExpandedChange,
   onSaveAndAdvance,
   openSignal = 0,
+  siblings = [],
 }: {
   value: FieldValue
   label?: string
@@ -54,6 +56,8 @@ export function FieldRow({
   onSaveAndAdvance?: (state: ValidationState, finalValue: string | null, comment: string | null) => void
   /** Cada cambio a un valor positivo abre el editor (avance desde la pantalla). */
   openSignal?: number
+  /** Otros valores del registro, para comparar los que compiten por el mismo campo. */
+  siblings?: readonly FieldValue[]
 }) {
   // El borrador se recupera al montar: recargar a mitad de una edición no
   // puede hacer que el revisor repita lo que ya había escrito.
@@ -155,6 +159,7 @@ export function FieldRow({
           ) : (
             <span className='value'><SourceValue value={value.literal_value} /></span>
           )}
+          <SourceComparison claims={divergentClaims(value, siblings)} />
         </div>
         <div className='field-row__states'>
           <ValidationBadge state={value.validation_state} />

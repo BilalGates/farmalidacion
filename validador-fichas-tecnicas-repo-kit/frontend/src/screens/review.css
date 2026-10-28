@@ -79,3 +79,21 @@
 .app-shell .review-screen .field-row__value,
 .app-shell .review-screen .field-row__value .value { font-weight: var(--weight-regular); }
 .app-shell .review-screen .occurrence [data-review-field] { border-bottom-color: var(--line-faint); }
+
+/* ── Discrepancias: aviso arriba, con lo que dice cada fuente ──────────── */
+.app-shell .review-conflicts { border-color: color-mix(in srgb, var(--warn) 30%, transparent); background: var(--warn-soft); }
+.app-shell .review-conflicts > h2 { color: var(--warn); font-family: var(--font-ui); font-size: var(--text-base); font-weight: var(--weight-semibold); }
+.app-shell .review-conflicts .conflicts { display: grid; gap: var(--space-2); margin: 0 0 var(--space-3); padding: 0; list-style: none; }
+.app-shell .review-conflicts .conflicts > li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); padding: 0; border: 0; background: none; }
+.app-shell .review-conflicts .conflicts__field { color: var(--ink); font-family: var(--font-ui); font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+.app-shell .review-conflicts .conflicts__claim { color: var(--ink-soft); font-size: var(--text-sm); }
+.app-shell .review-conflicts .conflicts__claim strong { color: var(--ink); font-weight: var(--weight-medium); }
+.app-shell .review-conflicts .conflicts__go { margin-left: auto; }
+.app-shell .review-conflicts .note { color: var(--ink-soft); font-size: var(--text-xs); }
+
+/* ── Lo que dice cada fuente, dentro del campo ─────────────────────────── */
+.app-shell .source-comparison { display: grid; gap: 4px; margin: var(--space-2) 0 0; }
+.app-shell .source-comparison > div { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: var(--space-2); align-items: baseline; }
+.app-shell .source-comparison dt { color: var(--ink-faint); font-size: var(--text-xs); }
+.app-shell .source-comparison dd { margin: 0; color: var(--ink); font-size: var(--text-sm); }
+.app-shell .source-comparison mark { padding: 0 2px; border-radius: 2px; color: inherit; background: color-mix(in srgb, var(--warn) 22%, transparent); }

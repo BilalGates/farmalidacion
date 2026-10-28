@@ -23,6 +23,7 @@ import { RoadmapNote } from '../components/RoadmapNote'
 import { ROADMAP_NOTES, conflictLabel, sourceLabel } from '../domain/vocabulary'
 import { FocusTracker } from '../domain/focusTracker'
 import { SHORTCUTS, isTypingTarget, resolveShortcut } from '../domain/shortcuts'
+import { divergentClaims } from '../components/SourceComparison'
 import { navigate } from '../navigation'
 import { blockLabel, fieldLabel, searchText } from '../domain/fieldLabels'
 import { clearDraft } from '../domain/drafts'
@@ -406,15 +407,18 @@ export function ReviewScreen({
   const activeIndex = fields.findIndex((value) => value.id === activeField?.id)
   const nextPending = [...fields.slice(activeIndex + 1), ...fields.slice(0, activeIndex + 1)]
     .find((value) => !RESOLVED_STATES.includes(value.validation_state)) ?? null
-  function openNextPending() {
-    if (!nextPending) return
-    setActiveId(nextPending.id)
-    setOpenRequest((current) => ({ id: nextPending.id, n: current.n + 1 }))
+  function openField(id: string) {
+    setActiveId(id)
+    if (compact) setExpandedId(id)
+    else setOpenRequest((current) => ({ id, n: current.n + 1 }))
     requestAnimationFrame(() => {
-      const row = fieldsRef.current?.querySelector<HTMLElement>(`[data-review-field="${nextPending.id}"]`)
+      const row = fieldsRef.current?.querySelector<HTMLElement>(`[data-review-field="${id}"]`)
       row?.scrollIntoView?.({ block: 'center' })
       row?.focus()
     })
+  }
+  function openNextPending() {
+    if (nextPending) openField(nextPending.id)
   }
 
   return (
@@ -471,20 +475,26 @@ export function ReviewScreen({
         <ContextPanel className='panel review-conflicts'>
           {compact ? <summary>Discrepancias entre fuentes · {conflicts.length} campos requieren revisión</summary> : <h2>Discrepancias entre fuentes</h2>}
           <ul className='conflicts'>
-            {conflicts.map((value) => (
-              <li key={value.id}>
-                <span className='conflicts__field'>{value.field_name}</span>
-                <span className='badge badge--requiere_revision'>
-                  {conflictLabel(value.conflict_status)}
-                </span>
-                {/* El valor afirmado se muestra aquí y no sólo en el campo: el
-                    resumen debe bastar para ver qué discrepa sin desplegarlo. */}
-                <span className='conflicts__claim'>
-                  {value.provenance.map((item) => sourceLabel(item.provenance_role)).join(', ')}:{' '}
-                  <strong>{value.literal_value ?? 'sin valor'}</strong>
-                </span>
-              </li>
-            ))}
+            {/* Una línea por campo, aunque llegue como varios valores rivales. */}
+            {conflicts.filter((value, index) => conflicts.findIndex(other => other.field_name === value.field_name) === index).map((value) => {
+              const claims = divergentClaims(value, fields)
+              return (
+                <li key={value.id}>
+                  <span className='conflicts__field'>{fieldLabel(value.field_name)}</span>
+                  <span className='badge badge--requiere_revision'>
+                    {conflictLabel(value.conflict_status)}
+                  </span>
+                  {/* El valor afirmado se muestra aquí y no sólo en el campo: el
+                      resumen debe bastar para ver qué discrepa sin desplegarlo. */}
+                  <span className='conflicts__claim'>
+                    {claims
+                      ? claims.map((claim, index) => <span key={claim.key}>{index > 0 && ' · '}{claim.source}: <strong>{claim.text}</strong></span>)
+                      : <>{value.provenance.map((item) => sourceLabel(item.provenance_role)).join(', ')}:{' '}<strong>{value.literal_value ?? 'sin valor'}</strong></>}
+                  </span>
+                  {canReview && <button type='button' className='button button--ghost button--sm conflicts__go' onClick={() => openField(value.id)}>Ir al campo</button>}
+                </li>
+              )
+            })}
           </ul>
           <p className='note'>
             Ninguna discrepancia se resuelve automáticamente: los valores en conflicto conservan su
@@ -616,6 +626,7 @@ export function ReviewScreen({
                         onSaveAndAdvance={(state, finalValue, comment) =>
                           void handleSave(value.id, state, finalValue, comment, true)}
                         openSignal={!compact && openRequest.id === value.id ? openRequest.n : 0}
+                        siblings={fields}
                       />
                     </div>
                   ))}
