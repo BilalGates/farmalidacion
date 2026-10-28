@@ -103,8 +103,15 @@ code, kbd, .mono { font-family: var(--font-mono); font-size: var(--text-code); f
   white-space: nowrap;
 }
 .app-shell .badge::before { content: ''; width: 6px; height: 6px; flex: none; border-radius: 50%; background: currentColor; }
-.app-shell .badge--validado, .app-shell .badge--confirmado, .app-shell .badge--disponible, .app-shell .badge--completed { color: var(--success); background: var(--success-soft); }
-.app-shell .badge--descartado, .app-shell .badge--sin_datos, .app-shell .badge--no_disponible { color: var(--ink-soft); background: var(--line-soft); }
+/* Un tono por significado, no por pantalla: sin empezar (neutro), en curso
+   (acento), corregido (información), resuelto (éxito), requiere atención
+   (aviso) y fallo (peligro). */
+.app-shell :is(.badge--pendiente, .badge--asignado, .badge--no_aplica, .badge--no_aplicable, .badge--descartado, .badge--sin_datos, .badge--no_disponible, .badge--info) { color: var(--ink-soft); background: var(--line-soft); }
+.app-shell :is(.badge--en_revision, .badge--requiere_segunda_revision, .badge--pending, .badge--parcial, .badge--running) { color: var(--accent-strong); background: var(--accent-soft); }
+.app-shell .badge--corregido { color: var(--info); background: var(--info-soft); }
+.app-shell :is(.badge--validado, .badge--confirmado, .badge--completado, .badge--completed, .badge--disponible) { color: var(--success); background: var(--success-soft); }
+.app-shell :is(.badge--no_consta, .badge--revision_pendiente, .badge--warning, .badge--advertencia, .badge--bloqueado, .badge--bloqueado_por_contrato) { color: var(--warn); background: var(--warn-soft); }
+.app-shell :is(.badge--requiere_revision, .badge--error, .badge--failed, .badge--fallido, .badge--con_errores, .badge--bloqueante) { color: var(--danger); background: var(--danger-soft); }
 
 /* ── Chips de filtro activo ────────────────────────────────────────────── */
 .app-shell .chip {
@@ -134,6 +141,7 @@ code, kbd, .mono { font-family: var(--font-mono); font-size: var(--text-code); f
 }
 .app-shell .table tbody th,
 .app-shell .table tbody td { padding-block: calc(var(--cell-y) * .7); border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+.app-shell .table tbody th { background: transparent; }
 .app-shell .table tbody tr { transition: background-color var(--motion-fast) ease; }
 .app-shell .table tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
 

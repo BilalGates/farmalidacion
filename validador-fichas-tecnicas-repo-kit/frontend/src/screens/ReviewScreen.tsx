@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { FileSearch } from 'lucide-react'
 
 import {
   ApiError,
@@ -588,7 +589,7 @@ export function ReviewScreen({
           className='panel review-evidence'
           aria-label='Evidencia del campo activo'
         >
-          <div className='evidence-head'><span className='evidence-head__icon' aria-hidden='true'>⌕</span><div><p className='eyebrow'>Fuente activa</p><h2>Evidencia · {activeField?.field_name ?? 'Sin campos'}</h2></div></div>
+          <div className='evidence-head'><span className='evidence-head__icon' aria-hidden='true'><FileSearch size={16} /></span><div><p className='eyebrow'>Fuente activa</p><h2>Evidencia · {activeField?.field_name ?? 'Sin campos'}</h2></div></div>
           {activeField ? (
             <ProvenanceList key={activeField.id} provenance={activeField.provenance} highlightField={activeField.field_name} contextual={compact} />
           ) : (
