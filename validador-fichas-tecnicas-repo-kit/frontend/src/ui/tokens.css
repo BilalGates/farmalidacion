@@ -9,9 +9,11 @@
 
 :root {
   /* Tipografía */
-  --font-ui: 'Segoe UI Variable', 'Segoe UI', Inter, system-ui, sans-serif;
-  --font-display: Georgia, 'Times New Roman', serif;
-  --font-mono: 'Cascadia Mono', 'Cascadia Code', Consolas, ui-monospace, monospace;
+  /* Tres letras con papel propio: interfaz, títulos de documento y literales
+     de origen. Se sirven con la aplicación (@fontsource), sin red externa. */
+  --font-ui: 'IBM Plex Sans', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-mono: 'IBM Plex Mono', 'Cascadia Mono', Consolas, ui-monospace, monospace;
 
   /* Escala tipográfica: seis pasos, nada fuera de ella en código nuevo. */
   --text-xs: .75rem;
@@ -29,29 +31,32 @@
   --line-normal: 1.5;
 
   /* Color — tema claro */
-  --canvas: #f5f3ef;
-  --surface: #fffdfa;
-  --ink: #2e2933;
-  --ink-soft: #625b67;
-  --ink-faint: #736b78;
-  --line: #d9d3db;
-  --line-soft: #e7e1e5;
+  --canvas: #f4f2ec;
+  --surface: #ffffff;
+  --surface-sunken: #fbfaf7;
+  --ink: #1f1b24;
+  --ink-soft: #4a4550;
+  --ink-faint: #6e6874;
+  /* Tres grosores de línea: control, recuadro y separador de fila. */
+  --line: #d9d4cc;
+  --line-soft: #e2ded6;
+  --line-faint: #efece6;
   --accent: #754a91;
-  --accent-strong: #623879;
-  --accent-soft: #f0e9f3;
+  --accent-strong: #5b3a78;
+  --accent-soft: #ece6f1;
   /* Relleno de la acción principal: en oscuro, más saturado que el acento de texto. */
-  --accent-fill: var(--accent);
-  --accent-fill-hover: var(--accent-strong);
+  --accent-fill: #5b3a78;
+  --accent-fill-hover: #3f2656;
   --on-accent: #fff;
-  --rail: #30243b;
+  --rail: var(--canvas);
   --focus-ring: rgb(104 67 152 / 26%);
-  --success: #246c54;
-  --success-soft: #eaf4ef;
-  --warn: #805312;
-  --warn-soft: #fbf3e5;
+  --success: #2f6b53;
+  --success-soft: #e8f2ec;
+  --warn: #7a4e0f;
+  --warn-soft: #fbf4e7;
   --danger: #a43647;
   --danger-soft: #f9ebee;
-  --info: #345f8b;
+  --info: #335e8a;
   --info-soft: #ecf3fa;
   --muted: var(--ink-soft);
   --border: var(--line);
@@ -117,7 +122,9 @@
   --accent-soft: #3a2b45;
   --accent-fill: #74419d;
   --accent-fill-hover: #8650ad;
-  --rail: #241b2e;
+  --surface-sunken: #1f1c25;
+  --line-faint: #312c38;
+  --rail: var(--canvas);
   --focus-ring: rgb(196 151 239 / 45%);
   --success: #8edbb6;
   --success-soft: #18372c;

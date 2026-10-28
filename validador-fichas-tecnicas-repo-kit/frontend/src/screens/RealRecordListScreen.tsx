@@ -413,7 +413,14 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
 
   return (
     <div className='screen catalog-screen'>
-      <PageHeader className='catalog-results__head' title='Catálogo' description='Explora y revisa medicamentos, presentaciones y principios activos.' actions={canReadReview && <button type='button' className='button button--secondary' onClick={() => { setHasOpenedSecondReview(true); setSecondReviewOpen(true) }}>Segundas validaciones</button>} />
+      <PageHeader className='catalog-results__head' title='Catálogo' description='Explora y revisa medicamentos, presentaciones y principios activos.' actions={<>
+        <dl className='catalog-figures'>
+          <div><dt>En catálogo</dt><dd>{data ? data.total.toLocaleString('es-ES') : '—'}</dd></div>
+          {canReadReview && <div><dt>En cola</dt><dd>{queueLoading ? '—' : queue.filter(item => item.state !== 'completado').length.toLocaleString('es-ES')}</dd></div>}
+          {canReadReview && <div><dt>Completadas</dt><dd>{queueLoading ? '—' : queue.filter(item => item.state === 'completado').length.toLocaleString('es-ES')}</dd></div>}
+        </dl>
+        {canReadReview && <button type='button' className='button button--secondary' onClick={() => { setHasOpenedSecondReview(true); setSecondReviewOpen(true) }}>Segundas validaciones</button>}
+      </>} />
       <FilterWorkspace
         title='Filtros del catálogo'
         storageKey='farmalidacion.filters.catalog.closed'
@@ -477,9 +484,16 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
         }
       >
       <div ref={resultsRef} tabIndex={-1} aria-label='Resultados del catálogo' className='catalog-results'>
+        <div className='catalog-scopes-row'>
+        {canReadReview && !showQuarantine && <div className='catalog-scopes' role='group' aria-label='Alcance de revisión'>
+          {REVIEW_FILTERS.map(item => <button key={item.value} type='button' className='catalog-scope' aria-pressed={reviewScope === item.value}
+            disabled={item.value === 'mine' && !reviewer} title={item.value === 'mine' && !reviewer ? 'Identifícate en Equipo y preferencias para ver tus tareas' : undefined}
+            onClick={() => { setOffset(0); setReviewScope(item.value) }}>{item.label}</button>)}
+        </div>}
         <div className='catalog-quarantine-switch segmented' role='group' aria-label='Estado de los datos del catálogo'>
           <button type='button' className='segmented__option' aria-pressed={!showQuarantine} onClick={() => setShowQuarantine(false)}>Registros vinculados</button>
           <button type='button' className='segmented__option' aria-pressed={showQuarantine} onClick={() => setShowQuarantine(true)}><AlertTriangle size={14} aria-hidden='true' /> Filas en cuarentena{showQuarantine ? <span className='segmented__count'>{quarantineTotal}</span> : null}</button>
+        </div>
         </div>
         {showQuarantine && <section aria-label='Filas en cuarentena del catálogo'>
           <p className='alert alert--warning' role='status'><AlertTriangle size={16} aria-hidden='true' /> Estas {quarantineTotal} filas de excipientes están guardadas, pero no vinculadas a una especialidad. No forman parte del catálogo validado ni se pueden enviar a revisión hasta resolver su relación. Los filtros y la búsqueda superiores se aplican a los registros vinculados.</p>
@@ -548,7 +562,7 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
                 <tbody>
                   {data.items.map((item) => (
                     <tr key={item.id}>
-                      <th scope='row'><button type='button' className='catalog-row__name' onClick={() => openIdentity(item.id)}>{orDash(item.display_name)}</button>{item.identity_type === 'presentation' && <span className='catalog-row__tags'>{item.commercial_class && <span className='catalog-row__tag'>{CLASS_LABELS[item.commercial_class] ?? item.commercial_class}</span>}{item.conditions?.map((value) => <span className='catalog-row__tag catalog-row__tag--condition' key={value}>{CONDITION_LABELS[value] ?? value}</span>)}</span>}</th>
+                      <th scope='row'><button type='button' className='catalog-row__name' onClick={() => openIdentity(item.id)}>{orDash(item.display_name)}</button>{item.identity_type === 'presentation' && (item.commercial_class || item.conditions?.length) ? <span className='catalog-row__detail'>{[item.commercial_class ? CLASS_LABELS[item.commercial_class] ?? item.commercial_class : null, ...(item.conditions ?? []).map(value => CONDITION_LABELS[value] ?? value)].filter(Boolean).join(' · ')}</span> : null}</th>
                       <td><code>{orDash(item.code)}</code></td>
                       <td>{ENTITY_LABELS[item.identity_type] ?? item.identity_type}</td>
                       <td>{item.source_workbook ? SOURCE_LABELS[item.source_workbook] : <span className='muted'>Sin libro maestro</span>}</td>
