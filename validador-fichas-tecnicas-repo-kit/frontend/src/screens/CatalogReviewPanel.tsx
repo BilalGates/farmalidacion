@@ -46,7 +46,7 @@ export function CatalogReviewPanel({ recordId, reviewer }: { recordId: string | 
         {reviewer && item.assignee_id === reviewer.identifier && item.state === 'asignado' && <button type='button' className='button button--primary' disabled={busy} onClick={() => void act(() => transitionQueue(item, reviewer.identifier, 'en_revision'))}>Iniciar revisión</button>}
         {reviewer && item.assignee_id === reviewer.identifier && ['asignado', 'en_revision'].includes(item.state) && <button type='button' className='button' disabled={busy} onClick={() => void act(() => transitionQueue(item, reviewer.identifier, 'pendiente'))}>Devolver a pendientes</button>}
       </div>}
-      {!reviewer && item && <p className='muted'>Seleccione un revisor para asignar o iniciar la revisión.</p>}
+      {!reviewer && item && <p className='muted'>Identifícate en Equipo y preferencias para asignar o iniciar la revisión.</p>}
     </>}
   </section>
 }

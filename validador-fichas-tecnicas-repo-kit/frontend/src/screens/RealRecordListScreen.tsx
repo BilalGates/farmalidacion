@@ -524,8 +524,8 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
         emptyTitle={activeFilterCount > 0 ? 'No hay resultados con estos filtros' : 'No hay identidades en el catálogo'}
         emptyDetail={
           activeFilterCount > 0
-            ? 'Pruebe con otros criterios o limpie los filtros para consultar todo el catálogo.'
-            : 'Todavía no hay identidades disponibles. Consulte el estado de las fuentes de datos.'
+            ? 'Prueba con otros criterios o limpia los filtros para ver todo el catálogo.'
+            : 'Todavía no hay identidades disponibles. Consulta el estado de las fuentes de datos.'
         }
         emptyAction={activeFilterCount > 0 ? <button type='button' className='button button--secondary' onClick={clearFilters}>Limpiar filtros</button> : undefined}
         onRetry={() => setRetryKey((k) => k + 1)}

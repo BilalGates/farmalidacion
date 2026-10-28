@@ -1,0 +1,57 @@
+/*
+ * Expediente de revisión: la pantalla donde más horas se pasa.
+ *
+ * Jerarquía por línea y alineación, no por cajas: qué campo es, qué valor
+ * tiene, en qué estado está y de dónde sale. El campo activo se señala con
+ * una barra lateral; la evidencia acompaña sin competir.
+ */
+
+/* ── Cabecera: identidad, identificadores y avance ─────────────────────── */
+.app-shell .review-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 280px); align-items: end; gap: var(--space-6); }
+.app-shell .review-head .lede code { color: var(--ink-faint); }
+.app-shell .review-identifiers { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: var(--space-2) 0 0; }
+.app-shell .review-identifiers > div { display: inline-flex; align-items: baseline; gap: var(--space-2); }
+.app-shell .review-identifiers dt { color: var(--ink-faint); font-size: var(--text-xs); letter-spacing: .02em; }
+.app-shell .review-identifiers dd { margin: 0; font-family: var(--font-mono); font-size: var(--text-xs); }
+
+.app-shell .review-head .review-progress { display: grid; grid-template-columns: 1fr auto; gap: var(--space-1) var(--space-3); padding: 0; border: 0; background: none; box-shadow: none; }
+.app-shell .review-head .review-progress__label { color: var(--ink-soft); font-size: var(--text-xs); }
+.app-shell .review-head .review-progress strong { grid-row: 1; grid-column: 2; font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.app-shell .review-head .review-progress__track { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--line-soft); }
+.app-shell .review-head .review-progress__track span { border-radius: 2px; background: var(--accent-fill); }
+
+/* ── Campos: filas separadas por líneas ────────────────────────────────── */
+.app-shell .review-screen .occurrence__label { margin: var(--space-3) 0 var(--space-1); color: var(--ink-faint); font-size: var(--text-xs); font-weight: var(--weight-semibold); letter-spacing: .04em; }
+.app-shell .review-screen .occurrence [data-review-field] { position: relative; border-bottom: 1px solid var(--line-soft); }
+.app-shell .review-screen .occurrence [data-review-field]:last-child { border-bottom: 0; }
+.app-shell .review-screen .field-row,
+.app-shell .review-screen .field-row + .field-row { margin: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.app-shell .review-screen [data-review-field]:hover .field-row { background: color-mix(in srgb, var(--canvas) 60%, transparent); }
+
+.app-shell .review-screen .review-field--active { outline: 0; border-radius: 0; }
+.app-shell .review-screen .review-field--active::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 2px; background: var(--accent-fill); }
+.app-shell .review-screen .review-field--active .field-row { background: color-mix(in srgb, var(--accent-soft) 55%, transparent); }
+.app-shell .review-screen [data-review-field]:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+
+.app-shell .review-screen .field-row--conflict { background: transparent; }
+.app-shell .review-screen [data-review-field]:has(.field-row--conflict)::after { content: ''; position: absolute; inset: 0 0 0 auto; width: 2px; background: var(--warn); }
+
+/* ── Evidencia: lectura continua, sin tarjetas anidadas ────────────────── */
+.app-shell .review-evidence .evidence-head { gap: var(--space-3); margin-bottom: var(--space-3); padding-bottom: var(--space-3); }
+.app-shell .review-evidence .evidence-head__icon { width: 30px; height: 30px; border-radius: var(--radius-small); color: var(--ink-soft); background: var(--line-soft); }
+.app-shell .review-evidence .evidence-head h2 { font-size: var(--text-base); }
+.app-shell .review-evidence .sources { gap: 0; }
+.app-shell .review-evidence .sources > li { padding: var(--space-3) 0; border: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; background: transparent; }
+.app-shell .review-evidence .sources > li:last-child { border-bottom: 0; }
+.app-shell .review-evidence .sources__evidence { font-family: var(--font-mono); font-size: var(--text-xs); }
+
+@media (max-width: 900px) {
+  .app-shell .review-head { grid-template-columns: minmax(0, 1fr); align-items: start; }
+}
+
+/* ── Anatomía del campo: nombre legible, código técnico, tipo y valor ──── */
+.app-shell .review-screen .field-row__identity { display: grid; gap: 2px; }
+.app-shell .review-screen .field-row__name { color: var(--ink); font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+.app-shell .review-screen .field-row__code { color: var(--ink-soft); font-family: var(--font-mono); font-size: var(--text-xs); }
+.app-shell .review-screen .field-row__type { color: var(--ink-faint); font-family: var(--font-mono); font-size: var(--text-xs); }
+.app-shell .review-screen .field-row__value { color: var(--ink); font-size: var(--text-base); }

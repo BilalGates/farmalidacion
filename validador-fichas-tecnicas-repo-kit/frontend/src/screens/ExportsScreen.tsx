@@ -104,7 +104,7 @@ export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
     setSubmitError(null)
     setSubmitMessage(null)
     if (!reviewer) {
-      setSubmitError('Seleccione un revisor antes de firmar la exportación.')
+      setSubmitError('Identifícate en Equipo y preferencias antes de firmar la exportación.')
       return
     }
     try {
@@ -132,7 +132,7 @@ export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
 
   return (
     <div className='screen'>
-      <PageHeader eyebrow='Exportación' title='Exportaciones' description='Revise las exclusiones antes de descargar. Cada ejecución conserva su configuración y su hash para poder comprobarla.' />
+      <PageHeader eyebrow='Exportación' title='Exportaciones' description='Revisa las exclusiones antes de descargar. Cada ejecución conserva su configuración y su hash para poder comprobarla.' />
 
       <p className='note export-contract-note' role='note'>
         Ningún perfil está aceptado por el proveedor: D-011 sigue pendiente. Que un

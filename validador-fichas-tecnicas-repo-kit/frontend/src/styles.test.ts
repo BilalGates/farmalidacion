@@ -25,7 +25,7 @@ describe('tokens', () => {
 describe('capa común y hojas migradas', () => {
   // El código nuevo sólo usa tokens: un color o un tamaño escrito a mano es
   // exactamente la deriva que llevó a cinco paletas superpuestas.
-  const migrated = ['src/ui/components.css', 'src/screens/catalog.css', 'src/screens/work.css', 'src/screens/sources.css']
+  const migrated = ['src/ui/components.css', 'src/screens/catalog.css', 'src/screens/work.css', 'src/screens/sources.css', 'src/screens/review.css']
   it.each(migrated)('%s no escribe colores ni tamaños de letra literales', (file) => {
     const css = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
     expect(css).not.toMatch(/#[0-9a-f]{3,8}\b/i)

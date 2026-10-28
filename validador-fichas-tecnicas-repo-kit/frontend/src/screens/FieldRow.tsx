@@ -198,7 +198,7 @@ export function FieldRow({
                 value={state}
                 onChange={(event) => setState(event.target.value as ValidationState | '')}
               >
-                <option value=''>Seleccione una decisión…</option>
+                <option value=''>Elige una decisión…</option>
                 {ASSIGNABLE_STATES.map((item) => (
                   <option key={item} value={item} disabled={['no_consta', 'no_aplica'].includes(item) && !reviewer?.may_sign_pharmacist_states}>
                     {VALIDATION_STATE_LABELS[item]}
@@ -267,7 +267,7 @@ export function FieldRow({
               Guardar y siguiente campo
             </button>}
             {reviewer === null && (
-              <span className='muted'>Seleccione un revisor para poder firmar.</span>
+              <span className='muted'>Identifícate en Equipo y preferencias para poder firmar.</span>
             )}
             {missingValue && (
               <span className='field-error'>Escriba el valor final antes de guardar.</span>

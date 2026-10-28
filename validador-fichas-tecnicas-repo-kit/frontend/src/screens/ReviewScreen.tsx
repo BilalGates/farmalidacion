@@ -134,6 +134,16 @@ function recordTitle(record: TargetRecord): string {
   return named?.literal_value ?? record.id
 }
 
+function ReviewProgress({ resolved, total }: { resolved: number; total: number }) {
+  return (
+    <div className='review-progress' role='status'>
+      <span className='review-progress__label'>{resolved} de {total} campos revisados</span>
+      <div className='review-progress__track' aria-hidden='true'><span style={{ width: `${total ? (resolved / total) * 100 : 0}%` }} /></div>
+      <strong>{total ? Math.round((resolved / total) * 100) : 0}%</strong>
+    </div>
+  )
+}
+
 export function ReviewScreen({
   recordId,
   reviewer,
@@ -394,18 +404,30 @@ export function ReviewScreen({
         ← Volver al listado
       </button>}
 
-      {/* Zona A — contexto de la ficha. */}
-      <div className='screen__head'>
+      {/* Zona A — contexto de la ficha: identidad, identificadores y avance en
+          una sola cabecera, para que los campos empiecen arriba. */}
+      <div className='screen__head review-head'>
         <div>
           <p className='eyebrow'>{canReview ? 'Revisión de ficha' : 'Ficha y evidencia'}</p>
           <h1>{displayName || recordTitle(record)}</h1>
           <p className='lede'>
             <code>{record.id}</code> · {RECORD_TYPE_LABELS[record.entity_type] ?? record.entity_type}
           </p>
+          {!compact && record.external_identifiers.length > 0 && (
+            <dl className='review-identifiers' aria-label='Identificación'>
+              {record.external_identifiers.map((item) => (
+                <div key={`${item.source_system}-${item.source_identifier}`}>
+                  <dt>{item.source_system}</dt>
+                  <dd>{item.source_identifier} · {item.source_version}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
         </div>
+        {!compact && <ReviewProgress resolved={resolved} total={fields.length} />}
       </div>
 
-      {record.external_identifiers.length > 0 && (
+      {compact && record.external_identifiers.length > 0 && (
         <ContextPanel className='panel review-identification'>
           {compact ? <summary>Identificación y versiones ({record.external_identifiers.length})</summary> : <h2>Identificación</h2>}
           <dl className='pairs'>
@@ -459,11 +481,7 @@ export function ReviewScreen({
         </p>
       )}
 
-      <div className='review-progress' role='status'>
-        <span className='review-progress__label'>{resolved} de {fields.length} campos revisados</span>
-        <div className='review-progress__track' aria-hidden='true'><span style={{ width: `${fields.length ? (resolved / fields.length) * 100 : 0}%` }} /></div>
-        <strong>{fields.length ? Math.round((resolved / fields.length) * 100) : 0}%</strong>
-      </div>
+      {compact && <ReviewProgress resolved={resolved} total={fields.length} />}
 
       <div className='review-workspace' onKeyDown={handleKeyDown}>
         {/* Zona B — campo de trabajo. */}

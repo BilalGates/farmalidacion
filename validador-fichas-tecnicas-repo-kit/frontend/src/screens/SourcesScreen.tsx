@@ -83,7 +83,7 @@ function MasterUpload({ kind, onImported }: { kind: CatalogSourceWorkbook; onImp
     setBusy(true); setError(''); setMessage('')
     try {
       const result = await importMasterWorkbook(kind, file, { sha256: preview.sha256, actor_id: actor, reason })
-      setMessage(result.created ? 'Libro importado. Consulte el lote en Importaciones.' : 'El mismo contenido ya estaba importado.')
+      setMessage(result.created ? 'Libro importado. Consulta el lote en Importaciones.' : 'El mismo contenido ya estaba importado.')
       setFile(null); setPreview(null); setReason(''); onImported()
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'No se pudo importar el Excel.') }
     finally { setBusy(false) }
@@ -305,7 +305,7 @@ function SourceDetail({ id, onClose, onSaved }: { id: string; onClose: () => voi
               <p className='eyebrow'>Vista del libro maestro</p>
               <h3>{preview.title}</h3>
               <p>{preview.description}</p>
-              <p>Abra un registro para consultar todas sus hojas y anotar o corregir valores con revisor y motivo. El Excel original se conserva.</p>
+              <p>Abre un registro para consultar todas sus hojas y anotar o corregir valores con revisor y motivo. El Excel original se conserva.</p>
               <button type='button' className='button button--primary' onClick={() => openCatalogSource(preview.view)}>
                 {preview.action}
               </button>

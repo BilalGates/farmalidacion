@@ -57,7 +57,7 @@ function Cases({ segment, label, entityType, sourceType, onClose }: {
         <button type='button' className='button' onClick={onClose}>Cerrar</button>
       </div>
       <AsyncBoundary loading={loading} error={error} empty={data?.total === 0}
-        emptyTitle='No hay registros en este segmento' emptyDetail='Seleccione otro grupo o cambie los filtros.'>
+        emptyTitle='No hay registros en este segmento' emptyDetail='Elige otro grupo o cambia los filtros.'>
         {data && <div className='dashboard-cases__body'>
           <p className='muted'>{number(data.total)} registros · {number(offset + 1)}–{number(Math.min(offset + PAGE_SIZE, data.total))}</p>
           <ul>{data.items.map(item => <li key={item.id}>
@@ -94,7 +94,7 @@ export function DashboardScreen() {
   return (
     <div className='screen dashboard-screen'>
       <PageHeader eyebrow='Resumen operativo' title='Dónde actuar y qué cubren los datos'
-        description='Explore registros reales, fuentes y trabajo de revisión. Cada cifra abre sus casos o su listado.' />
+        description='Registros reales, fuentes y trabajo de revisión. Cada cifra abre sus casos o su listado.' />
       <AsyncBoundary loading={loading} error={error}
         empty={Boolean(data && data.total_records === 0 && !entityType && !sourceType && data.quarantined === 0 && data.diagnostics === 0)}
         emptyTitle='Todavía no hay maestros importados'

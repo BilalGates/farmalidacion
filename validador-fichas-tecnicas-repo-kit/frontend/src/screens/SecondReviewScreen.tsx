@@ -119,7 +119,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
         <PageHeader eyebrow='Segunda validación' title='Validaciones' />
         <EmptyState
           title='Identifícate para hacer segundas lecturas'
-          detail='Seleccione un revisor: una segunda lectura exige saber quién la firma.'
+          detail='Una segunda lectura exige saber quién la firma.'
           action={<a className='button button--primary' href='#/revisores'>Ir a Equipo y preferencias</a>}
         />
       </div>
@@ -193,13 +193,13 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
 
           <div className='review__grid'>
             <label className='field'>
-              <span className='field__label'>Su decisión</span>
+              <span className='field__label'>Tu decisión</span>
               <select
                 aria-label='Decisión de segunda lectura'
                 value={state}
                 onChange={(event) => setState(event.target.value)}
               >
-                <option value=''>Seleccione una decisión…</option>
+                <option value=''>Elige una decisión…</option>
                 {ASSIGNABLE_STATES.map((item) => (
                   <option key={item} value={item}>
                     {VALIDATION_STATE_LABELS[item]}

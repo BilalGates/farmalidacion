@@ -102,7 +102,7 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
   }
 
   return <div className='screen'>
-    <PageHeader eyebrow='Trabajo del equipo' title='Cola de revisión' description='Filtre los registros pendientes, selecciónelos y asígnese un lote antes de abrir cada ficha.' actions={<div className='page-stat' aria-label={`${items.length} registros en la cola`}>
+    <PageHeader eyebrow='Trabajo del equipo' title='Cola de revisión' description='Filtra los pendientes, selecciónalos y asígnate un lote antes de abrir cada ficha.' actions={<div className='page-stat' aria-label={`${items.length} registros en la cola`}>
         <strong>{items.length}</strong><span>En cola</span>
       </div>} />
     {error && <div role='alert' className='alert alert--error'>{error} {stale && items.length > 0 && 'La lista muestra la última carga correcta y puede estar desactualizada.'} <button type='button' className='button button--secondary' disabled={loading || busy} onClick={() => void reload()}>Reintentar carga</button></div>}

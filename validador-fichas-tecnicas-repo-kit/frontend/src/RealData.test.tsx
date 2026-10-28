@@ -485,7 +485,7 @@ describe('ficha de un registro real', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
     expect(screen.getByRole('button', { name: 'Guardar decisión' })).toBeDisabled()
-    expect(screen.getByText(/Seleccione un revisor/)).toBeInTheDocument()
+    expect(screen.getByText(/Identifícate en Equipo y preferencias/)).toBeInTheDocument()
   })
 })
 

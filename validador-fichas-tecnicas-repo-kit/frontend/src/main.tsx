@@ -10,6 +10,7 @@ import './ui/components.css'
 import './screens/catalog.css'
 import './screens/work.css'
 import './screens/sources.css'
+import './screens/review.css'
 
 const root = document.getElementById('root')
 

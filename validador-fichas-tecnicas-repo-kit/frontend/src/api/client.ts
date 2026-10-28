@@ -97,7 +97,7 @@ async function request<T>(path: string, init?: RequestInit, publicRequest = fals
   } catch (error) {
     if (error instanceof SessionError) throw new ApiError(error.message, 401)
     if (controller.signal.aborted) {
-      throw new ApiError('La solicitud ha tardado demasiado. Inténtelo de nuevo.', 0)
+      throw new ApiError('La solicitud ha tardado demasiado. Inténtalo de nuevo.', 0)
     }
     throw new ApiError('No se ha podido contactar con el servidor.', 0)
   } finally {

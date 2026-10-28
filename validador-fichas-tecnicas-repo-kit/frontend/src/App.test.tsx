@@ -538,7 +538,7 @@ describe('Recorrido de la vertical de revisión', () => {
     const select = screen.getByRole('combobox', { name: 'Decisión de revisión' })
     expect(select).toHaveValue('')
     expect(screen.getByRole('button', { name: 'Guardar decisión' })).toBeDisabled()
-    expect(screen.getByText('Seleccione un revisor para poder firmar.')).toBeVisible()
+    expect(screen.getByText('Identifícate en Equipo y preferencias para poder firmar.')).toBeVisible()
     expect(postCount).toBe(0)
   })
 
