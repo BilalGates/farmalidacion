@@ -281,3 +281,4 @@ code, kbd, .mono { font-family: var(--font-mono); font-size: var(--text-code); f
 /* Títulos de recuadro con la voz de documento, como los bloques del expediente. */
 .app-shell :is(.panel > h2:first-child, .panel__head h2, .panel > header h2) { font-family: var(--font-display); font-size: var(--text-xl); font-weight: var(--weight-regular); letter-spacing: -.01em; }
 .app-shell :is(.validation-overview__icon, .empty-state__icon) { display: inline-grid; place-items: center; }
+.app-shell :is(.panel > div:first-child > h2, .reviewer-management__list-head h3, .reviewer-management__list > h2, .reviewer-management__add > h3, .reviewer-management form > h3) { margin: 0; font-family: var(--font-display); font-size: var(--text-xl); font-weight: var(--weight-regular); letter-spacing: -.01em; }
