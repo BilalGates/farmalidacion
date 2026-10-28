@@ -70,6 +70,8 @@
   --shadow: 0 1px 2px rgb(32 25 42 / 4%);
   --shadow-hover: 0 8px 22px rgb(55 35 62 / 8%);
   --shadow-raised: 0 1px 2px rgb(0 0 0 / 6%);
+  --shadow-dialog: 0 24px 64px rgb(20 16 26 / 22%);
+  --backdrop: rgb(20 16 26 / 45%);
 
   /* Espacio */
   --space-1: .25rem;
@@ -135,6 +137,8 @@
   --info: #a5c9f4;
   --info-soft: #202f45;
   --shadow: 0 2px 12px rgb(0 0 0 / 16%);
+  --shadow-dialog: 0 24px 64px rgb(0 0 0 / 45%);
+  --backdrop: rgb(3 3 8 / 72%);
   --scrollbar-thumb: #777080;
   --scrollbar-thumb-hover: #a79aac;
   color-scheme: dark;

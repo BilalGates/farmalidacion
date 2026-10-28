@@ -42,3 +42,16 @@
 .app-shell .catalog-table-scroll { border-color: var(--line-soft); border-radius: 10px; background: var(--surface); }
 .app-shell .catalog-table-scroll .table thead th { color: var(--ink-faint); font-weight: var(--weight-medium); }
 .app-shell .catalog-table-scroll .table tbody :is(th, td) { border-bottom-color: var(--line-faint); }
+
+/* Revisión en una línea: estado, responsable y acción al final. */
+.app-shell .catalog-col-name { width: 27%; }
+.app-shell .catalog-col-code { width: 15%; }
+.app-shell .catalog-col-type { width: 10%; }
+.app-shell .catalog-col-source { width: 12%; }
+.app-shell .catalog-col-status { width: 10%; }
+.app-shell .catalog-col-review { width: 26%; }
+.app-shell .catalog-review-cell__content { flex-wrap: nowrap; justify-content: space-between; gap: var(--space-2); }
+.app-shell .catalog-review-cell__assignment { min-width: 0; overflow: hidden; }
+.app-shell .catalog-review-cell__assignee { overflow: hidden; color: var(--ink-faint); font-size: var(--text-xs); text-overflow: ellipsis; }
+.app-shell .catalog-table-scroll .catalog-review-cell .button { flex: none; border-color: transparent; color: var(--accent-strong); background: transparent; }
+.app-shell .catalog-table-scroll .catalog-review-cell .button:hover:not(:disabled) { background: var(--accent-soft); }

@@ -282,3 +282,16 @@ code, kbd, .mono { font-family: var(--font-mono); font-size: var(--text-code); f
 .app-shell :is(.panel > h2:first-child, .panel__head h2, .panel > header h2) { font-family: var(--font-display); font-size: var(--text-xl); font-weight: var(--weight-regular); letter-spacing: -.01em; }
 .app-shell :is(.validation-overview__icon, .empty-state__icon) { display: inline-grid; place-items: center; }
 .app-shell :is(.panel > div:first-child > h2, .reviewer-management__list-head h3, .reviewer-management__list > h2, .reviewer-management__add > h3, .reviewer-management form > h3) { margin: 0; font-family: var(--font-display); font-size: var(--text-xl); font-weight: var(--weight-regular); letter-spacing: -.01em; }
+
+/* Títulos de recuadro precedidos de un antetítulo («Procedencia · Valor fuente»). */
+.app-shell .panel .eyebrow + h2 { margin-top: 2px; font-family: var(--font-display); font-size: var(--text-xl); font-weight: var(--weight-regular); letter-spacing: -.01em; }
+
+/* ── Diálogo de expediente ─────────────────────────────────────────────── */
+.record-dialog { border: 1px solid var(--line-soft); border-radius: 12px; background: var(--canvas); box-shadow: var(--shadow-dialog); }
+.record-dialog::backdrop { background: var(--backdrop); }
+.record-dialog__header { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); border-bottom: 1px solid var(--line-soft); background: var(--canvas); }
+.record-dialog__header h2 { margin: 0 auto 0 0; font-family: var(--font-display); font-size: var(--text-xl); font-weight: var(--weight-regular); }
+.record-dialog__header nav { display: flex; gap: var(--space-1); order: 3; }
+.record-dialog__header > .muted { order: 2; font-family: var(--font-mono); font-size: var(--text-xs); }
+.record-dialog__header nav .button:not(.button--secondary) { border-color: transparent; background: transparent; }
+.record-dialog__header nav .button:not(.button--secondary):hover:not(:disabled) { background: var(--line-faint); }
