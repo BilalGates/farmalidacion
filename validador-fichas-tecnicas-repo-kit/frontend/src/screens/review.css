@@ -45,7 +45,6 @@
 /* ── Evidencia: lectura continua, sin tarjetas anidadas ────────────────── */
 .app-shell .review-evidence .evidence-head { gap: var(--space-3); margin-bottom: var(--space-3); padding-bottom: var(--space-3); }
 .app-shell .review-evidence .evidence-head__icon { width: 30px; height: 30px; border-radius: var(--radius-small); color: var(--ink-soft); background: var(--line-soft); }
-.app-shell .review-evidence .evidence-head h2 { font-size: var(--text-base); }
 .app-shell .review-evidence .sources { gap: 0; }
 .app-shell .review-evidence .sources > li { padding: var(--space-3) 0; border: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; background: transparent; }
 .app-shell .review-evidence .sources > li:last-child { border-bottom: 0; }

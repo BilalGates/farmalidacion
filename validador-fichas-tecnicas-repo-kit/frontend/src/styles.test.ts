@@ -41,7 +41,7 @@ describe('sistema visual profesional', () => {
     for (const token of ['--accent:', '--success:', '--warn:', '--danger:', '--info:', '--space-4:', '--radius:', '--text-title:', '--z-popover:']) {
       expect(styles).toContain(token)
     }
-    expect(styles).toContain('.button--primary { border-color: var(--accent);')
+    expect(readFileSync('src/ui/components.css', 'utf8')).toContain('.app-shell .button--primary { border-color: var(--accent-fill); color: var(--on-accent); background: var(--accent-fill); }')
     expect(styles).not.toContain('linear-gradient(')
   })
 
