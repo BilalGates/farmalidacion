@@ -4,7 +4,6 @@
   grid-template-columns: minmax(220px, 1fr) minmax(140px, 220px) auto auto;
   align-items: end;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
 }
 .app-shell .queue-add .queue-toolbar__title { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 34px; color: var(--ink); font-size: var(--text-sm); font-weight: var(--weight-semibold); white-space: nowrap; grid-column: 1 / -1; }
 .app-shell .queue-add .queue-check { min-height: 34px; font-size: var(--text-sm); }
@@ -23,7 +22,6 @@
 .app-shell .queue-list > li { grid-template-columns: auto minmax(220px, 1fr) 132px minmax(0, 420px); }
 .app-shell .queue-list > li > .badge { justify-self: start; }
 .app-shell .queue-list__actions { gap: var(--space-1); }
-.app-shell .queue-list__actions .button { min-height: 28px; padding: 0 var(--space-2); font-size: var(--text-xs); }
 .app-shell .queue-list__actions .button:last-child { border-color: transparent; color: var(--accent-strong); background: transparent; }
 .app-shell .queue-list__actions .button:last-child:hover { background: var(--accent-soft); }
 

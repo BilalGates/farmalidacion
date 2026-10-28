@@ -79,7 +79,9 @@
   --cell-y: 15px;
   --panel-pad: 24px;
   --workspace-gap: 22px;
-  --control-height: 40px;
+  /* Altura común de botones y campos: un botón junto a un campo siempre alinea. */
+  --control-height: 36px;
+  --control-height-sm: 28px;
 
   /* Capas y movimiento */
   --z-sticky: 10;
@@ -99,7 +101,7 @@
   --cell-y: 9px;
   --panel-pad: 16px;
   --workspace-gap: 14px;
-  --control-height: 34px;
+  --control-height: 32px;
 }
 
 :root[data-theme='dark'] {

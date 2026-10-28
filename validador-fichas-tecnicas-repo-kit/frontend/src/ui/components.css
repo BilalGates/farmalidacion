@@ -240,3 +240,40 @@ code, kbd, .mono { font-family: var(--font-mono); font-size: var(--text-code); f
 .app-shell .topbar__actions { gap: var(--space-4); }
 .app-shell .topbar__actions .mode-chip { margin: 0; padding: 2px var(--space-2); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); border-radius: var(--radius-small); color: var(--warn); background: var(--warn-soft); font-size: var(--text-xs); letter-spacing: .08em; }
 .app-shell .account-summary { padding-left: var(--space-4); border-left: 1px solid var(--line-soft); }
+
+/* ══ Normalización transversal ═══════════════════════════════════════════
+   Medido en todas las rutas: 15 variantes de botón, campos de 35 px junto a
+   botones de 40 px, cuatro rellenos de recuadro y dos estilos de pestaña.
+   Desde aquí hay una sola medida para cada cosa. */
+
+/* Controles: misma altura para botón, campo y desplegable. */
+.app-shell .button,
+.app-shell :is(input[type='text'], input[type='search'], input[type='number'], input[type='date'], input:not([type]), select) {
+  height: var(--control-height);
+  min-height: var(--control-height);
+}
+.app-shell .button { padding-block: 0; }
+.app-shell :is(.button--sm, .queue-list__actions .button, .catalog-review-cell .button, .button.back) { height: var(--control-height-sm); min-height: var(--control-height-sm); }
+.app-shell .button--icon { width: var(--control-height); padding: 0; }
+.app-shell textarea { min-height: calc(var(--control-height) * 2); padding: var(--space-2) var(--space-3); border-color: var(--line); border-radius: var(--radius-control); background-color: var(--surface); font-size: var(--text-sm); }
+
+/* Recuadros: un único relleno, que la densidad ajusta. */
+.app-shell :is(.panel, .filter-panel, .queue-add) { padding: var(--panel-pad); border-color: var(--line-soft); border-radius: var(--radius); box-shadow: none; }
+.app-shell .state { padding: var(--panel-pad); }
+.app-shell .panel__head { margin-bottom: var(--space-4); padding-bottom: var(--space-3); border-bottom: 1px solid var(--line-soft); }
+.app-shell .panel > h2:first-child, .app-shell .panel__head h2 { font-size: var(--text-lg); }
+
+/* Pestañas: las de sección (enlaces) y las de ficha (botones) son la misma pieza. */
+.app-shell :is(.section-workspace__nav ul, .workspace-tabs__nav) { display: flex; gap: var(--space-5); margin: 0; padding: 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; }
+.app-shell :is(.section-workspace__nav a, .workspace-tabs__nav [role='tab']) {
+  display: inline-flex; align-items: center; height: 40px; min-height: 0; margin-bottom: -1px; padding: 0 2px;
+  border: 0; border-bottom: 2px solid transparent; border-radius: 0; color: var(--ink-soft); background: transparent;
+  font: inherit; font-size: var(--text-sm); font-weight: var(--weight-medium); text-decoration: none; white-space: nowrap; cursor: pointer;
+}
+.app-shell :is(.section-workspace__nav a, .workspace-tabs__nav [role='tab']):hover { color: var(--ink); }
+.app-shell :is(.section-workspace__nav a[aria-current='page'], .workspace-tabs__nav [role='tab'][aria-selected='true']) { border-bottom-color: var(--accent-fill); color: var(--ink); background: transparent; font-weight: var(--weight-semibold); }
+.app-shell :is(.button--sm, .queue-list__actions .button, .catalog-review-cell .button, .button.back) { padding-inline: var(--space-2); font-size: var(--text-xs); }
+.app-shell .roadmap__toggle { min-height: var(--control-height-sm); padding-block: var(--space-1); font-size: var(--text-sm); }
+
+/* Títulos de sección dentro de una página: misma voz que «Maestros Excel». */
+.app-shell .page-header h2 { margin: 0; font-family: var(--font-display); font-size: var(--text-xl); font-weight: var(--weight-regular); letter-spacing: -.01em; }
