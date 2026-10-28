@@ -676,7 +676,7 @@ select option { color: var(--ink); background: var(--surface); }
 .app-shell .catalog-review-cell { white-space: normal; min-width: 0; vertical-align: middle; text-align: left; }
 .catalog-review-cell__content { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; min-width: 0; }
 .catalog-review-cell__assignment { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 7px; min-width: 0; }
-.catalog-review-cell__state { display: inline-block; padding: 3px 7px; border-radius: 5px; color: var(--accent-strong); background: var(--accent-soft); font-size: .72rem; font-weight: 650; line-height: 1.25; }
+.catalog-review-cell__state { display: inline-block; padding: 3px 7px; border-radius: 5px; font-size: .72rem; font-weight: 650; line-height: 1.25; }
 .catalog-review-cell__assignee { color: var(--ink-soft); font-size: .78rem; line-height: 1.35; overflow-wrap: anywhere; }
 .app-shell .catalog-review-cell .button { width: auto; max-width: 100%; white-space: normal; margin: 0; }
 

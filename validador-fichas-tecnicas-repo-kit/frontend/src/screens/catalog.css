@@ -15,3 +15,8 @@
 .app-shell .catalog-results__footer { border: 0; padding-inline: 0; background: transparent; }
 .app-shell .catalog-results__footer .pagination { display: flex; gap: var(--space-2); }
 .app-shell .catalog-table-scroll .table td.catalog-review-cell { text-align: left; }
+
+.app-shell .catalog-review-cell__content { gap: 4px var(--space-2); }
+.app-shell .catalog-col-name { width: 29%; }
+.app-shell .catalog-col-review { width: 17%; }
+.app-shell .catalog-review-cell__assignment { flex-wrap: nowrap; white-space: nowrap; }
