@@ -7,7 +7,7 @@ export function PilotIdentity({ reviewers, reviewer, onChange }: { reviewers: Re
   return <section className='panel identity-preferences' aria-labelledby='identity-title'>
     <h2 id='identity-title'>Identidad y acceso</h2>
     <p className='muted'>El acceso corporativo con Microsoft Entra ID está pendiente de configuración.</p>
-    <p className='mode-banner mode-banner--warning'>Este entorno usa identificación declarada del piloto. No verifica tu identidad ni restringe el acceso mediante una sesión autenticada.</p>
+    <p className='alert alert--warning'>Este entorno usa identificación declarada del piloto. No verifica tu identidad ni restringe el acceso mediante una sesión autenticada.</p>
     {reviewer ? <div className='identity-preferences__current'>
       <span><strong>{reviewer.display_name}</strong><small>{reviewer.role_label} · Identidad declarada</small></span>
       <button type='button' className='button' onClick={() => { onChange(''); setCandidate('') }}>Finalizar identificación</button>

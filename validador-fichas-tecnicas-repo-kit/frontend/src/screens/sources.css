@@ -1,0 +1,10 @@
+/* Datos: fuentes. */
+
+.app-shell .source-section-heading { align-items: end; }
+.app-shell .source-section-heading h2 { font-family: var(--font-display); font-size: var(--text-xl); font-weight: var(--weight-regular); }
+.app-shell .source-master-card { min-height: 0; gap: var(--space-2); }
+.app-shell .source-master-card h3 { margin: 0; font-size: var(--text-lg); }
+.app-shell .source-master-card__count { font-variant-numeric: tabular-nums; }
+.app-shell .source-master-card__meta { color: var(--ink-soft); font-size: var(--text-sm); }
+.app-shell .source-filename { color: var(--ink-faint); font-family: var(--font-mono); font-size: var(--text-xs); overflow-wrap: anywhere; }
+.app-shell .source-note { margin: var(--space-3) 0 0; font-size: var(--text-sm); }

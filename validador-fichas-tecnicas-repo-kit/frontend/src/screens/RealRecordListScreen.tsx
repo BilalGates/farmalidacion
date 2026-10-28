@@ -477,12 +477,12 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
         }
       >
       <div ref={resultsRef} tabIndex={-1} aria-label='Resultados del catálogo' className='catalog-results'>
-        <div className='catalog-quarantine-switch' role='group' aria-label='Estado de los datos del catálogo'>
-          <button type='button' className={`button ${!showQuarantine ? 'button--primary' : 'button--secondary'}`} aria-pressed={!showQuarantine} onClick={() => setShowQuarantine(false)}>Registros vinculados</button>
-          <button type='button' className={`button ${showQuarantine ? 'button--primary' : 'button--secondary'}`} aria-pressed={showQuarantine} onClick={() => setShowQuarantine(true)}><AlertTriangle size={16} aria-hidden='true' /> Filas en cuarentena{showQuarantine ? ` · ${quarantineTotal}` : ''}</button>
+        <div className='catalog-quarantine-switch segmented' role='group' aria-label='Estado de los datos del catálogo'>
+          <button type='button' className='segmented__option' aria-pressed={!showQuarantine} onClick={() => setShowQuarantine(false)}>Registros vinculados</button>
+          <button type='button' className='segmented__option' aria-pressed={showQuarantine} onClick={() => setShowQuarantine(true)}><AlertTriangle size={14} aria-hidden='true' /> Filas en cuarentena{showQuarantine ? <span className='segmented__count'>{quarantineTotal}</span> : null}</button>
         </div>
         {showQuarantine && <section aria-label='Filas en cuarentena del catálogo'>
-          <p className='alert badge--warning' role='status'><AlertTriangle size={16} aria-hidden='true' /> Estas {quarantineTotal} filas de excipientes están guardadas, pero no vinculadas a una especialidad. No forman parte del catálogo validado ni se pueden enviar a revisión hasta resolver su relación. Los filtros y la búsqueda superiores se aplican a los registros vinculados.</p>
+          <p className='alert alert--warning' role='status'><AlertTriangle size={16} aria-hidden='true' /> Estas {quarantineTotal} filas de excipientes están guardadas, pero no vinculadas a una especialidad. No forman parte del catálogo validado ni se pueden enviar a revisión hasta resolver su relación. Los filtros y la búsqueda superiores se aplican a los registros vinculados.</p>
           {quarantineError && <p className='alert alert--error' role='alert'>{quarantineError} <button type='button' className='button' onClick={() => setRetryKey(key => key + 1)}>Reintentar</button></p>}
           {quarantineLoading && <p role='status'>Cargando filas en cuarentena…</p>}
           {!quarantineLoading && !quarantineError && <>
@@ -551,14 +551,14 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
                       <th scope='row'><button type='button' className='catalog-row__name' onClick={() => openIdentity(item.id)}>{orDash(item.display_name)}</button>{item.identity_type === 'presentation' && <span className='catalog-row__tags'>{item.commercial_class && <span className='catalog-row__tag'>{CLASS_LABELS[item.commercial_class] ?? item.commercial_class}</span>}{item.conditions?.map((value) => <span className='catalog-row__tag catalog-row__tag--condition' key={value}>{CONDITION_LABELS[value] ?? value}</span>)}</span>}</th>
                       <td><code>{orDash(item.code)}</code></td>
                       <td>{ENTITY_LABELS[item.identity_type] ?? item.identity_type}</td>
-                      <td>{item.source_workbook ? SOURCE_LABELS[item.source_workbook] : 'Sin libro maestro asociado'}</td>
+                      <td>{item.source_workbook ? SOURCE_LABELS[item.source_workbook] : <span className='muted'>Sin libro maestro</span>}</td>
                       <td><span className={`badge ${item.active ? 'badge--validado' : 'badge--descartado'}`}>{item.active ? 'Vigente' : 'Archivado'}</span></td>
                       <td className='catalog-review-cell'>{(() => {
                         const work = queue.find((entry) => entry.target_record_id === item.target_record_id)
-                        return work ? <div className='catalog-review-cell__content'><span className='catalog-review-cell__assignment'><span className='catalog-review-cell__state'>{REVIEW_LABELS[work.state] ?? work.state}</span>{' '}<span className='catalog-review-cell__assignee'>{work.assignee_id ? reviewers.find(person => person.identifier === work.assignee_id)?.display_name ?? work.assignee_id : 'Sin asignar'}</span></span>
+                        return work ? <div className='catalog-review-cell__content'><span className='catalog-review-cell__assignment'><span className={`catalog-review-cell__state badge badge--${work.state}`}>{REVIEW_LABELS[work.state] ?? work.state}</span>{' '}<span className='catalog-review-cell__assignee'>{work.assignee_id ? reviewers.find(person => person.identifier === work.assignee_id)?.display_name ?? work.assignee_id : 'Sin asignar'}</span></span>
                           {canReview && reviewer && work.assignee_id === reviewer.identifier && work.state === 'asignado' && <button type='button' className='button button--secondary' disabled={queueBusy !== null} onClick={() => void updateQueue(() => transitionQueue(work, reviewer.identifier, 'en_revision'))}>Iniciar</button>}
                           {canReview && reviewer && !work.assignee_id && work.state === 'pendiente' && <button type='button' className='button button--secondary' disabled={queueBusy !== null} onClick={() => void updateQueue(() => assignQueue(work.target_record_id, reviewer.identifier))}>Asignarme</button>}
-                        </div> : !canReadReview || !canReview ? <span className='muted'>—</span> : item.target_record_id ? queueLoading ? <span className='muted'>Consultando…</span> : <button type='button' className='button button--secondary' disabled={queueBusy !== null || Boolean(queueError)} onClick={() => void addToQueue(item.target_record_id!)}>+ Revisar</button>
+                        </div> : !canReadReview || !canReview ? <span className='muted'>—</span> : item.target_record_id ? queueLoading ? <span className='muted'>Consultando…</span> : <button type='button' className='button button--ghost button--sm' disabled={queueBusy !== null || Boolean(queueError)} onClick={() => void addToQueue(item.target_record_id!)}>+ Revisar</button>
                             : <span className='muted'>Sin registro asociado</span>
                       })()}</td>
 
@@ -619,7 +619,7 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
       </RecordDialog>
       <RecordDialog open={selectedQuarantine !== null} onClose={() => setSelectedQuarantine(null)} titleId='catalog-quarantine-dialog-title'>
         {selectedQuarantine && <><header className='record-dialog__header'><h2 id='catalog-quarantine-dialog-title'>Fila en cuarentena · {selectedQuarantine.source_locator}</h2><button type='button' className='button button--secondary' onClick={() => setSelectedQuarantine(null)}>Cerrar</button></header>
-          <div className='record-dialog__body'><p className='alert badge--warning' role='alert'><AlertTriangle size={16} aria-hidden='true' /> {selectedQuarantine.reason_code}: {selectedQuarantine.reason}</p><p>Datos preservados; relación con la especialidad pendiente. Los cambios de valores no vinculan automáticamente esta fila.</p>
+          <div className='record-dialog__body'><p className='alert alert--warning' role='alert'><AlertTriangle size={16} aria-hidden='true' /> {selectedQuarantine.reason_code}: {selectedQuarantine.reason}</p><p>Datos preservados; relación con la especialidad pendiente. Los cambios de valores no vinculan automáticamente esta fila.</p>
             <dl className='quarantine-fields'>{selectedQuarantine.fields.map(field => <div className='quarantine-field' key={field.source_column_index}><dt><strong>{field.field_name}</strong><small>Columna Excel {field.source_column_index}</small></dt><dd><p><span>Valor de trabajo</span><output>{field.maintained_value ?? 'Vacío en el origen'}</output></p><p><span>Literal original</span><output>{field.literal_value ?? 'Vacío en el origen'}</output></p></dd></div>)}</dl>
             <a className='button button--secondary' href='#/datos/cuarentena'>Abrir incidencias para editar campos</a>
           </div></>}

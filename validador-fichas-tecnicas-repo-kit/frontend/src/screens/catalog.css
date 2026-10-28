@@ -1,0 +1,23 @@
+/* Catálogo: pantalla guía del sistema visual. */
+
+.app-shell .catalog-quarantine-switch { display: inline-flex; width: fit-content; margin: 0; }
+
+.app-shell .catalog-table-scroll .table tbody th,
+.app-shell .catalog-table-scroll .table tbody td { padding-block: calc(var(--cell-y) * .65); line-height: 1.35; }
+.app-shell .catalog-table-scroll .table thead th { position: sticky; top: 0; z-index: var(--z-sticky); }
+
+.app-shell .catalog-row__name { font-weight: var(--weight-semibold); text-align: left; }
+.app-shell .catalog-row__tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+
+.app-shell .catalog-table-scroll .catalog-review-cell .button { display: inline-flex; width: auto; min-height: 28px; margin: 0; }
+.app-shell .catalog-table-scroll .table td:last-child .button--ghost { color: var(--accent-strong); }
+
+.app-shell .catalog-results__footer { border: 0; padding-inline: 0; background: transparent; }
+.app-shell .catalog-results__footer .pagination { display: flex; gap: var(--space-2); }
+.app-shell .catalog-table-scroll .table td.catalog-review-cell { text-align: left; }
+
+.app-shell .catalog-review-cell__content { gap: 4px var(--space-2); }
+.app-shell .catalog-col-name { width: 29%; }
+.app-shell .catalog-col-review { width: 17%; }
+.app-shell .catalog-review-cell__assignment { flex-wrap: nowrap; white-space: nowrap; }
+.app-shell .catalog-filter-workspace .filter-workspace__toolbar > .catalog-search-toolbar { margin-bottom: 0; padding-bottom: 0; border-bottom: 0; }

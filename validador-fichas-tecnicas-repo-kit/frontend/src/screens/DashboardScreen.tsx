@@ -97,8 +97,9 @@ export function DashboardScreen() {
         description='Explore registros reales, fuentes y trabajo de revisión. Cada cifra abre sus casos o su listado.' />
       <AsyncBoundary loading={loading} error={error}
         empty={Boolean(data && data.total_records === 0 && !entityType && !sourceType && data.quarantined === 0 && data.diagnostics === 0)}
-        emptyTitle='Todavía no hay datos cargados'
-        emptyDetail='Consulte las importaciones y las fuentes para comenzar.'>
+        emptyTitle='Todavía no hay maestros importados'
+        emptyDetail='El resumen se calcula sobre los registros de los maestros importados. Mientras tanto, el catálogo y las fuentes siguen disponibles.'
+        emptyAction={<div className='state__actions'><a className='button button--primary' href='#/fichas'>Abrir el catálogo</a>{canReadSources && <a className='button' href='#/datos/fuentes'>Ver fuentes de datos</a>}</div>}>
         {data && <>
           <section className='dashboard-priorities' aria-label='Prioridades'>
             <h2>Atención ahora</h2>

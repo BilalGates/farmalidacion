@@ -9,6 +9,7 @@ import {
 import type { BlindField, Reviewer, SecondReviewItem } from '../api/types'
 import { ASSIGNABLE_STATES, VALIDATION_STATE_LABELS } from '../domain/vocabulary'
 import { PageHeader } from '../components/PageHeader'
+import { EmptyState } from '../components/AsyncState'
 import { useCapability } from '../auth/SessionContext'
 
 /**
@@ -116,9 +117,11 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
     return (
       <div className='screen'>
         <PageHeader eyebrow='Segunda validación' title='Validaciones' />
-        <p className='muted'>
-          Seleccione un revisor: una segunda lectura exige saber quién la firma.
-        </p>
+        <EmptyState
+          title='Identifícate para hacer segundas lecturas'
+          detail='Seleccione un revisor: una segunda lectura exige saber quién la firma.'
+          action={<a className='button button--primary' href='#/revisores'>Ir a Equipo y preferencias</a>}
+        />
       </div>
     )
   }

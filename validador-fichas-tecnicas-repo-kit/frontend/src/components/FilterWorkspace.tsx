@@ -61,9 +61,27 @@ export function FilterWorkspace({
     })
   }
 
+  const reopen = !open && (
+    <button
+      ref={reopenButton}
+      type='button'
+      className='button filter-panel__reopen'
+      onClick={toggle}
+      aria-controls={panelId}
+      aria-expanded='false'
+    >
+      <PanelLeftOpen size={17} aria-hidden='true' />
+      <SlidersHorizontal size={16} aria-hidden='true' />
+      <span>Mostrar filtros</span>
+      {activeCount > 0 && <span className='filter-panel__badge'>{activeCount}</span>}
+    </button>
+  )
+
   return (
     <div className={`filter-workspace${open ? '' : ' filter-workspace--closed'} ${className}`.trim()}>
-      {toolbar && <div className='filter-workspace__toolbar'>{toolbar}</div>}
+      {/* Con barra de búsqueda, «Mostrar filtros» se integra en ella: una sola
+          fila de controles en lugar de un botón aislado encima de los resultados. */}
+      {toolbar && <div className='filter-workspace__toolbar'>{toolbar && reopen}{toolbar}</div>}
       <aside className='filter-sidebar'>
           <section id={panelId} className='filter-panel' aria-label={title} hidden={!open}>
             <div className='filter-panel__head'>
@@ -87,21 +105,7 @@ export function FilterWorkspace({
             {activeCount > 0 && <p className='filter-panel__count' aria-live='polite'>{activeCount} {activeCount === 1 ? 'filtro activo' : 'filtros activos'}</p>}
             <div className='filter-panel__body'>{filters}</div>
           </section>
-        {!open && (
-          <button
-            ref={reopenButton}
-            type='button'
-            className='button filter-panel__reopen'
-            onClick={toggle}
-            aria-controls={panelId}
-            aria-expanded='false'
-          >
-            <PanelLeftOpen size={17} aria-hidden='true' />
-            <SlidersHorizontal size={16} aria-hidden='true' />
-            <span>Mostrar filtros</span>
-            {activeCount > 0 && <span className='filter-panel__badge'>{activeCount}</span>}
-          </button>
-        )}
+        {!toolbar && reopen}
       </aside>
       <div className='filter-workspace__content'>
         {children}

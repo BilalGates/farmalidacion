@@ -1,0 +1,225 @@
+/*
+ * Componentes canónicos de Farmalidación.
+ *
+ * Se carga después de las hojas históricas y fija la forma definitiva de los
+ * controles compartidos. Las reglas antiguas que estas sustituyen se retiran
+ * pantalla a pantalla; mientras tanto, esta hoja manda.
+ *
+ * Criterio: herramienta de trabajo, no escaparate. Líneas finas en lugar de
+ * cajas, el violeta sólo donde hay intención (acción principal, foco,
+ * selección) y cifras alineadas allí donde se comparan códigos.
+ */
+
+/* ── Tipografía de página ──────────────────────────────────────────────── */
+.app-shell .screen__head h1,
+.app-shell .page-header h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-title);
+  font-weight: var(--weight-regular);
+  letter-spacing: -.03em;
+  line-height: 1.15;
+}
+.app-shell .page-header .lede { margin: var(--space-1) 0 0; color: var(--ink-soft); font-size: var(--text-sm); }
+.app-shell .page-header .eyebrow { margin: 0 0 var(--space-1); color: var(--ink-faint); font-size: var(--text-xs); font-weight: var(--weight-semibold); letter-spacing: .04em; }
+
+code, kbd, .mono { font-family: var(--font-mono); font-size: var(--text-code); font-variant-numeric: tabular-nums; }
+.table code { color: var(--ink-soft); background: none; padding: 0; font-size: var(--text-xs); letter-spacing: .01em; }
+
+/* ── Botones ───────────────────────────────────────────────────────────── */
+.app-shell .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 34px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: none;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  transform: none;
+  transition: background-color var(--motion-fast) ease, border-color var(--motion-fast) ease, color var(--motion-fast) ease;
+}
+.app-shell .button:hover:not(:disabled) { border-color: var(--ink-faint); background: var(--canvas); transform: none; }
+.app-shell .button:disabled { opacity: .55; cursor: not-allowed; }
+.app-shell .button--primary { border-color: var(--accent-fill); color: var(--on-accent); background: var(--accent-fill); }
+.app-shell .button--primary:hover:not(:disabled) { border-color: var(--accent-fill-hover); color: var(--on-accent); background: var(--accent-fill-hover); }
+.app-shell .button--secondary { border-color: var(--line); color: var(--ink); background: var(--surface); }
+.app-shell .button--ghost { border-color: transparent; color: var(--accent-strong); background: transparent; }
+.app-shell .button--ghost:hover:not(:disabled) { border-color: transparent; background: var(--accent-soft); }
+.app-shell .button--danger { border-color: color-mix(in srgb, var(--danger) 40%, transparent); color: var(--danger); background: transparent; }
+.app-shell .button--danger:hover:not(:disabled) { border-color: var(--danger); background: var(--danger-soft); }
+.app-shell .button--sm { min-height: 28px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+.app-shell .button svg { flex: none; }
+
+/* ── Control segmentado ────────────────────────────────────────────────── */
+.segmented {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--canvas);
+}
+.segmented__option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 28px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-small);
+  color: var(--ink-soft);
+  background: transparent;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: background-color var(--motion-fast) ease, color var(--motion-fast) ease;
+}
+.segmented__option:hover { color: var(--ink); }
+.segmented__option[aria-pressed='true'] { color: var(--ink); background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow-raised); }
+.segmented__count { color: var(--ink-faint); font-variant-numeric: tabular-nums; font-size: var(--text-xs); }
+
+/* ── Distintivos de estado ─────────────────────────────────────────────── */
+/* Siempre con texto; el punto refuerza, nunca sustituye a la palabra. */
+.app-shell .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-small);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+}
+.app-shell .badge::before { content: ''; width: 6px; height: 6px; flex: none; border-radius: 50%; background: currentColor; }
+.app-shell .badge--validado, .app-shell .badge--confirmado, .app-shell .badge--disponible, .app-shell .badge--completed { color: var(--success); background: var(--success-soft); }
+.app-shell .badge--descartado, .app-shell .badge--sin_datos, .app-shell .badge--no_disponible { color: var(--ink-soft); background: var(--line-soft); }
+
+/* ── Chips de filtro activo ────────────────────────────────────────────── */
+.app-shell .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 26px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  color: var(--ink);
+  background: var(--surface);
+  font-size: var(--text-xs);
+}
+.app-shell .chip:hover { border-color: var(--ink-faint); }
+
+/* ── Tablas ────────────────────────────────────────────────────────────── */
+.app-shell .table { font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.app-shell .table thead th {
+  padding-block: var(--space-2);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-faint);
+  background: var(--surface);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: .02em;
+}
+.app-shell .table tbody th,
+.app-shell .table tbody td { padding-block: calc(var(--cell-y) * .7); border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+.app-shell .table tbody tr { transition: background-color var(--motion-fast) ease; }
+.app-shell .table tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+
+/* ── Estados de carga, vacío y error ───────────────────────────────────── */
+.app-shell .state { display: grid; gap: var(--space-2); justify-items: start; padding: var(--space-5); border-radius: var(--radius); font-size: var(--text-sm); }
+.app-shell .state--empty { border: 1px solid var(--line-soft); background: var(--surface); }
+.app-shell .state--error { border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent); color: var(--danger); background: var(--danger-soft); }
+.app-shell .state--error p { margin: 0; }
+.app-shell .state__title { margin: 0; color: var(--ink); font-size: var(--text-base); font-weight: var(--weight-semibold); }
+.app-shell .state__detail { margin: 0; color: var(--ink-soft); }
+
+/* ── Avisos ────────────────────────────────────────────────────────────── */
+.app-shell .alert { display: flex; align-items: center; gap: var(--space-2); margin: 0; padding: var(--space-2) var(--space-3); border-radius: var(--radius-control); font-size: var(--text-sm); line-height: var(--line-normal); }
+.app-shell .alert svg { flex: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .button, .segmented__option, .app-shell .table tbody tr { transition: none; }
+}
+
+.app-shell .state__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.app-shell .state--error .button { color: var(--ink); }
+
+/* Enlaces con forma de botón y retorno a la lista. */
+.app-shell a.button { text-decoration: none; }
+.app-shell .button.back { justify-self: start; min-height: 28px; margin-left: calc(var(--space-2) * -1); padding-inline: var(--space-2); color: var(--ink-soft); }
+.app-shell .button.back:hover:not(:disabled) { color: var(--ink); background: var(--line-soft); }
+
+/* ── Campos de formulario ──────────────────────────────────────────────── */
+.app-shell .field { display: grid; gap: 6px; min-width: 0; }
+.app-shell .field__label { color: var(--ink-soft); font-size: var(--text-xs); font-weight: var(--weight-semibold); letter-spacing: .01em; }
+.app-shell :is(input[type='text'], input[type='search'], input:not([type]), select) {
+  min-height: 34px;
+  border-color: var(--line);
+  border-radius: var(--radius-control);
+  background-color: var(--surface);
+  font-size: var(--text-sm);
+}
+.app-shell :is(input, select, textarea):hover:not(:disabled):not(:focus) { border-color: var(--ink-faint); }
+.app-shell :is(input, select, textarea)::placeholder { color: var(--ink-faint); }
+
+/* ── Cifra de cabecera ─────────────────────────────────────────────────── */
+/* Una cifra acompaña al título; no es una tarjeta que compita con él. */
+.app-shell .page-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+/* Cifras siempre en la letra de interfaz: la de títulos usa numerales de estilo antiguo (el 0 se confunde con la O). */
+.app-shell .page-stat strong { color: var(--ink); font-family: var(--font-ui); font-size: var(--text-figure); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; line-height: 1; }
+.app-shell .page-stat span { color: var(--ink-faint); font-size: var(--text-xs); }
+
+/* ── Estado vacío ilustrado ────────────────────────────────────────────── */
+.app-shell .empty-state { padding: var(--space-8) var(--space-4); }
+.app-shell .empty-state__icon { width: 40px; height: 40px; margin-bottom: var(--space-3); border-radius: 50%; color: var(--ink-soft); background: var(--line-soft); }
+.app-shell .empty-state h2 { font-size: var(--text-base); font-weight: var(--weight-semibold); }
+.app-shell .empty-state p { color: var(--ink-soft); font-size: var(--text-sm); }
+
+/* ── Panel de filtros ──────────────────────────────────────────────────── */
+.app-shell .filter-panel__head h2 { font-size: var(--text-base); }
+.app-shell .filter-panel__head .eyebrow { color: var(--ink-faint); }
+.app-shell .filter-panel__body { gap: var(--space-3); }
+.app-shell .filter-panel__actions { gap: var(--space-2); padding-top: var(--space-3); }
+.app-shell .filter-panel__actions [role='status'] { color: var(--warn); font-size: var(--text-xs); }
+
+/* Errores escritos como párrafo suelto: se leen como aviso, no como contenido. */
+.app-shell p[role='alert']:not(.alert):not(.state) { margin: 0; padding: var(--space-2) var(--space-3); border-left: 2px solid var(--danger); color: var(--danger); background: var(--danger-soft); font-size: var(--text-sm); }
+
+/* Advertencias: algo que conviene saber o hacer, no un fallo. */
+.app-shell .alert--warning { color: var(--warn); background: var(--warn-soft); }
+.app-shell .state--warning { border: 1px solid color-mix(in srgb, var(--warn) 25%, transparent); color: var(--warn); background: var(--warn-soft); }
+
+/* Barra de herramientas con «Mostrar filtros» integrado. */
+.app-shell .filter-workspace__toolbar { display: flex; align-items: flex-end; gap: var(--space-3); }
+.app-shell .filter-workspace__toolbar > form { flex: 1; min-width: 0; margin: 0; }
+.app-shell .filter-workspace__toolbar > .filter-panel__reopen { flex: none; height: 36px; min-height: 0; }
+.app-shell .filter-workspace--closed > .filter-sidebar:not(:has(.filter-panel__reopen)) { display: none; }
+@media (max-width: 760px) {
+  .app-shell .filter-workspace__toolbar { flex-direction: column-reverse; align-items: stretch; }
+  .app-shell .filter-workspace__toolbar > .filter-panel__reopen { align-self: flex-start; }
+}
+@media (max-width: 520px) {
+  .segmented { display: flex; width: 100%; }
+  .segmented__option { flex: 1 1 0; justify-content: center; padding-inline: var(--space-2); text-align: center; }
+}

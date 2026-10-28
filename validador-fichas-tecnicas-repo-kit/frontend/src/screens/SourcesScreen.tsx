@@ -450,7 +450,7 @@ export function SourcesScreen() {
             return <article className='panel source-master-card' key={filename}>
               <p className='eyebrow'>Libro maestro</p>
               <h3>{profile.title}</h3>
-              <p className='source-master-card__count'>{source ? source.records.toLocaleString('es-ES') : '—'} <span>registros</span></p>
+              {source && <p className='source-master-card__count'>{source.records.toLocaleString('es-ES')} <span>registros</span></p>}
               <p className='source-master-card__meta'>{source ? `${source.versions} ${source.versions === 1 ? 'versión' : 'versiones'} disponible${source.versions === 1 ? '' : 's'}` : 'Sin datos cargados en este entorno'}</p>
               <p className='source-filename' title={filename}>{filename}</p>
               <div className='source-actions'>
@@ -461,7 +461,7 @@ export function SourcesScreen() {
             </article>
           })}
         </div>
-        {databaseInfo?.mode === 'demo' && <p className='muted'>Esta base DEMO contiene datos sintéticos. Los tres maestros originales están en la vista previa REAL.</p>}
+        {databaseInfo?.mode === 'demo' && <p className='muted source-note'>Esta base DEMO contiene datos sintéticos. Los tres maestros originales están en la vista previa REAL.</p>}
         {selectedUpload && <section className='panel' aria-label='Cargar maestro Excel'>
           <div className='panel__head'><h3>Cargar {selectedUpload.replace('_', ' ')}</h3><button type='button' className='button' onClick={() => setSelectedUpload(null)}>Cerrar</button></div>
           <MasterUpload kind={selectedUpload} onImported={() => { setSelectedUpload(null); setRefresh((value) => value + 1) }} />

@@ -366,8 +366,8 @@ describe('panel de inicio', () => {
       }),
     )
     render(<App />)
-    expect(await screen.findByText(/Todavía no hay datos cargados/)).toBeInTheDocument()
-    expect(screen.getByText(/Consulte las importaciones y las fuentes/)).toBeInTheDocument()
+    expect(await screen.findByText(/Todavía no hay maestros importados/)).toBeInTheDocument()
+    expect(screen.getByText(/se calcula sobre los registros de los maestros importados/)).toBeInTheDocument()
   })
 
   it('muestra el error del backend sin reescribirlo', async () => {

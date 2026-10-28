@@ -1,0 +1,132 @@
+/*
+ * Tokens de Farmalidación: única fuente de color, tipografía, espacio y forma.
+ *
+ * Ninguna otra hoja define variables en `:root`. Los valores consolidan los que
+ * ganaban en la cascada histórica (styles.css → studio.css), de modo que este
+ * archivo no altera la apariencia por sí solo; las pantallas migran a la escala
+ * de forma gradual.
+ */
+
+:root {
+  /* Tipografía */
+  --font-ui: 'Segoe UI Variable', 'Segoe UI', Inter, system-ui, sans-serif;
+  --font-display: Georgia, 'Times New Roman', serif;
+  --font-mono: 'Cascadia Mono', 'Cascadia Code', Consolas, ui-monospace, monospace;
+
+  /* Escala tipográfica: seis pasos, nada fuera de ella en código nuevo. */
+  --text-xs: .75rem;
+  --text-sm: .85rem;
+  --text-base: .94rem;
+  --text-lg: 1.08rem;
+  --text-xl: 1.38rem;
+  --text-title: clamp(1.8rem, 2.2vw, 2.2rem);
+  --text-figure: 1.75rem;
+  --text-code: .92em;
+  --weight-regular: 400;
+  --weight-medium: 550;
+  --weight-semibold: 650;
+  --line-tight: 1.25;
+  --line-normal: 1.5;
+
+  /* Color — tema claro */
+  --canvas: #f5f3ef;
+  --surface: #fffdfa;
+  --ink: #2e2933;
+  --ink-soft: #625b67;
+  --ink-faint: #736b78;
+  --line: #d9d3db;
+  --line-soft: #e7e1e5;
+  --accent: #754a91;
+  --accent-strong: #623879;
+  --accent-soft: #f0e9f3;
+  /* Relleno de la acción principal: en oscuro, más saturado que el acento de texto. */
+  --accent-fill: var(--accent);
+  --accent-fill-hover: var(--accent-strong);
+  --on-accent: #fff;
+  --rail: #30243b;
+  --focus-ring: rgb(104 67 152 / 26%);
+  --success: #246c54;
+  --success-soft: #eaf4ef;
+  --warn: #805312;
+  --warn-soft: #fbf3e5;
+  --danger: #a43647;
+  --danger-soft: #f9ebee;
+  --info: #345f8b;
+  --info-soft: #ecf3fa;
+  --muted: var(--ink-soft);
+  --border: var(--line);
+  --scrollbar-thumb: #b9b3c1;
+  --scrollbar-thumb-hover: #82778d;
+
+  /* Forma y profundidad */
+  --radius: 8px;
+  --radius-control: 6px;
+  --radius-small: 4px;
+  --shadow: 0 1px 2px rgb(32 25 42 / 4%);
+  --shadow-hover: 0 8px 22px rgb(55 35 62 / 8%);
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 6%);
+
+  /* Espacio */
+  --space-1: .25rem;
+  --space-2: .5rem;
+  --space-3: .75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* Densidad (Cómoda por defecto) */
+  --cell-y: 15px;
+  --panel-pad: 24px;
+  --workspace-gap: 22px;
+  --control-height: 40px;
+
+  /* Capas y movimiento */
+  --z-sticky: 10;
+  --z-popover: 40;
+  --motion-fast: .12s;
+  --motion-base: .18s;
+
+  color: var(--ink);
+  background: var(--canvas);
+  font-family: var(--font-ui);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+:root[data-density='compact'] {
+  --cell-y: 9px;
+  --panel-pad: 16px;
+  --workspace-gap: 14px;
+  --control-height: 34px;
+}
+
+:root[data-theme='dark'] {
+  --canvas: #18161e;
+  --surface: #24212b;
+  --ink: #f4eff6;
+  --ink-soft: #ccc3d2;
+  --ink-faint: #ada2b6;
+  --line: #504657;
+  --line-soft: #3b3442;
+  --accent: #bc92d7;
+  --accent-strong: #d9b9eb;
+  --accent-soft: #3a2b45;
+  --accent-fill: #74419d;
+  --accent-fill-hover: #8650ad;
+  --rail: #241b2e;
+  --focus-ring: rgb(196 151 239 / 45%);
+  --success: #8edbb6;
+  --success-soft: #18372c;
+  --warn: #f0c180;
+  --warn-soft: #3b2d1c;
+  --danger: #f4a5b0;
+  --danger-soft: #42242d;
+  --info: #a5c9f4;
+  --info-soft: #202f45;
+  --shadow: 0 2px 12px rgb(0 0 0 / 16%);
+  --scrollbar-thumb: #777080;
+  --scrollbar-thumb-hover: #a79aac;
+  color-scheme: dark;
+}

@@ -1,0 +1,36 @@
+/* Trabajo: cola de revisión. */
+
+.app-shell .queue-add {
+  grid-template-columns: minmax(220px, 1fr) minmax(140px, 220px) auto auto;
+  align-items: end;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+.app-shell .queue-add .queue-toolbar__title { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 34px; color: var(--ink); font-size: var(--text-sm); font-weight: var(--weight-semibold); white-space: nowrap; grid-column: 1 / -1; }
+.app-shell .queue-add .queue-check { min-height: 34px; font-size: var(--text-sm); }
+
+.app-shell .queue-list__icon { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-small); color: var(--ink-soft); background: var(--line-soft); }
+.app-shell .queue-list__identity strong { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: var(--weight-medium); }
+
+@media (max-width: 1100px) {
+  .app-shell .queue-add { grid-template-columns: minmax(200px, 1fr) minmax(130px, 180px) auto; }
+}
+@media (max-width: 700px) {
+  .app-shell .queue-add { grid-template-columns: 1fr; }
+}
+
+/* Filas de la cola: identidad, estado en columna fija y acciones discretas. */
+.app-shell .queue-list > li { grid-template-columns: auto minmax(220px, 1fr) 132px minmax(0, 420px); }
+.app-shell .queue-list > li > .badge { justify-self: start; }
+.app-shell .queue-list__actions { gap: var(--space-1); }
+.app-shell .queue-list__actions .button { min-height: 28px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+.app-shell .queue-list__actions .button:last-child { border-color: transparent; color: var(--accent-strong); background: transparent; }
+.app-shell .queue-list__actions .button:last-child:hover { background: var(--accent-soft); }
+
+/* Novedades CIMA: total del histórico como cifra, no como tarjeta. */
+.app-shell .maintenance-history-search__total { padding: 0; border: 0; background: none; color: var(--ink); font-size: var(--text-figure); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; line-height: 1; text-align: right; }
+.app-shell .maintenance-history-search__total span { display: block; margin-top: 4px; color: var(--ink-faint); font-size: var(--text-xs); font-weight: var(--weight-regular); }
+@media (max-width: 1280px) {
+  .app-shell .queue-list > li { grid-template-columns: auto minmax(0, 1fr) 132px; }
+  .app-shell .queue-list__actions { grid-column: 2 / -1; justify-content: flex-start; }
+}

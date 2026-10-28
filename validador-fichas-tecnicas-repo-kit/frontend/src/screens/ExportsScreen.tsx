@@ -168,7 +168,7 @@ export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
           <button className='button button--primary' disabled={submitting || !reviewer || !profileName.trim()}>
             {submitting ? 'Generando…' : 'Generar exportación'}
           </button>
-          {!reviewer && <p className='alert alert--error'>Identifícate en Equipo y preferencias para firmar la ejecución.</p>}
+          {!reviewer && <p className='alert alert--warning'>Identifícate en Equipo y preferencias para firmar la ejecución.</p>}
           {submitError && <p role='alert' className='alert alert--error'>{submitError}</p>}
           {submitMessage && <p role='status' className='alert alert--ok'>{submitMessage}</p>}
         </form>
