@@ -360,13 +360,13 @@ h3 { color: var(--ink); }
 /* ---------- Pulido de componentes y espacios de trabajo ---------- */
 
 .reviewer-select { position: relative; }
-.reviewer-select__trigger { display: flex; align-items: center; gap: .65rem; width: 100%; border: 1px solid var(--line); color: var(--ink); background: #fff; cursor: pointer; text-align: left; }
+.reviewer-select__trigger { display: flex; align-items: center; gap: .65rem; width: 100%; border: 1px solid var(--line); color: var(--ink); background: var(--field); cursor: pointer; text-align: left; }
 .reviewer-select__copy { display: grid; min-width: 0; flex: 1; }
 .reviewer-select__copy > span { color: var(--ink-faint); font-size: .62rem; }
 .reviewer-select__copy strong { overflow: hidden; font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
 .reviewer-select__chevron { color: var(--ink-soft); font-size: 1.1rem; transition: transform .18s ease; }
 .reviewer-select__chevron--open { transform: rotate(180deg); }
-.reviewer-select__menu { position: absolute; top: calc(100% + .5rem); right: 0; width: 100%; padding: .4rem; border: 1px solid var(--line); background: #fff; }
+.reviewer-select__menu { position: absolute; top: calc(100% + .5rem); right: 0; width: 100%; padding: .4rem; border: 1px solid var(--line); background: var(--field); }
 .reviewer-select__menu button { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: .6rem; width: 100%; padding: .58rem; border: 0; color: var(--ink); background: transparent; text-align: left; cursor: pointer; }
 .reviewer-select__menu button > span:nth-child(2) { display: grid; }
 .reviewer-select__menu strong { font-size: .78rem; }
@@ -375,7 +375,7 @@ h3 { color: var(--ink); }
 
 select { appearance: none; padding-right: 2.3rem; background-image: linear-gradient(45deg, transparent 50%, #64748b 50%), linear-gradient(135deg, #64748b 50%, transparent 50%); background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
 
-.page-stat { display: grid; grid-template-columns: auto auto; align-items: center; gap: 0 .5rem; min-width: 112px; padding: .7rem .9rem; border: 1px solid var(--line); background: #fff; }
+.page-stat { display: grid; grid-template-columns: auto auto; align-items: center; gap: 0 .5rem; min-width: 112px; padding: .7rem .9rem; border: 1px solid var(--line); background: var(--surface); }
 .page-stat strong { grid-row: 1 / 3; }
 .queue-add select { width: 100%; min-width: 0; }
 .queue-toolbar__title { grid-column: 1 / -1; display: flex; align-items: center; gap: .5rem; margin-bottom: .05rem; color: var(--ink); font-size: .82rem; font-weight: 750; }
@@ -407,7 +407,7 @@ select { appearance: none; padding-right: 2.3rem; background-image: linear-gradi
 .empty-state--compact p { align-self: center; }
 
 .validation-overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.validation-overview > div { display: grid; grid-template-columns: 42px auto 1fr; align-items: center; gap: 0 .75rem; background: #fff; }
+.validation-overview > div { display: grid; grid-template-columns: 42px auto 1fr; align-items: center; gap: 0 .75rem; background: var(--surface); }
 .validation-overview__icon { display: grid; place-items: center; grid-row: 1 / 3; color: var(--accent); background: var(--accent-soft); font-weight: 780; }
 .validation-overview__icon--danger { color: var(--danger); background: var(--danger-soft); }
 .validation-overview__icon--success { color: var(--success); background: var(--success-soft); }
@@ -420,7 +420,7 @@ select { appearance: none; padding-right: 2.3rem; background-image: linear-gradi
 
 .review-screen { width: min(1520px, 100%); }
 .review-screen > .back { margin-bottom: -.4rem; }
-.review-progress { display: grid; grid-template-columns: auto minmax(180px, 1fr) auto; align-items: center; gap: 1rem; padding: .72rem 1rem; border: 1px solid var(--line); background: #fff; }
+.review-progress { display: grid; grid-template-columns: auto minmax(180px, 1fr) auto; align-items: center; gap: 1rem; padding: .72rem 1rem; border: 1px solid var(--line); background: var(--surface); }
 .review-progress__label { color: var(--ink); font-size: .8rem; font-weight: 720; white-space: nowrap; }
 .review-progress span { color: var(--ink-faint); font-size: .76rem; }
 .review-progress__track { overflow: hidden; border-radius: 999px; }

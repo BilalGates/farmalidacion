@@ -32,7 +32,10 @@
 
   /* Color — tema claro */
   --canvas: #f4f2ec;
-  --surface: #ffffff;
+  /* Todo sobre el mismo papel: recuadros y tablas comparten el fondo y se
+     separan con líneas. Sólo donde se escribe (--field) queda en blanco. */
+  --surface: var(--canvas);
+  --field: #ffffff;
   --surface-sunken: #fbfaf7;
   --ink: #1f1b24;
   --ink-soft: #4a4550;
@@ -113,7 +116,8 @@
 
 :root[data-theme='dark'] {
   --canvas: #18161e;
-  --surface: #24212b;
+  --surface: var(--canvas);
+  --field: #24212b;
   --ink: #f4eff6;
   --ink-soft: #ccc3d2;
   --ink-faint: #ada2b6;
