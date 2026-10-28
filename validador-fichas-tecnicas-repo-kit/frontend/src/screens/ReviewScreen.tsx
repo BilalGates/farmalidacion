@@ -134,11 +134,16 @@ function recordTitle(record: TargetRecord): string {
   return named?.literal_value ?? record.id
 }
 
-function ReviewProgress({ resolved, total }: { resolved: number; total: number }) {
+/** Avance por campos: un tramo por campo, con el color de su estado. */
+function ReviewProgress({ fields }: { fields: readonly FieldValue[] }) {
+  const resolved = fields.filter((value) => RESOLVED_STATES.includes(value.validation_state)).length
+  const total = fields.length
   return (
     <div className='review-progress' role='status'>
       <span className='review-progress__label'>{resolved} de {total} campos revisados</span>
-      <div className='review-progress__track' aria-hidden='true'><span style={{ width: `${total ? (resolved / total) * 100 : 0}%` }} /></div>
+      <div className='review-progress__steps' aria-hidden='true'>
+        {fields.map((value) => <span key={value.id} className={`review-progress__step review-progress__step--${value.validation_state}`} />)}
+      </div>
       <strong>{total ? Math.round((resolved / total) * 100) : 0}%</strong>
     </div>
   )
@@ -175,6 +180,9 @@ export function ReviewScreen({
   const [helpOpen, setHelpOpen] = useState(false)
   const [sourceMaintenanceOpen, setSourceMaintenanceOpen] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  // Vista completa: los editores son independientes; la pantalla sólo pide
+  // abrir uno concreto al avanzar.
+  const [openRequest, setOpenRequest] = useState<{ id: string; n: number }>({ id: '', n: 0 })
   const [fieldSearch, setFieldSearch] = useState('')
   const [blockFilter, setBlockFilter] = useState('')
   const [onlyPending, setOnlyPending] = useState(false)
@@ -303,7 +311,8 @@ export function ReviewScreen({
       const refreshed = await load()
       if (advance && nextId && refreshed) {
         setActiveId(nextId)
-        setExpandedId(nextId)
+        if (compact) setExpandedId(nextId)
+        else setOpenRequest(current => ({ id: nextId, n: current.n + 1 }))
         requestAnimationFrame(() => {
           fieldsRef.current?.querySelector<HTMLElement>(`[data-review-field="${nextId}"]`)?.focus()
         })
@@ -393,10 +402,20 @@ export function ReviewScreen({
   }
 
   const conflicts = fields.filter((value) => value.has_conflict)
-  const resolved = fields.filter((value) =>
-    RESOLVED_STATES.includes(value.validation_state),
-  ).length
   const ContextPanel = compact ? 'details' : 'section'
+  const activeIndex = fields.findIndex((value) => value.id === activeField?.id)
+  const nextPending = [...fields.slice(activeIndex + 1), ...fields.slice(0, activeIndex + 1)]
+    .find((value) => !RESOLVED_STATES.includes(value.validation_state)) ?? null
+  function openNextPending() {
+    if (!nextPending) return
+    setActiveId(nextPending.id)
+    setOpenRequest((current) => ({ id: nextPending.id, n: current.n + 1 }))
+    requestAnimationFrame(() => {
+      const row = fieldsRef.current?.querySelector<HTMLElement>(`[data-review-field="${nextPending.id}"]`)
+      row?.scrollIntoView?.({ block: 'center' })
+      row?.focus()
+    })
+  }
 
   return (
     <div className={`screen review-screen${compact ? ' review-screen--compact' : ''}`}>
@@ -424,7 +443,12 @@ export function ReviewScreen({
             </dl>
           )}
         </div>
-        {!compact && <ReviewProgress resolved={resolved} total={fields.length} />}
+        {!compact && <div className='review-head__aside'>
+          <ReviewProgress fields={fields} />
+          {canReview && <button type='button' className='button button--primary' disabled={!nextPending} onClick={openNextPending}>
+            {nextPending ? 'Siguiente pendiente' : 'Todo revisado'}
+          </button>}
+        </div>}
       </div>
 
       {compact && record.external_identifiers.length > 0 && (
@@ -481,7 +505,7 @@ export function ReviewScreen({
         </p>
       )}
 
-      {compact && <ReviewProgress resolved={resolved} total={fields.length} />}
+      {compact && <ReviewProgress fields={fields} />}
 
       <div className='review-workspace' onKeyDown={handleKeyDown}>
         {/* Zona B — campo de trabajo. */}
@@ -589,8 +613,9 @@ export function ReviewScreen({
                         onSave={(state, finalValue, comment) =>
                           void handleSave(value.id, state, finalValue, comment)
                         }
-                        onSaveAndAdvance={compact ? (state, finalValue, comment) =>
-                          void handleSave(value.id, state, finalValue, comment, true) : undefined}
+                        onSaveAndAdvance={(state, finalValue, comment) =>
+                          void handleSave(value.id, state, finalValue, comment, true)}
+                        openSignal={!compact && openRequest.id === value.id ? openRequest.n : 0}
                       />
                     </div>
                   ))}

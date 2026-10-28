@@ -535,8 +535,8 @@ describe('Recorrido de la vertical de revisión', () => {
 
     await click(reviewButtonFor('CANTIDAD'))
 
-    const select = screen.getByRole('combobox', { name: 'Decisión de revisión' })
-    expect(select).toHaveValue('')
+    expect(screen.getByRole('group', { name: 'Decisión de revisión' })).toBeVisible()
+    expect(screen.queryByRole('radio', { checked: true })).toBeNull()
     expect(screen.getByRole('button', { name: 'Guardar decisión' })).toBeDisabled()
     expect(screen.getByText('Identifícate en Equipo y preferencias para poder firmar.')).toBeVisible()
     expect(postCount).toBe(0)
@@ -550,7 +550,7 @@ describe('Recorrido de la vertical de revisión', () => {
     await screen.findByRole('heading', { level: 1, name: 'Metotrexato 2,5 mg comprimidos' })
 
     await click(reviewButtonFor('CANTIDAD'))
-    await selectOption(screen.getByRole('combobox', { name: 'Decisión de revisión' }), 'confirmado')
+    await click(screen.getByRole('radio', { name: 'Validado' }))
     await typeInto(screen.getByRole('textbox', { name: 'Valor final' }), '2,5 mg')
     await click(screen.getByRole('button', { name: 'Guardar decisión' }))
 
@@ -571,7 +571,7 @@ describe('Recorrido de la vertical de revisión', () => {
     await screen.findByRole('heading', { level: 1, name: 'Metotrexato 2,5 mg comprimidos' })
 
     await click(reviewButtonFor('CANTIDAD'))
-    await selectOption(screen.getByRole('combobox', { name: 'Decisión de revisión' }), 'no_aplica')
+    await click(screen.getByRole('radio', { name: 'No aplica' }))
 
     expect(screen.getByRole('button', { name: 'Guardar decisión' })).toBeDisabled()
     expect(screen.getByText('«No aplica» exige un comentario.')).toBeVisible()

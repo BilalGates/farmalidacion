@@ -39,6 +39,7 @@ export function FieldRow({
   expanded,
   onExpandedChange,
   onSaveAndAdvance,
+  openSignal = 0,
 }: {
   value: FieldValue
   label?: string
@@ -51,12 +52,15 @@ export function FieldRow({
   expanded?: boolean
   onExpandedChange?: (open: boolean) => void
   onSaveAndAdvance?: (state: ValidationState, finalValue: string | null, comment: string | null) => void
+  /** Cada cambio a un valor positivo abre el editor (avance desde la pantalla). */
+  openSignal?: number
 }) {
   // El borrador se recupera al montar: recargar a mitad de una edición no
   // puede hacer que el revisor repita lo que ya había escrito.
   const restored = useRef(readDraft(recordId, value.id)).current
   const [localOpen, setLocalOpen] = useState(restored !== null)
   const open = canReview && (expanded ?? localOpen)
+  useEffect(() => { if (openSignal > 0) setLocalOpen(true) }, [openSignal])
   function setOpen(next: boolean | ((current: boolean) => boolean)) {
     const result = typeof next === 'function' ? next(open) : next
     if (onExpandedChange) onExpandedChange(result)
@@ -190,22 +194,26 @@ export function FieldRow({
             </p>
           )}
           <div className='review__grid'>
-            <label className='field'>
-              <span className='field__label'>Decisión</span>
-              <select
-                aria-label='Decisión de revisión'
-                disabled={saving}
-                value={state}
-                onChange={(event) => setState(event.target.value as ValidationState | '')}
-              >
-                <option value=''>Elige una decisión…</option>
+            {/* Las decisiones se ven todas a la vez: elegir es comparar, y un
+                desplegable obliga a abrirlo para saber qué opciones hay. */}
+            <fieldset className='decision-choice field--wide' aria-label='Decisión de revisión' disabled={saving}>
+              <legend className='field__label'>Decisión</legend>
+              <div className='decision-choice__options'>
                 {ASSIGNABLE_STATES.map((item) => (
-                  <option key={item} value={item} disabled={['no_consta', 'no_aplica'].includes(item) && !reviewer?.may_sign_pharmacist_states}>
+                  <label key={item} className='decision-choice__option'>
+                    <input
+                      type='radio'
+                      name={`decision-${value.id}`}
+                      value={item}
+                      checked={state === item}
+                      disabled={['no_consta', 'no_aplica'].includes(item) && !reviewer?.may_sign_pharmacist_states}
+                      onChange={() => setState(item)}
+                    />
                     {VALIDATION_STATE_LABELS[item]}
-                  </option>
+                  </label>
                 ))}
-              </select>
-            </label>
+              </div>
+            </fieldset>
 
             {needsValue && (
               <label className='field'>
