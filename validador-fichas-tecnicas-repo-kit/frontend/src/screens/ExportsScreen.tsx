@@ -109,7 +109,7 @@ export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
     }
     try {
       const parsedColumns = parseColumns(columns)
-      if (parsedColumns.length === 0) throw new Error('Declare al menos una columna.')
+      if (parsedColumns.length === 0) throw new Error('Declara al menos una columna.')
       setSubmitting(true)
       const outcome = await createExport({
         actor_id: reviewer.identifier,
@@ -142,7 +142,7 @@ export function ExportsScreen({ reviewer }: { reviewer: Reviewer | null }) {
       {canExport && <section className='panel'>
         <h2>Nueva exportación técnica</h2>
         <p className='muted'>
-          Declare el perfil usado en esta ejecución. Las columnas no se consideran un
+          Declara el perfil usado en esta ejecución. Las columnas no se consideran un
           contrato aceptado y el backend excluirá cualquier ficha que no cumpla.
         </p>
         <form className='export-form' onSubmit={(event) => void submit(event)}>

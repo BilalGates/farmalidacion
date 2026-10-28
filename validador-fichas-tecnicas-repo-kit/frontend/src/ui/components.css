@@ -231,3 +231,12 @@ code, kbd, .mono { font-family: var(--font-mono); font-size: var(--text-code); f
   .segmented { display: flex; width: 100%; }
   .segmented__option { flex: 1 1 0; justify-content: center; padding-inline: var(--space-2); text-align: center; }
 }
+
+/* ── Estructura: migas y zona de cuenta ────────────────────────────────── */
+.app-shell .app-shell__breadcrumb { display: flex; align-items: baseline; gap: 0; color: var(--ink-faint); font-size: var(--text-sm); }
+.app-shell .app-shell__breadcrumb > span { padding: 0; color: var(--ink-faint); }
+.app-shell .app-shell__breadcrumb .app-shell__separator { padding: 0 var(--space-2); color: var(--line); }
+.app-shell .app-shell__breadcrumb strong { color: var(--ink); font-weight: var(--weight-semibold); }
+.app-shell .topbar__actions { gap: var(--space-4); }
+.app-shell .topbar__actions .mode-chip { margin: 0; padding: 2px var(--space-2); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); border-radius: var(--radius-small); color: var(--warn); background: var(--warn-soft); font-size: var(--text-xs); letter-spacing: .08em; }
+.app-shell .account-summary { padding-left: var(--space-4); border-left: 1px solid var(--line-soft); }

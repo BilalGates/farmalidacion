@@ -62,6 +62,31 @@ const NAV: readonly NavItem[] = [
   { id: 'datos', label: 'Datos', icon: Database, available: true, path: '/datos/fuentes' },
 ]
 
+const SECTION_TRAIL: Record<string, readonly string[]> = {
+  trabajo: ['Trabajo', 'Cola de revisión'],
+  'revision/cola': ['Trabajo', 'Cola de revisión'],
+  'catalogo/trabajo': ['Trabajo', 'Cola de revisión'],
+  'revision/validaciones': ['Trabajo', 'Segunda lectura'],
+  'catalogo/segunda': ['Trabajo', 'Segunda lectura'],
+  'catalogo/novedades': ['Trabajo', 'Novedades CIMA'],
+  'datos/cuarentena': ['Datos', 'Incidencias'],
+  exportaciones: ['Datos', 'Exportaciones'],
+  revisores: ['Equipo y preferencias'],
+}
+
+/** Migas de la ruta actual: área y apartado, sin un «espacio de trabajo» genérico. */
+function routeTrail(route: ReturnType<typeof useRoute>): readonly string[] {
+  switch (route.name) {
+    case 'inicio': return ['Resumen']
+    case 'fichas': return ['Catálogo']
+    case 'ficha': return ['Catálogo', 'Revisión de ficha']
+    case 'catalogo': return ['Catálogo', 'Ficha de identidad']
+    case 'fuentes': return ['Datos', 'Fuentes']
+    case 'importaciones': return ['Datos', 'Importaciones']
+    case 'seccion': return SECTION_TRAIL[route.id] ?? ['Página no encontrada']
+  }
+}
+
 function activeNavId(routeName: string, routeId: string | null): string {
   if (routeName === 'ficha' || routeName === 'fichas' || routeName === 'catalogo') return 'fichas'
   if (routeName === 'fuentes' || routeName === 'importaciones') return 'datos'
@@ -131,7 +156,7 @@ export function App() {
     : route.name === 'seccion' && route.id === 'revisores' ? '' : 'catalog.read'
   const allowed = !requiredCapability || may(requiredCapability)
   const active = activeNavId(route.name, route.name === 'seccion' ? route.id : null)
-  const activeLabel = NAV.find((item) => item.id === active)?.label ?? (active === 'revisores' ? 'Equipo y preferencias' : 'Resumen')
+  const trail = routeTrail(route)
   const changeReviewer = (identifier: string) => {
     setReviewerId(identifier)
     if (identifier) localStorage.setItem('farmalidacion.reviewer', identifier)
@@ -201,7 +226,9 @@ export function App() {
             >
               {navigationCollapsed ? <PanelLeftOpen size={18} aria-hidden='true' /> : <PanelLeftClose size={18} aria-hidden='true' />}
             </button>
-            <span className='app-shell__breadcrumb'>Espacio de trabajo <span aria-hidden='true'>/</span> <strong>{activeLabel}</strong></span>
+            <nav className='app-shell__breadcrumb' aria-label='Ubicación'>{trail.map((step, index) => index === trail.length - 1
+              ? <strong key={step} aria-current='page'>{step}</strong>
+              : <span key={step}>{step}<span className='app-shell__separator' aria-hidden='true'>/</span></span>)}</nav>
           </div>
           <div className='topbar__actions'>
             {database?.mode === 'demo' && <span className='mode-chip mode-chip--demo' aria-label='Base de datos de demostración'>DEMO</span>}

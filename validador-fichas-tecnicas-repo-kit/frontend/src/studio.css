@@ -468,9 +468,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 :root[data-theme='dark'] .app-shell .catalog-filter-workspace .filter-panel,
 :root[data-theme='dark'] .app-shell .catalog-table-scroll .table thead th { background: var(--surface); }
 
-:root[data-theme='dark'] .table th,
-:root[data-theme='dark'] .data-table th,
-:root[data-theme='dark'] .catalog-table-scroll .table thead th { color: var(--ink-soft); background: #252630; }
+:root[data-theme='dark'] .table thead th,
+:root[data-theme='dark'] .data-table thead th,
+:root[data-theme='dark'] .catalog-table-scroll .table thead th { color: var(--ink-soft); background: var(--surface); }
 :root[data-theme='dark'] .table tbody tr:hover,
 :root[data-theme='dark'] .data-table tbody tr:hover,
 :root[data-theme='dark'] .queue-list > li:hover { background: #292632; }
@@ -487,8 +487,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 :root[data-theme='dark'] .reviewer-select__option-avatar,
 :root[data-theme='dark'] .reviewer-picker__avatar,
 :root[data-theme='dark'] .filter-panel__badge,
-:root[data-theme='dark'] .catalog-row__tag,
-:root[data-theme='dark'] .section-workspace__nav a[aria-current='page'] { background: var(--accent-soft); color: var(--accent-strong); }
+:root[data-theme='dark'] .catalog-row__tag { background: var(--accent-soft); color: var(--accent-strong); }
 
 :root[data-theme='dark'] .app-sidebar .nav__item--active { background: var(--accent-soft); color: var(--accent-strong); }
 :root[data-theme='dark'] .button--ghost:hover { border-color: var(--accent); background: #453350; }
