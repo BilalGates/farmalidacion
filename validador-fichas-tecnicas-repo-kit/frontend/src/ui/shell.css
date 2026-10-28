@@ -31,3 +31,16 @@
 :root[data-theme='dark'] .app-shell .app-sidebar { background: var(--canvas); }
 :root[data-theme='dark'] .app-shell .topbar { background: var(--canvas); }
 :root[data-theme='dark'] .app-shell .app-sidebar .nav__item:hover { background: var(--line-faint); }
+
+/* ── Pantalla de acceso (fuera de la estructura de la aplicación) ──────── */
+.access-screen { background: var(--canvas); }
+.access-screen__card { display: grid; gap: var(--space-2); width: min(100%, 420px); padding: 40px; border: 1px solid var(--line-soft); border-radius: 12px; background: var(--surface); box-shadow: none; }
+.access-screen__card img { width: 28px; height: 28px; }
+.access-screen__card h1 { margin: var(--space-4) 0 0; font-family: var(--font-display); font-size: var(--text-title); font-weight: var(--weight-regular); letter-spacing: -.02em; }
+.access-screen__card h1 + p { margin: 0 0 var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--line-soft); color: var(--ink-soft); }
+.access-screen__card p { margin: 0; font-size: var(--text-sm); }
+.access-screen__card p[role='alert'] { padding: var(--space-2) var(--space-3); border-left: 2px solid var(--danger); color: var(--danger); background: var(--danger-soft); }
+.access-screen__card .button { display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 40px; margin-top: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink); background: var(--surface); font: inherit; font-size: var(--text-sm); font-weight: var(--weight-medium); cursor: pointer; }
+.access-screen__card .button:hover { border-color: var(--ink-faint); }
+.access-screen__card .button--primary { border-color: var(--accent-fill); color: var(--on-accent); background: var(--accent-fill); }
+.access-screen__card .button--primary:hover { background: var(--accent-fill-hover); }

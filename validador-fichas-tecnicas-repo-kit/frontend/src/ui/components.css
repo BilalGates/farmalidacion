@@ -295,3 +295,13 @@ code, kbd, .mono { font-family: var(--font-mono); font-size: var(--text-code); f
 .record-dialog__header > .muted { order: 2; font-family: var(--font-mono); font-size: var(--text-xs); }
 .record-dialog__header nav .button:not(.button--secondary) { border-color: transparent; background: transparent; }
 .record-dialog__header nav .button:not(.button--secondary):hover:not(:disabled) { background: var(--line-faint); }
+
+/* ── Carga con esqueleto ───────────────────────────────────────────────── */
+.app-shell .skeleton { display: grid; gap: 0; padding: 0; border: 1px solid var(--line-soft); background: var(--surface); }
+.app-shell .skeleton__row { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--space-6); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--line-faint); }
+.app-shell .skeleton__row:last-child { border-bottom: 0; }
+.app-shell .skeleton__row > span { height: 10px; border-radius: 5px; background: var(--line-faint); animation: skeleton-pulse 1.4s ease-in-out infinite; }
+.app-shell .skeleton__row > span:first-child { width: 70%; }
+.app-shell .skeleton__row:nth-child(odd) > span:first-child { width: 55%; }
+@keyframes skeleton-pulse { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .app-shell .skeleton__row > span { animation: none; } }
