@@ -12,6 +12,7 @@ import type { EmptySourceColumn, QuarantinedField, QuarantinedSourceRow, Reviewe
 import { formatDateTime } from '../domain/format'
 import { FilterWorkspace } from '../components/FilterWorkspace'
 import { PageHeader } from '../components/PageHeader'
+import { EmptyState } from '../components/AsyncState'
 import { useCapability } from '../auth/SessionContext'
 
 const PAGE_SIZE = 50
@@ -176,7 +177,7 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
         {reviewer && !canMaintain && <p className='note'>Esta cuenta puede consultar las incidencias; no tiene permiso para modificar campos.</p>}
         {loadError && <p className='alert alert--error' role='alert'>{loadError}<button className='button button--ghost' type='button' onClick={() => void load()}>Reintentar</button></p>}
         {loading && <p role='status'>Cargando filas…</p>}
-        {!loading && !loadError && rows.length === 0 && <p className='muted'>No hay filas en cuarentena para este filtro.</p>}
+        {!loading && !loadError && rows.length === 0 && <EmptyState title='Sin filas en cuarentena' detail='No hay filas en cuarentena para este filtro. Las filas apartadas en una importación aparecen aquí para corregirlas.' />}
 
         {!loading && rows.length > 0 && (
           <div className='quarantine-screen__layout'>
