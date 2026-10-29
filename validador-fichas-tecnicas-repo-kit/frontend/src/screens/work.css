@@ -5,7 +5,6 @@
 .app-shell .queue-list__icon { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-small); color: var(--ink-soft); background: var(--line-soft); }
 .app-shell .queue-list__identity strong { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: var(--weight-medium); }
 
-
 /* Filas de la cola: identidad, estado en columna fija y acciones discretas. */
 .app-shell .queue-list > li { grid-template-columns: auto minmax(220px, 1fr) 132px minmax(0, 420px); }
 .app-shell .queue-list > li > .badge { justify-self: start; }
@@ -27,4 +26,3 @@
 .app-shell .queue-add__record { flex: 1 1 280px; }
 .app-shell .queue-add > .field:not(.queue-add__record) { flex: 0 1 180px; }
 .app-shell .queue-add .queue-check { height: var(--control-height); min-height: 0; }
-.app-shell .queue-workspace > .filter-workspace__toolbar { padding-bottom: var(--space-4); border-bottom: 1px solid var(--line-soft); }
