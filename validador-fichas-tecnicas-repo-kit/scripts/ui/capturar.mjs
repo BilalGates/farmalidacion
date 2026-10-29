@@ -1,7 +1,7 @@
 // Captura rutas de la aplicación con Chrome sin interfaz.
 //   node scripts/ui/capturar.mjs <light|dark> <carpeta> <ruta>...      (rutas sin «#/»)
 // Variables: REVIEWER (identidad del piloto), WIDTH/HEIGHT, CLICK (selector a pulsar
-// antes de capturar), SLOW=1 (bloquea el backend para ver estados sin datos),
+// antes de capturar), WAIT (ms de espera por ruta; 6000 por defecto), SLOW=1 (bloquea el backend para ver estados sin datos),
 // CHROME (ruta del navegador), BASE_URL (por defecto http://localhost:5173).
 import { spawn } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
@@ -23,7 +23,7 @@ await send('Page.navigate', { url: `${BASE}/` }); await wait(1500)
 await send('Runtime.evaluate', { expression: `localStorage.setItem('farmalidacion.theme', '${theme}'); localStorage.setItem('farmalidacion.reviewer', '${process.env.REVIEWER ?? ''}')` })
 for (const route of routes) {
   if (process.env.SLOW) { await send('Network.enable'); await send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 }); await send('Network.setBlockedURLs', { urls: ['*:8000/*'] }) }
-  await send('Page.navigate', { url: `${BASE}/?r=${Math.random()}#/${route}` }); await wait(6000)
+  await send('Page.navigate', { url: `${BASE}/?r=${Math.random()}#/${route}` }); await wait(Number(process.env.WAIT ?? 6000))
   if (process.env.CLICK) { await send('Runtime.evaluate', { expression: `document.querySelector(${JSON.stringify(process.env.CLICK)})?.click()` }); await wait(3000) }
   const { data } = await send('Page.captureScreenshot', { format: 'png' })
   writeFileSync(`${out}/${theme}-${route.replaceAll('/', '-')}.png`, Buffer.from(data, 'base64'))
