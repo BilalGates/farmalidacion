@@ -436,6 +436,15 @@ def read_dashboard(session: SessionDependency) -> DashboardRead:
     )
 
 
+def _matches_linked_source(linked_type: str, source_type: str) -> bool:
+    """La misma correspondencia que `_linked_source`, para un tipo ya leído."""
+    if source_type == "cima":
+        return linked_type.startswith("cima")
+    if source_type == "ficha_tecnica":
+        return linked_type in ("ficha_tecnica", "cima_document_type_1")
+    return linked_type == source_type
+
+
 def _linked_source(source_type: str) -> ColumnElement[bool]:
     source_condition = (
         SourceDocument.source_type.like("cima%")
@@ -469,10 +478,7 @@ def _explore_records(entity_type: str | None, source_type: str | None) -> Select
 
 
 def _review_condition(segment: str) -> ColumnElement[bool]:
-    queue = (
-        select(ReviewQueueEntry.id)
-        .where(ReviewQueueEntry.target_record_id == TargetRecord.id)
-    )
+    queue = select(ReviewQueueEntry.id).where(ReviewQueueEntry.target_record_id == TargetRecord.id)
     if segment == "sin_cola":
         return ~queue.exists()
     if segment == "segunda_revision":
@@ -493,34 +499,100 @@ def explore_dashboard(
     entity_type: str | None = None,
     source_type: str | None = None,
 ) -> DashboardExploreRead:
-    """Desgloses exactos de registros REAL; incidencias conservan su propia unidad."""
-    base = _explore_records(entity_type, source_type)
-    total = _count(session, base)
-    entity_keys = [key for (key,) in session.execute(
-        select(TargetRecord.entity_type).distinct().order_by(TargetRecord.entity_type)
-    ).all()]
-    source_keys = [key for (key,) in session.execute(
-        select(SourceDocument.source_type).distinct()
-        .where(SourceDocument.source_type.not_in(DEMO_SOURCE_TYPES))
-        .order_by(SourceDocument.source_type)
-    ).all()]
+    """Desgloses exactos de registros REAL; incidencias conservan su propia unidad.
+
+    Se calcula en una sola pasada: tres lecturas (enlaces a documentos con su
+    tipo de fuente, registros y entradas de la cola) y la agregación en
+    memoria. Antes, cada cifra era un COUNT con subconsultas correlacionadas
+    que recorría todos los registros (17 recorridos por llamada). Las
+    condiciones son las mismas que `_linked_source` y `_review_condition`,
+    que siguen sirviendo a `/dashboard/cases`.
+    """
+    linked: dict[str, set[str]] = {}
+    for record_id, linked_type in session.execute(
+        select(DocumentRecordLink.target_record_id, SourceDocument.source_type)
+        .join(
+            SourceDocumentVersion,
+            DocumentRecordLink.document_version_id == SourceDocumentVersion.id,
+        )
+        .join(SourceDocument, SourceDocumentVersion.document_id == SourceDocument.id)
+        .distinct()
+    ):
+        linked.setdefault(record_id, set()).add(linked_type)
+    # REAL = sin enlace a una fuente DEMO, la misma regla que `apply_origin_filter`,
+    # resuelta con los enlaces ya leídos en lugar de otro recorrido con NOT IN.
+    records = [
+        (record_id, entity_type)
+        for record_id, entity_type in session.execute(
+            select(TargetRecord.id, TargetRecord.entity_type)
+        )
+        if linked.get(record_id, set()).isdisjoint(DEMO_SOURCE_TYPES)
+    ]
+    queue_states: dict[str, set[str]] = {}
+    second_pending: set[str] = set()
+    for record_id, state, requires_second in session.execute(
+        select(
+            ReviewQueueEntry.target_record_id,
+            ReviewQueueEntry.state,
+            ReviewQueueEntry.requires_second_review,
+        )
+    ):
+        queue_states.setdefault(record_id, set()).add(state)
+        if requires_second and state != "completado":
+            second_pending.add(record_id)
+
+    def has_source(record_id: str, key: str) -> bool:
+        return any(
+            _matches_linked_source(linked_type, key) for linked_type in linked.get(record_id, ())
+        )
+
+    selected = [
+        (record_id, record_entity)
+        for record_id, record_entity in records
+        if (not entity_type or record_entity == entity_type)
+        and (not source_type or has_source(record_id, source_type))
+    ]
+    ids = [record_id for record_id, _ in selected]
+    total = len(selected)
+
+    entity_keys = [
+        key
+        for (key,) in session.execute(
+            select(TargetRecord.entity_type).distinct().order_by(TargetRecord.entity_type)
+        ).all()
+    ]
+    source_keys = [
+        key
+        for (key,) in session.execute(
+            select(SourceDocument.source_type)
+            .distinct()
+            .where(SourceDocument.source_type.not_in(DEMO_SOURCE_TYPES))
+            .order_by(SourceDocument.source_type)
+        ).all()
+    ]
     entity_segments = [
-        _segment(key, {
-            "medication": "Medicamentos",
-            "active_ingredient": "Principios activos",
-            "specialty": "Especialidades",
-        }.get(key, key.replace("_", " ").capitalize()),
-                 _count(session, base.where(TargetRecord.entity_type == key)))
+        _segment(
+            key,
+            {
+                "medication": "Medicamentos",
+                "active_ingredient": "Principios activos",
+                "specialty": "Especialidades",
+            }.get(key, key.replace("_", " ").capitalize()),
+            sum(1 for _, record_entity in selected if record_entity == key),
+        )
         for key in entity_keys
     ]
     source_segments = [
-        _segment(key, {
-            "master_excel": "Maestros Excel",
-            "cima_document_type_1": "Fichas técnicas CIMA",
-            "cima": "CIMA",
-            "ficha_tecnica": "Fichas técnicas",
-        }.get(key, key.replace("_", " ").capitalize()),
-                 _count(session, base.where(_linked_source(key))))
+        _segment(
+            key,
+            {
+                "master_excel": "Maestros Excel",
+                "cima_document_type_1": "Fichas técnicas CIMA",
+                "cima": "CIMA",
+                "ficha_tecnica": "Fichas técnicas",
+            }.get(key, key.replace("_", " ").capitalize()),
+            sum(1 for record_id in ids if has_source(record_id, key)),
+        )
         for key in source_keys
     ]
     review_states = (
@@ -533,11 +605,23 @@ def explore_dashboard(
         ("completado", "Completado"),
     )
     review = [
-        _segment(key, label, _count(session, base.where(_review_condition(key))))
+        _segment(
+            key,
+            label,
+            sum(
+                1
+                for record_id in ids
+                if (
+                    record_id not in queue_states
+                    if key == "sin_cola"
+                    else key in queue_states.get(record_id, ())
+                )
+            ),
+        )
         for key, label in review_states
     ]
     coverage = [
-        _segment(f"{key}:present", label, _count(session, base.where(_linked_source(key))))
+        _segment(f"{key}:present", label, sum(1 for record_id in ids if has_source(record_id, key)))
         for key, label in (
             ("master_excel", "Maestro"),
             ("cima", "CIMA"),
@@ -567,7 +651,7 @@ def explore_dashboard(
             for item in review
             if item.key in {"pendiente", "asignado", "en_revision", "bloqueado"}
         ),
-        second_review=_count(session, base.where(_review_condition("segunda_revision"))),
+        second_review=sum(1 for record_id in ids if record_id in second_pending),
         quarantined=_scalar_count(
             session, QuarantinedSourceRow, QuarantinedSourceRow.import_batch_id.in_(batch_ids)
         ),
@@ -605,8 +689,14 @@ def dashboard_cases(
     elif segment.startswith("review:"):
         key = segment.removeprefix("review:")
         if key not in {
-            "sin_cola", "pendiente", "asignado", "en_revision",
-            "requiere_segunda_revision", "bloqueado", "completado", "segunda_revision",
+            "sin_cola",
+            "pendiente",
+            "asignado",
+            "en_revision",
+            "requiere_segunda_revision",
+            "bloqueado",
+            "completado",
+            "segunda_revision",
         }:
             raise ApplicationError("Segmento no reconocido.", status_code=400)
         base = base.where(_review_condition(key))
