@@ -183,9 +183,9 @@ it('ofrece al técnico sólo las decisiones de revisión que puede firmar', asyn
   )
   await screen.findByRole('heading', { name: 'Omeprazol 20 mg' })
   fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
-  expect(screen.getByRole('option', { name: 'No consta' })).toBeDisabled()
-  expect(screen.getByRole('option', { name: 'No aplica' })).toBeDisabled()
-  expect(screen.getByRole('option', { name: 'Corregido' })).toBeEnabled()
+  expect(screen.getByRole('radio', { name: 'No consta' })).toBeDisabled()
+  expect(screen.getByRole('radio', { name: 'No aplica' })).toBeDisabled()
+  expect(screen.getByRole('radio', { name: 'Corregido' })).toBeEnabled()
 })
 
 it('en compacto abre un solo editor y conserva borradores al filtrar', async () => {
@@ -193,11 +193,11 @@ it('en compacto abre un solo editor y conserva borradores al filtrar', async () 
   render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} compact />)
   await screen.findByRole('heading', { name: 'Omeprazol 20 mg' })
   fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
-  fireEvent.change(screen.getByLabelText('Decisión de revisión'), { target: { value: 'corregido' } })
+  fireEvent.click(screen.getByRole('radio', { name: 'Corregido' }))
   fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: 'borrador explícito' } })
   fireEvent.click(screen.getByRole('button', { name: 'Revisar' }))
   expect(screen.getAllByLabelText('Decisión de revisión')).toHaveLength(1)
-  expect(screen.getByLabelText('Decisión de revisión')).toHaveValue('')
+  expect(screen.queryByRole('radio', { checked: true })).toBeNull()
   fireEvent.change(screen.getByLabelText('Localizar campo'), { target: { value: 'descripción' } })
   expect(screen.getByRole('complementary', { name: 'Evidencia del campo activo' })).toHaveTextContent('Texto literal del maestro.')
   fireEvent.click(screen.getByRole('button', { name: 'Revisar' }))
@@ -212,7 +212,7 @@ it('guardar y siguiente campo solo avanza tras confirmación del backend', async
   render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} compact />)
   await screen.findByRole('heading', { name: 'Omeprazol 20 mg' })
   fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
-  fireEvent.change(screen.getByLabelText('Decisión de revisión'), { target: { value: 'confirmado' } })
+  fireEvent.click(screen.getByRole('radio', { name: 'Validado' }))
   expect(screen.getByLabelText('Valor final')).toHaveValue('')
   fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: 'dato revisado' } })
   fireEvent.click(screen.getByRole('button', { name: 'Guardar y siguiente campo' }))
@@ -226,7 +226,7 @@ it('un rechazo de guardar y avanzar conserva el campo y el borrador', async () =
   render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} compact />)
   await screen.findByRole('heading', { name: 'Omeprazol 20 mg' })
   fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
-  fireEvent.change(screen.getByLabelText('Decisión de revisión'), { target: { value: 'confirmado' } })
+  fireEvent.click(screen.getByRole('radio', { name: 'Validado' }))
   fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: 'mi borrador' } })
   fireEvent.click(screen.getByRole('button', { name: 'Guardar y siguiente campo' }))
   await screen.findByText('Revisión rechazada.')
@@ -243,7 +243,7 @@ it('bloquea la edición mientras se guarda para no descartar cambios escritos du
   render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} compact />)
   await screen.findByRole('heading', { name: 'Omeprazol 20 mg' })
   fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
-  fireEvent.change(screen.getByLabelText('Decisión de revisión'), { target: { value: 'confirmado' } })
+  fireEvent.click(screen.getByRole('radio', { name: 'Validado' }))
   fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: 'valor enviado' } })
   fireEvent.click(screen.getByRole('button', { name: 'Guardar decisión' }))
   await waitFor(() => expect(finish).toBeDefined())
@@ -386,9 +386,7 @@ it('Ctrl+Enter guarda cuando la decisión ya es admisible', async () => {
   await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
 
   fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
-  fireEvent.change(screen.getByLabelText('Decisión de revisión'), {
-    target: { value: 'confirmado' },
-  })
+  fireEvent.click(screen.getByRole('radio', { name: 'Validado' }))
   fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: 'Omeprazol 20 mg' } })
 
   fireEvent.keyDown(screen.getByLabelText('Valor final'), { key: 'Enter', ctrlKey: true })
@@ -447,9 +445,7 @@ it('muestra el mensaje del backend cuando la decisión se rechaza', async () => 
   await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
 
   fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
-  fireEvent.change(screen.getByLabelText('Decisión de revisión'), {
-    target: { value: 'confirmado' },
-  })
+  fireEvent.click(screen.getByRole('radio', { name: 'Validado' }))
   fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: 'x' } })
   fireEvent.click(screen.getByRole('button', { name: 'Guardar decisión' }))
 
@@ -465,9 +461,7 @@ it('recupera lo escrito sin guardar tras recargar la pantalla', async () => {
   await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
 
   fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
-  fireEvent.change(screen.getByLabelText('Decisión de revisión'), {
-    target: { value: 'corregido' },
-  })
+  fireEvent.click(screen.getByRole('radio', { name: 'Corregido' }))
   fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: '20 mg exactos' } })
   await waitFor(() => expect(screen.getByText('Cambios sin guardar.')).toBeInTheDocument())
 
@@ -490,9 +484,7 @@ it('conserva el borrador cuando el backend rechaza el guardado', async () => {
   await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
 
   fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
-  fireEvent.change(screen.getByLabelText('Decisión de revisión'), {
-    target: { value: 'confirmado' },
-  })
+  fireEvent.click(screen.getByRole('radio', { name: 'Validado' }))
   fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: 'valor propuesto' } })
   fireEvent.click(screen.getByRole('button', { name: 'Guardar decisión' }))
 
@@ -525,9 +517,7 @@ it('retira el borrador cuando la decisión queda firmada', async () => {
   await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
 
   fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
-  fireEvent.change(screen.getByLabelText('Decisión de revisión'), {
-    target: { value: 'confirmado' },
-  })
+  fireEvent.click(screen.getByRole('radio', { name: 'Validado' }))
   fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: 'Omeprazol 20 mg' } })
   fireEvent.click(screen.getByRole('button', { name: 'Guardar decisión' }))
 
@@ -547,10 +537,8 @@ it('no precarga ningún valor bajo la política conservadora (DEV-512)', async (
 
   // El desplegable arranca sin decisión y el valor final vacío, aunque la
   // fuente declare un valor: proponerlo sería decidir por el revisor.
-  expect(screen.getByLabelText('Decisión de revisión')).toHaveValue('')
-  fireEvent.change(screen.getByLabelText('Decisión de revisión'), {
-    target: { value: 'confirmado' },
-  })
+  expect(screen.queryByRole('radio', { checked: true })).toBeNull()
+  fireEvent.click(screen.getByRole('radio', { name: 'Validado' }))
   expect(screen.getByLabelText('Valor final')).toHaveValue('')
 })
 
@@ -564,4 +552,28 @@ it('muestra el aviso de criterio clínico que declara el backend', async () => {
   expect(
     screen.getByText(/La ficha técnica no declara este dato/),
   ).toBeInTheDocument()
+})
+
+it('en la vista completa, «Siguiente pendiente» abre el siguiente campo sin revisar', async () => {
+  routeFetch({})
+  render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} />)
+  await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
+  fireEvent.click(screen.getByRole('button', { name: 'Siguiente pendiente' }))
+  await waitFor(() => expect(document.querySelector('[data-review-field="value-2"] button[aria-expanded="true"]')).not.toBeNull())
+  expect(screen.getByRole('group', { name: 'Decisión de revisión' })).toBeVisible()
+})
+
+it('en la vista completa, guardar y siguiente abre el campo siguiente tras confirmarse', async () => {
+  const saved = record()
+  saved.blocks[0].values[0].validation_state = 'confirmado'
+  saved.blocks[0].values[0].history = [{ sequence: 1, state: 'confirmado', final_value: 'dato revisado', comment: null, reviewer_id: 'ana', reviewer_assurance: 'declarada', decided_at: '2026-09-10T09:00:00Z' }]
+  routeFetch({ afterDecision: saved })
+  render(<ReviewScreen recordId='rec-1' reviewer={REVIEWER} />)
+  await screen.findByRole('heading', { level: 1, name: 'Omeprazol 20 mg' })
+  fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
+  fireEvent.click(screen.getByRole('radio', { name: 'Validado' }))
+  fireEvent.change(screen.getByLabelText('Valor final'), { target: { value: 'dato revisado' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar y siguiente campo' }))
+  await screen.findByText('Decisión guardada.')
+  await waitFor(() => expect(document.querySelector('[data-review-field="value-2"] button[aria-expanded="true"]')).not.toBeNull())
 })

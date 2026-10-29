@@ -10,8 +10,9 @@ import {
 } from '../api/client'
 import type { EmptySourceColumn, QuarantinedField, QuarantinedSourceRow, Reviewer } from '../api/types'
 import { formatDateTime } from '../domain/format'
-import { FilterWorkspace } from '../components/FilterWorkspace'
+import { FilterBar, FilterSelect } from '../components/FilterBar'
 import { PageHeader } from '../components/PageHeader'
+import { EmptyState } from '../components/AsyncState'
 import { useCapability } from '../auth/SessionContext'
 
 const PAGE_SIZE = 50
@@ -157,26 +158,17 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
     <div className='screen quarantine-screen'>
       <PageHeader eyebrow='Datos preservados, relación pendiente' title='Filas en cuarentena' description={canMaintain ? 'Corrige celdas fuente sin asignar un padre ni cambiar por qué la fila quedó apartada.' : 'Consulta las filas apartadas, su motivo y los valores originales y de trabajo.'} actions={<span className='badge badge--warning'><AlertTriangle size={15} aria-hidden='true' /> {total} filas</span>} />
 
-      <FilterWorkspace
-        title='Filtros de cuarentena'
-        storageKey='farmalidacion.filters.quarantine.closed'
-        activeCount={Number(Boolean(workbook))}
-        filters={
-          <label className='field'>
-            <span className='field__label'>Libro de origen</span>
-            <select value={workbook} onChange={(event) => void load(0, event.target.value, '')}>
-              <option value=''>Todos los libros</option>
-              {Object.entries(WORKBOOKS).map(([filename, label]) => <option key={filename} value={filename}>{label}</option>)}
-            </select>
-          </label>
-        }
-      >
+      <FilterBar label='Filtrar incidencias' activeCount={Number(Boolean(workbook))} onClear={() => void load(0, '', '')}>
+        <FilterSelect label='Libro' name='Libro de origen' value={workbook}
+          options={[{ value: '', label: 'Todos los libros' }, ...Object.entries(WORKBOOKS).map(([filename, label]) => ({ value: filename, label }))]}
+          onChange={(value) => void load(0, value, '')} />
+      </FilterBar>
       <section className='panel quarantine-results-panel'>
         {!reviewer && <p className='alert alert--warning'>Identifícate en Equipo y preferencias para mantener campos.</p>}
         {reviewer && !canMaintain && <p className='note'>Esta cuenta puede consultar las incidencias; no tiene permiso para modificar campos.</p>}
         {loadError && <p className='alert alert--error' role='alert'>{loadError}<button className='button button--ghost' type='button' onClick={() => void load()}>Reintentar</button></p>}
         {loading && <p role='status'>Cargando filas…</p>}
-        {!loading && !loadError && rows.length === 0 && <p className='muted'>No hay filas en cuarentena para este filtro.</p>}
+        {!loading && !loadError && rows.length === 0 && <EmptyState title='Sin filas en cuarentena' detail='No hay filas en cuarentena para este filtro. Las filas apartadas en una importación aparecen aquí para corregirlas.' />}
 
         {!loading && rows.length > 0 && (
           <div className='quarantine-screen__layout'>
@@ -252,7 +244,6 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
           </div>
         )}
       </section>
-      </FilterWorkspace>
     </div>
   )
 }

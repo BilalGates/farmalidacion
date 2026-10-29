@@ -10,5 +10,7 @@ export default defineConfig({
       auth: fileURLToPath(new URL('./auth-redirect.html', import.meta.url)),
     } },
   },
-  test: { environment: 'happy-dom', setupFiles: './src/test/setup.ts' },
+  // Las pruebas de pantalla montan la aplicación entera; con la suite en paralelo,
+  // 5 s por prueba se quedaba corto y fallaba una distinta en cada ejecución.
+  test: { environment: 'happy-dom', setupFiles: './src/test/setup.ts', testTimeout: 15_000 },
 })

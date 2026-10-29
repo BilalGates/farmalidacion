@@ -7,8 +7,6 @@ vi.mock('./CatalogIdentityScreen', () => ({
   CatalogIdentityScreen: ({ identityId }: { identityId: string }) => <label>Edición {identityId}<input defaultValue={identityId} /></label>,
 }))
 beforeEach(() => {
-  // Estas pruebas ejercitan filtros concretos; la vista por defecto los pliega.
-  localStorage.setItem('farmalidacion.filters.catalog.closed', 'open')
   vi.spyOn(HTMLDialogElement.prototype, 'showModal').mockImplementation(function (this: HTMLDialogElement) { this.setAttribute('open', '') })
   vi.spyOn(HTMLDialogElement.prototype, 'close').mockImplementation(function (this: HTMLDialogElement) { this.removeAttribute('open') })
 })
@@ -18,22 +16,25 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+/** Las condiciones se eligen en el menú de su píldora. */
+function openConditions() {
+  fireEvent.click(screen.getByRole('button', { name: /Condiciones/ }))
+}
+
 function cleanCatalogState() {
   window.sessionStorage.removeItem('farmalidacion.catalog-list-state')
 }
 
-it('mantiene la búsqueda visible al plegar filtros y recupera el foco al reabrirlos', async () => {
+it('muestra búsqueda y filtros a la vista, en una sola barra sobre los resultados', async () => {
   cleanCatalogState()
-  localStorage.setItem('farmalidacion.filters.catalog.closed', 'closed')
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE))))
   render(<RealRecordListScreen />)
   await screen.findByText('No hay identidades en el catálogo')
 
-  expect(screen.getByRole('searchbox', { name: 'Buscar en el catálogo' })).toBeVisible()
-  const reopen = screen.getByRole('button', { name: 'Mostrar filtros' })
-  fireEvent.click(reopen)
-  expect(screen.getByRole('button', { name: 'Ocultar filtros' })).toHaveFocus()
-  expect(screen.getByRole('combobox', { name: 'Nivel farmacéutico' })).toBeVisible()
+  const bar = screen.getByRole('region', { name: 'Buscar y filtrar el catálogo' })
+  expect(bar).toContainElement(screen.getByRole('searchbox', { name: 'Buscar en el catálogo' }))
+  expect(bar).toContainElement(screen.getByRole('combobox', { name: 'Nivel farmacéutico' }))
+  expect(screen.queryByRole('button', { name: 'Mostrar filtros' })).not.toBeInTheDocument()
 })
 
 it('añade a revisión desde una identidad vinculada sin escribir su identificador', async () => {
@@ -265,6 +266,7 @@ it('combina clase comercial y condición como filtros del servidor', async () =>
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
   fireEvent.change(screen.getByRole('combobox', { name: 'Clase comercial' }), { target: { value: 'generico' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+  openConditions()
   fireEvent.click(screen.getByRole('checkbox', { name: 'Huérfano' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4))
 
@@ -293,6 +295,7 @@ it('permite combinar varias condiciones y limpiar todos los filtros', async () =
 
   fireEvent.change(screen.getByRole('combobox', { name: 'Nivel farmacéutico' }), { target: { value: 'presentation' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+  openConditions()
   fireEvent.click(screen.getByRole('checkbox', { name: 'Huérfano' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
   fireEvent.click(screen.getByRole('checkbox', { name: 'Control especial' }))
@@ -300,8 +303,7 @@ it('permite combinar varias condiciones y limpiar todos los filtros', async () =
   expect(fetchMock.mock.calls[3][0]).toContain('condition=huerfano')
   expect(fetchMock.mock.calls[3][0]).toContain('condition=especial_control_medico')
 
-  fireEvent.click(screen.getByRole('button', { name: 'Condición: Huérfano ×' }))
-  await waitFor(() => expect(screen.getByLabelText('Resultados del catálogo')).toHaveFocus())
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Huérfano' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(5))
 
   fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros · 2' }))
@@ -331,6 +333,7 @@ it('restaura filtros al volver a montar el listado', async () => {
   await screen.findByText('No hay identidades en el catálogo')
   fireEvent.change(screen.getByRole('combobox', { name: 'Nivel farmacéutico' }), { target: { value: 'presentation' } })
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+  openConditions()
   fireEvent.click(screen.getByRole('checkbox', { name: 'Huérfano' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
   first.unmount()
@@ -367,6 +370,7 @@ it('al elegir una condición desde Todo el catálogo conserva el contexto de pre
   render(<RealRecordListScreen />)
   await screen.findByText('No hay identidades en el catálogo')
 
+  openConditions()
   fireEvent.click(screen.getByRole('checkbox', { name: 'Huérfano' }))
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
   expect(fetchMock.mock.calls[1][0]).toContain('identity_type=presentation')

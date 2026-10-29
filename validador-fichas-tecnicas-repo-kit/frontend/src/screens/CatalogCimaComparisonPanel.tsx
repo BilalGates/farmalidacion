@@ -82,7 +82,7 @@ export function CatalogCimaComparisonPanel({
   async function decide(action: CatalogCimaDecisionWrite['action']) {
     if (!selected?.document_version_id || !canDecide) return
     if (!reason.trim()) {
-      setError('Indique el motivo de la decisión.')
+      setError('Indica el motivo de la decisión.')
       return
     }
     setSaving(true)
@@ -155,7 +155,7 @@ export function CatalogCimaComparisonPanel({
               <label className='field'>
                 <span className='field__label'>Apartado que sustenta la decisión</span>
                 <select value={sectionLocator} onChange={(event) => setSectionLocator(event.target.value)}>
-                  <option value=''>Seleccione un apartado</option>
+                  <option value=''>Elige un apartado</option>
                   {selected.section_locators.map((locator) => <option key={locator} value={locator}>Apartado {locator}</option>)}
                 </select>
               </label>

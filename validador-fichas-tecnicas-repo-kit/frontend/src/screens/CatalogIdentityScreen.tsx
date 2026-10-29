@@ -201,7 +201,7 @@ export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, 
 
           {identity.identity_type === 'presentation' && <section className='panel catalog-classifications' aria-labelledby='catalog-classifications-title'>
             <div className='panel__head'><div><p className='eyebrow'>Clasificación farmacéutica</p><h2 id='catalog-classifications-title'>Clase comercial y condiciones</h2></div></div>
-            <p className='catalog-classifications__hint'>Seleccione una única clase comercial. Las condiciones se combinan de forma independiente.</p>
+            <p className='catalog-classifications__hint'>Elige una única clase comercial. Las condiciones se combinan de forma independiente.</p>
             <fieldset disabled={!reviewer || !canMaintain}>
               <legend>Clase comercial</legend>
               <div className='catalog-classifications__options'>{COMMERCIAL_CLASSES.map(([value, label]) => {
@@ -216,7 +216,7 @@ export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, 
                 return <label key={value}><input type='checkbox' checked={selected} onChange={(event) => void changeClassification('condition', value, event.target.checked)} />{label}</label>
               })}</div>
             </fieldset>
-            {!reviewer && <p className='muted'>Seleccione un revisor para cambiar clasificaciones.</p>}
+            {!reviewer && <p className='muted'>Identifícate en Equipo y preferencias para cambiar clasificaciones.</p>}
             <p className='catalog-classifications__provenance'>Clasificaciones cargadas con fuente: {classifications.filter((item) => item.source_system !== 'canonical_manual').map((item) => item.source_system).filter((value, index, all) => all.indexOf(value) === index).join(', ') || 'sin clasificaciones importadas'}.</p>
           </section>}
 

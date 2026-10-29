@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Database,
   CheckCheck,
@@ -14,7 +14,6 @@ import { fetchDatabaseInfo, fetchReviewers } from './api/client'
 import type { DatabaseInfo, Reviewer } from './api/types'
 import { ModeBanner } from './components/ModeBanner'
 import { AppearancePreferences } from './components/AppearancePreferences'
-import { FilterLayoutContext } from './components/FilterLayoutContext'
 import { PilotIdentity } from './components/PilotIdentity'
 import { TeamDirectory } from './components/TeamDirectory'
 import { useCorporateSession } from './auth/SessionContext'
@@ -62,6 +61,31 @@ const NAV: readonly NavItem[] = [
   { id: 'datos', label: 'Datos', icon: Database, available: true, path: '/datos/fuentes' },
 ]
 
+const SECTION_TRAIL: Record<string, readonly string[]> = {
+  trabajo: ['Trabajo', 'Cola de revisión'],
+  'revision/cola': ['Trabajo', 'Cola de revisión'],
+  'catalogo/trabajo': ['Trabajo', 'Cola de revisión'],
+  'revision/validaciones': ['Trabajo', 'Segunda lectura'],
+  'catalogo/segunda': ['Trabajo', 'Segunda lectura'],
+  'catalogo/novedades': ['Trabajo', 'Novedades CIMA'],
+  'datos/cuarentena': ['Datos', 'Incidencias'],
+  exportaciones: ['Datos', 'Exportaciones'],
+  revisores: ['Equipo y preferencias'],
+}
+
+/** Migas de la ruta actual: área y apartado, sin un «espacio de trabajo» genérico. */
+function routeTrail(route: ReturnType<typeof useRoute>): readonly string[] {
+  switch (route.name) {
+    case 'inicio': return ['Resumen']
+    case 'fichas': return ['Catálogo']
+    case 'ficha': return ['Catálogo', 'Revisión de ficha']
+    case 'catalogo': return ['Catálogo', 'Ficha de identidad']
+    case 'fuentes': return ['Datos', 'Fuentes']
+    case 'importaciones': return ['Datos', 'Importaciones']
+    case 'seccion': return SECTION_TRAIL[route.id] ?? ['Página no encontrada']
+  }
+}
+
 function activeNavId(routeName: string, routeId: string | null): string {
   if (routeName === 'ficha' || routeName === 'fichas' || routeName === 'catalogo') return 'fichas'
   if (routeName === 'fuentes' || routeName === 'importaciones') return 'datos'
@@ -85,14 +109,7 @@ export function App() {
     const saved = localStorage.getItem('farmalidacion.sidebar.collapsed')
     return saved === null ? window.innerWidth <= 900 : saved === 'true'
   })
-  const [openFilterPanels, setOpenFilterPanels] = useState<string[]>([])
-  const reportFilterOpen = useCallback((id: string, open: boolean) => {
-    setOpenFilterPanels(current => open
-      ? current.includes(id) ? current : [...current, id]
-      : current.includes(id) ? current.filter(item => item !== id) : current)
-  }, [])
-  const filtersOpen = openFilterPanels.length > 0
-  const navigationCollapsed = sidebarCollapsed || filtersOpen
+  const navigationCollapsed = sidebarCollapsed
 
   useEffect(() => {
     fetchReviewers()
@@ -131,7 +148,7 @@ export function App() {
     : route.name === 'seccion' && route.id === 'revisores' ? '' : 'catalog.read'
   const allowed = !requiredCapability || may(requiredCapability)
   const active = activeNavId(route.name, route.name === 'seccion' ? route.id : null)
-  const activeLabel = NAV.find((item) => item.id === active)?.label ?? (active === 'revisores' ? 'Equipo y preferencias' : 'Resumen')
+  const trail = routeTrail(route)
   const changeReviewer = (identifier: string) => {
     setReviewerId(identifier)
     if (identifier) localStorage.setItem('farmalidacion.reviewer', identifier)
@@ -139,7 +156,6 @@ export function App() {
   }
 
   return (
-    <FilterLayoutContext.Provider value={reportFilterOpen}>
     <div className={`layout app-shell${navigationCollapsed ? ' app-shell--collapsed' : ''}`}>
       <a className='skip-link' href='#workspace-content' onClick={event => { event.preventDefault(); document.getElementById('workspace-content')?.focus() }}>Ir al contenido</a>
       <aside className='app-sidebar'>
@@ -191,8 +207,6 @@ export function App() {
               className='app-shell__toggle'
               aria-label={navigationCollapsed ? 'Expandir navegación' : 'Plegar navegación'}
               aria-expanded={!navigationCollapsed}
-              disabled={filtersOpen}
-              title={filtersOpen ? 'Cierra los filtros para expandir la navegación' : undefined}
               onClick={() => {
                 const next = !sidebarCollapsed
                 setSidebarCollapsed(next)
@@ -201,7 +215,9 @@ export function App() {
             >
               {navigationCollapsed ? <PanelLeftOpen size={18} aria-hidden='true' /> : <PanelLeftClose size={18} aria-hidden='true' />}
             </button>
-            <span className='app-shell__breadcrumb'>Espacio de trabajo <span aria-hidden='true'>/</span> <strong>{activeLabel}</strong></span>
+            <nav className='app-shell__breadcrumb' aria-label='Ubicación'>{trail.map((step, index) => index === trail.length - 1
+              ? <strong key={step} aria-current='page'>{step}</strong>
+              : <span key={step}>{step}<span className='app-shell__separator' aria-hidden='true'>/</span></span>)}</nav>
           </div>
           <div className='topbar__actions'>
             {database?.mode === 'demo' && <span className='mode-chip mode-chip--demo' aria-label='Base de datos de demostración'>DEMO</span>}
@@ -265,6 +281,5 @@ export function App() {
         </div>
       </div>
     </div>
-    </FilterLayoutContext.Provider>
   )
 }

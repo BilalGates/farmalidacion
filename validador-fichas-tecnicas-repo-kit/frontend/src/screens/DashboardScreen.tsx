@@ -4,6 +4,7 @@ import type { DashboardSegment } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
 import { PageHeader } from '../components/PageHeader'
+import { FilterBar, FilterSelect } from '../components/FilterBar'
 import { useCapability } from '../auth/SessionContext'
 
 const number = (value: number) => value.toLocaleString('es-ES')
@@ -57,7 +58,7 @@ function Cases({ segment, label, entityType, sourceType, onClose }: {
         <button type='button' className='button' onClick={onClose}>Cerrar</button>
       </div>
       <AsyncBoundary loading={loading} error={error} empty={data?.total === 0}
-        emptyTitle='No hay registros en este segmento' emptyDetail='Seleccione otro grupo o cambie los filtros.'>
+        emptyTitle='No hay registros en este segmento' emptyDetail='Elige otro grupo o cambia los filtros.'>
         {data && <div className='dashboard-cases__body'>
           <p className='muted'>{number(data.total)} registros · {number(offset + 1)}–{number(Math.min(offset + PAGE_SIZE, data.total))}</p>
           <ul>{data.items.map(item => <li key={item.id}>
@@ -94,7 +95,7 @@ export function DashboardScreen() {
   return (
     <div className='screen dashboard-screen'>
       <PageHeader eyebrow='Resumen operativo' title='Dónde actuar y qué cubren los datos'
-        description='Explore registros reales, fuentes y trabajo de revisión. Cada cifra abre sus casos o su listado.' />
+        description='Registros reales, fuentes y trabajo de revisión. Cada cifra abre sus casos o su listado.' />
       <AsyncBoundary loading={loading} error={error}
         empty={Boolean(data && data.total_records === 0 && !entityType && !sourceType && data.quarantined === 0 && data.diagnostics === 0)}
         emptyTitle='Todavía no hay maestros importados'
@@ -119,20 +120,15 @@ export function DashboardScreen() {
           <section className='dashboard-explorer' aria-label='Explorar cobertura y calidad'>
             <div className='dashboard-explorer__head'>
               <div><h2>Cobertura y calidad</h2><p>Compare grupos y abra los registros detrás de cada barra.</p></div>
-              <div className='dashboard-explorer__filters'>
-                <label>Tipo de registro
-                  <select value={entityType} onChange={event => { setEntityType(event.target.value); setSelected(null) }}>
-                    <option value=''>Todos</option>
-                    {data.entity_types.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}
-                  </select>
-                </label>
-                <label>Fuente enlazada
-                  <select value={sourceType} onChange={event => { setSourceType(event.target.value); setSelected(null) }}>
-                    <option value=''>Todas</option>
-                    {data.sources.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}
-                  </select>
-                </label>
-              </div>
+              <FilterBar label='Filtrar cobertura y calidad' activeCount={Number(Boolean(entityType)) + Number(Boolean(sourceType))}
+                onClear={() => { setEntityType(''); setSourceType(''); setSelected(null) }}>
+                <FilterSelect label='Tipo' name='Tipo de registro' value={entityType}
+                  options={[{ value: '', label: 'Todos' }, ...data.entity_types.map(item => ({ value: item.key, label: item.label }))]}
+                  onChange={value => { setEntityType(value); setSelected(null) }} />
+                <FilterSelect label='Fuente' name='Fuente enlazada' value={sourceType}
+                  options={[{ value: '', label: 'Todas' }, ...data.sources.map(item => ({ value: item.key, label: item.label }))]}
+                  onChange={value => { setSourceType(value); setSelected(null) }} />
+              </FilterBar>
             </div>
             <p className='dashboard-explorer__total'><strong>{number(data.total_records)}</strong> registros reales en la selección</p>
             {data.total_records === 0 && <p className='state state--empty'>No hay registros para estos filtros.</p>}

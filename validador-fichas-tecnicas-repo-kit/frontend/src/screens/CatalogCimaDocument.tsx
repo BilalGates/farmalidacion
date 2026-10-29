@@ -74,7 +74,7 @@ export function CatalogCimaDocumentReader({ identityId, recordId, reviewerId = '
         {fields.length > 0 && <div className='catalog-cima__field-search'>
           <label className='field'><span className='field__label'>Localizar un valor de trabajo en la ficha</span>
             <select value={selectedFieldId} onChange={(event) => { setSelectedFieldId(event.target.value); setQuery('') }}>
-              <option value=''>Seleccione un campo</option>
+              <option value=''>Elige un campo</option>
               {fields.map((field) => <option key={field.id} value={field.id}>{field.label}</option>)}
             </select>
           </label>

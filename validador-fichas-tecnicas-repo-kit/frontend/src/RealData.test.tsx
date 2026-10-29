@@ -428,7 +428,9 @@ describe('separación entre datos reales y DEMO', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Buscar' }))
 
     expect(await screen.findByText(/No hay resultados con estos filtros/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Búsqueda: inexistente/ })).toBeInTheDocument()
+    // La búsqueda activa se ve en el propio buscador y cuenta como filtro que se puede limpiar.
+    expect(screen.getByRole('searchbox')).toHaveValue('inexistente')
+    expect(screen.getByRole('button', { name: 'Limpiar filtros · 1' })).toBeInTheDocument()
   })
 })
 
@@ -485,7 +487,7 @@ describe('ficha de un registro real', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Revisar' })[0])
     expect(screen.getByRole('button', { name: 'Guardar decisión' })).toBeDisabled()
-    expect(screen.getByText(/Seleccione un revisor/)).toBeInTheDocument()
+    expect(screen.getByText(/Identifícate en Equipo y preferencias/)).toBeInTheDocument()
   })
 })
 

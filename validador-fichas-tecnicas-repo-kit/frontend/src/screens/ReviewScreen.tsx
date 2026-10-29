@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { FileSearch } from 'lucide-react'
 
 import {
   ApiError,
@@ -22,6 +23,7 @@ import { RoadmapNote } from '../components/RoadmapNote'
 import { ROADMAP_NOTES, conflictLabel, sourceLabel } from '../domain/vocabulary'
 import { FocusTracker } from '../domain/focusTracker'
 import { SHORTCUTS, isTypingTarget, resolveShortcut } from '../domain/shortcuts'
+import { divergentClaims } from '../components/SourceComparison'
 import { navigate } from '../navigation'
 import { blockLabel, fieldLabel, searchText } from '../domain/fieldLabels'
 import { clearDraft } from '../domain/drafts'
@@ -133,6 +135,21 @@ function recordTitle(record: TargetRecord): string {
   return named?.literal_value ?? record.id
 }
 
+/** Avance por campos: un tramo por campo, con el color de su estado. */
+function ReviewProgress({ fields }: { fields: readonly FieldValue[] }) {
+  const resolved = fields.filter((value) => RESOLVED_STATES.includes(value.validation_state)).length
+  const total = fields.length
+  return (
+    <div className='review-progress' role='status'>
+      <span className='review-progress__label'>{resolved} de {total} campos revisados</span>
+      <div className='review-progress__steps' aria-hidden='true'>
+        {fields.map((value) => <span key={value.id} className={`review-progress__step review-progress__step--${value.validation_state}`} />)}
+      </div>
+      <strong>{total ? Math.round((resolved / total) * 100) : 0}%</strong>
+    </div>
+  )
+}
+
 export function ReviewScreen({
   recordId,
   reviewer,
@@ -164,6 +181,9 @@ export function ReviewScreen({
   const [helpOpen, setHelpOpen] = useState(false)
   const [sourceMaintenanceOpen, setSourceMaintenanceOpen] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  // Vista completa: los editores son independientes; la pantalla sólo pide
+  // abrir uno concreto al avanzar.
+  const [openRequest, setOpenRequest] = useState<{ id: string; n: number }>({ id: '', n: 0 })
   const [fieldSearch, setFieldSearch] = useState('')
   const [blockFilter, setBlockFilter] = useState('')
   const [onlyPending, setOnlyPending] = useState(false)
@@ -292,7 +312,8 @@ export function ReviewScreen({
       const refreshed = await load()
       if (advance && nextId && refreshed) {
         setActiveId(nextId)
-        setExpandedId(nextId)
+        if (compact) setExpandedId(nextId)
+        else setOpenRequest(current => ({ id: nextId, n: current.n + 1 }))
         requestAnimationFrame(() => {
           fieldsRef.current?.querySelector<HTMLElement>(`[data-review-field="${nextId}"]`)?.focus()
         })
@@ -382,10 +403,23 @@ export function ReviewScreen({
   }
 
   const conflicts = fields.filter((value) => value.has_conflict)
-  const resolved = fields.filter((value) =>
-    RESOLVED_STATES.includes(value.validation_state),
-  ).length
   const ContextPanel = compact ? 'details' : 'section'
+  const activeIndex = fields.findIndex((value) => value.id === activeField?.id)
+  const nextPending = [...fields.slice(activeIndex + 1), ...fields.slice(0, activeIndex + 1)]
+    .find((value) => !RESOLVED_STATES.includes(value.validation_state)) ?? null
+  function openField(id: string) {
+    setActiveId(id)
+    if (compact) setExpandedId(id)
+    else setOpenRequest((current) => ({ id, n: current.n + 1 }))
+    requestAnimationFrame(() => {
+      const row = fieldsRef.current?.querySelector<HTMLElement>(`[data-review-field="${id}"]`)
+      row?.scrollIntoView?.({ block: 'center' })
+      row?.focus()
+    })
+  }
+  function openNextPending() {
+    if (nextPending) openField(nextPending.id)
+  }
 
   return (
     <div className={`screen review-screen${compact ? ' review-screen--compact' : ''}`}>
@@ -393,18 +427,35 @@ export function ReviewScreen({
         ← Volver al listado
       </button>}
 
-      {/* Zona A — contexto de la ficha. */}
-      <div className='screen__head'>
+      {/* Zona A — contexto de la ficha: identidad, identificadores y avance en
+          una sola cabecera, para que los campos empiecen arriba. */}
+      <div className='screen__head review-head'>
         <div>
           <p className='eyebrow'>{canReview ? 'Revisión de ficha' : 'Ficha y evidencia'}</p>
           <h1>{displayName || recordTitle(record)}</h1>
           <p className='lede'>
             <code>{record.id}</code> · {RECORD_TYPE_LABELS[record.entity_type] ?? record.entity_type}
           </p>
+          {!compact && record.external_identifiers.length > 0 && (
+            <dl className='review-identifiers' aria-label='Identificación'>
+              {record.external_identifiers.map((item) => (
+                <div key={`${item.source_system}-${item.source_identifier}`}>
+                  <dt>{item.source_system}</dt>
+                  <dd>{item.source_identifier} · {item.source_version}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
         </div>
+        {!compact && <div className='review-head__aside'>
+          <ReviewProgress fields={fields} />
+          {canReview && <button type='button' className='button button--primary' disabled={!nextPending} onClick={openNextPending}>
+            {nextPending ? 'Siguiente pendiente' : 'Todo revisado'}
+          </button>}
+        </div>}
       </div>
 
-      {record.external_identifiers.length > 0 && (
+      {compact && record.external_identifiers.length > 0 && (
         <ContextPanel className='panel review-identification'>
           {compact ? <summary>Identificación y versiones ({record.external_identifiers.length})</summary> : <h2>Identificación</h2>}
           <dl className='pairs'>
@@ -424,20 +475,26 @@ export function ReviewScreen({
         <ContextPanel className='panel review-conflicts'>
           {compact ? <summary>Discrepancias entre fuentes · {conflicts.length} campos requieren revisión</summary> : <h2>Discrepancias entre fuentes</h2>}
           <ul className='conflicts'>
-            {conflicts.map((value) => (
-              <li key={value.id}>
-                <span className='conflicts__field'>{value.field_name}</span>
-                <span className='badge badge--requiere_revision'>
-                  {conflictLabel(value.conflict_status)}
-                </span>
-                {/* El valor afirmado se muestra aquí y no sólo en el campo: el
-                    resumen debe bastar para ver qué discrepa sin desplegarlo. */}
-                <span className='conflicts__claim'>
-                  {value.provenance.map((item) => sourceLabel(item.provenance_role)).join(', ')}:{' '}
-                  <strong>{value.literal_value ?? 'sin valor'}</strong>
-                </span>
-              </li>
-            ))}
+            {/* Una línea por campo, aunque llegue como varios valores rivales. */}
+            {conflicts.filter((value, index) => conflicts.findIndex(other => other.field_name === value.field_name) === index).map((value) => {
+              const claims = divergentClaims(value, fields)
+              return (
+                <li key={value.id}>
+                  <span className='conflicts__field'>{fieldLabel(value.field_name)}</span>
+                  <span className='badge badge--requiere_revision'>
+                    {conflictLabel(value.conflict_status)}
+                  </span>
+                  {/* El valor afirmado se muestra aquí y no sólo en el campo: el
+                      resumen debe bastar para ver qué discrepa sin desplegarlo. */}
+                  <span className='conflicts__claim'>
+                    {claims
+                      ? claims.map((claim, index) => <span key={claim.key}>{index > 0 && ' · '}{claim.source}: <strong>{claim.text}</strong></span>)
+                      : <>{value.provenance.map((item) => sourceLabel(item.provenance_role)).join(', ')}:{' '}<strong>{value.literal_value ?? 'sin valor'}</strong></>}
+                  </span>
+                  {canReview && <button type='button' className='button button--ghost button--sm conflicts__go' onClick={() => openField(value.id)}>Ir al campo</button>}
+                </li>
+              )
+            })}
           </ul>
           <p className='note'>
             Ninguna discrepancia se resuelve automáticamente: los valores en conflicto conservan su
@@ -458,11 +515,7 @@ export function ReviewScreen({
         </p>
       )}
 
-      <div className='review-progress' role='status'>
-        <span className='review-progress__label'>{resolved} de {fields.length} campos revisados</span>
-        <div className='review-progress__track' aria-hidden='true'><span style={{ width: `${fields.length ? (resolved / fields.length) * 100 : 0}%` }} /></div>
-        <strong>{fields.length ? Math.round((resolved / fields.length) * 100) : 0}%</strong>
-      </div>
+      {compact && <ReviewProgress fields={fields} />}
 
       <div className='review-workspace' onKeyDown={handleKeyDown}>
         {/* Zona B — campo de trabajo. */}
@@ -570,8 +623,10 @@ export function ReviewScreen({
                         onSave={(state, finalValue, comment) =>
                           void handleSave(value.id, state, finalValue, comment)
                         }
-                        onSaveAndAdvance={compact ? (state, finalValue, comment) =>
-                          void handleSave(value.id, state, finalValue, comment, true) : undefined}
+                        onSaveAndAdvance={(state, finalValue, comment) =>
+                          void handleSave(value.id, state, finalValue, comment, true)}
+                        openSignal={!compact && openRequest.id === value.id ? openRequest.n : 0}
+                        siblings={fields}
                       />
                     </div>
                   ))}
@@ -588,7 +643,7 @@ export function ReviewScreen({
           className='panel review-evidence'
           aria-label='Evidencia del campo activo'
         >
-          <div className='evidence-head'><span className='evidence-head__icon' aria-hidden='true'>⌕</span><div><p className='eyebrow'>Fuente activa</p><h2>Evidencia · {activeField?.field_name ?? 'Sin campos'}</h2></div></div>
+          <div className='evidence-head'><span className='evidence-head__icon' aria-hidden='true'><FileSearch size={16} /></span><div><p className='eyebrow'>Fuente activa</p><h2>Evidencia · {activeField?.field_name ?? 'Sin campos'}</h2></div></div>
           {activeField ? (
             <ProvenanceList key={activeField.id} provenance={activeField.provenance} highlightField={activeField.field_name} contextual={compact} />
           ) : (

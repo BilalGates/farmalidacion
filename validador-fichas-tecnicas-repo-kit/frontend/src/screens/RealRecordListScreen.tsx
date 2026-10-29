@@ -6,7 +6,7 @@ import type { QueueItem } from '../api/client'
 import type { CatalogIdentitySort, CatalogIdentityType, CatalogSourceWorkbook } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
-import { FilterWorkspace } from '../components/FilterWorkspace'
+import { FilterBar, FilterChecks, FilterSelect, FilterToggle } from '../components/FilterBar'
 import { PageHeader } from '../components/PageHeader'
 import { orDash } from '../domain/format'
 import { CATALOG_LIST_STATE_KEY } from '../domain/catalogSourceNavigation'
@@ -413,15 +413,21 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
 
   return (
     <div className='screen catalog-screen'>
-      <PageHeader className='catalog-results__head' title='Catálogo' description='Explora y revisa medicamentos, presentaciones y principios activos.' actions={canReadReview && <button type='button' className='button button--secondary' onClick={() => { setHasOpenedSecondReview(true); setSecondReviewOpen(true) }}>Segundas validaciones</button>} />
-      <FilterWorkspace
-        title='Filtros del catálogo'
-        storageKey='farmalidacion.filters.catalog.closed'
-        className='catalog-filter-workspace'
+      <PageHeader className='catalog-results__head' title='Catálogo' description='Explora y revisa medicamentos, presentaciones y principios activos.' actions={<>
+        <dl className='catalog-figures'>
+          <div><dt>En catálogo</dt><dd>{data ? data.total.toLocaleString('es-ES') : '—'}</dd></div>
+          {canReadReview && <div><dt>En cola</dt><dd>{queueLoading ? '—' : queue.filter(item => item.state !== 'completado').length.toLocaleString('es-ES')}</dd></div>}
+          {canReadReview && <div><dt>Completadas</dt><dd>{queueLoading ? '—' : queue.filter(item => item.state === 'completado').length.toLocaleString('es-ES')}</dd></div>}
+        </dl>
+        {canReadReview && <button type='button' className='button button--secondary' onClick={() => { setHasOpenedSecondReview(true); setSecondReviewOpen(true) }}>Segundas validaciones</button>}
+      </>} />
+      <FilterBar
+        label='Buscar y filtrar el catálogo'
         activeCount={activeFilterCount}
-        defaultOpen={false}
-        toolbar={
-          <form className='toolbar catalog-search-toolbar' onSubmit={search} role='search'>
+        onClear={clearFilters}
+        clearable={Boolean(term)}
+        search={
+          <form className='catalog-search-toolbar' onSubmit={search} role='search'>
             <label className='field'>
               <span className='field__label'>Buscar en el catálogo</span>
               <span className='input-with-icon'><Search aria-hidden='true' /><input type='search' value={term} placeholder='CN, nombre o principio activo' onChange={(event) => setTerm(event.target.value)} /></span>
@@ -435,52 +441,35 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
             </label>
           </form>
         }
-        filters={
-          <>
-            <label className='field'>
-              <span className='field__label'>Trabajo de revisión</span>
-              <select aria-label='Trabajo de revisión' value={reviewScope} onChange={event => { setOffset(0); setReviewScope(event.target.value as ReviewScope) }}>{REVIEW_FILTERS.map(item => <option key={item.value} value={item.value} disabled={item.value === 'mine' && !reviewer}>{item.label}</option>)}</select>
-              {!reviewer && <small className='field__hint'>Identifícate en Equipo para ver «Mis tareas».</small>}
-            </label>
-            <label className='field'>
-              <span className='field__label'>Libro de origen</span>
-              <select value={sourceWorkbook ?? ''} onChange={event => selectSourceView(SOURCE_VIEWS.find(item => item.value === event.target.value) ?? null)}><option value=''>Todo el catálogo</option>{SOURCE_VIEWS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select>
-            </label>
-            {sourceWorkbook === null ? <label className='field'>
-              <span className='field__label'>Nivel farmacéutico</span>
-              <select value={entityType ?? ''} onChange={event => selectEntityType((event.target.value || null) as CatalogIdentityType | null)}>{ENTITY_FILTERS.map(item => <option key={item.label} value={item.value ?? ''}>{item.label}</option>)}</select>
-            </label> : <p className='catalog-source-context'>Libro: <strong>{SOURCE_LABELS[sourceWorkbook]}</strong><br />Tipo: <strong>{ENTITY_LABELS[entityType ?? ''] ?? entityType}</strong></p>}
-            {(entityType === null || entityType === 'presentation') && <>
-              <label className='field'>
-                <span className='field__label'>Clase comercial</span>
-                <select value={commercialClass ?? ''} onChange={event => selectCommercialClass(event.target.value || null)}>{CLASSIFICATION_FILTERS.map(item => <option key={item.label} value={item.value ?? ''}>{item.label}</option>)}</select>
-              </label>
-              <fieldset className='filter-group catalog-condition-filter'>
-                <legend>Condiciones</legend>
-                <div className='catalog-condition-filter__options'>
-                  {CONDITION_FILTERS.map((item) => <label key={item.value}>
-                    <input type='checkbox' checked={conditions.includes(item.value)} onChange={() => toggleCondition(item.value)} />
-                    {item.label}
-                  </label>)}
-                </div>
-                <small className='field__hint'>Al marcar varias, se muestran registros que cumplen todas.</small>
-              </fieldset>
-            </>}
-            <label className='catalog-toggle'>
-              <input type='checkbox' checked={showArchived} onChange={(event) => { setOffset(0); setShowArchived(event.target.checked) }} />
-              Incluir archivados
-            </label>
-            <button type='button' className='button button--secondary filter-reset' onClick={clearFilters} disabled={activeFilterCount === 0 && !term}>
-              Limpiar filtros{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
-            </button>
-          </>
+        aside={
+          <div className='catalog-quarantine-switch segmented' role='group' aria-label='Estado de los datos del catálogo'>
+            <button type='button' className='segmented__option' aria-pressed={!showQuarantine} onClick={() => setShowQuarantine(false)}>Registros vinculados</button>
+            <button type='button' className='segmented__option' aria-pressed={showQuarantine} onClick={() => setShowQuarantine(true)}><AlertTriangle size={14} aria-hidden='true' /> Filas en cuarentena{showQuarantine ? <span className='segmented__count'>{quarantineTotal}</span> : null}</button>
+          </div>
         }
       >
+        {canReadReview && <FilterSelect label='Revisión' name='Trabajo de revisión' value={reviewScope}
+          title={!reviewer ? 'Identifícate en Equipo y preferencias para ver «Mis tareas»' : undefined}
+          options={REVIEW_FILTERS.map(item => ({ value: item.value, label: item.label, disabled: item.value === 'mine' && !reviewer }))}
+          onChange={value => { setOffset(0); setReviewScope(value as ReviewScope) }} />}
+        <FilterSelect label='Libro' name='Libro de origen' value={sourceWorkbook ?? ''}
+          options={[{ value: '', label: 'Todo el catálogo' }, ...SOURCE_VIEWS.map(item => ({ value: item.value, label: item.label }))]}
+          onChange={value => selectSourceView(SOURCE_VIEWS.find(item => item.value === value) ?? null)} />
+        {sourceWorkbook === null && <FilterSelect label='Nivel' name='Nivel farmacéutico' value={entityType ?? ''}
+          options={ENTITY_FILTERS.map(item => ({ value: item.value ?? '', label: item.label }))}
+          onChange={value => selectEntityType((value || null) as CatalogIdentityType | null)} />}
+        {(entityType === null || entityType === 'presentation') && <>
+          <FilterSelect label='Clase' name='Clase comercial' value={commercialClass ?? ''}
+            options={CLASSIFICATION_FILTERS.map(item => ({ value: item.value ?? '', label: item.label }))}
+            onChange={value => selectCommercialClass(value || null)} />
+          <FilterChecks label='Condiciones' values={conditions}
+            options={CONDITION_FILTERS.map(item => ({ value: item.value, label: item.label }))}
+            hint='Al marcar varias, se muestran registros que cumplen todas.'
+            onToggle={toggleCondition} />
+        </>}
+        <FilterToggle label='Incluir archivados' checked={showArchived} onChange={checked => { setOffset(0); setShowArchived(checked) }} />
+      </FilterBar>
       <div ref={resultsRef} tabIndex={-1} aria-label='Resultados del catálogo' className='catalog-results'>
-        <div className='catalog-quarantine-switch segmented' role='group' aria-label='Estado de los datos del catálogo'>
-          <button type='button' className='segmented__option' aria-pressed={!showQuarantine} onClick={() => setShowQuarantine(false)}>Registros vinculados</button>
-          <button type='button' className='segmented__option' aria-pressed={showQuarantine} onClick={() => setShowQuarantine(true)}><AlertTriangle size={14} aria-hidden='true' /> Filas en cuarentena{showQuarantine ? <span className='segmented__count'>{quarantineTotal}</span> : null}</button>
-        </div>
         {showQuarantine && <section aria-label='Filas en cuarentena del catálogo'>
           <p className='alert alert--warning' role='status'><AlertTriangle size={16} aria-hidden='true' /> Estas {quarantineTotal} filas de excipientes están guardadas, pero no vinculadas a una especialidad. No forman parte del catálogo validado ni se pueden enviar a revisión hasta resolver su relación. Los filtros y la búsqueda superiores se aplican a los registros vinculados.</p>
           {quarantineError && <p className='alert alert--error' role='alert'>{quarantineError} <button type='button' className='button' onClick={() => setRetryKey(key => key + 1)}>Reintentar</button></p>}
@@ -507,16 +496,6 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
         </section>}
         {!showQuarantine && <>
         {queueError && <div className='alert alert--error' role='alert'>{queueError} <button type='button' className='button' onClick={() => setRetryKey((key) => key + 1)}>Reintentar</button></div>}
-        {activeFilterCount > 0 && <div className='catalog-active-filters' aria-label='Filtros activos' onClickCapture={() => window.requestAnimationFrame(() => resultsRef.current?.focus({ preventScroll: true }))}>
-          <span className='catalog-active-filters__label'>Filtros activos</span>
-          {query && <button type='button' className='chip' onClick={() => { setQuery(''); setTerm(''); setOffset(0) }}>Búsqueda: {query} ×</button>}
-          {sourceWorkbook && <button type='button' className='chip' onClick={() => selectSourceView(null)}>Libro: {SOURCE_LABELS[sourceWorkbook]} ×</button>}
-          {entityType && !sourceWorkbook && <button type='button' className='chip' onClick={() => selectEntityType(null)}>Nivel: {ENTITY_LABELS[entityType] ?? entityType} ×</button>}
-          {commercialClass && <button type='button' className='chip' onClick={() => { setCommercialClass(null); setOffset(0) }}>Clase: {CLASS_LABELS[commercialClass] ?? commercialClass} ×</button>}
-          {conditions.map((value) => <button key={value} type='button' className='chip' onClick={() => toggleCondition(value)}>Condición: {CONDITION_LABELS[value] ?? value} ×</button>)}
-          {showArchived && <button type='button' className='chip' onClick={() => { setShowArchived(false); setOffset(0) }}>Incluye archivados ×</button>}
-          {reviewScope !== 'all' && <button type='button' className='chip' onClick={() => { setReviewScope('all'); setOffset(0) }}>Revisión: {REVIEW_FILTERS.find((item) => item.value === reviewScope)?.label} ×</button>}
-        </div>}
         <AsyncBoundary
         loading={loading}
         error={error}
@@ -524,8 +503,8 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
         emptyTitle={activeFilterCount > 0 ? 'No hay resultados con estos filtros' : 'No hay identidades en el catálogo'}
         emptyDetail={
           activeFilterCount > 0
-            ? 'Pruebe con otros criterios o limpie los filtros para consultar todo el catálogo.'
-            : 'Todavía no hay identidades disponibles. Consulte el estado de las fuentes de datos.'
+            ? 'Prueba con otros criterios o limpia los filtros para ver todo el catálogo.'
+            : 'Todavía no hay identidades disponibles. Consulta el estado de las fuentes de datos.'
         }
         emptyAction={activeFilterCount > 0 ? <button type='button' className='button button--secondary' onClick={clearFilters}>Limpiar filtros</button> : undefined}
         onRetry={() => setRetryKey((k) => k + 1)}
@@ -548,7 +527,7 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
                 <tbody>
                   {data.items.map((item) => (
                     <tr key={item.id}>
-                      <th scope='row'><button type='button' className='catalog-row__name' onClick={() => openIdentity(item.id)}>{orDash(item.display_name)}</button>{item.identity_type === 'presentation' && <span className='catalog-row__tags'>{item.commercial_class && <span className='catalog-row__tag'>{CLASS_LABELS[item.commercial_class] ?? item.commercial_class}</span>}{item.conditions?.map((value) => <span className='catalog-row__tag catalog-row__tag--condition' key={value}>{CONDITION_LABELS[value] ?? value}</span>)}</span>}</th>
+                      <th scope='row'><button type='button' className='catalog-row__name' onClick={() => openIdentity(item.id)}>{orDash(item.display_name)}</button>{item.identity_type === 'presentation' && (item.commercial_class || item.conditions?.length) ? <span className='catalog-row__detail'>{[item.commercial_class ? CLASS_LABELS[item.commercial_class] ?? item.commercial_class : null, ...(item.conditions ?? []).map(value => CONDITION_LABELS[value] ?? value)].filter(Boolean).join(' · ')}</span> : null}</th>
                       <td><code>{orDash(item.code)}</code></td>
                       <td>{ENTITY_LABELS[item.identity_type] ?? item.identity_type}</td>
                       <td>{item.source_workbook ? SOURCE_LABELS[item.source_workbook] : <span className='muted'>Sin libro maestro</span>}</td>
@@ -597,7 +576,6 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
         </AsyncBoundary>
         </>}
       </div>
-      </FilterWorkspace>
       <RecordDialog open={selectedId !== null} onClose={() => { if (!navigating) { setSelectedId(null); setRecordId(null) } }}>
         <header className='record-dialog__header'>
           <h2 id='record-dialog-title'>Expediente del registro</h2>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Search } from 'lucide-react'
 
 import {
   fetchMaintenanceChange,
@@ -11,6 +12,7 @@ import { useQuery } from '../api/useQuery'
 import { useCapability } from '../auth/SessionContext'
 import { AsyncBoundary } from '../components/AsyncState'
 import { PageHeader } from '../components/PageHeader'
+import { FilterBar } from '../components/FilterBar'
 import { formatDateTime, shortHash } from '../domain/format'
 
 const CHANGE_LABELS: Record<number, string> = {
@@ -319,22 +321,25 @@ export function MaintenanceScreen() {
           </div>
           {data && <strong className='maintenance-history-search__total'>{data.total.toLocaleString('es-ES')} <span>novedades</span></strong>}
         </div>
-        <form onSubmit={(event) => {
-          event.preventDefault()
-          setRegistrationFilter(registrationInput.trim())
-          goToPage(1)
-        }}>
-          <label htmlFor='maintenance-registration'>N.º registro CIMA</label>
-          <input id='maintenance-registration' type='search' value={registrationInput}
-            onChange={(event) => setRegistrationInput(event.target.value)} maxLength={80}
-            placeholder='Buscar por número de registro' />
-          <button type='submit' className='button button--secondary'>Buscar</button>
-          {registrationFilter && <button type='button' className='button button--ghost' onClick={() => {
-            setRegistrationInput('')
-            setRegistrationFilter('')
-            goToPage(1)
-          }}>Limpiar búsqueda</button>}
-        </form>
+        <FilterBar label='Buscar en el histórico CIMA' activeCount={registrationFilter ? 1 : 0}
+          onClear={() => { setRegistrationInput(''); setRegistrationFilter(''); goToPage(1) }}
+          search={
+            <form role='search' onSubmit={(event) => {
+              event.preventDefault()
+              setRegistrationFilter(registrationInput.trim())
+              goToPage(1)
+            }}>
+              <label className='field' htmlFor='maintenance-registration'>
+                <span className='field__label'>N.º registro CIMA</span>
+                <span className='input-with-icon'><Search aria-hidden='true' /><input id='maintenance-registration' type='search' value={registrationInput}
+                  onChange={(event) => setRegistrationInput(event.target.value)} maxLength={80}
+                  placeholder='Buscar por número de registro' /></span>
+              </label>
+              <button type='submit' className='button button--primary'>Buscar</button>
+            </form>
+          }>
+          {registrationFilter && <span className='filter-pill' data-active='true'><span className='filter-pill__label'>Registro</span><strong>{registrationFilter}</strong></span>}
+        </FilterBar>
         {data && (
           <p className='state__detail'>
             {data.total > 0

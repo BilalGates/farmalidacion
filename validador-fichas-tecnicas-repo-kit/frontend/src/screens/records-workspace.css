@@ -1,5 +1,5 @@
 /* Espacio de trabajo compacto. Los estilos se limitan a Registros. */
-.content.content--records { padding: .8rem 1rem; }
+
 .screen.records-workspace { width: 100%; max-width: none; height: calc(100dvh - var(--records-top, 105px) - 12px); min-height: 440px; display: flex; flex-direction: column; gap: .6rem; animation: none; }
 .records-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex: none; }
 .records-heading h1 { font-size: 1.5rem; margin: 0; }

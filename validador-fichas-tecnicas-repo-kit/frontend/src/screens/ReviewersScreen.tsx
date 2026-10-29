@@ -80,7 +80,7 @@ export function ReviewersScreen({ embedded = false }: { embedded?: boolean }) {
         error={reviewers.error}
         empty={(reviewers.data?.length ?? 0) === 0}
         emptyTitle='No hay revisores dados de alta'
-        emptyDetail='Añada al menos un farmacéutico para poder firmar validaciones.'
+        emptyDetail='Añade al menos un farmacéutico para poder firmar validaciones.'
         onRetry={refresh}
       >
         {reviewers.data && (

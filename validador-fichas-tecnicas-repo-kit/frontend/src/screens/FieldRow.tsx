@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 
 import type { FieldValue, Reviewer, ValidationState } from '../api/types'
 import { ValidationBadge } from '../components/StateBadge'
+import { SourceComparison, divergentClaims } from '../components/SourceComparison'
 import { ProvenanceList } from '../components/ProvenanceList'
 import { SourceValue } from '../components/SourceValue'
 import { clearDraft, isEmptyDraft, readDraft, saveDraft } from '../domain/drafts'
@@ -39,6 +40,8 @@ export function FieldRow({
   expanded,
   onExpandedChange,
   onSaveAndAdvance,
+  openSignal = 0,
+  siblings = [],
 }: {
   value: FieldValue
   label?: string
@@ -51,12 +54,17 @@ export function FieldRow({
   expanded?: boolean
   onExpandedChange?: (open: boolean) => void
   onSaveAndAdvance?: (state: ValidationState, finalValue: string | null, comment: string | null) => void
+  /** Cada cambio a un valor positivo abre el editor (avance desde la pantalla). */
+  openSignal?: number
+  /** Otros valores del registro, para comparar los que compiten por el mismo campo. */
+  siblings?: readonly FieldValue[]
 }) {
   // El borrador se recupera al montar: recargar a mitad de una edición no
   // puede hacer que el revisor repita lo que ya había escrito.
   const restored = useRef(readDraft(recordId, value.id)).current
   const [localOpen, setLocalOpen] = useState(restored !== null)
   const open = canReview && (expanded ?? localOpen)
+  useEffect(() => { if (openSignal > 0) setLocalOpen(true) }, [openSignal])
   function setOpen(next: boolean | ((current: boolean) => boolean)) {
     const result = typeof next === 'function' ? next(open) : next
     if (onExpandedChange) onExpandedChange(result)
@@ -151,6 +159,7 @@ export function FieldRow({
           ) : (
             <span className='value'><SourceValue value={value.literal_value} /></span>
           )}
+          <SourceComparison claims={divergentClaims(value, siblings)} />
         </div>
         <div className='field-row__states'>
           <ValidationBadge state={value.validation_state} />
@@ -186,26 +195,30 @@ export function FieldRow({
           )}
           {recovered && (
             <p className='alert alert--info' role='status'>
-              Se ha recuperado lo que había escrito sin guardar. Revíselo antes de firmar.
+              Se ha recuperado lo que había escrito sin guardar. Revísalo antes de firmar.
             </p>
           )}
           <div className='review__grid'>
-            <label className='field'>
-              <span className='field__label'>Decisión</span>
-              <select
-                aria-label='Decisión de revisión'
-                disabled={saving}
-                value={state}
-                onChange={(event) => setState(event.target.value as ValidationState | '')}
-              >
-                <option value=''>Seleccione una decisión…</option>
+            {/* Las decisiones se ven todas a la vez: elegir es comparar, y un
+                desplegable obliga a abrirlo para saber qué opciones hay. */}
+            <fieldset className='decision-choice field--wide' aria-label='Decisión de revisión' disabled={saving}>
+              <legend className='field__label'>Decisión</legend>
+              <div className='decision-choice__options'>
                 {ASSIGNABLE_STATES.map((item) => (
-                  <option key={item} value={item} disabled={['no_consta', 'no_aplica'].includes(item) && !reviewer?.may_sign_pharmacist_states}>
+                  <label key={item} className='decision-choice__option'>
+                    <input
+                      type='radio'
+                      name={`decision-${value.id}`}
+                      value={item}
+                      checked={state === item}
+                      disabled={['no_consta', 'no_aplica'].includes(item) && !reviewer?.may_sign_pharmacist_states}
+                      onChange={() => setState(item)}
+                    />
                     {VALIDATION_STATE_LABELS[item]}
-                  </option>
+                  </label>
                 ))}
-              </select>
-            </label>
+              </div>
+            </fieldset>
 
             {needsValue && (
               <label className='field'>
@@ -215,7 +228,7 @@ export function FieldRow({
                   aria-label='Valor final'
                   disabled={saving}
                   value={finalValue}
-                  placeholder='Escriba el valor que valida'
+                  placeholder='Escribe el valor que validas'
                   onChange={(event) => setFinalValue(event.target.value)}
                 />
               </label>
@@ -267,10 +280,10 @@ export function FieldRow({
               Guardar y siguiente campo
             </button>}
             {reviewer === null && (
-              <span className='muted'>Seleccione un revisor para poder firmar.</span>
+              <span className='muted'>Identifícate en Equipo y preferencias para poder firmar.</span>
             )}
             {missingValue && (
-              <span className='field-error'>Escriba el valor final antes de guardar.</span>
+              <span className='field-error'>Escribe el valor final antes de guardar.</span>
             )}
             {missingComment && (
               <span className='field-error'>«No aplica» exige un comentario.</span>

@@ -9,11 +9,17 @@ import type { ReactNode } from 'react'
  * devuelve nada» es información, no decoración.
  */
 
-export function LoadingState({ label = 'Cargando…' }: { label?: string }) {
+/**
+ * Carga con la forma de lo que llega: unas filas tenues en lugar de un texto
+ * suelto, para que la página no salte al aparecer los datos. El texto sigue
+ * ahí para quien usa lector de pantalla.
+ */
+export function LoadingState({ label = 'Cargando…', rows = 4 }: { label?: string; rows?: number }) {
   return (
-    <p className='state state--loading' role='status'>
-      {label}
-    </p>
+    <div className='state state--loading skeleton' role='status' aria-busy='true'>
+      <span className='visually-hidden'>{label}</span>
+      {Array.from({ length: rows }, (_, index) => <span key={index} className='skeleton__row' aria-hidden='true'><span /><span /><span /></span>)}
+    </div>
   )
 }
 

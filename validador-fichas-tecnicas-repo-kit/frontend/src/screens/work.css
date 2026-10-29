@@ -1,29 +1,14 @@
 /* Trabajo: cola de revisión. */
 
-.app-shell .queue-add {
-  grid-template-columns: minmax(220px, 1fr) minmax(140px, 220px) auto auto;
-  align-items: end;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-}
-.app-shell .queue-add .queue-toolbar__title { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 34px; color: var(--ink); font-size: var(--text-sm); font-weight: var(--weight-semibold); white-space: nowrap; grid-column: 1 / -1; }
-.app-shell .queue-add .queue-check { min-height: 34px; font-size: var(--text-sm); }
+.app-shell .queue-add .queue-check { font-size: var(--text-sm); }
 
 .app-shell .queue-list__icon { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-small); color: var(--ink-soft); background: var(--line-soft); }
 .app-shell .queue-list__identity strong { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: var(--weight-medium); }
-
-@media (max-width: 1100px) {
-  .app-shell .queue-add { grid-template-columns: minmax(200px, 1fr) minmax(130px, 180px) auto; }
-}
-@media (max-width: 700px) {
-  .app-shell .queue-add { grid-template-columns: 1fr; }
-}
 
 /* Filas de la cola: identidad, estado en columna fija y acciones discretas. */
 .app-shell .queue-list > li { grid-template-columns: auto minmax(220px, 1fr) 132px minmax(0, 420px); }
 .app-shell .queue-list > li > .badge { justify-self: start; }
 .app-shell .queue-list__actions { gap: var(--space-1); }
-.app-shell .queue-list__actions .button { min-height: 28px; padding: 0 var(--space-2); font-size: var(--text-xs); }
 .app-shell .queue-list__actions .button:last-child { border-color: transparent; color: var(--accent-strong); background: transparent; }
 .app-shell .queue-list__actions .button:last-child:hover { background: var(--accent-soft); }
 
@@ -34,3 +19,10 @@
   .app-shell .queue-list > li { grid-template-columns: auto minmax(0, 1fr) 132px; }
   .app-shell .queue-list__actions { grid-column: 2 / -1; justify-content: flex-start; }
 }
+
+/* Alta en la cola: una fila de herramientas, no un recuadro. */
+.app-shell .queue-add { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); margin: 0; padding: 0; border: 0; background: none; }
+.app-shell .queue-add__title { align-self: center; padding-top: 18px; color: var(--ink-faint); font-size: var(--text-xs); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.app-shell .queue-add__record { flex: 1 1 280px; }
+.app-shell .queue-add > .field:not(.queue-add__record) { flex: 0 1 180px; }
+.app-shell .queue-add .queue-check { height: var(--control-height); min-height: 0; }

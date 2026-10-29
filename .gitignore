@@ -1,2 +1,8 @@
 # Caché local de dependencias de pnpm
 /.pnpm-store/
+
+# Cachés de Python de las skills (p. ej. ui-ux-pro-max)
+__pycache__/
+
+# Worktrees locales de Claude Code
+/.claude/worktrees/

@@ -144,7 +144,7 @@ export function BlockEditor({
       </div>
 
       {reviewer === null && (
-        <p className='muted'>Seleccione un revisor para poder editar el bloque.</p>
+        <p className='muted'>Identifícate en Equipo y preferencias para editar el bloque.</p>
       )}
       {error && (
         <p className='alert alert--error' role='alert'>
@@ -243,7 +243,7 @@ export function BlockEditor({
                       value={mergeTarget}
                       onChange={(event) => setMergeTarget(event.target.value)}
                     >
-                      <option value=''>Seleccione una ocurrencia…</option>
+                      <option value=''>Elige una ocurrencia…</option>
                       {occurrences
                         .filter((item) => item.occurrence_id !== occurrence.occurrence_id)
                         .map((item) => (

@@ -7,8 +7,10 @@ const styles = tokens + readFileSync('src/studio.css', 'utf8')
 const entry = readFileSync('src/main.tsx', 'utf8')
 
 describe('tipografia global', () => {
-  it('usa tipografia del sistema y evita fabricar grosores borrosos', () => {
-    expect(styles).toContain("--font-ui: 'Segoe UI Variable', 'Segoe UI', Inter, system-ui, sans-serif")
+  it('sirve sus propias letras con respaldo del sistema y evita fabricar grosores', () => {
+    expect(styles).toContain("--font-ui: 'IBM Plex Sans', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif")
+    expect(styles).toContain('font-synthesis: none')
+    expect(entry).toContain("import '@fontsource/ibm-plex-sans/latin-400.css'")
     expect(entry.indexOf("import './studio.css'")).toBeGreaterThan(entry.indexOf("import './styles.css'"))
     expect(entry.indexOf("import './ui/tokens.css'")).toBeLessThan(entry.indexOf("import './styles.css'"))
   })
@@ -25,7 +27,7 @@ describe('tokens', () => {
 describe('capa común y hojas migradas', () => {
   // El código nuevo sólo usa tokens: un color o un tamaño escrito a mano es
   // exactamente la deriva que llevó a cinco paletas superpuestas.
-  const migrated = ['src/ui/components.css', 'src/screens/catalog.css', 'src/screens/work.css', 'src/screens/sources.css']
+  const migrated = ['src/ui/filters.css', 'src/ui/shell.css', 'src/ui/components.css', 'src/screens/catalog.css', 'src/screens/work.css', 'src/screens/sources.css', 'src/screens/review.css', 'src/screens/dashboard.css']
   it.each(migrated)('%s no escribe colores ni tamaños de letra literales', (file) => {
     const css = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
     expect(css).not.toMatch(/#[0-9a-f]{3,8}\b/i)
@@ -39,7 +41,7 @@ describe('sistema visual profesional', () => {
     for (const token of ['--accent:', '--success:', '--warn:', '--danger:', '--info:', '--space-4:', '--radius:', '--text-title:', '--z-popover:']) {
       expect(styles).toContain(token)
     }
-    expect(styles).toContain('.button--primary { border-color: var(--accent);')
+    expect(readFileSync('src/ui/components.css', 'utf8')).toContain('.app-shell .button--primary { border-color: var(--accent-fill); color: var(--on-accent); background: var(--accent-fill); }')
     expect(styles).not.toContain('linear-gradient(')
   })
 

@@ -81,7 +81,7 @@ it('no permite editar sin revisor seleccionado', () => {
     />,
   )
   expect(screen.getByRole('button', { name: 'Añadir ocurrencia' })).toBeDisabled()
-  expect(screen.getByText(/Seleccione un revisor/)).toBeInTheDocument()
+  expect(screen.getByText(/Identifícate en Equipo y preferencias/)).toBeInTheDocument()
 })
 
 it('exige motivo antes de eliminar y advierte si la ocurrencia es importada', async () => {

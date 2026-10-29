@@ -60,30 +60,37 @@ it('no permite asignar sin revisor', async () => {
   await waitFor(() => expect(screen.getByRole('button', { name: 'Asignarme' })).toBeDisabled())
 })
 
-it('envía los filtros explícitos al servidor', async () => {
+it('aplica cada filtro al momento y envía los filtros acumulados al servidor', async () => {
   const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify([])))
   vi.stubGlobal('fetch', fetchMock)
   render(<QueueScreen reviewer={null} />)
   await screen.findByText('La cola está al día')
-  fireEvent.change(screen.getByLabelText('Entidad'), { target: { value: 'medicamento' } })
-  fireEvent.change(screen.getByLabelText('Bloque'), { target: { value: 'general' } })
-  fireEvent.change(screen.getByLabelText('Filtrar por conjunto'), { target: { value: 'oro' } })
-  fireEvent.change(screen.getByLabelText('Filtrar doble validación'), { target: { value: 'true' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Aplicar filtros' }))
+  const commit = (label: string, value: string) => {
+    fireEvent.change(screen.getByLabelText(label), { target: { value } })
+    fireEvent.keyDown(screen.getByLabelText(label), { key: 'Enter' })
+  }
+  commit('Entidad', 'medicamento')
   await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
-  expect(fetchMock.mock.calls[1][0]).toContain(
+  commit('Bloque', 'general')
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+  fireEvent.change(screen.getByLabelText('Filtrar por conjunto'), { target: { value: 'oro' } })
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4))
+  fireEvent.change(screen.getByLabelText('Filtrar doble validación'), { target: { value: 'true' } })
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(5))
+  expect(fetchMock.mock.calls[4][0]).toContain(
     '/queue?entity_type=medicamento&block_type=general&review_set=oro&requires_second_review=true',
   )
   expect(await screen.findByText('No hay resultados')).toBeInTheDocument()
   expect(screen.getByText('Ningún registro coincide con los filtros aplicados.')).toBeInTheDocument()
+  // Escribir sin confirmar no consulta: el texto se aplica con Intro o al salir del campo.
   fireEvent.change(screen.getByLabelText('Entidad'), { target: { value: 'especialidad' } })
-  expect(screen.getByRole('status')).toHaveTextContent('Filtros modificados sin aplicar')
   fireEvent.click(screen.getByRole('button', { name: 'Actualizar cola' }))
-  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
-  expect(fetchMock.mock.calls[2][0]).toContain('entity_type=medicamento')
-  expect(fetchMock.mock.calls[2][0]).not.toContain('entity_type=especialidad')
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(6))
+  expect(fetchMock.mock.calls[5][0]).toContain('entity_type=medicamento')
+  expect(fetchMock.mock.calls[5][0]).not.toContain('entity_type=especialidad')
   fireEvent.click(screen.getByText('No hay resultados').closest('.queue-empty')!.querySelector('button')!)
-  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4))
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(7))
+  expect(fetchMock.mock.calls[6][0]).not.toContain('entity_type')
   expect(await screen.findByText('La cola está al día')).toBeInTheDocument()
 })
 
