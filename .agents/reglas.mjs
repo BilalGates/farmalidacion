@@ -7,7 +7,7 @@ const FRONT = "validador-fichas-tecnicas-repo-kit/frontend/src/";
 const HOJAS_NUEVAS = /frontend\/src\/(ui|screens)\/[^/]+\.css$/;
 const HISTORICAS = /frontend\/src\/(styles|studio)\.css$/;
 // Formas de usted que ya se retiraron de la interfaz (la app trata de tú).
-const USTED = /['">`]\s*(Seleccione|Consulte|Revise|Pruebe|Indique|Inténtelo|Recargue|Filtre|Añada|Elija|Abra|Pulse|Introduzca|Escriba|Identifíquese|Compruebe)\b/;
+const USTED = /['">`]\s*(Seleccione|Consulte|Revise|Pruebe|Indique|Inténtelo|Recargue|Filtre|Añada|Elija|Abra|Pulse|Introduzca|Escriba|Identifíquese|Compruebe|Revíse\p{L}*)(?!\p{L})/u;
 // Caracteres que se usaron como iconos; los iconos vienen de lucide-react.
 const ICONOS_TEXTO = /[◷✓⌕▤↻◇]/;
 
