@@ -1,0 +1,43 @@
+/* Resumen: cifras que llevan a sus casos, sobre el mismo papel y con líneas. */
+
+/* Títulos de sección con la voz de documento. */
+.app-shell .dashboard-priorities > h2,
+.app-shell .dashboard-explorer__head h2 { margin: 0 0 var(--space-3); font-family: var(--font-display); font-size: var(--text-xl); font-weight: var(--weight-regular); letter-spacing: -.01em; }
+.app-shell .dashboard-explorer__group h3 { margin: 0; font-size: var(--text-base); font-weight: var(--weight-semibold); }
+
+/* «Atención ahora»: una banda de cifras separadas por líneas, no cuatro cajas. */
+.app-shell .dashboard-priorities__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-block: 1px solid var(--line-soft); }
+.app-shell .dashboard-priority { display: grid; align-content: start; gap: 2px; padding: var(--space-4) var(--space-5); border: 0; border-radius: 0; background: none; box-shadow: none; }
+.app-shell .dashboard-priority + .dashboard-priority { border-left: 1px solid var(--line-soft); }
+.app-shell .dashboard-priority p { margin: 0; color: var(--ink-soft); font-size: var(--text-sm); }
+.app-shell .dashboard-priority strong { color: var(--ink); font-size: var(--text-figure); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; line-height: 1.15; }
+.app-shell .dashboard-priority span { color: var(--ink-faint); font-size: var(--text-xs); }
+.app-shell .dashboard-priority__action,
+.app-shell .dashboard-segment__missing { justify-self: start; margin-top: var(--space-2); padding: 0; border: 0; color: var(--accent-strong); background: none; font: inherit; font-size: var(--text-sm); font-weight: var(--weight-medium); text-decoration: none; cursor: pointer; }
+.app-shell :is(.dashboard-priority__action, .dashboard-segment__missing):hover { text-decoration: underline; text-underline-offset: 3px; }
+.app-shell .dashboard-segment__missing { margin: 4px 0 var(--space-3); font-size: var(--text-xs); }
+
+/* «Cobertura y calidad»: la barra de filtros es parte de la cabecera. */
+.app-shell .dashboard-explorer__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.app-shell .dashboard-explorer__head p { margin: 0; color: var(--ink-soft); font-size: var(--text-sm); }
+.app-shell .dashboard-explorer__head .filter-bar { padding: 0; border: 0; }
+.app-shell .dashboard-explorer__total { margin: var(--space-4) 0 var(--space-5); color: var(--ink-soft); }
+.app-shell .dashboard-explorer__total strong { color: var(--ink); font-size: var(--text-xl); font-variant-numeric: tabular-nums; }
+.app-shell .dashboard-explorer__columns { gap: var(--space-8); }
+.app-shell .dashboard-explorer__denominator { margin: 2px 0 var(--space-3); color: var(--ink-faint); font-size: var(--text-xs); }
+
+/* Segmentos: etiqueta, cifra y una barra fina. */
+.app-shell .dashboard-segment { display: grid; gap: 6px; width: 100%; padding: var(--space-2) 0; border: 0; border-radius: 0; color: var(--ink); background: none; font: inherit; text-align: left; cursor: pointer; }
+.app-shell .dashboard-segment:hover .dashboard-segment__line strong { color: var(--accent-strong); }
+.app-shell .dashboard-segment__line { display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-sm); }
+.app-shell .dashboard-segment__line strong { font-weight: var(--weight-medium); }
+.app-shell .dashboard-segment__line span { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.app-shell .dashboard-segment__track { height: 4px; border-radius: 2px; background: var(--line-faint); overflow: hidden; }
+.app-shell .dashboard-segment__track span { display: block; height: 100%; border-radius: 2px; background: var(--accent-fill); }
+.app-shell .dashboard-explorer__note { margin: var(--space-6) 0 0; padding-top: var(--space-3); border-top: 1px solid var(--line-faint); color: var(--ink-faint); font-size: var(--text-xs); }
+
+@media (max-width: 900px) {
+  .app-shell .dashboard-priorities__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app-shell .dashboard-priority:nth-child(3) { border-left: 0; }
+  .app-shell .dashboard-priority:nth-child(n + 3) { border-top: 1px solid var(--line-soft); }
+}

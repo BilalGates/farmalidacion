@@ -20,6 +20,7 @@ import './screens/catalog.css'
 import './screens/work.css'
 import './screens/sources.css'
 import './screens/review.css'
+import './screens/dashboard.css'
 
 const root = document.getElementById('root')
 
