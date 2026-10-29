@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { Check } from 'lucide-react'
 
 import type { Reviewer } from '../api/types'
 
@@ -72,7 +73,7 @@ export function ReviewerSelect({
           <button id={`${listId}-option-0`} tabIndex={-1} type='button' role='option' aria-selected={value === ''} onClick={() => choose('')}>
             <span className='reviewer-select__option-avatar' aria-hidden='true'>—</span>
             <span><strong>Sin revisor</strong><small>Consultar sin firmar</small></span>
-            {value === '' && <span aria-hidden='true'>✓</span>}
+            {value === '' && <Check size={14} aria-hidden='true' />}
           </button>
           {reviewers.map((item, index) => (
             <button
@@ -86,7 +87,7 @@ export function ReviewerSelect({
             >
               <span className='reviewer-select__option-avatar' aria-hidden='true'>{item.display_name.slice(0, 1).toUpperCase()}</span>
               <span><strong>{item.display_name}</strong><small>{item.role_label}</small></span>
-              {value === item.identifier && <span aria-hidden='true'>✓</span>}
+              {value === item.identifier && <Check size={14} aria-hidden='true' />}
             </button>
           ))}
         </div>

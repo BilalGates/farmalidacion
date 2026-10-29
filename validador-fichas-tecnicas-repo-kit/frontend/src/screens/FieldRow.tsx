@@ -195,7 +195,7 @@ export function FieldRow({
           )}
           {recovered && (
             <p className='alert alert--info' role='status'>
-              Se ha recuperado lo que había escrito sin guardar. Revíselo antes de firmar.
+              Se ha recuperado lo que había escrito sin guardar. Revísalo antes de firmar.
             </p>
           )}
           <div className='review__grid'>
@@ -228,7 +228,7 @@ export function FieldRow({
                   aria-label='Valor final'
                   disabled={saving}
                   value={finalValue}
-                  placeholder='Escriba el valor que valida'
+                  placeholder='Escribe el valor que validas'
                   onChange={(event) => setFinalValue(event.target.value)}
                 />
               </label>
@@ -283,7 +283,7 @@ export function FieldRow({
               <span className='muted'>Identifícate en Equipo y preferencias para poder firmar.</span>
             )}
             {missingValue && (
-              <span className='field-error'>Escriba el valor final antes de guardar.</span>
+              <span className='field-error'>Escribe el valor final antes de guardar.</span>
             )}
             {missingComment && (
               <span className='field-error'>«No aplica» exige un comentario.</span>
