@@ -4,6 +4,7 @@ import type { DashboardSegment } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { AsyncBoundary } from '../components/AsyncState'
 import { PageHeader } from '../components/PageHeader'
+import { FilterBar, FilterSelect } from '../components/FilterBar'
 import { useCapability } from '../auth/SessionContext'
 
 const number = (value: number) => value.toLocaleString('es-ES')
@@ -119,20 +120,15 @@ export function DashboardScreen() {
           <section className='dashboard-explorer' aria-label='Explorar cobertura y calidad'>
             <div className='dashboard-explorer__head'>
               <div><h2>Cobertura y calidad</h2><p>Compare grupos y abra los registros detrás de cada barra.</p></div>
-              <div className='dashboard-explorer__filters'>
-                <label>Tipo de registro
-                  <select value={entityType} onChange={event => { setEntityType(event.target.value); setSelected(null) }}>
-                    <option value=''>Todos</option>
-                    {data.entity_types.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}
-                  </select>
-                </label>
-                <label>Fuente enlazada
-                  <select value={sourceType} onChange={event => { setSourceType(event.target.value); setSelected(null) }}>
-                    <option value=''>Todas</option>
-                    {data.sources.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}
-                  </select>
-                </label>
-              </div>
+              <FilterBar label='Filtrar cobertura y calidad' activeCount={Number(Boolean(entityType)) + Number(Boolean(sourceType))}
+                onClear={() => { setEntityType(''); setSourceType(''); setSelected(null) }}>
+                <FilterSelect label='Tipo' name='Tipo de registro' value={entityType}
+                  options={[{ value: '', label: 'Todos' }, ...data.entity_types.map(item => ({ value: item.key, label: item.label }))]}
+                  onChange={value => { setEntityType(value); setSelected(null) }} />
+                <FilterSelect label='Fuente' name='Fuente enlazada' value={sourceType}
+                  options={[{ value: '', label: 'Todas' }, ...data.sources.map(item => ({ value: item.key, label: item.label }))]}
+                  onChange={value => { setSourceType(value); setSelected(null) }} />
+              </FilterBar>
             </div>
             <p className='dashboard-explorer__total'><strong>{number(data.total_records)}</strong> registros reales en la selección</p>
             {data.total_records === 0 && <p className='state state--empty'>No hay registros para estos filtros.</p>}

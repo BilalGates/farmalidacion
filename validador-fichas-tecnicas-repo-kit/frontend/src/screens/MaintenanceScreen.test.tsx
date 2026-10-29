@@ -85,7 +85,7 @@ it('permite recorrer el histórico y buscar un número de registro', async () =>
   fireEvent.click(screen.getByRole('button', { name: 'Buscar' }))
   expect(await screen.findByText('70000')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Más antiguas' })).not.toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'Limpiar búsqueda' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros · 1' }))
   expect(await screen.findByText('51347')).toBeInTheDocument()
   expect(screen.getAllByText('Página 1 de 2')).toHaveLength(2)
 })

@@ -93,3 +93,9 @@
 
 /* El desplegable se ajusta a su valor, no a la opción más larga. */
 .app-shell .filter-pill select { width: auto; field-sizing: content; }
+
+/* Buscadores dentro de la barra: el campo ocupa su hueco y deja sitio al icono. */
+.app-shell .filter-bar .input-with-icon { display: block; }
+.app-shell .filter-bar .input-with-icon input { width: 100%; max-width: none; padding-left: 2rem; }
+.app-shell .filter-bar__search > form { margin: 0; }
+.app-shell .panel .filter-bar { margin-top: var(--space-4); }
