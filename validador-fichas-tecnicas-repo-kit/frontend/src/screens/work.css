@@ -26,3 +26,22 @@
 .app-shell .queue-add__record { flex: 1 1 280px; }
 .app-shell .queue-add > .field:not(.queue-add__record) { flex: 0 1 180px; }
 .app-shell .queue-add .queue-check { height: var(--control-height); min-height: 0; }
+
+/* ── Revisión: cola y segunda lectura en una página ────────────────────── */
+.app-shell .work-screen { gap: var(--space-8); }
+.app-shell .work-figures { display: flex; gap: var(--space-6); margin: 0; }
+.app-shell .work-figures dt { color: var(--ink-faint); font-size: var(--text-xs); }
+.app-shell .work-figures dd { margin: 0; font-family: var(--font-mono); font-size: var(--text-xl); line-height: 1.2; }
+.app-shell .work-figures [data-alert='true'] dd { color: var(--danger); }
+
+/* Cada bloque es un recuadro beige claro sobre el lienzo. */
+.app-shell .work-block { gap: var(--space-4); padding: var(--panel-pad); border: 1px solid var(--line-soft); border-radius: 10px; background: var(--surface); scroll-margin-top: var(--space-4); }
+.app-shell .work-block__head h2 { margin: 0; font-family: var(--font-display); font-size: var(--text-xl); font-weight: var(--weight-regular); }
+.app-shell .work-block__head p { margin: var(--space-1) 0 0; color: var(--ink-soft); font-size: var(--text-sm); }
+.app-shell .work-block__note { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-control); color: var(--ink-soft); background: var(--surface-tint); font-size: var(--text-sm); }
+.app-shell .work-block .queue-panel,
+.app-shell .work-block .validation-panel { background: var(--surface-raised); }
+.app-shell .work-block .validation-panel h3 { margin: 0 0 var(--space-3); font-family: var(--font-display); font-size: var(--text-lg); font-weight: var(--weight-regular); }
+.app-shell .work-block__closed { grid-column: 1 / -1; }
+.app-shell .work-block__closed summary { font-family: var(--font-display); font-size: var(--text-lg); cursor: pointer; }
+.app-shell .work-block__closed[open] summary { margin-bottom: var(--space-3); }
