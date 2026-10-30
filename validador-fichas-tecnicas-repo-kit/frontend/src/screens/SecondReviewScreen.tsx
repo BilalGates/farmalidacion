@@ -30,7 +30,14 @@ import { useCapability } from '../auth/SessionContext'
 
 const OPEN_STATES = ['pendiente', 'en_revision']
 
-export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) {
+export interface SecondReviewCounts { open: number; conflicts: number; closed: number }
+
+export function SecondReviewScreen({ reviewer, embedded = false, onCounts }: {
+  reviewer: Reviewer | null
+  /** Dentro de la página de Revisión: bloque con título propio y cerradas plegadas. */
+  embedded?: boolean
+  onCounts?: (counts: SecondReviewCounts) => void
+}) {
   const canReview = useCapability('review.write')
   const canReconcile = useCapability('review.reconcile')
   const [items, setItems] = useState<SecondReviewItem[]>([])
@@ -114,6 +121,30 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
     }
   }
 
+  const open = items.filter((item) => OPEN_STATES.includes(item.state))
+  const conflicts = items.filter((item) => item.state === 'desacuerdo')
+  const closed = items.filter((item) => ['acuerdo', 'conciliado'].includes(item.state))
+  useEffect(() => { onCounts?.({ open: open.length, conflicts: conflicts.length, closed: closed.length }) }, [open.length, conflicts.length, closed.length, onCounts])
+
+  const blockHead = <header className='work-block__head'><h2 id='work-block-second'>Segunda lectura</h2><p>Emite una segunda lectura sin ver la primera. Las discrepancias requieren conciliación explícita antes de exportar.</p></header>
+  const Panel = embedded ? 'h3' : 'h2'
+
+  if (reviewer === null && embedded) {
+    return <section className='screen work-block' id='segunda-lectura' aria-labelledby='work-block-second'>
+      {blockHead}
+      <p className='work-block__note'>Identifícate en <a href='#/revisores'>Equipo y preferencias</a> para hacer segundas lecturas: cada una exige saber quién la firma.</p>
+    </section>
+  }
+
+  // Sin nada que mostrar y con la API negándose (p. ej. segunda revisión
+  // desactivada), el bloque se queda en una línea en vez de tres paneles vacíos.
+  if (embedded && error && items.length === 0 && active === null) {
+    return <section className='screen work-block' id='segunda-lectura' aria-labelledby='work-block-second'>
+      {blockHead}
+      <p className='work-block__note' role='status'>{error}</p>
+    </section>
+  }
+
   if (reviewer === null) {
     return (
       <div className='screen'>
@@ -127,13 +158,23 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
     )
   }
 
-  const open = items.filter((item) => OPEN_STATES.includes(item.state))
-  const conflicts = items.filter((item) => item.state === 'desacuerdo')
-  const closed = items.filter((item) => ['acuerdo', 'conciliado'].includes(item.state))
+  const Root = embedded ? 'section' : 'div'
+  const closedList = closed.length === 0 ? (
+    <div className='empty-state empty-state--compact'><span className='empty-state__icon' aria-hidden='true'><Archive size={16} /></span><p>Todavía no hay segundas lecturas cerradas.</p></div>
+  ) : (
+    <ul className='conflicts'>
+      {closed.map((item) => (
+        <li key={item.id}>
+          <span className='conflicts__field'>{item.target_record_id}<small>{item.field_name}</small></span>
+          <span className='badge badge--confirmado'>{item.state}</span>
+        </li>
+      ))}
+    </ul>
+  )
 
   return (
-    <div className='screen'>
-      <PageHeader eyebrow='Segunda validación' title='Validaciones' description='Emite una segunda lectura sin ver la primera. Las discrepancias requieren conciliación explícita antes de exportar.' />
+    <Root className={embedded ? 'screen work-block' : 'screen'} id={embedded ? 'segunda-lectura' : undefined} aria-labelledby={embedded ? 'work-block-second' : undefined}>
+      {embedded ? blockHead : <PageHeader eyebrow='Segunda validación' title='Validaciones' description='Emite una segunda lectura sin ver la primera. Las discrepancias requieren conciliación explícita antes de exportar.' />}
       <h2 className='visually-hidden' ref={pageHeading} tabIndex={-1}>Lista de validaciones</h2>
 
       {notice && (
@@ -147,15 +188,15 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
         </p>
       )}
 
-      <div className='validation-overview' aria-label='Resumen de validaciones'>
+      {!embedded && <div className='validation-overview' aria-label='Resumen de validaciones'>
         <div><span className='validation-overview__icon' aria-hidden='true'><Clock size={16} /></span><strong>{open.length}</strong><small>Pendientes</small></div>
         <div><span className='validation-overview__icon validation-overview__icon--danger' aria-hidden='true'><AlertTriangle size={16} /></span><strong>{conflicts.length}</strong><small>Discrepancias</small></div>
         <div><span className='validation-overview__icon validation-overview__icon--success' aria-hidden='true'><Check size={16} /></span><strong>{closed.length}</strong><small>Cerradas</small></div>
-      </div>
+      </div>}
 
       <div className='validation-grid'>
       <section className='panel validation-panel'>
-        <h2>Pendientes de segunda lectura ({open.length})</h2>
+        <Panel>Pendientes de segunda lectura ({open.length})</Panel>
         {open.length === 0 ? (
           <div className='empty-state empty-state--compact'><span className='empty-state__icon' aria-hidden='true'><Clock size={16} /></span><p>No hay campos esperando una segunda lectura tuya.</p></div>
         ) : (
@@ -250,7 +291,7 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
       )}
 
       <section className='panel validation-panel'>
-        <h2>Discrepancias por conciliar ({conflicts.length})</h2>
+        <Panel>Discrepancias por conciliar ({conflicts.length})</Panel>
         {conflicts.length === 0 ? (
           <div className='empty-state empty-state--compact'><span className='empty-state__icon' aria-hidden='true'><Check size={16} /></span><p>No hay discrepancias abiertas.</p></div>
         ) : (
@@ -276,22 +317,18 @@ export function SecondReviewScreen({ reviewer }: { reviewer: Reviewer | null }) 
         </p>
       </section>
 
-      <section className='panel validation-panel'>
-        <h2>Cerradas ({closed.length})</h2>
-        {closed.length === 0 ? (
-          <div className='empty-state empty-state--compact'><span className='empty-state__icon' aria-hidden='true'><Archive size={16} /></span><p>Todavía no hay segundas lecturas cerradas.</p></div>
-        ) : (
-          <ul className='conflicts'>
-            {closed.map((item) => (
-              <li key={item.id}>
-                <span className='conflicts__field'>{item.target_record_id}<small>{item.field_name}</small></span>
-                <span className='badge badge--confirmado'>{item.state}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {embedded ? (
+        <details className='panel validation-panel work-block__closed'>
+          <summary>Cerradas ({closed.length})</summary>
+          {closedList}
+        </details>
+      ) : (
+        <section className='panel validation-panel'>
+          <h2>Cerradas ({closed.length})</h2>
+          {closedList}
+        </section>
+      )}
       </div>
-    </div>
+    </Root>
   )
 }

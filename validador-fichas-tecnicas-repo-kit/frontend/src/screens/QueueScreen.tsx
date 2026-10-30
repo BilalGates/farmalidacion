@@ -20,7 +20,12 @@ const labels: Record<string, string> = {
   completado: 'Completado', requiere_segunda_revision: 'Segunda revisión', bloqueado: 'Bloqueado',
 }
 
-export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
+export function QueueScreen({ reviewer, embedded = false, onCount }: {
+  reviewer: Reviewer | null
+  /** Dentro de la página de Revisión: bloque con título propio, sin cabecera de página. */
+  embedded?: boolean
+  onCount?: (count: number) => void
+}) {
   const canReview = useCapability('review.write')
   const [items, setItems] = useState<QueueItem[]>([])
   const [error, setError] = useState('')
@@ -86,6 +91,7 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
   }
 
   const visibleItems = items
+  useEffect(() => { onCount?.(items.length) }, [items.length, onCount])
   function clearFilters() {
     setStateFilter('')
     setEntityFilter('')
@@ -94,10 +100,13 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
     setSecondFilter('')
   }
 
-  return <div className='screen'>
-    <PageHeader eyebrow='Trabajo del equipo' title='Cola de revisión' description='Filtra los pendientes, selecciónalos y asígnate un lote antes de abrir cada ficha.' actions={<div className='page-stat' aria-label={`${items.length} registros en la cola`}>
+  const Root = embedded ? 'section' : 'div'
+  return <Root className={embedded ? 'screen work-block' : 'screen'} aria-labelledby={embedded ? 'work-block-queue' : undefined}>
+    {embedded
+      ? <header className='work-block__head'><h2 id='work-block-queue'>Cola</h2><p>Filtra los pendientes, selecciónalos y asígnate un lote antes de abrir cada ficha.</p></header>
+      : <PageHeader eyebrow='Trabajo del equipo' title='Cola de revisión' description='Filtra los pendientes, selecciónalos y asígnate un lote antes de abrir cada ficha.' actions={<div className='page-stat' aria-label={`${items.length} registros en la cola`}>
         <strong>{items.length}</strong><span>En cola</span>
-      </div>} />
+      </div>} />}
     {error && <div role='alert' className='alert alert--error'>{error} {stale && items.length > 0 && 'La lista muestra la última carga correcta y puede estar desactualizada.'} <button type='button' className='button button--secondary' disabled={loading || busy} onClick={() => void reload()}>Reintentar carga</button></div>}
     <form className='queue-add' aria-label='Añadir registro a la cola' onSubmit={(event) => {
                 event.preventDefault()
@@ -160,5 +169,5 @@ export function QueueScreen({ reviewer }: { reviewer: Reviewer | null }) {
         </li>)}
       </ul>}
     </section>
-  </div>
+  </Root>
 }

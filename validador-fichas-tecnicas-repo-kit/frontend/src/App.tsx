@@ -34,8 +34,7 @@ import { ExportsScreen } from './screens/ExportsScreen'
 import { MaintenanceScreen } from './screens/MaintenanceScreen'
 import { CatalogIdentityScreen } from './screens/CatalogIdentityScreen'
 import { QuarantinedRecordsScreen } from './screens/QuarantinedRecordsScreen'
-import { QueueScreen } from './screens/QueueScreen'
-import { SecondReviewScreen } from './screens/SecondReviewScreen'
+import { WorkScreen } from './screens/WorkScreen'
 
 interface NavItem {
   readonly id: string
@@ -62,11 +61,11 @@ const NAV: readonly NavItem[] = [
 ]
 
 const SECTION_TRAIL: Record<string, readonly string[]> = {
-  trabajo: ['Trabajo', 'Cola de revisión'],
-  'revision/cola': ['Trabajo', 'Cola de revisión'],
-  'catalogo/trabajo': ['Trabajo', 'Cola de revisión'],
-  'revision/validaciones': ['Trabajo', 'Segunda lectura'],
-  'catalogo/segunda': ['Trabajo', 'Segunda lectura'],
+  trabajo: ['Trabajo', 'Revisión'],
+  'revision/cola': ['Trabajo', 'Revisión'],
+  'catalogo/trabajo': ['Trabajo', 'Revisión'],
+  'revision/validaciones': ['Trabajo', 'Revisión'],
+  'catalogo/segunda': ['Trabajo', 'Revisión'],
   'catalogo/novedades': ['Trabajo', 'Novedades CIMA'],
   'datos/cuarentena': ['Datos', 'Incidencias'],
   exportaciones: ['Datos', 'Exportaciones'],
@@ -251,11 +250,10 @@ export function App() {
             {route.name === 'seccion' && route.id === 'datos/cuarentena' && (
               <SectionWorkspace group='data' active='quarantine'><QuarantinedRecordsScreen reviewer={reviewer} /></SectionWorkspace>
             )}
-            {route.name === 'seccion' && (route.id === 'trabajo' || route.id === 'revision/cola' || route.id === 'catalogo/trabajo') && (
-              <SectionWorkspace group='work' active='queue'><QueueScreen reviewer={reviewer} /></SectionWorkspace>
-            )}
-            {route.name === 'seccion' && (route.id === 'revision/validaciones' || route.id === 'catalogo/segunda') && (
-              <SectionWorkspace group='work' active='second'><SecondReviewScreen reviewer={reviewer} /></SectionWorkspace>
+            {route.name === 'seccion' && ['trabajo', 'revision/cola', 'catalogo/trabajo', 'revision/validaciones', 'catalogo/segunda'].includes(route.id) && (
+              <SectionWorkspace group='work' active='queue'>
+                <WorkScreen key={route.id} reviewer={reviewer} focusSecond={route.id === 'revision/validaciones' || route.id === 'catalogo/segunda'} />
+              </SectionWorkspace>
             )}
             {route.name === 'seccion' && route.id === 'exportaciones' && (
               <SectionWorkspace group='data' active='exports'><ExportsScreen reviewer={reviewer} /></SectionWorkspace>
