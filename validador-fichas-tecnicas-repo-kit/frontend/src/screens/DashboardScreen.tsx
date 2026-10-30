@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { fetchDashboardCases, fetchDashboardExplore } from '../api/client'
 import type { DashboardSegment } from '../api/types'
@@ -55,7 +56,7 @@ function Cases({ segment, label, entityType, sourceType, onClose }: {
     <section className='panel dashboard-cases' aria-label='Casos del segmento'>
       <div className='panel__head'>
         <div><p className='eyebrow'>Casos concretos</p><h2 ref={heading} tabIndex={-1}>{label}</h2></div>
-        <button type='button' className='button' onClick={onClose}>Cerrar</button>
+        <button type='button' className='button button--icon' onClick={onClose} aria-label='Cerrar' title='Cerrar'><X size={16} aria-hidden='true' /></button>
       </div>
       <AsyncBoundary loading={loading} error={error} empty={data?.total === 0}
         emptyTitle='No hay registros en este segmento' emptyDetail='Elige otro grupo o cambia los filtros.'>
@@ -66,8 +67,8 @@ function Cases({ segment, label, entityType, sourceType, onClose }: {
             <small>{item.detail}</small>
           </li>)}</ul>
           <div className='dashboard-cases__pagination'>
-            <button type='button' className='button' disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}>Anterior</button>
-            <button type='button' className='button' disabled={offset + PAGE_SIZE >= data.total} onClick={() => setOffset(offset + PAGE_SIZE)}>Siguiente</button>
+            <button type='button' className='button button--icon' disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))} aria-label='Anterior' title='Anterior'><ChevronLeft size={16} aria-hidden='true' /></button>
+            <button type='button' className='button button--icon' disabled={offset + PAGE_SIZE >= data.total} onClick={() => setOffset(offset + PAGE_SIZE)} aria-label='Siguiente' title='Siguiente'><ChevronRight size={16} aria-hidden='true' /></button>
           </div>
         </div>}
       </AsyncBoundary>

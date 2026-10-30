@@ -20,6 +20,8 @@ services:
       APP_ENTRA_SPA_SCOPE: ${APP_ENTRA_SPA_SCOPE:?Falta el scope delegado}
       APP_ENTRA_ROLE_CAPABILITIES: ${APP_ENTRA_ROLE_CAPABILITIES:?Falta la matriz de roles}
       APP_ENTRA_REVIEWER_BINDINGS: ${APP_ENTRA_REVIEWER_BINDINGS:?Faltan los vínculos de revisores}
+      # Segunda lectura ciega y conciliación, como en el perfil REAL local.
+      APP_ENABLE_SECOND_REVIEW: ${APP_ENABLE_SECOND_REVIEW:-true}
       APP_CIMA_CACHE_DIR: /app/data/cima-cache
       APP_EXPORT_ARTIFACT_DIR: /app/data/exports
       APP_NOMENCLATOR_SNAPSHOT_DIR: /app/data/nomenclator-users

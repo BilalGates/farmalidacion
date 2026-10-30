@@ -186,8 +186,8 @@ export function QuarantinedRecordsScreen({ reviewer }: { reviewer: Reviewer | nu
               <div className='pagination quarantine-screen__pagination'>
                 <span>Mostrando {offset + 1}–{Math.min(offset + rows.length, total)} de {total} · página {pageNumber} de {pageCount}</span>
                 <div>
-                  <button type='button' className='button button--ghost' aria-label='Página anterior' disabled={offset === 0 || loading} onClick={() => void load(Math.max(0, offset - PAGE_SIZE))}><ChevronLeft size={16} aria-hidden='true' /> Anterior</button>
-                  <button type='button' className='button button--ghost' aria-label='Página siguiente' disabled={offset + PAGE_SIZE >= total || loading} onClick={() => void load(offset + PAGE_SIZE)}><ChevronRight size={16} aria-hidden='true' /> Siguiente</button>
+                  <button type='button' className='button button--ghost button--icon' aria-label='Página anterior' disabled={offset === 0 || loading} onClick={() => void load(Math.max(0, offset - PAGE_SIZE))} title='Anterior'><ChevronLeft size={16} aria-hidden='true' /></button>
+                  <button type='button' className='button button--ghost button--icon' aria-label='Página siguiente' disabled={offset + PAGE_SIZE >= total || loading} onClick={() => void load(offset + PAGE_SIZE)} title='Siguiente'><ChevronRight size={16} aria-hidden='true' /></button>
                 </div>
               </div>
             </div>

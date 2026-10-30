@@ -335,7 +335,7 @@ export function MaintenanceScreen() {
                   onChange={(event) => setRegistrationInput(event.target.value)} maxLength={80}
                   placeholder='Buscar por número de registro' /></span>
               </label>
-              <button type='submit' className='button button--primary'>Buscar</button>
+              <button type='submit' className='button button--primary button--icon' aria-label='Buscar' title='Buscar'><Search size={16} aria-hidden='true' /></button>
             </form>
           }>
           {registrationFilter && <span className='filter-pill' data-active='true'><span className='filter-pill__label'>Registro</span><strong>{registrationFilter}</strong></span>}

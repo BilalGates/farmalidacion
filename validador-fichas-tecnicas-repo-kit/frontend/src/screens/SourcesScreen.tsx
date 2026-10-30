@@ -1,3 +1,4 @@
+import { X } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 
 import { fetchDatabaseInfo, fetchNomenclatorConnection, fetchSource, fetchSources, importMasterWorkbook, previewMasterWorkbook, saveNomenclatorConnection, testNomenclatorConnection, updateSource } from '../api/client'
@@ -255,9 +256,7 @@ function SourceDetail({ id, onClose, onSaved }: { id: string; onClose: () => voi
     <section className='panel' aria-label='Detalle de la fuente'>
       <div className='panel__head'>
         <h2>Detalle de la fuente</h2>
-        <button type='button' className='button' onClick={onClose}>
-          Cerrar
-        </button>
+        <button type='button' className='button button--icon' onClick={onClose} aria-label='Cerrar' title='Cerrar'><X size={16} aria-hidden='true' /></button>
       </div>
       <AsyncBoundary
         loading={loading}
@@ -463,7 +462,7 @@ export function SourcesScreen() {
         </div>
         {databaseInfo?.mode === 'demo' && <p className='muted source-note'>Esta base DEMO contiene datos sintéticos. Los tres maestros originales están en la vista previa REAL.</p>}
         {selectedUpload && <section className='panel' aria-label='Cargar maestro Excel'>
-          <div className='panel__head'><h3>Cargar {selectedUpload.replace('_', ' ')}</h3><button type='button' className='button' onClick={() => setSelectedUpload(null)}>Cerrar</button></div>
+          <div className='panel__head'><h3>Cargar {selectedUpload.replace('_', ' ')}</h3><button type='button' className='button button--icon' onClick={() => setSelectedUpload(null)} aria-label='Cerrar' title='Cerrar'><X size={16} aria-hidden='true' /></button></div>
           <MasterUpload kind={selectedUpload} onImported={() => { setSelectedUpload(null); setRefresh((value) => value + 1) }} />
         </section>}
       </section>
