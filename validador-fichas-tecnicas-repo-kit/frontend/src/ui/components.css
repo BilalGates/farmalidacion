@@ -300,3 +300,8 @@ code, kbd { font-family: var(--font-mono); font-size: var(--text-code); font-var
    aria-label y se muestra como tooltip (title). */
 .app-shell .button.button--icon { display: inline-grid; place-items: center; width: var(--control-height); height: var(--control-height); min-width: 0; padding: 0; }
 .app-shell .button.button--icon svg { flex: none; }
+
+/* Pestañas: si no caben se desplazan en horizontal, pero sin barra visible
+   ni desplazamiento vertical (el subrayado activo sobresalía y lo provocaba). */
+.app-shell :is(.section-workspace__nav ul, .workspace-tabs__nav) { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.app-shell :is(.section-workspace__nav ul, .workspace-tabs__nav)::-webkit-scrollbar { display: none; }
