@@ -1,3 +1,17 @@
+## 2026-10-30 — Revisión unificada y gama de beige
+
+Rama `ui-pulido`. Trabajo pasa a dos pestañas: «Novedades CIMA» (primera) y
+«Revisión», que reúne en una página (`screens/WorkScreen.tsx`) la cola y la
+segunda lectura con sus cifras en la cabecera. Cada bloque conserva su carga,
+permisos y lógica (`QueueScreen` y `SecondReviewScreen` con `embedded`); la
+lectura ciega sigue sin recibir la primera. `/catalogo/segunda` y
+`/revision/validaciones` abren la misma página en el bloque de segunda lectura.
+Si el servidor rechaza la segunda lectura (p. ej. desactivada), el bloque queda
+en una línea. Recuadros en una gama de beige (`--surface`, `--surface-raised`,
+`--surface-tint`, `--rail`), desplegables de filtro con `appearance:
+base-select` y catálogo desplazable en pantallas de menos de 860 px de alto.
+Verificación: 226 tests, lint y build del frontend. Sin capturas todavía.
+
 ## 2026-10-29 — Pulido de la interfaz y Resumen más rápido
 
 Rama `ui-pulido`. Interfaz rehecha sobre un sistema único sin cambiar
