@@ -32,9 +32,12 @@
 
   /* Color — tema claro */
   --canvas: #f4f2ec;
-  /* Todo sobre el mismo papel: recuadros y tablas comparten el fondo y se
-     separan con líneas. Sólo donde se escribe (--field) queda en blanco. */
-  --surface: var(--canvas);
+  /* Una gama de beige: el lienzo, recuadros un punto más claros encima y un
+     tono más hondo para el carril y las cabeceras. Sólo donde se escribe
+     (--field) queda en blanco. */
+  --surface: #faf8f4;
+  --surface-raised: #fdfcf9;
+  --surface-tint: #ebe7de;
   --field: #ffffff;
   --surface-sunken: #fbfaf7;
   --ink: #1f1b24;
@@ -51,7 +54,7 @@
   --accent-fill: #5b3a78;
   --accent-fill-hover: #3f2656;
   --on-accent: #fff;
-  --rail: var(--canvas);
+  --rail: #ece8df;
   --focus-ring: rgb(104 67 152 / 26%);
   --success: #2f6b53;
   --success-soft: #e8f2ec;
@@ -74,6 +77,7 @@
   --shadow-hover: 0 8px 22px rgb(55 35 62 / 8%);
   --shadow-raised: 0 1px 2px rgb(0 0 0 / 6%);
   --shadow-dialog: 0 24px 64px rgb(20 16 26 / 22%);
+  --shadow-popover: 0 1px 2px rgb(32 25 42 / 6%), 0 12px 28px rgb(55 35 62 / 12%);
   --backdrop: rgb(20 16 26 / 45%);
 
   /* Espacio */
@@ -116,7 +120,9 @@
 
 :root[data-theme='dark'] {
   --canvas: #18161e;
-  --surface: var(--canvas);
+  --surface: #1e1b25;
+  --surface-raised: #24212b;
+  --surface-tint: #14121a;
   --field: #24212b;
   --ink: #f4eff6;
   --ink-soft: #ccc3d2;
@@ -130,7 +136,7 @@
   --accent-fill-hover: #8650ad;
   --surface-sunken: #1f1c25;
   --line-faint: #312c38;
-  --rail: var(--canvas);
+  --rail: #131118;
   --focus-ring: rgb(196 151 239 / 45%);
   --success: #8edbb6;
   --success-soft: #18372c;
@@ -142,6 +148,7 @@
   --info-soft: #202f45;
   --shadow: 0 2px 12px rgb(0 0 0 / 16%);
   --shadow-dialog: 0 24px 64px rgb(0 0 0 / 45%);
+  --shadow-popover: 0 12px 32px rgb(0 0 0 / 40%);
   --backdrop: rgb(3 3 8 / 72%);
   --scrollbar-thumb: #777080;
   --scrollbar-thumb-hover: #a79aac;

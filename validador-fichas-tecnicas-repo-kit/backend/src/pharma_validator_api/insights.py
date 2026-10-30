@@ -712,7 +712,10 @@ def dashboard_cases(
     else:
         raise ApplicationError("Segmento no reconocido.", status_code=400)
     total = _count(session, base)
-    ids = list(session.scalars(base.order_by(TargetRecord.id).limit(limit).offset(offset)).all())
+    ids = cast(
+        list[str],
+        list(session.scalars(base.order_by(TargetRecord.id).limit(limit).offset(offset)).all()),
+    )
     names, identifiers, _, _ = _identity_by_record(session, ids)
     return DashboardCasePageRead(
         items=[

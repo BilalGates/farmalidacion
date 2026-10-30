@@ -1,3 +1,24 @@
+## 2026-10-29 — Pulido de la interfaz y Resumen más rápido
+
+Rama `ui-pulido`. Interfaz rehecha sobre un sistema único sin cambiar
+funcionalidad, rutas ni permisos: tokens en `frontend/src/ui/tokens.css`, capas
+`ui/components.css`, `ui/shell.css`, `ui/filters.css` y hojas por pantalla en
+`screens/*.css`; letras IBM Plex Sans, Newsreader e IBM Plex Mono servidas en
+local; todo sobre el mismo papel, con blanco solo en campos. Una única barra de
+filtros (`FilterBar`) para catálogo, cola, novedades, cuarentena y Resumen,
+aplicados al momento. Expediente con pasos de progreso, «Siguiente pendiente» y
+comparación de fuentes por palabras. Textos tratando de tú. Retirados CSS
+muertos y la pantalla no montada `RecordsWorkspace`; `styles.css` y
+`studio.css` solo decrecen. Kit de agentes integrado en `.agents/` (perfil,
+skills `farmalidacion-ui` y `farmalidacion-dominio`, avisos en `.githooks`).
+
+`/insights/dashboard/explore` agrega en una pasada en memoria en lugar de ~17
+COUNT correlacionados: sobre la copia REAL (43.381 registros) pasa de 2,95 s a
+~2,2 s sin filtros y de 7,57 s a ~2,1 s con Maestros Excel; las 20
+combinaciones de filtros devuelven el mismo JSON. Verificación: 224 tests,
+lint y build del frontend; tests de insights del backend; mypy limpio en
+`insights.py`.
+
 ## 2026-10-26 — Nomenclátor persistente, versionado y consultable
 
 Auditoría: la copia de `dbo.nomenclatur` ya se persistía en el servidor por
