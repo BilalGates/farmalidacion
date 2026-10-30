@@ -1,3 +1,4 @@
+import { X } from 'lucide-react'
 import { useState } from 'react'
 
 import { fetchImport, fetchImports } from '../api/client'
@@ -26,9 +27,7 @@ function ImportDetail({ id, onClose }: { id: string; onClose: () => void }) {
     <section className='panel' aria-label='Detalle de la importación'>
       <div className='panel__head'>
         <h2>Detalle de la importación</h2>
-        <button type='button' className='button' onClick={onClose}>
-          Cerrar
-        </button>
+        <button type='button' className='button button--icon' onClick={onClose} aria-label='Cerrar' title='Cerrar'><X size={16} aria-hidden='true' /></button>
       </div>
       <AsyncBoundary loading={loading} error={error} empty={false} emptyTitle='' emptyDetail=''>
         {data && (

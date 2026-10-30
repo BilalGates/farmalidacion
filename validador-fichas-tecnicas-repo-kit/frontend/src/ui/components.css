@@ -295,3 +295,8 @@ code, kbd { font-family: var(--font-mono); font-size: var(--text-code); font-var
 
 /* Un estado vacío dentro de un recuadro no dibuja otra caja. */
 .app-shell .panel .state--empty { padding: 0; border: 0; background: none; }
+
+/* Botón de icono: cuadrado, a la altura de los controles. El nombre va en
+   aria-label y se muestra como tooltip (title). */
+.app-shell .button.button--icon { display: inline-grid; place-items: center; width: var(--control-height); height: var(--control-height); min-width: 0; padding: 0; }
+.app-shell .button.button--icon svg { flex: none; }

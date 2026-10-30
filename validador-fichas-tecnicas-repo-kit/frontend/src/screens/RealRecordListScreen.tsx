@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { AlertTriangle, Search } from 'lucide-react'
+import { AlertTriangle, ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
 
 import { assignQueue, enqueueRecord, fetchCatalogIdentities, fetchQuarantinedRows, fetchQueue, transitionQueue } from '../api/client'
 import type { QueueItem } from '../api/client'
@@ -432,7 +432,7 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
               <span className='field__label'>Buscar en el catálogo</span>
               <span className='input-with-icon'><Search aria-hidden='true' /><input type='search' value={term} placeholder='CN, nombre o principio activo' onChange={(event) => setTerm(event.target.value)} /></span>
             </label>
-            <button type='submit' className='button button--primary'>Buscar</button>
+            <button type='submit' className='button button--primary button--icon' aria-label='Buscar' title='Buscar'><Search size={16} aria-hidden='true' /></button>
             <label className='field catalog-sort-control'>
               <span className='field__label'>Ordenar por</span>
               <select value={sortBy} onChange={(event) => { setOffset(0); setSortBy(event.target.value as CatalogIdentitySort) }}>
@@ -490,7 +490,7 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
               </table>
             </div>
             <div className='catalog-results__footer'><p className='muted'>Mostrando {quarantineTotal ? quarantineOffset + 1 : 0}–{Math.min(quarantineOffset + quarantineRows.length, quarantineTotal)} de {quarantineTotal} filas apartadas</p>
-              <div className='pagination'><button type='button' className='button' disabled={quarantineOffset === 0} onClick={() => setQuarantineOffset(Math.max(0, quarantineOffset - PAGE_SIZE))}>Anterior</button><button type='button' className='button' disabled={quarantineOffset + PAGE_SIZE >= quarantineTotal} onClick={() => setQuarantineOffset(quarantineOffset + PAGE_SIZE)}>Siguiente</button></div>
+              <div className='pagination'><button type='button' className='button button--icon' disabled={quarantineOffset === 0} onClick={() => setQuarantineOffset(Math.max(0, quarantineOffset - PAGE_SIZE))} aria-label='Anterior' title='Anterior'><ChevronLeft size={16} aria-hidden='true' /></button><button type='button' className='button button--icon' disabled={quarantineOffset + PAGE_SIZE >= quarantineTotal} onClick={() => setQuarantineOffset(quarantineOffset + PAGE_SIZE)} aria-label='Siguiente' title='Siguiente'><ChevronRight size={16} aria-hidden='true' /></button></div>
             </div>
           </>}
         </section>}
@@ -555,20 +555,16 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
               <div className='pagination'>
               <button
                 type='button'
-                className='button'
+                className='button button--icon'
                 disabled={offset === 0}
                 onClick={() => changePage(Math.max(0, offset - PAGE_SIZE))}
-              >
-                Anterior
-              </button>
+               aria-label='Anterior' title='Anterior'><ChevronLeft size={16} aria-hidden='true' /></button>
               <button
                 type='button'
-                className='button'
+                className='button button--icon'
                 disabled={offset + PAGE_SIZE >= data.total}
                 onClick={() => changePage(offset + PAGE_SIZE)}
-              >
-                Siguiente
-              </button>
+               aria-label='Siguiente' title='Siguiente'><ChevronRight size={16} aria-hidden='true' /></button>
               </div>
             </div>
           </>
@@ -582,7 +578,7 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
           <nav aria-label='Navegación entre registros'>
             <button type='button' className='button' disabled={navigating || selectedIndex < 0 || (selectedIndex === 0 && navigationPage?.offset === 0)} onClick={() => void adjacent(-1)}>← Anterior registro</button>
             <button type='button' className='button' disabled={navigating || selectedIndex < 0 || !navigationPage || navigationPage.offset + selectedIndex + 1 >= navigationPage.total} onClick={() => void adjacent(1)}>Siguiente registro →</button>
-            <button type='button' className='button button--secondary' disabled={navigating} onClick={() => { setSelectedId(null); setRecordId(null) }}>Cerrar</button>
+            <button type='button' className='button button--secondary button--icon' disabled={navigating} onClick={() => { setSelectedId(null); setRecordId(null) }} aria-label='Cerrar' title='Cerrar'><X size={16} aria-hidden='true' /></button>
           </nav>
           {selectedIndex >= 0 && navigationPage && <span className='muted'>Registro {navigationPage.offset + selectedIndex + 1} de {navigationPage.total}</span>}
           {navigating && <span role='status'>Cargando registro…</span>}
@@ -596,14 +592,14 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
         </div>
       </RecordDialog>
       <RecordDialog open={selectedQuarantine !== null} onClose={() => setSelectedQuarantine(null)} titleId='catalog-quarantine-dialog-title'>
-        {selectedQuarantine && <><header className='record-dialog__header'><h2 id='catalog-quarantine-dialog-title'>Fila en cuarentena · {selectedQuarantine.source_locator}</h2><button type='button' className='button button--secondary' onClick={() => setSelectedQuarantine(null)}>Cerrar</button></header>
+        {selectedQuarantine && <><header className='record-dialog__header'><h2 id='catalog-quarantine-dialog-title'>Fila en cuarentena · {selectedQuarantine.source_locator}</h2><button type='button' className='button button--secondary button--icon' onClick={() => setSelectedQuarantine(null)} aria-label='Cerrar' title='Cerrar'><X size={16} aria-hidden='true' /></button></header>
           <div className='record-dialog__body'><p className='alert alert--warning' role='alert'><AlertTriangle size={16} aria-hidden='true' /> {selectedQuarantine.reason_code}: {selectedQuarantine.reason}</p><p>Datos preservados; relación con la especialidad pendiente. Los cambios de valores no vinculan automáticamente esta fila.</p>
             <dl className='quarantine-fields'>{selectedQuarantine.fields.map(field => <div className='quarantine-field' key={field.source_column_index}><dt><strong>{field.field_name}</strong><small>Columna Excel {field.source_column_index}</small></dt><dd><p><span>Valor de trabajo</span><output>{field.maintained_value ?? 'Vacío en el origen'}</output></p><p><span>Literal original</span><output>{field.literal_value ?? 'Vacío en el origen'}</output></p></dd></div>)}</dl>
             <a className='button button--secondary' href='#/datos/cuarentena'>Abrir incidencias para editar campos</a>
           </div></>}
       </RecordDialog>
       <RecordDialog open={secondReviewOpen} onClose={() => setSecondReviewOpen(false)} titleId='second-review-dialog-title'>
-        <header className='record-dialog__header'><h2 id='second-review-dialog-title'>Segundas validaciones</h2><button type='button' className='button button--secondary' onClick={() => setSecondReviewOpen(false)}>Cerrar</button></header>
+        <header className='record-dialog__header'><h2 id='second-review-dialog-title'>Segundas validaciones</h2><button type='button' className='button button--secondary button--icon' onClick={() => setSecondReviewOpen(false)} aria-label='Cerrar' title='Cerrar'><X size={16} aria-hidden='true' /></button></header>
         <div className='record-dialog__body'>{hasOpenedSecondReview && <SecondReviewScreen reviewer={reviewer} />}</div>
       </RecordDialog>
     </div>

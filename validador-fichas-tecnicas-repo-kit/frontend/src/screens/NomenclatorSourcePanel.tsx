@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 
 import {
@@ -91,7 +92,7 @@ function DataView() {
     <form className='nomenclator-search' role='search' onSubmit={(event) => { event.preventDefault(); setOffset(0); setQuery(draft.trim()) }}>
       <label className='field'><span>Buscar por CN, n.º de registro, ATC o principio activo</span>
         <input type='search' maxLength={120} value={draft} onChange={(event) => setDraft(event.target.value)} /></label>
-      <button className='button button--secondary' type='submit'>Buscar</button>
+      <button className='button button--secondary button--icon' type='submit' aria-label='Buscar' title='Buscar'><Search size={16} aria-hidden='true' /></button>
     </form>
     {rows.error && <p role='alert'>{rows.error}</p>}
     {page && page.available && <>
@@ -106,9 +107,9 @@ function DataView() {
         </tr>)}</tbody>
       </table></div>
       <div className='nomenclator-pager'>
-        <button type='button' className='button button--secondary' disabled={offset === 0 || rows.loading} onClick={() => setOffset((value) => Math.max(0, value - 25))}>Anterior</button>
+        <button type='button' className='button button--secondary button--icon' disabled={offset === 0 || rows.loading} onClick={() => setOffset((value) => Math.max(0, value - 25))} aria-label='Anterior' title='Anterior'><ChevronLeft size={16} aria-hidden='true' /></button>
         <span className='muted'>{page.total ? `${number(offset + 1)}–${number(Math.min(offset + 25, page.total))}` : '0'} de {number(page.total)}</span>
-        <button type='button' className='button button--secondary' disabled={offset + 25 >= page.total || rows.loading} onClick={() => setOffset((value) => value + 25)}>Siguiente</button>
+        <button type='button' className='button button--secondary button--icon' disabled={offset + 25 >= page.total || rows.loading} onClick={() => setOffset((value) => value + 25)} aria-label='Siguiente' title='Siguiente'><ChevronRight size={16} aria-hidden='true' /></button>
       </div>
     </>}
   </div>
