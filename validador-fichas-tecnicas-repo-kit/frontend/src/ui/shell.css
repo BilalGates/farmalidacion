@@ -6,7 +6,7 @@
  * dónde se está.
  */
 
-.app-shell .app-sidebar { border: 0; border-right: 1px solid var(--line-soft); color: var(--ink); background: var(--canvas); }
+.app-shell .app-sidebar { border: 0; border-right: 1px solid var(--line-soft); color: var(--ink); background: var(--rail); }
 .app-shell .app-sidebar .brand { min-height: 76px; padding-inline: 24px; }
 .app-shell .app-sidebar .brand__mark { width: 24px; height: 24px; }
 .app-shell .app-sidebar .brand__name { color: var(--ink); font-family: var(--font-display); font-size: var(--text-xl); font-weight: var(--weight-regular); letter-spacing: -.01em; }
@@ -28,7 +28,7 @@
 .app-shell .account-summary__avatar { color: var(--accent-strong); background: var(--accent-soft); font-weight: var(--weight-semibold); }
 
 /* En modo oscuro la barra también es del mismo fondo que el contenido. */
-:root[data-theme='dark'] .app-shell .app-sidebar { background: var(--canvas); }
+:root[data-theme='dark'] .app-shell .app-sidebar { background: var(--rail); }
 :root[data-theme='dark'] .app-shell .topbar { background: var(--canvas); }
 :root[data-theme='dark'] .app-shell .app-sidebar .nav__item:hover { background: var(--line-faint); }
 
