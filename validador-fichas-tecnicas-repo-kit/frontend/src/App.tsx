@@ -259,7 +259,7 @@ export function App() {
               <SectionWorkspace group='data' active='exports'><ExportsScreen reviewer={reviewer} /></SectionWorkspace>
             )}
             {route.name === 'seccion' && route.id === 'catalogo/novedades' && (
-              <SectionWorkspace group='work' active='changes'><MaintenanceScreen /></SectionWorkspace>
+              <SectionWorkspace group='work' active='changes'><MaintenanceScreen reviewer={reviewer} /></SectionWorkspace>
             )}
             {route.name === 'seccion' && route.id === 'revisores' && <div className='screen preferences-screen'>
               <PageHeader eyebrow='Configuración' title='Equipo y preferencias' description='Ajusta tu espacio de trabajo y consulta cómo se gestiona el acceso del equipo.' />

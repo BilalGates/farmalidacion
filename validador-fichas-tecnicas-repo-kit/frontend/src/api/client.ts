@@ -443,6 +443,7 @@ export function fetchCatalogIdentities(params: {
   reviewScope?: 'all' | 'pending' | 'unassigned' | 'mine' | 'second' | 'completed'
   reviewerId?: string
   active?: boolean
+  maintenance?: 'pending'
   limit?: number
   offset?: number
 } = {}): Promise<CatalogIdentityPage> {
@@ -456,6 +457,7 @@ export function fetchCatalogIdentities(params: {
   if (params.reviewScope && params.reviewScope !== 'all') search.set('review_scope', params.reviewScope)
   if (params.reviewerId) search.set('reviewer_id', params.reviewerId)
   if (params.active !== undefined) search.set('active', String(params.active))
+  if (params.maintenance) search.set('maintenance', params.maintenance)
   if (params.limit !== undefined) search.set('limit', String(params.limit))
   if (params.offset !== undefined) search.set('offset', String(params.offset))
   const query = search.toString()
@@ -963,6 +965,128 @@ export function fetchMaintenanceRuns(): Promise<MaintenanceRunSummary[]> {
 
 export function runCimaMaintenance(): Promise<MaintenanceRunSummary> {
   return request<MaintenanceRunSummary>('/maintenance/run', { method: 'POST' })
+}
+
+export type MaintenanceActionKind =
+  | 'proponer_activo_n' | 'revisar_estado' | 'revisar_comercializacion'
+  | 'revisar_archivo' | 'proponer_alta'
+export type MaintenanceActionState = 'pendiente' | 'aceptada' | 'descartada' | 'enviada_revision'
+export type MaintenanceActionDecisionKind = 'aceptada' | 'descartada' | 'enviada_revision' | 'reabierta'
+
+export interface MaintenanceActionDecision {
+  sequence: number
+  decision: MaintenanceActionDecisionKind
+  reason: string
+  actor_id: string
+  actor_assurance: string
+  recorded_at: string
+  applied_revision_id: string | null
+  applied_field_revision_id: string | null
+}
+
+export interface MaintenanceAltaColumn {
+  column: number
+  name: string
+  value: string | null
+  provenance: { cima_version_id: string, pointer: string, rule_id?: string } | null
+  diagnostic: string | null
+}
+
+export interface MaintenanceAction {
+  id: string
+  event_id: string
+  kind: MaintenanceActionKind
+  area: string
+  data_origin: 'real' | 'demo'
+  state: MaintenanceActionState
+  sequence: number
+  nregistro: string
+  event_occurred_at_epoch: number
+  event_change_type: number
+  target_record_id: string | null
+  identity_id: string | null
+  identity_name: string | null
+  national_code: string | null
+  master_field_name: string | null
+  master_value_literal: string | null
+  cima_version_id: string | null
+  cima_pointer: string | null
+  cima_value_literal: string | null
+  cima_fetched_at: string | null
+  cima_source_url: string | null
+  proposed_value: string | null
+  rule_id: string | null
+  proposal: { workbook: string, sheet: string, columns: MaintenanceAltaColumn[] } | null
+  diagnostic_code: string | null
+  derivation_version: string
+  last_decision: MaintenanceActionDecision | null
+  decisions?: MaintenanceActionDecision[] | null
+}
+
+export interface MaintenanceActionPage {
+  items: MaintenanceAction[]
+  total: number
+  limit: number
+  offset: number
+  origin: string
+  counts: Partial<Record<MaintenanceActionKind, number>>
+}
+
+export interface UnlinkedMaintenanceEvent {
+  id: string
+  nregistro: string
+  occurred_at_epoch: number
+  change_type: number
+  areas: string[]
+  recorded_at: string
+  diagnostic_code: string
+}
+
+export interface UnlinkedMaintenancePage {
+  items: UnlinkedMaintenanceEvent[]
+  page: number
+  page_size: number
+  total: number
+}
+
+export function fetchMaintenanceActions(
+  scope: 'pending' | 'history', limit = 200, offset = 0,
+): Promise<MaintenanceActionPage> {
+  const path = scope === 'pending' ? '/maintenance/actions' : '/maintenance/actions/history'
+  return request<MaintenanceActionPage>(`${path}?limit=${limit}&offset=${offset}`)
+}
+
+export function fetchUnlinkedMaintenanceEvents(page: number): Promise<UnlinkedMaintenancePage> {
+  return request<UnlinkedMaintenancePage>(`/maintenance/actions/unlinked?page=${page}&limit=50`)
+}
+
+export function fetchIdentityMaintenanceActions(identityId: string): Promise<MaintenanceAction[]> {
+  return request<MaintenanceAction[]>(
+    `/catalog/identities/${encodeURIComponent(identityId)}/maintenance-actions`,
+  )
+}
+
+export function decideMaintenanceAction(
+  actionId: string,
+  payload: { actor_id: string, decision: MaintenanceActionDecisionKind, reason: string, expected_sequence: number },
+): Promise<MaintenanceActionDecision> {
+  return request<MaintenanceActionDecision>(
+    `/maintenance/actions/${encodeURIComponent(actionId)}/decisions`,
+    { method: 'POST', body: JSON.stringify(payload) },
+  )
+}
+
+export interface SendToReviewResult {
+  enqueued: string[]
+  already_queued: string[]
+  decided: string[]
+  rejected: Array<{ action_id: string, reason: string }>
+}
+
+export function sendActionsToReview(actorId: string, actionIds: string[]): Promise<SendToReviewResult> {
+  return request<SendToReviewResult>('/maintenance/actions/send-to-review', {
+    method: 'POST', body: JSON.stringify({ actor_id: actorId, action_ids: actionIds }),
+  })
 }
 
 export interface ChatCitation {

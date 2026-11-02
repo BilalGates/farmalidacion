@@ -83,8 +83,8 @@ it('edita campos importados sin enviar una decisión farmacéutica', async () =>
   fireEvent.change(screen.getByLabelText('Motivo para DESCRIPCION'), { target: { value: 'Corrección de catálogo.' } })
   fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
 
-  await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/maintenance'))).toBe(true))
-  const maintenanceCall = fetchMock.mock.calls.find(([url]) => String(url).includes('/maintenance'))
+  await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/maintenance') && !String(url).includes('/maintenance-actions'))).toBe(true))
+  const maintenanceCall = fetchMock.mock.calls.find(([url]) => String(url).includes('/maintenance') && !String(url).includes('/maintenance-actions'))
   expect(JSON.parse(String(maintenanceCall?.[1]?.body))).toMatchObject({
     expected_sequence: 0, value: 'Nombre corregido', actor_id: 'ana', reason: 'Corrección de catálogo.',
   })
@@ -116,4 +116,48 @@ it('consulta clasificaciones solo para una presentación', async () => {
   expect(await screen.findByRole('heading', { name: 'Nomenclátor' })).toBeVisible()
   expect(screen.getByText('2431000140106')).toBeVisible()
   expect(screen.getByText('Diferencia por revisar')).toBeVisible()
+})
+
+function identityServer(actions: unknown) {
+  return vi.fn(async (url: string) => {
+    if (url.includes('/maintenance-actions')) return new Response(JSON.stringify(actions))
+    if (url.includes('/cima-comparison') || url.includes('/cima-documents')) return new Response(JSON.stringify([]))
+    if (url.includes('/records/record-1')) return new Response(JSON.stringify(SOURCE_RECORD))
+    if (url.includes('/history') || url.includes('/relations') || url.includes('/classifications')) return new Response(JSON.stringify([]))
+    return new Response(JSON.stringify(IDENTITY))
+  })
+}
+
+const NOVELTY = {
+  id: 'a1', event_id: 'e1', kind: 'revisar_estado', area: 'estado', data_origin: 'real',
+  state: 'pendiente', sequence: 0, nregistro: '51347', event_occurred_at_epoch: 1_761_800_000_000,
+  event_change_type: 3, target_record_id: 'record-1', identity_id: 'dcp-1',
+  identity_name: 'Medicamento ejemplo', national_code: '600000', master_field_name: 'ACTIVO',
+  master_value_literal: 'S', cima_version_id: 'v1', cima_pointer: '/estado',
+  cima_value_literal: '{"susp":2}', cima_fetched_at: '2026-10-30T09:00:00+00:00',
+  cima_source_url: 'https://cima.aemps.es/cima/rest/presentacion/600000',
+  proposed_value: null, rule_id: null, proposal: null, diagnostic_code: 'sin_correspondencia',
+  derivation_version: 'novedades-v1', last_decision: null,
+}
+
+it('muestra el bloque de novedades CIMA sin atender junto a los paneles de fuentes', async () => {
+  vi.stubGlobal('fetch', identityServer([NOVELTY]))
+  render(<CatalogIdentityScreen identityId='dcp-1' reviewer={REVIEWER} />)
+
+  await screen.findByRole('heading', { name: 'Medicamento ejemplo' })
+  fireEvent.click(screen.getByRole('tab', { name: 'Fuentes' }))
+  expect(await screen.findByRole('heading', { name: 'Novedades CIMA sin atender' })).toBeInTheDocument()
+  expect(screen.getByText('1 novedad CIMA sin atender')).toBeInTheDocument()
+  expect(screen.getByText('Sin valor propuesto: no hay correspondencia aceptada')).toBeInTheDocument()
+})
+
+it('no muestra el bloque cuando no hay novedades pendientes', async () => {
+  vi.stubGlobal('fetch', identityServer([]))
+  render(<CatalogIdentityScreen identityId='dcp-1' reviewer={REVIEWER} />)
+
+  await screen.findByRole('heading', { name: 'Medicamento ejemplo' })
+  fireEvent.click(screen.getByRole('tab', { name: 'Fuentes' }))
+  await screen.findByRole('heading', { name: 'Campos importados' })
+  expect(screen.queryByRole('heading', { name: 'Novedades CIMA sin atender' })).not.toBeInTheDocument()
+  expect(screen.queryByText(/novedad(es)? CIMA sin atender/)).not.toBeInTheDocument()
 })

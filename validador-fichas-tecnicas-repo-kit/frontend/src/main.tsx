@@ -21,6 +21,7 @@ import './screens/work.css'
 import './screens/sources.css'
 import './screens/review.css'
 import './screens/dashboard.css'
+import './screens/maintenance.css'
 
 const root = document.getElementById('root')
 
