@@ -8,6 +8,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from pharma_validator_api.cima_changes import query_cima_changes
+from pharma_validator_api.data_origin import DataOrigin
+from pharma_validator_api.maintenance_actions import CimaCapture, derive_for_events
 from pharma_validator_api.maintenance_refresh import MaintenanceClient
 from pharma_validator_api.maintenance_store import change_is_recorded, process_change_report
 from pharma_validator_api.models import (
@@ -34,7 +36,13 @@ def _completed_days(session: Session) -> set[date]:
     completed = session.scalars(
         select(MaintenanceRun.requested_date).where(MaintenanceRun.status == "completed")
     ).all()
-    return {_parse(item) for item in completed}
+    days: set[date] = set()
+    for item in completed:
+        try:
+            days.add(_parse(item))
+        except ValueError:
+            continue  # pasadas que no son un día, como el backfill de acciones
+    return days
 
 
 def next_pending_date(session: Session, *, start_date: date) -> date:
@@ -96,6 +104,7 @@ def run_one_day(
     client: MaintenanceClient,
     day: date,
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
+    data_origin: DataOrigin = DataOrigin.REAL,
 ) -> MaintenanceRun:
     requested = _literal(day)
     # A new invocation can only start after the shared maintenance lock is
@@ -129,19 +138,15 @@ def run_one_day(
         report = query_cima_changes(client, date=requested)
         master_by_cn = _master_cn_index(session)
         targets_by_registration: dict[str, tuple[tuple[str, str], ...]] = {}
-        relevant_changes = []
         # Sin ningún CN maestro no puede existir un destino exacto. Evita
-        # consultas CIMA adicionales y registra igualmente la pasada del día.
+        # consultas CIMA adicionales; los avisos se guardan igualmente (D-040).
         if master_by_cn:
             targets_by_registration = _catalog_targets_by_registration(client, master_by_cn)
-            for change in report.changes:
-                if (
-                    change.nregistro not in targets_by_registration
-                    or change_is_recorded(session, change)
-                ):
-                    continue
-                relevant_changes.append(change)
-        report = replace(report, changes=tuple(relevant_changes))
+        new_changes = tuple(
+            change for change in report.changes if not change_is_recorded(session, change)
+        )
+        report = replace(report, changes=new_changes)
+
         def save_progress(count: int) -> None:
             run.event_count = count
             session.commit()
@@ -153,10 +158,26 @@ def run_one_day(
             targets_by_registration=targets_by_registration,
             on_progress=save_progress,
         )
+        underived = 0
+        for event in events:
+            # Captura nueva por evento: tras un rollback, las versiones que la
+            # anterior recordaba ya no existen y no deben reutilizarse.
+            capture = CimaCapture(session, client)
+            try:
+                derive_for_events(
+                    session, events=[event], client=client, default_origin=data_origin,
+                    capture=capture,
+                )
+                session.commit()
+            except Exception:
+                session.rollback()
+                underived += 1
         run.status = "completed"
         run.event_count = len(events)
         unavailable = sum(
-            "ft" in change.areas and event.new_version_id is None
+            "ft" in change.areas
+            and change.nregistro in targets_by_registration
+            and event.new_version_id is None
             for change, event in zip(report.changes, events, strict=True)
         )
         if unavailable:
@@ -164,6 +185,12 @@ def run_one_day(
                 f"{unavailable} {'aviso' if unavailable == 1 else 'avisos'} de ficha técnica "
                 "sin secciones disponibles en CIMA. "
                 "Se conservaron los avisos, sin crear versiones ni alterar campos."
+            )
+        if underived:
+            run.error_detail = (
+                (run.error_detail + " " if run.error_detail else "")
+                + f"{underived} {'aviso' if underived == 1 else 'avisos'} sin acciones derivadas; "
+                "se completarán con el backfill de acciones."
             )
         run.source_sha256 = report.source_sha256
         run.finished_at = now()
@@ -188,6 +215,7 @@ def run_pending_days(
     client: MaintenanceClient,
     start_date: date,
     through_date: date,
+    data_origin: DataOrigin = DataOrigin.REAL,
 ) -> tuple[MaintenanceRun, ...]:
     completed_days = _completed_days(session)
     pending_days: list[date] = []
@@ -200,7 +228,9 @@ def run_pending_days(
         return ()
     # registroCambios(fecha) is cumulative through the moment of the request.
     # The earliest pending date therefore covers every later pending date.
-    first = run_one_day(session, client=client, day=pending_days[0])
+    first = run_one_day(
+        session, client=client, day=pending_days[0], data_origin=data_origin
+    )
     runs = [first]
     coverage_started_at = datetime.now(UTC)
     for day in pending_days[1:]:

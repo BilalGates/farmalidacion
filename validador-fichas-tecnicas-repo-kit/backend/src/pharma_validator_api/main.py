@@ -29,6 +29,10 @@ from pharma_validator_api.fixtures import load_demo_fixture, load_showcase_fixtu
 from pharma_validator_api.import_batches import CATALOG_DEFINITION_IMPORTER
 from pharma_validator_api.insights import router as insights_router
 from pharma_validator_api.logging import configure_logging
+from pharma_validator_api.maintenance_actions_api import (
+    catalog_router as maintenance_catalog_router,
+)
+from pharma_validator_api.maintenance_actions_api import router as maintenance_actions_router
 from pharma_validator_api.maintenance_api import router as maintenance_router
 from pharma_validator_api.master_workbook_export_api import router as master_export_router
 from pharma_validator_api.models import Base, ImportBatch, TargetRecord
@@ -191,6 +195,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(audit_router)
     application.include_router(risk_router)
     application.include_router(maintenance_router)
+    application.include_router(maintenance_actions_router)
+    application.include_router(maintenance_catalog_router)
     application.include_router(reviewer_router)
 
     @application.get("/health", response_model=HealthResponse, tags=["sistema"])

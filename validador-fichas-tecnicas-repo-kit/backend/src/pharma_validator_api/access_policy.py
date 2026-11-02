@@ -62,7 +62,13 @@ _rules("GET", "sources.read", (
     "/insights/imports/{batch_id}", "/maintenance/changes", "/maintenance/changes/history",
     "/maintenance/changes/{event_id}",
     "/maintenance/runs",
+    "/maintenance/actions", "/maintenance/actions/history", "/maintenance/actions/unlinked",
+    "/maintenance/actions/{action_id}",
 ))
+_rules("GET", "catalog.read", ("/catalog/identities/{identity_id}/maintenance-actions",))
+_rules("POST", "review.write", (
+    "/maintenance/actions/{action_id}/decisions", "/maintenance/actions/send-to-review",
+), "actor_id")
 _rules("GET", "", (
     "/nomenclator/snapshot", "/nomenclator/snapshots",
     "/nomenclator/snapshots/{version_id}/changes",
@@ -72,6 +78,7 @@ _rules("POST", "", ("/nomenclator/snapshots",))
 _rules("PATCH", "sources.manage", ("/insights/sources/{source_id}",), "actor_id")
 _rules("POST", "sources.manage", (
     "/imports/master/{kind}/preview", "/source-connections/nomenclator/test", "/maintenance/run",
+    "/maintenance/actions/backfill",
 ))
 _rules("POST", "sources.manage", ("/imports/master/{kind}",), "x-import-actor", "header")
 _rules("GET", "sources.manage", ("/source-connections/nomenclator",))
