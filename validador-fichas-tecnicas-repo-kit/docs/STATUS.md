@@ -1,6 +1,6 @@
 ## 2026-10-30 — Novedades CIMA accionables, fase 1
 
-Rama de trabajo `ui-pulido` (el árbol estaba en `main` al empezar). Implementa
+Rama de trabajo `novedades-cima-accionables` (el árbol estaba en `main` al empezar). Implementa
 ADR-0019 / D-040 según `docs/design/novedades-cima-accionables.md`: migración
 `e1f2a3b4c5d6` (`maintenance_action`, `maintenance_action_decision`), derivación
 idempotente en `maintenance_actions.py`, decisiones y envío en lote a la cola
