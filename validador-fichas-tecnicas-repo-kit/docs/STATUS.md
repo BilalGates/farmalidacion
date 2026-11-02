@@ -1,3 +1,25 @@
+## 2026-10-30 — Novedades CIMA accionables, fase 1
+
+Rama de trabajo `novedades-cima-accionables` (el árbol estaba en `main` al empezar). Implementa
+ADR-0019 / D-040 según `docs/design/novedades-cima-accionables.md`: migración
+`e1f2a3b4c5d6` (`maintenance_action`, `maintenance_action_decision`), derivación
+idempotente en `maintenance_actions.py`, decisiones y envío en lote a la cola
+general en `maintenance_action_decisions.py`, endpoints en
+`maintenance_actions_api.py`, respuestas CIMA persistidas como versión inmutable
+(`document_versions.persist_cima_api_response`), backfill reanudable (CLI y
+endpoint con `maintenance_lock`), la pasada diaria guarda todos los avisos y
+filtro `maintenance=pending` en el catálogo. Interfaz: pestañas Por atender /
+Histórico / Sin registro en el catálogo, bloque de novedades en el expediente y
+filtro en el catálogo. Contrato en `docs/CIMA_NOVELTY_PANEL_CONTRACT.md`.
+
+No se ha ejecutado el backfill contra CIMA real ni contra `data/local/real.db`.
+Pendiente: capturas antes/después en claro y oscuro, y el backfill manual sobre
+una copia de `real-preview.db`. Fase 2 (ficha técnica) sin empezar.
+
+Observación: en `real-preview.db` todos los `ACTIVO` de Especialidades
+`General` valen `N` (29.850 de 29.850); `proponer_activo_n` no escribirá nada
+mientras el maestro ya diga `N`.
+
 ## 2026-10-30 — Revisión unificada y gama de beige
 
 Rama `ui-pulido`. Trabajo pasa a dos pestañas: «Novedades CIMA» (primera) y

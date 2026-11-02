@@ -168,6 +168,7 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
   const [entityType, setEntityType] = useState<CatalogIdentityType | null>(initialState.entityType ?? null)
   const [sourceWorkbook, setSourceWorkbook] = useState<CatalogSourceWorkbook | null>(initialState.sourceWorkbook ?? null)
   const [showArchived, setShowArchived] = useState(initialState.showArchived ?? false)
+  const [withNovelties, setWithNovelties] = useState(false)
   const [commercialClass, setCommercialClass] = useState<string | null>(initialState.commercialClass ?? null)
   const [conditions, setConditions] = useState<string[]>(initialState.conditions ?? [])
   const [sortBy, setSortBy] = useState<CatalogIdentitySort>(initialState.sortBy ?? 'name_asc')
@@ -231,6 +232,7 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
     setEntityType(null)
     setSourceWorkbook(null)
     setShowArchived(false)
+    setWithNovelties(false)
     setCommercialClass(null)
     setConditions((selected) => selected.length ? [] : selected)
     setSortBy('name_asc')
@@ -275,10 +277,11 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
         commercialClass: commercialClass ?? undefined,
         conditions: conditions.length ? conditions : undefined,
         active: showArchived ? undefined : true,
+        maintenance: withNovelties ? 'pending' : undefined,
         limit: PAGE_SIZE,
         offset,
       }),
-    [query, entityType, sourceWorkbook, sortBy, reviewScope, reviewer?.identifier, showArchived, commercialClass, conditions, offset, retryKey],
+    [query, entityType, sourceWorkbook, sortBy, reviewScope, reviewer?.identifier, showArchived, withNovelties, commercialClass, conditions, offset, retryKey],
   )
 
   useEffect(() => {
@@ -370,6 +373,7 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
         commercialClass: commercialClass ?? undefined,
         conditions: conditions.length ? conditions : undefined,
         active: showArchived ? undefined : true, reviewScope,
+        maintenance: withNovelties ? 'pending' : undefined,
         reviewerId: reviewScope === 'mine' ? reviewer?.identifier : undefined,
         limit: PAGE_SIZE, offset: nextOffset,
       })
@@ -387,7 +391,7 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
   const pages = data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1
   const firstResult = data && data.total > 0 ? data.offset + 1 : 0
   const lastResult = data ? Math.min(data.offset + data.items.length, data.total) : 0
-  const activeFilterCount = Number(Boolean(query)) + Number(Boolean(sourceWorkbook || entityType)) + Number(showArchived) + Number(Boolean(commercialClass)) + Number(reviewScope !== 'all') + conditions.length
+  const activeFilterCount = Number(Boolean(query)) + Number(Boolean(sourceWorkbook || entityType)) + Number(showArchived) + Number(withNovelties) + Number(Boolean(commercialClass)) + Number(reviewScope !== 'all') + conditions.length
 
   useEffect(() => {
     if (!loading && data && data.offset === requestedOffset.current && (data.total === 0 ? data.offset > 0 : data.offset >= data.total)) {
@@ -468,6 +472,7 @@ export function RealRecordListScreen({ reviewer = null, reviewers = [], initialR
             onToggle={toggleCondition} />
         </>}
         <FilterToggle label='Incluir archivados' checked={showArchived} onChange={checked => { setOffset(0); setShowArchived(checked) }} />
+        <FilterToggle label='Con novedades CIMA sin atender' checked={withNovelties} onChange={checked => { setOffset(0); setWithNovelties(checked) }} />
       </FilterBar>
       <div ref={resultsRef} tabIndex={-1} aria-label='Resultados del catálogo' className='catalog-results'>
         {showQuarantine && <section aria-label='Filas en cuarentena del catálogo'>

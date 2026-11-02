@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.engine import make_url
 
 from pharma_validator_api.cima_client import CimaClient
+from pharma_validator_api.data_origin import DataOrigin
 from pharma_validator_api.errors import ApplicationError
 from pharma_validator_api.maintenance_job import MaintenanceJobError, run_one_day
 from pharma_validator_api.maintenance_lock import MaintenanceAlreadyRunning, maintenance_lock
@@ -174,7 +175,10 @@ def run_yesterday(request: Request, session: SessionDependency) -> dict[str, Any
             backoff_seconds=settings.cima_backoff_seconds,
             max_retry_delay_seconds=settings.cima_max_retry_delay_seconds,
         ) as client:
-            row = run_one_day(session, client=client, day=day)
+            row = run_one_day(
+                session, client=client, day=day,
+                data_origin=DataOrigin(settings.data_mode),
+            )
     except MaintenanceJobError as error:
         raise ApplicationError(str(error), status_code=503) from error
     except MaintenanceAlreadyRunning as error:

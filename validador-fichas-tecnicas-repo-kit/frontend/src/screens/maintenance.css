@@ -1,0 +1,23 @@
+/* Novedades CIMA accionables (ADR-0019): bandeja, filas de acción y bloque del expediente. */
+.app-shell .action-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: var(--space-4); margin: 0 0 var(--space-4); }
+.app-shell .action-figures div { padding: var(--space-3) 0; border-top: 1px solid var(--line); }
+.app-shell .action-figures dt { color: var(--ink-soft); font-size: var(--text-sm); }
+.app-shell .action-figures dd { margin: var(--space-1) 0 0; color: var(--ink); font-family: var(--font-ui); font-size: var(--text-figure); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; }
+.app-shell .action-groups { display: grid; gap: var(--space-4); }
+.app-shell .action-group > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); cursor: pointer; list-style: none; }
+.app-shell .action-group > summary h3 { margin: 0; }
+.app-shell .action-group__count { color: var(--ink-soft); font-variant-numeric: tabular-nums; font-size: var(--text-sm); }
+.app-shell .action-group__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--line-soft); }
+.app-shell .action-list { display: grid; margin: 0; padding: 0; list-style: none; }
+.app-shell .action-row { display: grid; gap: var(--space-3); padding: var(--space-4) 0; border-bottom: 1px solid var(--line-soft); }
+.app-shell .action-row__head { display: flex; align-items: flex-start; gap: var(--space-3); }
+.app-shell .action-row__head > div { flex: 1 1 auto; }
+.app-shell .action-row__head small { color: var(--ink-faint); }
+.app-shell .action-row__values { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--space-4); margin: 0; }
+.app-shell .action-row__values dt { color: var(--ink-soft); font-size: var(--text-xs); }
+.app-shell .action-row__values dd { margin: var(--space-1) 0 0; overflow-wrap: anywhere; }
+.app-shell .action-row__pending, .app-shell .action-row__reason { margin: 0; color: var(--ink-soft); font-size: var(--text-sm); }
+.app-shell .action-row__empty { color: var(--ink-faint); font-style: italic; }
+.app-shell .action-row__actions, .app-shell .action-row__reason-form { display: flex; align-items: flex-end; flex-wrap: wrap; gap: var(--space-3); }
+.app-shell .action-row__reason-form .field { flex: 1 1 18rem; }
+.app-shell .identity-actions { margin-bottom: var(--space-4); }

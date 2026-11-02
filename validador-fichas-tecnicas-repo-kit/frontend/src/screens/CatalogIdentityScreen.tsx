@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Archive, ExternalLink, GitBranch, History, Save } from 'lucide-react'
 
 import {
+  fetchIdentityMaintenanceActions,
   fetchCatalogHistory,
   fetchCatalogIdentity,
   fetchCatalogClassifications,
@@ -9,6 +10,7 @@ import {
   setCatalogClassification,
   updateCatalogIdentity,
 } from '../api/client'
+import type { MaintenanceAction } from '../api/client'
 import type { CatalogClassification, CatalogIdentity, CatalogRelation, CatalogRevision, Reviewer } from '../api/types'
 import { AsyncBoundary } from '../components/AsyncState'
 import { PageHeader } from '../components/PageHeader'
@@ -19,6 +21,7 @@ import { SourceFieldsMaintenance } from './CatalogSourceFields'
 import { CatalogCimaDocumentReader } from './CatalogCimaDocument'
 import { CatalogReviewPanel } from './CatalogReviewPanel'
 import { NomenclatorComparisonPanel } from './NomenclatorComparisonPanel'
+import { IdentityActions } from './MaintenanceActions'
 import { useCapability } from '../auth/SessionContext'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -76,6 +79,8 @@ export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, 
   const [notice, setNotice] = useState('')
   const [activeTab, setActiveTab] = useState('summary')
   const [editing, setEditing] = useState(false)
+  const [novelties, setNovelties] = useState<MaintenanceAction[]>([])
+  const [noveltyKey, setNoveltyKey] = useState(0)
 
   async function load() {
     setLoading(true)
@@ -98,6 +103,14 @@ export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, 
   }
 
   useEffect(() => { void load() }, [identityId])
+
+  useEffect(() => {
+    let current = true
+    fetchIdentityMaintenanceActions(identityId)
+      .then(items => { if (current) setNovelties(Array.isArray(items) ? items : []) })
+      .catch(() => { if (current) setNovelties([]) })
+    return () => { current = false }
+  }, [identityId, noveltyKey])
 
   async function save(active: boolean) {
     if (!identity || !reviewer || !reason.trim() || !name.trim()) return
@@ -149,9 +162,14 @@ export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, 
         {identity && <>
           <PageHeader eyebrow={TYPE_LABELS[identity.identity_type] ?? identity.identity_type} title={identity.display_name}
             description={<>Código <strong>{orDash(identity.code)}</strong> · versión editable {identity.version}</>}
-            actions={<span className={`badge ${identity.active ? 'badge--validado' : 'badge--descartado'}`}>
-              {identity.active ? 'Vigente' : 'Archivado'}
-            </span>} />
+            actions={<>
+              {novelties.length > 0 && <span className='badge badge--warning'>
+                {novelties.length} {novelties.length === 1 ? 'novedad CIMA sin atender' : 'novedades CIMA sin atender'}
+              </span>}
+              <span className={`badge ${identity.active ? 'badge--validado' : 'badge--descartado'}`}>
+                {identity.active ? 'Vigente' : 'Archivado'}
+              </span>
+            </>} />
 
           {notice && <p className='alert alert--ok' role='status'>{notice}</p>}
           {saveError && <p className='alert alert--error' role='alert'>{saveError}</p>}
@@ -186,6 +204,8 @@ export function CatalogIdentityScreen({ identityId, reviewer, embedded = false, 
           <CatalogReviewPanel recordId={identity.target_record_id} reviewer={reviewer} />
           </> },
             { id: 'sources', label: 'Fuentes', content: <>
+          <IdentityActions actions={novelties} reviewer={reviewer} onChanged={() => { setNoveltyKey(key => key + 1); void load() }} />
+
           {identity.target_record_id && <SourceFieldsMaintenance recordId={identity.target_record_id} reviewer={reviewer} />}
 
           {identity.identity_type === 'presentation' && <NomenclatorComparisonPanel identityId={identity.id} reviewer={reviewer} />}

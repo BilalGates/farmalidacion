@@ -1055,3 +1055,80 @@ class ExportExclusion(Base):
     detail: Mapped[str] = mapped_column(Text)
     #: Estado del campo en el momento de excluirlo.
     observed_state: Mapped[str | None] = mapped_column(String(40))
+
+
+class MaintenanceAction(Base):
+    """Acción derivada de una novedad CIMA (ADR-0019). Insert-only e idempotente.
+
+    El evento es el aviso de CIMA y es inmutable; la acción es su valoración
+    determinista. Las decisiones humanas viven aparte, en
+    `maintenance_action_decision`, para que relanzar la derivación no pise nada.
+    """
+
+    __tablename__ = "maintenance_action"
+    # Sin UniqueConstraint sobre la tupla del diseño: la consulta CIMA sin
+    # respuesta y su reintento comparten tupla y tienen ids distintos.
+    __table_args__ = (Index("ix_maintenance_action_origin_kind", "data_origin", "kind"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    event_id: Mapped[str] = mapped_column(ForeignKey("maintenance_change_event.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(40))
+    area: Mapped[str] = mapped_column(String(40))
+    data_origin: Mapped[str] = mapped_column(String(10))
+    target_record_id: Mapped[str | None] = mapped_column(
+        ForeignKey("target_record.id"), nullable=True, index=True
+    )
+    identity_id: Mapped[str | None] = mapped_column(
+        ForeignKey("medication_catalog_identity.id"), nullable=True, index=True
+    )
+    national_code: Mapped[str | None] = mapped_column(Text)
+    master_workbook: Mapped[str | None] = mapped_column(String(40))
+    master_sheet: Mapped[str | None] = mapped_column(String(80))
+    master_field_name: Mapped[str | None] = mapped_column(String(80))
+    master_field_value_id: Mapped[str | None] = mapped_column(ForeignKey("field_value.id"))
+    master_value_literal: Mapped[str | None] = mapped_column(Text)
+    cima_version_id: Mapped[str | None] = mapped_column(ForeignKey("source_document_version.id"))
+    cima_pointer: Mapped[str | None] = mapped_column(Text)
+    cima_value_literal: Mapped[str | None] = mapped_column(Text)
+    proposed_value: Mapped[str | None] = mapped_column(Text)
+    rule_id: Mapped[str | None] = mapped_column(String(80))
+    proposal_json: Mapped[str | None] = mapped_column(Text)
+    diagnostic_code: Mapped[str | None] = mapped_column(String(60))
+    derivation_version: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class MaintenanceActionDecision(Base):
+    """Decisión humana append-only sobre una acción; la última es la vigente."""
+
+    __tablename__ = "maintenance_action_decision"
+    __table_args__ = (
+        UniqueConstraint("action_id", "sequence", name="uq_maintenance_action_decision_sequence"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    action_id: Mapped[str] = mapped_column(ForeignKey("maintenance_action.id"), index=True)
+    sequence: Mapped[int] = mapped_column(Integer)
+    decision: Mapped[str] = mapped_column(String(30))
+    reason: Mapped[str] = mapped_column(Text, default="", server_default="")
+    applied_revision_id: Mapped[str | None] = mapped_column(
+        ForeignKey("medication_catalog_revision.id")
+    )
+    applied_field_revision_id: Mapped[str | None] = mapped_column(
+        ForeignKey("field_maintenance_revision.id")
+    )
+    actor_id: Mapped[str] = mapped_column(String(80))
+    actor_assurance: Mapped[str] = mapped_column(String(20))
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+@event.listens_for(MaintenanceAction, "before_update")
+@event.listens_for(MaintenanceAction, "before_delete")
+def _reject_maintenance_action_mutation(*_: object) -> None:
+    raise ImmutableHistoryError("Las acciones de novedades son insert-only.")
+
+
+@event.listens_for(MaintenanceActionDecision, "before_update")
+@event.listens_for(MaintenanceActionDecision, "before_delete")
+def _reject_maintenance_action_decision_mutation(*_: object) -> None:
+    raise ImmutableHistoryError(
+        "Las decisiones sobre novedades son append-only: registre otra decisión."
+    )

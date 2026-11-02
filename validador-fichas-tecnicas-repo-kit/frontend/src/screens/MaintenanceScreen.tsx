@@ -2,18 +2,23 @@ import { useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
 
 import {
+  fetchMaintenanceActions,
   fetchMaintenanceChange,
   fetchMaintenanceChangeHistory,
   fetchMaintenanceRuns,
+  fetchUnlinkedMaintenanceEvents,
   runCimaMaintenance,
 } from '../api/client'
 import type { MaintenanceChangeSummary } from '../api/client'
+import type { Reviewer } from '../api/types'
 import { useQuery } from '../api/useQuery'
 import { useCapability } from '../auth/SessionContext'
 import { AsyncBoundary } from '../components/AsyncState'
 import { PageHeader } from '../components/PageHeader'
+import { WorkspaceTabs } from '../components/WorkspaceTabs'
 import { FilterBar } from '../components/FilterBar'
 import { formatDateTime, shortHash } from '../domain/format'
+import { ActionGroups, ActionRow, KIND_LABELS, KIND_ORDER } from './MaintenanceActions'
 
 const CHANGE_LABELS: Record<number, string> = {
   1: 'Alta',
@@ -159,6 +164,97 @@ function ChangeCard({ item, expanded, onToggle }: {
   )
 }
 
+function PendingTab({ reviewer, refreshKey, onChanged }: {
+  readonly reviewer: Reviewer | null
+  readonly refreshKey: number
+  readonly onChanged: () => void
+}) {
+  const { data, error, loading } = useQuery(() => fetchMaintenanceActions('pending'), [refreshKey])
+  const counts = data?.counts ?? {}
+  // Las cifras principales cuentan solo acciones con registro en el catálogo.
+  const figures = KIND_ORDER.filter(kind => kind !== 'proponer_alta')
+  return (
+    <>
+      {data && (
+        <dl className='action-figures' aria-label='Novedades por atender'>
+          {figures.map(kind => (
+            <div key={kind}><dt>{KIND_LABELS[kind]}</dt><dd>{(counts[kind] ?? 0).toLocaleString('es-ES')}</dd></div>
+          ))}
+        </dl>
+      )}
+      <AsyncBoundary loading={loading} error={error}
+        empty={data !== null && (data.items ?? []).length === 0}
+        emptyTitle='Nada por atender'
+        emptyDetail='No hay novedades CIMA pendientes de decisión en el catálogo.'>
+        {data && <ActionGroups page={data} reviewer={reviewer} onChanged={onChanged} />}
+      </AsyncBoundary>
+    </>
+  )
+}
+
+function DecidedActions({ reviewer, refreshKey, onChanged }: {
+  readonly reviewer: Reviewer | null
+  readonly refreshKey: number
+  readonly onChanged: () => void
+}) {
+  const { data } = useQuery(() => fetchMaintenanceActions('history', 50), [refreshKey])
+  const items = (data?.items ?? []).filter(item => KIND_ORDER.includes(item.kind))
+  if (items.length === 0) return null
+  return (
+    <section className='panel' aria-label='Acciones ya decididas'>
+      <div className='panel__head'><div><p className='eyebrow'>Decisiones</p><h2>Acciones decididas</h2></div></div>
+      <ul className='action-list'>
+        {items.map(item => <ActionRow key={item.id} action={item} reviewer={reviewer} onChanged={onChanged} />)}
+      </ul>
+    </section>
+  )
+}
+
+function UnlinkedTab({ refreshKey }: { readonly refreshKey: number }) {
+  const [page, setPage] = useState(1)
+  const { data, error, loading } = useQuery(() => fetchUnlinkedMaintenanceEvents(page), [page, refreshKey])
+  const pages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1
+  return (
+    <section className='panel' aria-label='Avisos sin registro en el catálogo'>
+      <div className='panel__head'>
+        <div>
+          <p className='eyebrow'>Archivo</p>
+          <h2>Sin registro en el catálogo</h2>
+          <p>Avisos de CIMA cuyo CN no coincide de forma exacta y única con el catálogo. Se conservan todos; no generan acciones.</p>
+        </div>
+        {data && <strong className='maintenance-history-search__total'>{data.total.toLocaleString('es-ES')} <span>avisos</span></strong>}
+      </div>
+      <AsyncBoundary loading={loading} error={error} empty={data !== null && data.items.length === 0}
+        emptyTitle='Sin avisos' emptyDetail='No hay avisos sin registro en el catálogo.'>
+        {data && (
+          <>
+            <div className='table-wrap' role='region' aria-label='Avisos sin registro; desplazamiento horizontal disponible' tabIndex={0}>
+              <table className='table'>
+                <thead><tr><th scope='col'>N.º registro</th><th scope='col'>Tipo</th><th scope='col'>Áreas</th><th scope='col'>Aviso</th></tr></thead>
+                <tbody>{data.items.map(item => (
+                  <tr key={item.id}>
+                    <th scope='row'>{item.nregistro}</th>
+                    <td>{CHANGE_LABELS[item.change_type] ?? `Tipo ${item.change_type}`}</td>
+                    <td>{item.areas.map(areaLabel).join(', ') || 'Sin área declarada'}</td>
+                    <td>{formatDateTime(new Date(item.occurred_at_epoch).toISOString())}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+            {pages > 1 && (
+              <nav className='maintenance-history-pager' aria-label='Páginas de avisos sin registro'>
+                <button type='button' className='button button--ghost' disabled={page <= 1 || loading} onClick={() => setPage(page - 1)}>Anterior</button>
+                <span>Página {page} de {pages}</span>
+                <button type='button' className='button button--ghost' disabled={page >= pages || loading} onClick={() => setPage(page + 1)}>Siguiente</button>
+              </nav>
+            )}
+          </>
+        )}
+      </AsyncBoundary>
+    </section>
+  )
+}
+
 function HistoryPager({ page, total, pageSize, loading, onPageChange, id }: {
   page: number
   total: number
@@ -189,7 +285,7 @@ function HistoryPager({ page, total, pageSize, loading, onPageChange, id }: {
   )
 }
 
-export function MaintenanceScreen() {
+export function MaintenanceScreen({ reviewer = null }: { readonly reviewer?: Reviewer | null }) {
   const canRunMaintenance = useCapability('sources.manage')
   const [selected, setSelected] = useState<string | null>(null)
   const [page, setPage] = useState(1)
@@ -199,6 +295,7 @@ export function MaintenanceScreen() {
   const [running, setRunning] = useState(false)
   const [runError, setRunError] = useState<string | null>(null)
   const [runMessage, setRunMessage] = useState<string | null>(null)
+  const [tab, setTab] = useState('pending')
   useEffect(() => {
     const interval = window.setInterval(() => setRefreshKey((value) => value + 1), 60_000)
     return () => window.clearInterval(interval)
@@ -296,7 +393,7 @@ export function MaintenanceScreen() {
           <div><dt>Último día consultado</dt><dd>{latestRun?.requested_date ?? 'Sin consultas'}</dd></div>
           <div><dt>Resultado</dt><dd>{latestRun ? `${latestRun.status === 'completed' ? 'Completada' : latestRun.status === 'running' ? 'En curso' : 'Fallida'} · ${latestRun.event_count.toLocaleString('es-ES')} novedades` : 'Pendiente'}</dd></div>
         </dl>
-        <p className='cima-sync__note'>Se consulta cada día cerrado. Solo se registran avisos cuyo CN coincide de forma exacta y única con el catálogo. Las correcciones requieren revisión humana.</p>
+        <p className='cima-sync__note'>Se consulta cada día cerrado. Se guardan todos los avisos; solo los que coinciden de forma exacta y única con el catálogo generan acciones. Nada se aplica sin tu decisión.</p>
         {runMessage && <p role='status'>{runMessage}</p>}
         {runError && <p className='state__detail' role='alert'>{runError}</p>}
         {runs && runs.length > 0 && (
@@ -312,6 +409,9 @@ export function MaintenanceScreen() {
           </details>
         )}
       </section>
+      <WorkspaceTabs label='Novedades CIMA' active={tab} onChange={setTab} tabs={[
+        { id: 'pending', label: 'Por atender', content: <PendingTab reviewer={reviewer} refreshKey={refreshKey} onChanged={() => setRefreshKey(value => value + 1)} /> },
+        { id: 'history', label: 'Histórico', content: <>
       <section className='panel maintenance-history-search' aria-label='Buscar en el histórico CIMA'>
         <div className='maintenance-history-search__head'>
           <div>
@@ -365,6 +465,10 @@ export function MaintenanceScreen() {
         )}
       </AsyncBoundary>
       {data && <HistoryPager page={page} total={data.total} pageSize={data.page_size} loading={loading} onPageChange={goToPage} id='history-page-bottom' />}
+          <DecidedActions reviewer={reviewer} refreshKey={refreshKey} onChanged={() => setRefreshKey(value => value + 1)} />
+        </> },
+        { id: 'unlinked', label: 'Sin registro en el catálogo', content: <UnlinkedTab refreshKey={refreshKey} /> },
+      ]} />
     </div>
   )
 }

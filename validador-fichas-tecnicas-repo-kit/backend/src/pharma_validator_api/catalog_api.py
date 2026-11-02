@@ -5,7 +5,7 @@ import json
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import asc, desc, func, or_, select
 from sqlalchemy.exc import IntegrityError
@@ -35,6 +35,7 @@ from pharma_validator_api.cima_comparison import (
 )
 from pharma_validator_api.contextual_chat import _sections
 from pharma_validator_api.errors import ApplicationError
+from pharma_validator_api.maintenance_actions import live_actions, pending_condition
 from pharma_validator_api.models import (
     BlockInstance,
     CatalogCimaReviewDecision,
@@ -42,6 +43,7 @@ from pharma_validator_api.models import (
     DocumentRecordLink,
     FieldMaintenanceRevision,
     FieldValue,
+    MaintenanceAction,
     MedicationCatalogClassification,
     MedicationCatalogIdentity,
     MedicationCatalogRelation,
@@ -401,6 +403,7 @@ def _comparison_inputs(
 
 @router.get("/identities", response_model=CatalogIdentityPage)
 def list_identities(
+    request: Request,
     session: SessionDependency,
     identity_type: CatalogIdentityType | None = None,
     commercial_class: str | None = None,
@@ -411,6 +414,7 @@ def list_identities(
     reviewer_id: str | None = None,
     q: str | None = None,
     active: bool | None = True,
+    maintenance: Literal["pending"] | None = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> CatalogIdentityPage:
@@ -430,6 +434,22 @@ def list_identities(
         elif review_scope == "completed":
             queue = queue.where(ReviewQueueEntry.state == "completado")
         statement = statement.where(MedicationCatalogIdentity.target_record_id.in_(queue))
+    if maintenance == "pending":
+        # Novedades CIMA sin atender: sin decisión o con la última «reabierta».
+        pending = select(MaintenanceAction.identity_id, MaintenanceAction.target_record_id).where(
+            live_actions(), pending_condition(),
+            MaintenanceAction.data_origin == request.app.state.settings.data_mode,
+        ).subquery()
+        statement = statement.where(
+            or_(
+                MedicationCatalogIdentity.id.in_(
+                    select(pending.c.identity_id).where(pending.c.identity_id.is_not(None))
+                ),
+                MedicationCatalogIdentity.target_record_id.in_(
+                    select(pending.c.target_record_id).where(pending.c.target_record_id.is_not(None))
+                ),
+            )
+        )
     if source_workbook is not None:
         filename = SOURCE_WORKBOOKS[source_workbook]
         source_fragment_ids = (

@@ -4,6 +4,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Literal
 from uuid import NAMESPACE_URL, uuid5
 
 import httpx
@@ -252,6 +253,85 @@ def persist_cima_document_version(
             )
             for artifact in artifacts
         ]
+    )
+    if commit:
+        session.commit()
+    else:
+        session.flush()
+    return PersistedDocumentVersion(document.id, version_id, content_hash, True)
+
+
+CimaApiEndpoint = Literal['medicamento', 'presentacion', 'presentaciones']
+
+
+def persist_cima_api_response(
+    session: Session,
+    *,
+    endpoint: CimaApiEndpoint,
+    key: str,
+    response: CimaResponse,
+    commit: bool = False,
+) -> PersistedDocumentVersion:
+    """Guarda una respuesta CIMA suelta como versión inmutable e idempotente.
+
+    Una misma respuesta (mismo contenido) devuelve la versión ya existente. El
+    cuerpo se conserva literal en un único artefacto `response`; es la fuente
+    que cita una acción de mantenimiento como procedencia.
+    """
+    if not key or key != key.strip():
+        raise DocumentVersionError('Identidad de respuesta CIMA incompatible.')
+    artifacts = (ArtifactInput('response', 1, endpoint, response),)
+    _validate_artifacts(artifacts)
+    source_type = f'cima_api_{endpoint}'
+    document = session.scalar(
+        select(SourceDocument).where(
+            SourceDocument.source_type == source_type, SourceDocument.name == key
+        )
+    )
+    if document is None:
+        document = SourceDocument(source_type=source_type, name=key)
+        session.add(document)
+        session.flush()
+    content_hash = _package_hash(artifacts, source_version=None)
+    source_locator = f'cima:{endpoint}:{key}'
+    existing = session.scalar(
+        select(SourceDocumentVersion).where(
+            SourceDocumentVersion.document_id == document.id,
+            SourceDocumentVersion.content_hash == content_hash,
+        )
+    )
+    if existing is not None:
+        _assert_existing_version(
+            session, existing, artifacts, source_version=None, source_locator=source_locator
+        )
+        return PersistedDocumentVersion(document.id, existing.id, content_hash, False)
+    version_id = str(uuid5(NAMESPACE_URL, f'{document.id}:{content_hash}'))
+    session.add(
+        SourceDocumentVersion(
+            id=version_id,
+            document_id=document.id,
+            content_hash=content_hash,
+            source_version=None,
+            source_locator=source_locator,
+            acquired_at=_fetched_at(response),
+        )
+    )
+    session.flush()
+    session.add(
+        SourceDocumentArtifact(
+            id=str(uuid5(NAMESPACE_URL, f'{version_id}:response:1')),
+            document_version_id=version_id,
+            artifact_role='response',
+            ordinal=1,
+            locator=endpoint,
+            source_url=response.url,
+            status_code=response.status_code,
+            media_type=response.content_type,
+            response_headers=_response_headers(response),
+            content_hash=response.content_sha256,
+            body=response.body,
+            fetched_at=response.fetched_at,
+        )
     )
     if commit:
         session.commit()

@@ -10,6 +10,7 @@ from pathlib import Path
 
 from pharma_validator_api.cima_client import CimaClient
 from pharma_validator_api.config import Settings
+from pharma_validator_api.data_origin import DataOrigin
 from pharma_validator_api.database import create_database_engine, create_session_factory
 from pharma_validator_api.maintenance_job import run_pending_days
 from pharma_validator_api.maintenance_lock import (
@@ -67,6 +68,7 @@ def main() -> int:
                         client=client,
                         start_date=args.start_date,
                         through_date=args.through_date,
+                        data_origin=DataOrigin.REAL,  # arriba se exige APP_DATA_MODE=real
                     )
             finally:
                 engine.dispose()

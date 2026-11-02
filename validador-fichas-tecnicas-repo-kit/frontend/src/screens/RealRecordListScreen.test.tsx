@@ -452,3 +452,17 @@ it('mantiene el expediente abierto si falla el avance y permite cerrar con Escap
   fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }))
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
+
+it('filtra por novedades CIMA sin atender enviando maintenance=pending', async () => {
+  cleanCatalogState()
+  const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(PAGE)))
+  vi.stubGlobal('fetch', fetchMock)
+  render(<RealRecordListScreen />)
+  await screen.findByText('No hay identidades en el catálogo')
+  expect(fetchMock.mock.calls.some(([url]) => String(url).includes('maintenance='))).toBe(false)
+
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Con novedades CIMA sin atender' }))
+  await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes('maintenance=pending'))).toBe(true))
+  fireEvent.click(await screen.findByRole('button', { name: /Limpiar filtros/ }))
+  await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Con novedades CIMA sin atender' })).not.toBeChecked())
+})

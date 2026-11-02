@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pytest
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 
 import pharma_validator_api.maintenance_job as maintenance_job
@@ -15,7 +15,7 @@ from pharma_validator_api.maintenance_job import (
     run_one_day,
     run_pending_days,
 )
-from pharma_validator_api.models import Base, MaintenanceRun
+from pharma_validator_api.models import Base, MaintenanceAction, MaintenanceRun
 
 
 class ChangesClient:
@@ -103,7 +103,8 @@ def test_medication_without_presentations_does_not_block_day(
             now=fixed_now,
         )
         assert run.status == "completed"
-        assert run.event_count == 0
+        # D-040: el aviso se guarda aunque no tenga destino en el catálogo.
+        assert run.event_count == 1
 
 
 def test_missing_cima_ft_sections_complete_day_with_visible_warning(
@@ -194,7 +195,10 @@ def test_bulk_index_skips_changes_without_matching_catalog_cn(
             day=date(2026, 9, 7),
         )
         assert run.status == "completed"
-        assert run.event_count == 0
+        # El aviso sin destino se guarda (D-040) pero no consulta metadatos ni
+        # genera acciones: queda en la vista «Sin registro en el catálogo».
+        assert run.event_count == 1
+        assert session.scalar(select(func.count()).select_from(MaintenanceAction)) == 0
 
 
 def test_failure_is_visible_and_next_attempt_retries_same_day(tmp_path: Path) -> None:

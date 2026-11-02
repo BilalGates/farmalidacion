@@ -126,6 +126,9 @@ def process_change_report(
     events: list[MaintenanceChangeEvent] = []
     refreshed: dict[str, RefreshResult] = {}
     unavailable: set[str] = set()
+    # Con inventario de destinos (aunque esté vacío) un aviso sin destino se
+    # guarda sin refrescar la ficha técnica (D-040); sin inventario, se refresca.
+    restrict_to_targets = targets_by_registration is not None
     targets_by_registration = targets_by_registration or {}
     for change in report.changes:
         existing = _existing_event(session, change)
@@ -139,7 +142,11 @@ def process_change_report(
             )
             continue
         refresh = None
-        if change.affects_technical_sheet and change.nregistro not in unavailable:
+        if (
+            change.affects_technical_sheet
+            and change.nregistro not in unavailable
+            and (not restrict_to_targets or change.nregistro in targets_by_registration)
+        ):
             refresh = refreshed.get(change.nregistro)
             if refresh is None:
                 try:
